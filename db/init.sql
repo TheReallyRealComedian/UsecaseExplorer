@@ -1,0 +1,1 @@
+-- Initial database schema will be defined here later

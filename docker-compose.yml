@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15-alpine # Use a stable, lightweight Postgres image
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: usecase_explorer_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password # CHANGE THIS IN PRODUCTION! Use environment variables.
+    volumes:
+      - db_data:/var/lib/postgresql/data/ # Persistent volume for data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql # Script for schema setup
+    ports:
+      - "5432:5432" # Optional: Map port for local database tools (e.g., pgAdmin)
+
+volumes:
+  db_data:

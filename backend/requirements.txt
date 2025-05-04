@@ -1,0 +1,10 @@
+#backend/requirements.txt
+
+Flask==2.3.3 # Or a recent version you prefer/is stable
+SQLAlchemy==2.0.25 # Or a recent version
+psycopg2-binary==2.9.9 # Or a recent version
+python-dotenv==1.0.0 # For managing local environment variables
+Flask-Login==0.6.2 # For user authentication
+requests==2.31.0 # General HTTP client, useful for LLMs not using specific library
+openai==1.10.0 # Official OpenAI library
+gunicorn==21.2.0 # WSGI server for Docker
