@@ -34,15 +34,38 @@
 
     <hr>
         <!-- ADD THIS SECTION TO DISPLAY AREAS -->
-        <h2>Areas</h2>
+        <h2>Areas and Process Steps</h2>
         {% if areas %}
-            <ul>
-                {% for area in areas %}
-                    <li>{{ area.name }} (ID: {{ area.id }})</li>
+            {% for area in areas %}
+                <h3>{{ area.name }} (Area ID: {{ area.id }})</h3>
+                {% if area.process_steps %}
+                    <ul>
+                        {% for step in area.process_steps | sort(attribute='name') %} {# Optional: Sort steps by name #}
+                            <li>
+                                <strong>{{ step.name }}</strong> (Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }})
+                                {# --- ADD Use Case List --- #}
+                                {% if step.use_cases %}
+                                    <ul>
+                                        {% for uc in step.use_cases | sort(attribute='name') %} {# Optional: Sort use cases #}
+                                        <li>
+                                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                            (UC ID: {{ uc.id }}, BI_ID: {{ uc.bi_id }})
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p style="margin-left: 20px;"><em>No use cases found for this step.</em></p>
+                                {% endif %}
+                                {# --- END Use Case List --- #}
+                            </li>
+                        {% endfor %}
+                    </ul>
                 {% else %}
-                    <li>No areas found in the database.</li>
-                {% endfor %}
-            </ul>
+                    <p><em>No process steps found for this area.</em></p>
+                {% endif %}
+            {% else %} {# This 'else' corresponds to the 'for area in areas' #}
+                <p>No areas found in the database.</p>
+            {% endfor %}
         {% else %}
              <p>No areas loaded or an error occurred.</p>
         {% endif %}

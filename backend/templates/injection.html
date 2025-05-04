@@ -61,10 +61,27 @@
     </form>
     <!-- End Process Step Injection Form -->
 
+
     <hr>
-    <!-- Placeholder for Use Case Injection -->
+    <!-- Use Case Injection Form -->
     <h2>Inject Use Cases</h2>
-    <p>(Upload form will go here later)</p>
+    <p>Upload a JSON file containing a list of use case objects.</p>
+    <p>Required keys per object: <code>"bi_id"</code> (string, must be unique for use cases), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match the BI_ID of an existing Process Step).</p>
+    <p>Optional keys: <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).</p>
+    <p>Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "summary": "Summary one"}, ...]</code></p>
+
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
+         {# CSRF token needed if using Flask-WTF/CSRFProtect later #}
+         <div>
+             <label for="usecase_file">Use Case JSON File:</label>
+             <input type="file" id="usecase_file" name="usecase_file" accept=".json" required>
+         </div>
+         <br>
+         <div>
+             <button type="submit">Upload Use Cases</button>
+         </div>
+    </form>
+    <!-- End Use Case Injection Form -->
 
     <hr>
     <p><a href="{{ url_for('index') }}">Back to Home</a></p>

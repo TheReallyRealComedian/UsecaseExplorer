@@ -7,7 +7,6 @@ from flask import Blueprint
 area_routes = Blueprint('areas', __name__, url_prefix='/api/areas')
 step_routes = Blueprint('steps', __name__, url_prefix='/api/steps')
 usecase_routes = Blueprint('usecases', __name__, url_prefix='/api/usecases')
-relevance_routes = Blueprint('relevance', __name__, url_prefix='/api/relevance')
 llm_routes = Blueprint('llm', __name__, url_prefix='/api/llm')
 injection_routes = Blueprint('injection', __name__, url_prefix='/api/injection')
 

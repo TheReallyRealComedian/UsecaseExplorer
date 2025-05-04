@@ -1,13 +1,14 @@
 # backend/app.py
 import os
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, flash
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, joinedload
 from flask_login import LoginManager, current_user
 
 # Use relative imports for modules within the same package (backend)
 from .config import get_config
-from .models import Base, User, Area
+# Import models needed, including ProcessStep for the joinedload path
+from .models import Base, User, Area, ProcessStep, UseCase
 
 # Database setup
 SessionLocal = scoped_session(sessionmaker())
@@ -29,11 +30,13 @@ def load_user(user_id):
 
     session = SessionLocal()
     try:
+        # Query the user by primary key
         user = session.query(User).get(user_id)
         return user
     except Exception as e:
         print(f"Error loading user {user_id}: {e}")
         return None
+    # No finally needed here; teardown_request handles removal
 
 
 def create_app():
@@ -49,7 +52,7 @@ def create_app():
     try:
         os.makedirs(app.instance_path)
     except OSError:
-        pass # Already exists
+        pass # Directory already exists
 
     # Load configuration
     app.config.from_object(get_config())
@@ -74,8 +77,7 @@ def create_app():
             print("Database connection successful!")
     except Exception as e:
         print(f"Database connection failed: {e}")
-        # Consider raising the error or exiting depending on severity
-        # raise e
+        # raise e # Consider raising the error during startup
 
     # Teardown database session after each request
     @app.teardown_request
@@ -85,25 +87,32 @@ def create_app():
     # --- Register Blueprints ---
     print("Importing and registering blueprints...")
 
-    # Import the auth blueprint object directly from its defining module
+    # Import and register blueprints defined in their own modules
     from .routes.auth_routes import auth_routes
     app.register_blueprint(auth_routes)
+
     from .routes.injection_routes import injection_routes
     app.register_blueprint(injection_routes)
 
-    # Keep the others as they are for now (defined in routes/__init__.py)
-    # TODO: Refactor other blueprints later following the auth_routes pattern
+    from .routes.usecase_routes import usecase_routes
+    app.register_blueprint(usecase_routes)
+
+    # --- CORRECTED SECTION FOR RELEVANCE ---
+    from .routes.relevance_routes import relevance_routes # Import directly
+    app.register_blueprint(relevance_routes)              # Register it
+    # --- END CORRECTION ---
+
+    # Import and register blueprints still defined in routes/__init__.py
+    # TODO: Refactor these later following the new pattern
     from .routes import (
         area_routes,
         step_routes,
-        usecase_routes,
-        relevance_routes,
+        # relevance_routes, # REMOVED from this group import
         llm_routes,
     )
     app.register_blueprint(area_routes)
     app.register_blueprint(step_routes)
-    app.register_blueprint(usecase_routes)
-    app.register_blueprint(relevance_routes)
+    # app.register_blueprint(relevance_routes) # Registration moved above
     app.register_blueprint(llm_routes)
 
     print("Blueprint registration complete.")
@@ -113,20 +122,22 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            # --- ADD QUERY ---
             session = SessionLocal()
+            areas = [] # Initialize areas to an empty list
             try:
-                areas = session.query(Area).order_by(Area.name).all()
+                # Eagerly load Areas, their ProcessSteps, and the UseCases associated with those steps
+                areas = session.query(Area).options(
+                    joinedload(Area.process_steps).joinedload(ProcessStep.use_cases)
+                ).order_by(Area.name).all()
             except Exception as e:
-                print(f"Error querying areas: {e}")
-                flash("Could not load areas from database.", "danger")
-                areas = [] # Pass empty list on error
+                print(f"Error querying areas with steps and use cases: {e}")
+                flash("Could not load necessary data from the database.", "danger")
+                # Keep areas as an empty list on error
             finally:
                 SessionLocal.remove()
-            # --- END QUERY ---
 
             # Pass areas to the template
-            return render_template('index.html', title='Home', areas=areas) # Added areas=areas
+            return render_template('index.html', title='Home', areas=areas)
         else:
             # User is not logged in, redirect to login
             return redirect(url_for('auth.login'))
@@ -138,35 +149,57 @@ def create_app():
         results = {"status": "success", "checks": {}}
         try:
             # Test relative imports needed by this app context
-            from .config import Config
+            from .config import Config # noqa: F401 (unused import)
             results["checks"]["config_import"] = "OK"
-            from .models import User
+            from .models import User # noqa: F401 (unused import)
             results["checks"]["models_import"] = "OK"
 
             # Test access to a blueprint object AFTER registration
             auth_bp_registered = app.blueprints.get('auth') is not None
             results["checks"]["auth_blueprint_registered"] = auth_bp_registered
+            usecase_bp_registered = app.blueprints.get('usecases') is not None # Corrected blueprint name
+            results["checks"]["usecase_blueprint_registered"] = usecase_bp_registered
+            relevance_bp_registered = app.blueprints.get('relevance') is not None # Added check
+            results["checks"]["relevance_blueprint_registered"] = relevance_bp_registered
+
 
             # Test config access
-            secret_key = app.config.get('SECRET_KEY')
+            secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
             openai_key_present = 'OPENAI_API_KEY' in app.config and bool(app.config.get('OPENAI_API_KEY'))
-            results["checks"]["secret_key_loaded"] = bool(secret_key)
+            results["checks"]["secret_key_loaded"] = secret_key_present
             results["checks"]["db_url_loaded"] = db_url_present
             results["checks"]["openai_key_loaded"] = openai_key_present
 
-            # Verify URL generation for a known registered route
+            # Verify URL generation for known registered routes
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
+                # Test a new relevance route URL
+                add_area_rel_url = url_for('relevance.add_area_relevance')
+                results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
+
             except Exception as url_err:
-                results["checks"]["url_for_auth_login"] = f"FAILED ({url_err})"
+                results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
+
+
+            # Test database connection again within request context
+            try:
+                # Using SessionLocal() directly ensures teardown is handled
+                user_count = SessionLocal().query(User).count()
+                results["checks"]["db_connection_request_context"] = f"OK (User count: {user_count})"
+                SessionLocal.remove() # Manually remove session used just for count
+            except Exception as db_err:
+                results["checks"]["db_connection_request_context"] = f"FAILED ({db_err})"
+                results["status"] = "warning" # Downgrade status if only DB fails here
+
 
         except Exception as e:
             results["status"] = "error"
             results["message"] = f"Debug check failed: {e}"
             results["error_type"] = type(e).__name__
             print(f"Error in /debug-check: {e}")
+            # Return 500 for significant errors during debug check
             return results, 500
 
         return results
@@ -174,4 +207,4 @@ def create_app():
     print("create_app function finished.")
     return app
 
-# No WSGI server execution here. Run via Gunicorn, Waitress, etc.
+# Run via WSGI server (Gunicorn)

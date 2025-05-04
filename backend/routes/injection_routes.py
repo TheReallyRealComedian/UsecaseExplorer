@@ -4,8 +4,8 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required
 
 from ..app import SessionLocal
-from ..models import Area, ProcessStep
-from ..injection_service import process_area_file, process_step_file
+from ..models import Area, ProcessStep, UseCase # Add UseCase
+from ..injection_service import process_area_file, process_step_file, process_usecase_file # Add process_usecase_file
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
@@ -30,7 +30,7 @@ def handle_injection():
                 if not result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0 :
                     flash_category = 'warning' # Downgrade error if only skips occurred
                 flash(result['message'], flash_category)
-                print(f"Area injection result: {result}") # Keep logging as requested
+                print(f"Area injection result: {result}")
                 return redirect(url_for('injection.handle_injection'))
             else:
                 flash('Invalid file type or name for Areas. Please upload a .json file.', 'danger')
@@ -45,7 +45,6 @@ def handle_injection():
 
             if file and '.' in file.filename and \
                file.filename.rsplit('.', 1)[1].lower() == 'json':
-                # Call the service function for step files
                 result = process_step_file(file.stream)
 
                 # Determine flash category based on outcome
@@ -55,15 +54,43 @@ def handle_injection():
                 elif result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
                      flash_category = 'warning' # No errors, but nothing added, only skipped
                 elif not result['success'] and result.get('added_count', 0) == 0 and result.get('skipped_count', 0) > 0 and 'Error:' not in result.get('message', ''):
-                    # Treat cases with only skips but marked as failure (due to data validation maybe) as warning
+                    # Treat cases with only skips but marked as failure as warning
                     flash_category = 'warning'
 
                 flash(result['message'], flash_category)
-                print(f"Step injection result: {result}") # Keep logging as requested
+                print(f"Step injection result: {result}")
                 return redirect(url_for('injection.handle_injection'))
             else:
                  flash('Invalid file type or name for Process Steps. Please upload a .json file.', 'danger')
                  return redirect(request.url)
+
+        # --- Use Case File Processing ---
+        elif 'usecase_file' in request.files:
+            file = request.files['usecase_file']
+            if file.filename == '':
+                flash('No selected file for Use Cases.', 'warning')
+                return redirect(request.url)
+
+            if file and '.' in file.filename and \
+               file.filename.rsplit('.', 1)[1].lower() == 'json':
+                result = process_usecase_file(file.stream)
+
+                # Determine flash category
+                flash_category = 'danger' # Default to danger
+                if result['success'] and result['added_count'] > 0:
+                    flash_category = 'success'
+                elif result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                    flash_category = 'warning'
+                elif not result['success'] and 'Error:' not in result.get('message', ''):
+                     flash_category = 'warning' # Treat skip-only failures as warnings
+
+                flash(result['message'], flash_category)
+                print(f"Use Case injection result: {result}")
+                return redirect(url_for('injection.handle_injection'))
+            else:
+                 flash('Invalid file type or name for Use Cases. Please upload a .json file.', 'danger')
+                 return redirect(request.url)
+        # --- END Use Case File Processing ---
 
         else:
             # Handle case where no known file input was found
