@@ -1,0 +1,560 @@
+/* style.css */
+:root {
+    --primary-color: #6a0dad; /* Purple */
+    --primary-color-dark: #5a0bad;
+    --primary-color-light: #f3e8fd; /* Lighter purple for backgrounds/hover */
+    --secondary-color: #f8f9fa; /* Light grey background for main content */
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --text-color-light: #6c757d;
+    --text-color-sidebar: #e0e0e0;
+    --text-color-sidebar-active: #ffffff;
+    --border-color: #dee2e6;
+    --white: #ffffff;
+    --font-family: 'Inter', sans-serif;
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --border-radius: 8px;
+}
+
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: var(--font-family);
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-size: 14px; /* Base font size */
+    line-height: 1.5;
+}
+
+a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--primary-color-dark);
+}
+
+ul {
+    list-style: none;
+}
+
+/* Main Layout */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 250px;
+    background-color: var(--primary-color);
+    color: var(--text-color-sidebar);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+}
+
+.sidebar-header {
+    padding: 0 25px 20px 25px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-header .logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--white);
+}
+
+.sidebar-menu {
+    flex-grow: 1;
+}
+
+.sidebar-menu li a,
+.sidebar-footer-menu li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 25px;
+    color: var(--text-color-sidebar);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0; /* Rounded on the right */
+    margin-right: 15px; /* Space before rounding */
+}
+
+.sidebar-menu li a i,
+.sidebar-footer-menu li a i {
+    margin-right: 15px;
+    font-size: 1.1rem;
+    width: 20px; /* Ensure icons align */
+    text-align: center;
+}
+
+.sidebar-menu li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color-sidebar-active);
+}
+
+.sidebar-menu li.active a {
+    background-color: var(--primary-color-dark); /* Or slightly darker purple */
+    color: var(--text-color-sidebar-active);
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset; /* Subtle inset shadow */
+}
+
+
+.sidebar-footer-menu {
+    margin-top: auto; /* Pushes to the bottom */
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Main Content Area Styles */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--secondary-color);
+}
+
+/* Header Styles */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: var(--secondary-color);
+    padding: 8px 15px;
+    border-radius: var(--border-radius);
+    width: 300px; /* Adjust as needed */
+}
+
+.search-bar i {
+    color: var(--text-color-light);
+    margin-right: 10px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: var(--text-color-light);
+}
+
+.icon-button:hover {
+    color: var(--text-color);
+}
+
+/* Page Content Styles */
+.page-content {
+    padding: 30px;
+    flex-grow: 1;
+    overflow-y: auto; /* Allow scrolling if content exceeds height */
+}
+
+/* Card Styles (Generic card for content blocks) */
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.card-link {
+    font-size: 0.85rem;
+    color: var(--text-color-light);
+    font-weight: 500;
+}
+
+.card-link:hover {
+    color: var(--primary-color);
+}
+
+/* Form Styles */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+}
+
+form label {
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+form input[type="text"],
+form input[type="password"],
+form input[type="email"],
+form input[type="number"],
+form input[type="file"],
+form select,
+form textarea {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+form input[type="checkbox"] {
+    margin-right: 5px;
+    align-self: flex-start; /* Align checkbox properly */
+}
+form div.checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+}
+form div.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+}
+
+form textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+form button[type="submit"],
+.btn {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    align-self: flex-start; /* Prevent button from stretching */
+}
+
+form button[type="submit"]:hover,
+.btn:hover {
+    background-color: var(--primary-color-dark);
+}
+
+.btn-secondary {
+     background-color: var(--text-color-light);
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+
+/* Flash Messages */
+.flash-messages {
+    margin-bottom: 20px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+/* Index page specific styles (Example Adaptation) */
+.welcome-message {
+    margin-bottom: 20px;
+}
+.welcome-message h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+.welcome-message p {
+    color: var(--text-color-light);
+}
+
+.data-section {
+    margin-bottom: 30px; /* Add more space between sections */
+}
+
+.data-section h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--primary-color); /* Make section titles stand out */
+}
+
+.area-card { /* Style for each Area block */
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--primary-color-light); /* Add a subtle left border */
+}
+.area-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+.area-card ul {
+    padding-left: 20px; /* Indent step list */
+    list-style: disc; /* Use bullets for steps */
+}
+.area-card li {
+    margin-bottom: 8px;
+}
+.area-card strong { /* Step name */
+    font-weight: 500;
+}
+.area-card .step-details {
+    font-size: 0.85rem;
+    color: var(--text-color-light);
+}
+.area-card .usecase-list {
+    padding-left: 25px; /* Further indent use case list */
+    margin-top: 5px;
+    list-style: circle; /* Different bullet for use cases */
+}
+.area-card .usecase-list li a {
+    font-weight: 500;
+}
+.area-card .usecase-list .uc-details {
+    font-size: 0.8rem;
+    color: var(--text-color-light);
+    margin-left: 5px;
+}
+.area-card p em { /* "No steps/use cases found" */
+    color: var(--text-color-light);
+    font-style: italic;
+}
+
+
+/* Use Case Detail Styles */
+.usecase-detail-page dl {
+    display: grid;
+    grid-template-columns: max-content auto; /* Label column sized to content, value takes rest */
+    gap: 10px 20px; /* Row gap, Column gap */
+    margin-bottom: 20px;
+}
+.usecase-detail-page dt {
+    font-weight: 600;
+    color: var(--text-color-light);
+}
+.usecase-detail-page dd {
+    margin-left: 0; /* Reset default margin */
+}
+.usecase-detail-page pre {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.85rem;
+    max-height: 200px; /* Limit height */
+    overflow-y: auto; /* Add scroll if needed */
+}
+
+.relevance-section {
+    margin-top: 30px;
+}
+.relevance-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+.relevance-section h4 {
+    font-size: 1rem;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+.relevance-section ul {
+    list-style: none;
+    padding-left: 0;
+}
+.relevance-section li {
+    background-color: var(--card-bg);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    border-left: 3px solid var(--primary-color-light);
+}
+.relevance-section li strong {
+    display: inline-block;
+    min-width: 50px; /* Align labels */
+}
+.relevance-section li pre { /* Relevance content */
+     background-color: #f8f9fa;
+     padding: 8px;
+     margin-top: 5px;
+     border: 1px solid #dee2e6;
+     border-radius: 4px;
+     white-space: pre-wrap;
+     word-wrap: break-word;
+     font-size: 0.85rem;
+}
+
+.add-relevance-form {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color); /* Add subtle border */
+}
+.add-relevance-form h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+.add-relevance-form h4 { /* Sub-title for each form */
+     font-size: 1rem;
+     font-weight: 600;
+     margin-bottom: 15px;
+     padding-bottom: 5px;
+     border-bottom: 1px solid var(--border-color);
+     color: var(--primary-color);
+}
+
+/* Login/Register Page Styles */
+.auth-container {
+    max-width: 400px;
+    margin: 50px auto; /* Center vertically and horizontally */
+    padding: 30px;
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.auth-container h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.6rem;
+    color: var(--primary-color);
+}
+
+.auth-container form button[type="submit"] {
+    width: 100%; /* Make button full width */
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.auth-container p {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+}
+
+.auth-container p a {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Injection Page Styles */
+.injection-form-section {
+    background-color: var(--card-bg);
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.injection-form-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+.injection-form-section p {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    margin-bottom: 15px;
+}
+.injection-form-section code {
+    background-color: #e9ecef;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }

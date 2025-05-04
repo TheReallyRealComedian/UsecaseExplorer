@@ -1,221 +1,225 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>{{ title }} - Usecase Explorer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        dt { font-weight: bold; margin-top: 0.5em; }
-        dd { margin-left: 2em; }
-        pre { background-color: #f4f4f4; padding: 10px; border: 1px solid #ddd; white-space: pre-wrap; word-wrap: break-word; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="usecase-detail-page"> {# Add wrapper class #}
     <h1>Use Case: {{ usecase.name }}</h1>
+    <p class="text-color-light mb-3">Detailed information and relevance links for this use case.</p>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div>
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+    {# Flash messages are now in base.html #}
 
-    <dl>
-        <dt>Use Case ID:</dt>
-        <dd>{{ usecase.id }}</dd>
+    <div class="card mb-3"> {# Wrap details in a card #}
+        <div class="card-header">
+             <h2 class="card-title">Details</h2>
+        </div>
+        <dl>
+            <dt>Use Case ID:</dt>
+            <dd>{{ usecase.id }}</dd>
 
-        <dt>Business ID (BI_ID):</dt>
-        <dd>{{ usecase.bi_id }}</dd>
+            <dt>Business ID (BI_ID):</dt>
+            <dd>{{ usecase.bi_id }}</dd>
 
-        <dt>Area:</dt>
-        <dd>{{ usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else 'N/A' }}</dd>
+            <dt>Area:</dt>
+            <dd>{{ usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else 'N/A' }}</dd>
 
-        <dt>Process Step:</dt>
-        <dd>{{ usecase.process_step.name if usecase.process_step else 'N/A' }} (BI_ID: {{ usecase.process_step.bi_id if usecase.process_step else 'N/A' }})</dd>
+            <dt>Process Step:</dt>
+            <dd>{{ usecase.process_step.name if usecase.process_step else 'N/A' }} (BI_ID: {{ usecase.process_step.bi_id if usecase.process_step else 'N/A' }})</dd>
 
-        <dt>Summary:</dt>
-        <dd>{{ usecase.summary | default('N/A', true) }}</dd>
+            <dt>Summary:</dt>
+            <dd>{{ usecase.summary | default('N/A', true) }}</dd>
 
-        <dt>Inspiration:</dt>
-        <dd>{{ usecase.inspiration | default('N/A', true) }}</dd>
+            <dt>Inspiration:</dt>
+            <dd>{{ usecase.inspiration | default('N/A', true) }}</dd>
 
-        <dt>Raw Content:</dt>
-        <dd>
-            {% if usecase.raw_content %}
-                <pre>{{ usecase.raw_content }}</pre>
+            <dt>Raw Content:</dt>
+            <dd>
+                {% if usecase.raw_content %}
+                    <pre>{{ usecase.raw_content }}</pre>
+                {% else %}
+                    N/A
+                {% endif %}
+            </dd>
+
+            {# Optionally hide LLM comments if empty or style them differently #}
+            <dt>LLM Comment 1:</dt> <dd>{{ usecase.llm_comment_1 | default('N/A', true) }}</dd>
+            <dt>LLM Comment 2:</dt> <dd>{{ usecase.llm_comment_2 | default('N/A', true) }}</dd>
+            <dt>LLM Comment 3:</dt> <dd>{{ usecase.llm_comment_3 | default('N/A', true) }}</dd>
+            <dt>LLM Comment 4:</dt> <dd>{{ usecase.llm_comment_4 | default('N/A', true) }}</dd>
+            <dt>LLM Comment 5:</dt> <dd>{{ usecase.llm_comment_5 | default('N/A', true) }}</dd>
+
+            <dt>Created At:</dt>
+            <dd>{{ usecase.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.created_at else 'N/A' }}</dd>
+
+            <dt>Updated At:</dt>
+            <dd>{{ usecase.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.updated_at else 'N/A' }}</dd>
+        </dl>
+    </div>
+
+
+    <div class="relevance-section">
+        <h2>Relevance Links (From this Use Case)</h2>
+
+        <div class="card mb-3">
+             <div class="card-header">
+                 <h4 class="card-title mb-0">Relevant Areas</h4> {# Removed extra margins #}
+             </div>
+            {% if usecase.relevant_to_areas %}
+                <ul>
+                    {% for rel in usecase.relevant_to_areas | sort(attribute='relevance_score', reverse=True) %}
+                        <li>
+                            <strong>Area:</strong> {{ rel.target_area.name if rel.target_area else 'N/A' }}<br>
+                            <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
+                            {% if rel.relevance_content %}
+                                <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
             {% else %}
-                N/A
+                <p class="p-3 mb-0"><em>No relevance links to Areas found.</em></p> {# Added padding #}
             {% endif %}
-        </dd>
-
-        <dt>LLM Comment 1:</dt>
-        <dd>{{ usecase.llm_comment_1 | default('N/A', true) }}</dd>
-        <dt>LLM Comment 2:</dt>
-        <dd>{{ usecase.llm_comment_2 | default('N/A', true) }}</dd>
-        <dt>LLM Comment 3:</dt>
-        <dd>{{ usecase.llm_comment_3 | default('N/A', true) }}</dd>
-        <dt>LLM Comment 4:</dt>
-        <dd>{{ usecase.llm_comment_4 | default('N/A', true) }}</dd>
-        <dt>LLM Comment 5:</dt>
-        <dd>{{ usecase.llm_comment_5 | default('N/A', true) }}</dd>
-
-        <dt>Created At:</dt>
-        <dd>{{ usecase.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.created_at else 'N/A' }}</dd>
-
-        <dt>Updated At:</dt>
-        <dd>{{ usecase.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.updated_at else 'N/A' }}</dd>
-
-    </dl>
-
-    <hr>
-
-    <h2>Relevance Links (From this Use Case)</h2>
-
-    <h4>Relevant Areas</h4>
-    {% if usecase.relevant_to_areas %}
-        <ul>
-            {% for rel in usecase.relevant_to_areas | sort(attribute='relevance_score', reverse=True) %}
-                <li>
-                    <strong>Area:</strong> {{ rel.target_area.name if rel.target_area else 'N/A' }}<br>
-                    <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
-                    {% if rel.relevance_content %}
-                        <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p><em>No relevance links to Areas found.</em></p>
-    {% endif %}
-
-    <h4>Relevant Process Steps</h4>
-    {% if usecase.relevant_to_steps %}
-        <ul>
-            {% for rel in usecase.relevant_to_steps | sort(attribute='relevance_score', reverse=True) %}
-                 <li>
-                    <strong>Step:</strong> {{ rel.target_process_step.name if rel.target_process_step else 'N/A' }}
-                    (BI_ID: {{ rel.target_process_step.bi_id if rel.target_process_step else 'N/A' }})<br>
-                    <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
-                    {% if rel.relevance_content %}
-                        <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p><em>No relevance links to Process Steps found.</em></p>
-    {% endif %}
-
-    <h4>Relevant Use Cases</h4>
-    {% if usecase.relevant_to_usecases_as_source %}
-        <ul>
-             {% for rel in usecase.relevant_to_usecases_as_source | sort(attribute='relevance_score', reverse=True) %}
-                <li>
-                    <strong>Use Case:</strong>
-                    {% if rel.target_usecase %}
-                        <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.target_usecase.id) }}">{{ rel.target_usecase.name }}</a>
-                        (BI_ID: {{ rel.target_usecase.bi_id }})
-                    {% else %}
-                        N/A
-                    {% endif %}<br>
-                    <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
-                    {% if rel.relevance_content %}
-                        <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p><em>No relevance links to other Use Cases found.</em></p>
-    {% endif %}
-
-    {# --- START ADD RELEVANCE FORMS --- #}
-    <hr style="margin-top: 2em;">
-    <h3>Add New Relevance Link</h3>
-
-    {# Form for Area Relevance #}
-    <form action="{{ url_for('relevance.add_area_relevance') }}" method="post" style="margin-bottom: 1.5em; border: 1px solid #ccc; padding: 10px;">
-        <h4>Link to Area</h4>
-        <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
-        <div>
-            <label for="target_area_id">Select Area:</label><br>
-            <select name="target_area_id" id="target_area_id" required>
-                <option value="">-- Select an Area --</option>
-                {% for area in all_areas %}
-                    <option value="{{ area.id }}">{{ area.name }}</option>
-                {% endfor %}
-            </select>
         </div>
-        <div>
-            <label for="area_relevance_score">Score (0-100):</label><br>
-            <input type="number" name="relevance_score" id="area_relevance_score" min="0" max="100" required>
-        </div>
-        <div>
-            <label for="area_relevance_content">Content (Optional):</label><br>
-            <textarea name="relevance_content" id="area_relevance_content" rows="3" style="width: 95%;"></textarea>
-        </div>
-        <button type="submit">Add Area Link</button>
-    </form>
 
-    {# Form for Step Relevance #}
-    <form action="{{ url_for('relevance.add_step_relevance') }}" method="post" style="margin-bottom: 1.5em; border: 1px solid #ccc; padding: 10px;">
-        <h4>Link to Process Step</h4>
-        <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
-         <div>
-            <label for="target_step_id">Select Process Step:</label><br>
-            <select name="target_process_step_id" id="target_step_id" required>
-                <option value="">-- Select a Step --</option>
-                {% for step in all_steps %}
-                    <option value="{{ step.id }}">{{ step.name }} ({{ step.bi_id }})</option>
-                {% endfor %}
-            </select>
+        <div class="card mb-3">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Relevant Process Steps</h4>
+            </div>
+            {% if usecase.relevant_to_steps %}
+                <ul>
+                    {% for rel in usecase.relevant_to_steps | sort(attribute='relevance_score', reverse=True) %}
+                         <li>
+                            <strong>Step:</strong> {{ rel.target_process_step.name if rel.target_process_step else 'N/A' }}
+                            (BI_ID: {{ rel.target_process_step.bi_id if rel.target_process_step else 'N/A' }})<br>
+                            <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
+                            {% if rel.relevance_content %}
+                                <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                 <p class="p-3 mb-0"><em>No relevance links to Process Steps found.</em></p>
+            {% endif %}
         </div>
-        <div>
-            <label for="step_relevance_score">Score (0-100):</label><br>
-            <input type="number" name="relevance_score" id="step_relevance_score" min="0" max="100" required>
-        </div>
-        <div>
-            <label for="step_relevance_content">Content (Optional):</label><br>
-            <textarea name="relevance_content" id="step_relevance_content" rows="3" style="width: 95%;"></textarea>
-        </div>
-         <button type="submit">Add Step Link</button>
-    </form>
 
-    {# Form for Use Case Relevance #}
-    <form action="{{ url_for('relevance.add_usecase_relevance') }}" method="post" style="margin-bottom: 1.5em; border: 1px solid #ccc; padding: 10px;">
-         <h4>Link to another Use Case</h4>
-        <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
-         <div>
-            <label for="target_usecase_id">Select Use Case:</label><br>
-            <select name="target_usecase_id" id="target_usecase_id" required>
-                <option value="">-- Select a Use Case --</option>
-                {% for other_uc in other_usecases %}
-                    <option value="{{ other_uc.id }}">{{ other_uc.name }} ({{ other_uc.bi_id }})</option>
-                {% endfor %}
-            </select>
+        <div class="card mb-3">
+             <div class="card-header">
+                <h4 class="card-title mb-0">Relevant Use Cases</h4>
+            </div>
+            {% if usecase.relevant_to_usecases_as_source %}
+                <ul>
+                     {% for rel in usecase.relevant_to_usecases_as_source | sort(attribute='relevance_score', reverse=True) %}
+                        <li>
+                            <strong>Use Case:</strong>
+                            {% if rel.target_usecase %}
+                                <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.target_usecase.id) }}">{{ rel.target_usecase.name }}</a>
+                                (BI_ID: {{ rel.target_usecase.bi_id }})
+                            {% else %}
+                                N/A
+                            {% endif %}<br>
+                            <strong>Score:</strong> {{ rel.relevance_score }}/100<br>
+                            {% if rel.relevance_content %}
+                                <strong>Content:</strong> <pre>{{ rel.relevance_content }}</pre>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                 <p class="p-3 mb-0"><em>No relevance links to other Use Cases found.</em></p>
+            {% endif %}
         </div>
-        <div>
-            <label for="uc_relevance_score">Score (0-100):</label><br>
-            <input type="number" name="relevance_score" id="uc_relevance_score" min="0" max="100" required>
+    </div>
+
+
+    <div class="add-relevance-forms mt-3"> {# Wrapper for forms #}
+        <h3>Add New Relevance Link</h3>
+
+        {# Form for Area Relevance #}
+        <form action="{{ url_for('relevance.add_area_relevance') }}" method="post" class="add-relevance-form">
+            <h4>Link to Area</h4>
+            <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
+            <div>
+                <label for="target_area_id">Select Area:</label>
+                <select name="target_area_id" id="target_area_id" required>
+                    <option value="">-- Select an Area --</option>
+                    {% for area in all_areas %}
+                         {# Prevent linking to own area implicitly? No, UC links to Area is fine #}
+                         {# Check if already linked? Can be done, but adds complexity. Keep simple for now. #}
+                         <option value="{{ area.id }}">{{ area.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="area_relevance_score">Score (0-100):</label>
+                <input type="number" name="relevance_score" id="area_relevance_score" min="0" max="100" required>
+            </div>
+            <div>
+                <label for="area_relevance_content">Content (Optional):</label>
+                <textarea name="relevance_content" id="area_relevance_content" rows="3"></textarea>
+            </div>
+            <button type="submit">Add Area Link</button>
+        </form>
+
+        {# Form for Step Relevance #}
+        <form action="{{ url_for('relevance.add_step_relevance') }}" method="post" class="add-relevance-form">
+            <h4>Link to Process Step</h4>
+            <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
+             <div>
+                <label for="target_step_id">Select Process Step:</label>
+                <select name="target_process_step_id" id="target_step_id" required>
+                    <option value="">-- Select a Step --</option>
+                    {% for step in all_steps %}
+                         {# Prevent linking to own step? No, UC links to Step is fine #}
+                        <option value="{{ step.id }}">{{ step.name }} ({{ step.bi_id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="step_relevance_score">Score (0-100):</label>
+                <input type="number" name="relevance_score" id="step_relevance_score" min="0" max="100" required>
+            </div>
+            <div>
+                <label for="step_relevance_content">Content (Optional):</label>
+                <textarea name="relevance_content" id="step_relevance_content" rows="3"></textarea>
+            </div>
+             <button type="submit">Add Step Link</button>
+        </form>
+
+        {# Form for Use Case Relevance #}
+        <form action="{{ url_for('relevance.add_usecase_relevance') }}" method="post" class="add-relevance-form">
+             <h4>Link to another Use Case</h4>
+            <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
+             <div>
+                <label for="target_usecase_id">Select Use Case:</label>
+                <select name="target_usecase_id" id="target_usecase_id" required>
+                    <option value="">-- Select a Use Case --</option>
+                    {% for other_uc in other_usecases %} {# Already filtered in route #}
+                        <option value="{{ other_uc.id }}">{{ other_uc.name }} ({{ other_uc.bi_id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="uc_relevance_score">Score (0-100):</label>
+                <input type="number" name="relevance_score" id="uc_relevance_score" min="0" max="100" required>
+            </div>
+            <div>
+                <label for="uc_relevance_content">Content (Optional):</label>
+                <textarea name="relevance_content" id="uc_relevance_content" rows="3"></textarea>
+            </div>
+             <button type="submit">Add Use Case Link</button>
+        </form>
+    </div>
+
+    {# Placeholder for LLM Interaction Section #}
+    <div class="card mt-3">
+        <div class="card-header">
+             <h2 class="card-title">LLM Interaction</h2>
         </div>
-        <div>
-            <label for="uc_relevance_content">Content (Optional):</label><br>
-            <textarea name="relevance_content" id="uc_relevance_content" rows="3" style="width: 95%;"></textarea>
+        <div class="card-body p-3">
+            <p><em>(LLM query controls and results for this Use Case will go here in the future)</em></p>
         </div>
-         <button type="submit">Add Use Case Link</button>
-    </form>
-    {# --- END ADD RELEVANCE FORMS --- #}
+    </div>
 
-    <hr>
-    <h2>LLM Interaction</h2>
-    <p>(LLM query controls and results for this Use Case will go here)</p>
-
-    <hr>
-    <p><a href="{{ url_for('index') }}">Back to Home</a></p>
-
-</body>
-</html>
+</div> {# End usecase-detail-page wrapper #}
+{% endblock %}

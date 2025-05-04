@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}Usecase Explorer{% endblock %}</title>
+    <!-- Link to your CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Add Google Fonts (Optional, but helps match the look) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Add Font Awesome (Optional, for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('index') }}" class="logo">UsecaseExplorer</a>
+                 {# In the image it's Inventor.io, changed to match app #}
+            </div>
+            <ul class="sidebar-menu">
+                 {# --- Add class="active" based on current page later --- #}
+                <li class="{{ 'active' if request.endpoint == 'index' else '' }}">
+                    <a href="{{ url_for('index') }}">
+                        <i class="fas fa-home"></i> {# Icon Placeholder #}
+                        <span>Home</span>
+                    </a>
+                </li>
+                 {# Add other relevant nav items for YOUR app #}
+                <li class="{{ 'active' if request.endpoint == 'injection.handle_injection' else '' }}">
+                     <a href="{{ url_for('injection.handle_injection') }}">
+                         <i class="fas fa-upload"></i> {# Icon Placeholder #}
+                         <span>Data Injection</span>
+                     </a>
+                 </li>
+                {# Example: Add links to future list views if created #}
+                {#
+                <li>
+                    <a href="#">
+                        <i class="fas fa-list"></i>
+                        <span>Areas</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-shoe-prints"></i>
+                        <span>Process Steps</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="#">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Use Cases</span>
+                    </a>
+                </li>
+                 #}
+                  <li>
+                    <a href="#"> {# Placeholder for future Settings #}
+                        <i class="fas fa-cog"></i> {# Icon Placeholder #}
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+            <ul class="sidebar-footer-menu">
+                {# Example: Add Product is not relevant here #}
+                {#
+                <li>
+                    <a href="#">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Add product</span>
+                    </a>
+                </li>
+                 #}
+                 {% if current_user.is_authenticated %}
+                <li>
+                    <a href="{{ url_for('auth.logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> {# Icon Placeholder #}
+                        <span>Log out</span>
+                    </a>
+                </li>
+                 {% endif %}
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="search" placeholder="Search...">
+                </div>
+                <div class="header-actions">
+                     {# Placeholder icons like in the image #}
+                    <button class="icon-button"><i class="fas fa-bell"></i></button>
+                    <button class="icon-button"><i class="fas fa-user-circle"></i></button>
+                    {# <span class="pro-badge">Pro</span> #} {# Removed Pro badge #}
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="page-content">
+                 <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}
+                <!-- Specific page content goes here -->
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Link to your JS (Optional) -->
+    <!-- <script src="{{ url_for('static', filename='js/main.js') }}"></script> -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

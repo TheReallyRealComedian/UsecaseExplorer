@@ -1,90 +1,65 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>{{ title }} - Usecase Explorer</title>
-    <!-- Link to your CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <h1>Data Injection</h1>
+{% extends "base.html" %}
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div>
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
-    <hr>
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="mb-3">Upload JSON files to bulk-add Areas, Process Steps, or Use Cases.</p>
 
+{# Flash messages are now in base.html #}
+
+<div class="injection-form-section">
     <h2>Inject Areas</h2>
-    <p>Upload a JSON file containing a list of area objects, each with a "name" key.</p>
-    <p>Example: <code>[{"name": "Area One"}, {"name": "Area Two"}]</code></p>
-
+    <p>Upload a JSON file containing a list of area objects, each with a <code>"name"</code> key.<br>
+       Example: <code>[{"name": "Area One"}, {"name": "Area Two"}]</code>
+    </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
-         {# CSRF token needed if using Flask-WTF/CSRFProtect later #}
          <div>
              <label for="area_file">Area JSON File:</label>
              <input type="file" id="area_file" name="area_file" accept=".json" required>
          </div>
-         <br>
          <div>
              <button type="submit">Upload Areas</button>
          </div>
     </form>
+</div>
 
-    <hr>
-    <hr>
-    <!-- Process Step Injection Form -->
+<div class="injection-form-section">
     <h2>Inject Process Steps</h2>
-    <p>Upload a JSON file containing a list of process step objects.</p>
-    <p>Required keys per object: <code>"bi_id"</code> (string, must be unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match an existing Area name).</p>
-    <p>Optional keys: <code>"raw_content"</code> (string), <code>"summary"</code> (string).</p>
-    <p>Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "summary": "Summary one"}, ...]</code></p>
-
+    <p>Upload a JSON file containing a list of process step objects.<br>
+       Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match existing Area).<br>
+       Optional keys: <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
+       Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "summary": "Summary one"}, ...]</code>
+    </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
-         {# CSRF token needed if using Flask-WTF/CSRFProtect later #}
          <div>
              <label for="step_file">Process Step JSON File:</label>
              <input type="file" id="step_file" name="step_file" accept=".json" required>
          </div>
-         <br>
          <div>
              <button type="submit">Upload Process Steps</button>
          </div>
     </form>
-    <!-- End Process Step Injection Form -->
+</div>
 
-
-    <hr>
-    <!-- Use Case Injection Form -->
+<div class="injection-form-section">
     <h2>Inject Use Cases</h2>
-    <p>Upload a JSON file containing a list of use case objects.</p>
-    <p>Required keys per object: <code>"bi_id"</code> (string, must be unique for use cases), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match the BI_ID of an existing Process Step).</p>
-    <p>Optional keys: <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).</p>
-    <p>Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "summary": "Summary one"}, ...]</code></p>
-
+    <p>Upload a JSON file containing a list of use case objects.<br>
+       Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match existing Step BI_ID).<br>
+       Optional keys: <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
+       Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "summary": "Summary one"}, ...]</code>
+    </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
-         {# CSRF token needed if using Flask-WTF/CSRFProtect later #}
          <div>
              <label for="usecase_file">Use Case JSON File:</label>
              <input type="file" id="usecase_file" name="usecase_file" accept=".json" required>
          </div>
-         <br>
          <div>
              <button type="submit">Upload Use Cases</button>
          </div>
     </form>
-    <!-- End Use Case Injection Form -->
+</div>
 
-    <hr>
-    <p><a href="{{ url_for('index') }}">Back to Home</a></p>
+{# Removed Back to Home link, use sidebar now #}
 
-</body>
-</html>
+{% endblock %}
