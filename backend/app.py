@@ -7,7 +7,7 @@ from flask_login import LoginManager, current_user
 
 # Use relative imports for modules within the same package (backend)
 from .config import get_config
-from .models import Base, User # Assuming models.py is in the same directory (backend)
+from .models import Base, User, Area
 
 # Database setup
 SessionLocal = scoped_session(sessionmaker())
@@ -113,8 +113,22 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            return render_template('index.html', title='Home')
+            # --- ADD QUERY ---
+            session = SessionLocal()
+            try:
+                areas = session.query(Area).order_by(Area.name).all()
+            except Exception as e:
+                print(f"Error querying areas: {e}")
+                flash("Could not load areas from database.", "danger")
+                areas = [] # Pass empty list on error
+            finally:
+                SessionLocal.remove()
+            # --- END QUERY ---
+
+            # Pass areas to the template
+            return render_template('index.html', title='Home', areas=areas) # Added areas=areas
         else:
+            # User is not logged in, redirect to login
             return redirect(url_for('auth.login'))
 
     # --- Debug Check Route ---

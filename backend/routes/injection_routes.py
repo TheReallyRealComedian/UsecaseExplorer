@@ -3,54 +3,72 @@ import os
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required
 
-# Define the blueprint for injection routes
+from ..app import SessionLocal
+from ..models import Area, ProcessStep
+from ..injection_service import process_area_file, process_step_file
+
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
-                             url_prefix='/injection') # Define a URL prefix for all routes in this blueprint
+                             url_prefix='/injection')
 
-# Import necessary things for later steps (e.g., service function, SessionLocal)
-from ..app import SessionLocal # Needed by the service function
-from ..models import Area      # Needed by the service function
-from ..injection_service import process_area_file # Import the function
-
-@injection_routes.route('/', methods=['GET', 'POST']) # Route handles both GET and POST at /injection/
+@injection_routes.route('/', methods=['GET', 'POST'])
 @login_required
 def handle_injection():
     if request.method == 'POST':
-        # --- Replace POST Logic ---
-        if 'area_file' not in request.files:
-            flash('No file part found in the request.', 'warning')
-            return redirect(request.url)
 
-        file = request.files['area_file']
+        # --- Area File Processing ---
+        if 'area_file' in request.files:
+            file = request.files['area_file']
+            if file.filename == '':
+                flash('No selected file.', 'warning')
+                return redirect(request.url)
 
-        if file.filename == '':
-            flash('No selected file.', 'warning')
-            return redirect(request.url)
+            if file and '.' in file.filename and \
+               file.filename.rsplit('.', 1)[1].lower() == 'json':
+                result = process_area_file(file.stream)
+                flash_category = 'success' if result['success'] else 'danger'
+                if not result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0 :
+                    flash_category = 'warning' # Downgrade error if only skips occurred
+                flash(result['message'], flash_category)
+                print(f"Area injection result: {result}") # Keep logging as requested
+                return redirect(url_for('injection.handle_injection'))
+            else:
+                flash('Invalid file type or name for Areas. Please upload a .json file.', 'danger')
+                return redirect(request.url)
 
-        # Use os.path.splitext for robust extension checking
-        if file and '.' in file.filename and \
-           file.filename.rsplit('.', 1)[1].lower() == 'json':
+        # --- Process Step File Processing ---
+        elif 'step_file' in request.files:
+            file = request.files['step_file']
+            if file.filename == '':
+                flash('No selected file for Process Steps.', 'warning')
+                return redirect(request.url)
 
-            # Call the service function to process the file stream
-            result = process_area_file(file.stream) # Pass the file stream
+            if file and '.' in file.filename and \
+               file.filename.rsplit('.', 1)[1].lower() == 'json':
+                # Call the service function for step files
+                result = process_step_file(file.stream)
 
-            # Use the result message for feedback
-            flash_category = 'success' if result['success'] else 'danger'
-            if not result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0 :
-                flash_category = 'warning' # Downgrade error if only skips occurred
+                # Determine flash category based on outcome
+                flash_category = 'danger' # Default to danger
+                if result['success'] and result['added_count'] > 0:
+                     flash_category = 'success'
+                elif result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                     flash_category = 'warning' # No errors, but nothing added, only skipped
+                elif not result['success'] and result.get('added_count', 0) == 0 and result.get('skipped_count', 0) > 0 and 'Error:' not in result.get('message', ''):
+                    # Treat cases with only skips but marked as failure (due to data validation maybe) as warning
+                    flash_category = 'warning'
 
-            flash(result['message'], flash_category)
+                flash(result['message'], flash_category)
+                print(f"Step injection result: {result}") # Keep logging as requested
+                return redirect(url_for('injection.handle_injection'))
+            else:
+                 flash('Invalid file type or name for Process Steps. Please upload a .json file.', 'danger')
+                 return redirect(request.url)
 
-            # Optional: Log details if needed
-            # print(f"Area injection result: {result}")
-
-            # Redirect back to the injection page
-            return redirect(url_for('injection.handle_injection'))
         else:
-            flash('Invalid file type or name. Please upload a .json file.', 'danger')
+            # Handle case where no known file input was found
+            flash('No file submitted or unknown form field.', 'warning')
             return redirect(request.url)
-        # --- End POST Logic Replacement ---
 
     # --- GET Logic ---
     # Render the injection page template for GET requests

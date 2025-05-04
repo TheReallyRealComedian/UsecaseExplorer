@@ -33,7 +33,23 @@
     {% endif %}
 
     <hr>
-    <p>This is the main application page. Content will go here.</p>
+        <!-- ADD THIS SECTION TO DISPLAY AREAS -->
+        <h2>Areas</h2>
+        {% if areas %}
+            <ul>
+                {% for area in areas %}
+                    <li>{{ area.name }} (ID: {{ area.id }})</li>
+                {% else %}
+                    <li>No areas found in the database.</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+             <p>No areas loaded or an error occurred.</p>
+        {% endif %}
+        <!-- END AREA DISPLAY SECTION -->
+
+        <hr>
+        <p>This is the main application page. Content will go here.</p>
 
     <!-- Link to your JS -->
     <!-- <script src="{{ url_for('static', filename='js/main.js') }}"></script> -->

@@ -1,7 +1,7 @@
 # backend/injection_service.py
 import json
-from .app import SessionLocal # Import the session manager from app.py
-from .models import Area      # Import the Area model
+from .app import SessionLocal
+from .models import Area, ProcessStep # Add ProcessStep here
 
 def process_area_file(file_stream):
     """
@@ -11,89 +11,79 @@ def process_area_file(file_stream):
         file_stream: A file-like object containing the JSON data.
 
     Returns:
-        A dictionary containing processing results:
-        {
-            "success": bool,
-            "message": str,
-            "added_count": int,
-            "skipped_count": int,
-            "duplicates": list[str]
-        }
+        A dictionary containing processing results.
     """
     session = SessionLocal()
     added_count = 0
     skipped_count = 0
     duplicates = []
     error_message = None
+    success = False # Default to False
 
     try:
-        # Ensure the stream is read correctly (uploaded files might need decoding)
+        # Ensure the stream is read correctly
         try:
             data = json.load(file_stream)
         except UnicodeDecodeError:
-             # If direct load fails, try reading as bytes and decoding explicitly
-             file_stream.seek(0) # Go back to the start of the stream
+             file_stream.seek(0)
              data = json.loads(file_stream.read().decode('utf-8'))
 
-
-        # Basic structure validation: should be a list
         if not isinstance(data, list):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
-        # Get existing area names for duplicate checking (efficiently)
+        # Get existing area names for duplicate checking
         existing_names = {name[0] for name in session.query(Area.name).all()}
 
         for item in data:
             # Validate item structure
             if not isinstance(item, dict):
-                print(f"Skipping invalid item (not a dict): {item}")
                 skipped_count += 1
                 continue
             if 'name' not in item:
-                print(f"Skipping item missing 'name' key: {item}")
                 skipped_count += 1
                 continue
 
             area_name = item['name']
             if not isinstance(area_name, str) or not area_name.strip():
-                print(f"Skipping item with invalid or empty name: {item}")
                 skipped_count += 1
                 continue
 
-            area_name = area_name.strip() # Clean whitespace
+            area_name = area_name.strip()
 
             # Check for duplicates
             if area_name in existing_names:
-                # print(f"Skipping duplicate Area: {area_name}")
-                if area_name not in duplicates: # Only record duplicate name once
+                if area_name not in duplicates:
                      duplicates.append(area_name)
                 skipped_count += 1
             else:
                 # Add new Area
                 new_area = Area(name=area_name)
                 session.add(new_area)
-                existing_names.add(area_name) # Add to our set to catch duplicates within the file itself
+                existing_names.add(area_name) # Add to set to catch intra-file duplicates
                 added_count += 1
-                # print(f"Adding new Area: {area_name}")
 
-        # Commit all added areas
         session.commit()
         success = True
+
+        # Construct result message
         if added_count == 0 and skipped_count > 0:
-             message = f"Processing complete. No new areas were added."
+             message = "Processing complete. No new areas were added."
              if duplicates:
                 message += f" {len(duplicates)} duplicate name(s) found."
         elif added_count > 0 and skipped_count == 0:
              message = f"Successfully added {added_count} new area(s)."
-        else:
+        else: # Mix of added and skipped or only skipped with no duplicates
              message = f"Processing complete. Added: {added_count}, Skipped: {skipped_count}."
              if duplicates:
                 message += f" Duplicate name(s) found: {len(duplicates)}."
+        if added_count == 0 and skipped_count == 0 and not duplicates:
+            message = "Processing complete. No data found or processed in the file."
+
 
     except json.JSONDecodeError:
         success = False
         message = "Error: Invalid JSON file. Could not decode content."
-        session.rollback() # Rollback any potential partial adds if commit failed somehow before error
+        session.rollback()
     except ValueError as ve:
         success = False
         message = f"Error: {ve}"
@@ -101,10 +91,10 @@ def process_area_file(file_stream):
     except Exception as e:
         success = False
         message = f"An unexpected error occurred: {e}"
-        print(f"Area Injection Error: {e}") # Log the full error
+        print(f"Area Injection Error: {e}")
         session.rollback()
     finally:
-        SessionLocal.remove() # Ensure session is closed
+        SessionLocal.remove()
 
     return {
         "success": success,
@@ -112,4 +102,156 @@ def process_area_file(file_stream):
         "added_count": added_count,
         "skipped_count": skipped_count,
         "duplicates": duplicates
+    }
+
+
+def process_step_file(file_stream):
+    """
+    Processes an uploaded JSON file stream to add new Process Steps.
+
+    Args:
+        file_stream: A file-like object containing the JSON data.
+
+    Returns:
+        A dictionary containing processing results.
+    """
+    session = SessionLocal()
+    added_count = 0
+    skipped_invalid_format = 0
+    skipped_duplicate_bi_id = 0
+    skipped_missing_area = 0
+    duplicates_bi_ids = []
+    missing_area_names = []
+    error_message = None
+    success = False
+
+    try:
+        # Pre-fetch existing data for efficiency
+        area_lookup = {
+            area.name: area.id for area in session.query(Area.name, Area.id).all()
+        }
+        existing_bi_ids = {
+            step.bi_id for step in session.query(ProcessStep.bi_id).all()
+        }
+
+        # Load and parse JSON data
+        try:
+            data = json.load(file_stream)
+        except UnicodeDecodeError:
+            file_stream.seek(0)
+            data = json.loads(file_stream.read().decode('utf-8'))
+
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON format: Top level must be a list.")
+
+        for item in data:
+            # Validate item format
+            if not isinstance(item, dict):
+                skipped_invalid_format += 1
+                continue
+            if not all(k in item for k in ('bi_id', 'name', 'area_name')):
+                skipped_invalid_format += 1
+                continue
+
+            bi_id = item['bi_id']
+            name = item['name']
+            area_name = item['area_name']
+
+            # Validate required field types and content
+            if not (isinstance(bi_id, str) and bi_id.strip() and
+                    isinstance(name, str) and name.strip() and
+                    isinstance(area_name, str) and area_name.strip()):
+                skipped_invalid_format += 1
+                continue
+
+            bi_id = bi_id.strip()
+            name = name.strip()
+            area_name = area_name.strip()
+
+            # Get optional fields safely
+            raw_content = item.get('raw_content')
+            summary = item.get('summary')
+            if raw_content is not None and not isinstance(raw_content, str):
+                raw_content = None
+            if summary is not None and not isinstance(summary, str):
+                summary = None
+
+            # Check for duplicate bi_id
+            if bi_id in existing_bi_ids:
+                skipped_duplicate_bi_id += 1
+                if bi_id not in duplicates_bi_ids:
+                    duplicates_bi_ids.append(bi_id)
+                continue
+
+            # Check if Area exists
+            if area_name not in area_lookup:
+                skipped_missing_area += 1
+                if area_name not in missing_area_names:
+                    missing_area_names.append(area_name)
+                continue
+
+            # If all checks pass, add the new Process Step
+            area_id = area_lookup[area_name]
+            new_step = ProcessStep(
+                bi_id=bi_id,
+                name=name,
+                area_id=area_id,
+                raw_content=raw_content if raw_content else None,
+                summary=summary if summary else None
+            )
+            session.add(new_step)
+            existing_bi_ids.add(bi_id) # Add to set to catch intra-file duplicates
+            added_count += 1
+
+        session.commit()
+        success = True
+
+    except json.JSONDecodeError:
+        error_message = "Error: Invalid JSON file. Could not decode content."
+        session.rollback()
+    except ValueError as ve:
+        error_message = f"Error: {ve}"
+        session.rollback()
+    except Exception as e:
+        error_message = f"An unexpected error occurred during processing: {e}"
+        print(f"Step Injection Error: {e}")
+        session.rollback()
+    finally:
+        SessionLocal.remove()
+
+    # Construct the result message
+    if error_message:
+         message = error_message
+    else:
+         parts = []
+         if added_count > 0:
+             parts.append(f"Added: {added_count}")
+         if skipped_invalid_format > 0:
+             parts.append(f"Skipped (Invalid Format): {skipped_invalid_format}")
+         if skipped_duplicate_bi_id > 0:
+             parts.append(f"Skipped (Duplicate BI_ID): {skipped_duplicate_bi_id}")
+         if skipped_missing_area > 0:
+             parts.append(f"Skipped (Missing Area): {skipped_missing_area}")
+
+         if not parts:
+             message = "Processing complete. No data found or processed in the file."
+         else:
+             message = f"Processing complete. {', '.join(parts)}."
+
+         if duplicates_bi_ids:
+             message += f" Duplicates found: {', '.join(duplicates_bi_ids)}."
+         if missing_area_names:
+             message += f" Missing areas: {', '.join(missing_area_names)}."
+
+    # Final result dictionary
+    return {
+        "success": success and error_message is None,
+        "message": message,
+        "added_count": added_count,
+        "skipped_count": skipped_invalid_format + skipped_duplicate_bi_id + skipped_missing_area,
+        "skipped_invalid_format": skipped_invalid_format,
+        "skipped_duplicate_bi_id": skipped_duplicate_bi_id,
+        "skipped_missing_area": skipped_missing_area,
+        "duplicates_bi_ids": duplicates_bi_ids,
+        "missing_area_names": missing_area_names
     }

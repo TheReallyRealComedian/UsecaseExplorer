@@ -40,9 +40,26 @@
     </form>
 
     <hr>
-    <!-- Placeholder for Step Injection -->
+    <hr>
+    <!-- Process Step Injection Form -->
     <h2>Inject Process Steps</h2>
-    <p>(Upload form will go here later)</p>
+    <p>Upload a JSON file containing a list of process step objects.</p>
+    <p>Required keys per object: <code>"bi_id"</code> (string, must be unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match an existing Area name).</p>
+    <p>Optional keys: <code>"raw_content"</code> (string), <code>"summary"</code> (string).</p>
+    <p>Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "summary": "Summary one"}, ...]</code></p>
+
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
+         {# CSRF token needed if using Flask-WTF/CSRFProtect later #}
+         <div>
+             <label for="step_file">Process Step JSON File:</label>
+             <input type="file" id="step_file" name="step_file" accept=".json" required>
+         </div>
+         <br>
+         <div>
+             <button type="submit">Upload Process Steps</button>
+         </div>
+    </form>
+    <!-- End Process Step Injection Form -->
 
     <hr>
     <!-- Placeholder for Use Case Injection -->
