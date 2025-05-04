@@ -1,0 +1,46 @@
+# Dependency directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables file (contains sensitive info)
+.env
+venv/
+.venv/
+
+# Database files (if not using a persistent volume outside container)
+# However, with Docker and persistent volumes, this might be less relevant
+# For a local dev setup where db files might be in the repo dir temporarily
+# This is good. Adjust if your db volume is outside the main repo dir.
+# db/data/ # Example if database files end up here
+
+# Docker artifacts
+*.dockerignore # Often similar to .gitignore, but sometimes distinct
+docker-compose.override.yml # Often used for local overrides, keep out of main repo
+# Docker build cache
+.dockerignore # (if you create one later)
+
+# Flask specific
+instance/ # Flask instance folder, often contains sensitive config/databases
+
+# Frontend specific (if build step generates files, e.g. webpack, npm)
+# dist/
+# build/
+node_modules/ # If you ever add Node.js tools later
+
+# Operating System files
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Editor/IDE specific files
+.vscode/ # Visual Studio Code
+.idea/ # IntelliJ IDEA
+
+# Logs
+*.log
+/logs/
+
+# Uploaded files (if users can upload)
+/uploads/
