@@ -30,7 +30,6 @@ def load_user(user_id):
 
     session = SessionLocal()
     try:
-        # Query the user by primary key
         user = session.query(User).get(user_id)
         return user
     except Exception as e:
@@ -97,23 +96,22 @@ def create_app():
     from .routes.usecase_routes import usecase_routes
     app.register_blueprint(usecase_routes)
 
-    # --- CORRECTED SECTION FOR RELEVANCE ---
-    from .routes.relevance_routes import relevance_routes # Import directly
-    app.register_blueprint(relevance_routes)              # Register it
-    # --- END CORRECTION ---
+    from .routes.relevance_routes import relevance_routes
+    app.register_blueprint(relevance_routes)
+
+    from .routes.llm_routes import llm_routes
+    app.register_blueprint(llm_routes)
 
     # Import and register blueprints still defined in routes/__init__.py
     # TODO: Refactor these later following the new pattern
     from .routes import (
         area_routes,
         step_routes,
-        # relevance_routes, # REMOVED from this group import
-        llm_routes,
+        # llm_routes, # REMOVED from this group import
     )
     app.register_blueprint(area_routes)
     app.register_blueprint(step_routes)
-    # app.register_blueprint(relevance_routes) # Registration moved above
-    app.register_blueprint(llm_routes)
+    # app.register_blueprint(llm_routes) # Registration moved above
 
     print("Blueprint registration complete.")
 
@@ -134,7 +132,7 @@ def create_app():
                 flash("Could not load necessary data from the database.", "danger")
                 # Keep areas as an empty list on error
             finally:
-                SessionLocal.remove()
+                SessionLocal.remove() # Ensure session is removed even if query fails
 
             # Pass areas to the template
             return render_template('index.html', title='Home', areas=areas)
@@ -154,13 +152,15 @@ def create_app():
             from .models import User # noqa: F401 (unused import)
             results["checks"]["models_import"] = "OK"
 
-            # Test access to a blueprint object AFTER registration
+            # Test access to blueprint objects AFTER registration
             auth_bp_registered = app.blueprints.get('auth') is not None
             results["checks"]["auth_blueprint_registered"] = auth_bp_registered
-            usecase_bp_registered = app.blueprints.get('usecases') is not None # Corrected blueprint name
+            usecase_bp_registered = app.blueprints.get('usecases') is not None
             results["checks"]["usecase_blueprint_registered"] = usecase_bp_registered
-            relevance_bp_registered = app.blueprints.get('relevance') is not None # Added check
+            relevance_bp_registered = app.blueprints.get('relevance') is not None
             results["checks"]["relevance_blueprint_registered"] = relevance_bp_registered
+            llm_bp_registered = app.blueprints.get('llm') is not None # Added check for llm
+            results["checks"]["llm_blueprint_registered"] = llm_bp_registered
 
 
             # Test config access
@@ -175,9 +175,11 @@ def create_app():
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
-                # Test a new relevance route URL
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
+                # Add a check for an llm route if applicable
+                # Example: list_llms_url = url_for('llm.list_llms')
+                # results["checks"]["url_for_llm_list"] = f"OK ({list_llms_url})"
 
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
