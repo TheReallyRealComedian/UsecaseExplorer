@@ -102,16 +102,20 @@ def create_app():
     from .routes.llm_routes import llm_routes
     app.register_blueprint(llm_routes)
 
-    # Import and register blueprints still defined in routes/__init__.py
-    # TODO: Refactor these later following the new pattern
-    from .routes import (
-        area_routes,
-        step_routes,
-        # llm_routes, # REMOVED from this group import
-    )
+    # MODIFIED: Import and register area_routes and step_routes from their own modules
+    from .routes.area_routes import area_routes
     app.register_blueprint(area_routes)
+
+    from .routes.step_routes import step_routes
     app.register_blueprint(step_routes)
-    # app.register_blueprint(llm_routes) # Registration moved above
+
+    # REMOVE or COMMENT OUT the old way of importing these if they were grouped:
+    # from .routes import (
+    #     area_routes,  # This line and its registration below are now handled above
+    #     step_routes,  # This line and its registration below are now handled above
+    # )
+    # app.register_blueprint(area_routes)
+    # app.register_blueprint(step_routes)
 
     print("Blueprint registration complete.")
 
@@ -159,8 +163,12 @@ def create_app():
             results["checks"]["usecase_blueprint_registered"] = usecase_bp_registered
             relevance_bp_registered = app.blueprints.get('relevance') is not None
             results["checks"]["relevance_blueprint_registered"] = relevance_bp_registered
-            llm_bp_registered = app.blueprints.get('llm') is not None # Added check for llm
+            llm_bp_registered = app.blueprints.get('llm') is not None
             results["checks"]["llm_blueprint_registered"] = llm_bp_registered
+            area_bp_registered = app.blueprints.get('areas') is not None # Added check for areas
+            results["checks"]["area_blueprint_registered"] = area_bp_registered
+            step_bp_registered = app.blueprints.get('steps') is not None # Added check for steps
+            results["checks"]["step_blueprint_registered"] = step_bp_registered
 
 
             # Test config access
@@ -177,9 +185,14 @@ def create_app():
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                # Add a check for an llm route if applicable
                 # Example: list_llms_url = url_for('llm.list_llms')
                 # results["checks"]["url_for_llm_list"] = f"OK ({list_llms_url})"
+                list_areas_url = url_for('areas.list_areas') # Check for an area route
+                results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
+                # You might need to add a specific step route to check here if available
+                # e.g., list_steps_url = url_for('steps.list_steps')
+                # results["checks"]["url_for_steps_list"] = f"OK ({list_steps_url})"
+
 
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"

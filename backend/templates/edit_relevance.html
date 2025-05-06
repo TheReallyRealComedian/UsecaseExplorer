@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Relevance Link - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="edit-relevance-page">
+    <h1>Edit Relevance Link</h1>
+
+    {% if relevance_link %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h2 class="card-title">
+                    Editing Link from Use Case:
+                    <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase.id) }}">
+                        {{ relevance_link.source_usecase.name }}
+                    </a>
+                </h2>
+            </div>
+            <div class="card-body">
+                <p>
+                    <strong>To:</strong>
+                    {% if link_type == 'area' %}
+                        Area: <a href="{{ url_for('areas.view_area', area_id=relevance_link.target_area.id) }}">{{ relevance_link.target_area.name }}</a>
+                    {% elif link_type == 'step' %}
+                        Process Step: <a href="{{ url_for('steps.view_step', step_id=relevance_link.target_process_step.id) }}">{{ relevance_link.target_process_step.name }}</a> ({{ relevance_link.target_process_step.bi_id }})
+                    {% elif link_type == 'usecase' %}
+                        Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.target_usecase.id) }}">{{ relevance_link.target_usecase.name }}</a> ({{ relevance_link.target_usecase.bi_id }})
+                    {% endif %}
+                </p>
+
+                <form method="POST">
+                    {# CSRF token if you add Flask-WTF later #}
+                    <input type="hidden" name="source_usecase_id" value="{{ relevance_link.source_usecase_id }}">
+
+                    <div class="mb-3">
+                        <label for="relevance_score" class="form-label">Relevance Score (0-100):</label>
+                        <input type="number" class="form-control" id="relevance_score" name="relevance_score"
+                               value="{{ relevance_link.relevance_score }}" min="0" max="100" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="relevance_content" class="form-label">Relevance Content (Optional):</label>
+                        <textarea class="form-control" id="relevance_content" name="relevance_content" rows="5">{{ relevance_link.relevance_content | default('', true) }}</textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase_id) }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            Relevance link not found or could not be loaded for editing.
+        </div>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+    {% endif %}
+</div>
+{% endblock %}

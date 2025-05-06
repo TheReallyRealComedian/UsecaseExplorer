@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="step-detail-page">
+    <h1>Process Step: {{ step.name }}</h1>
+    <p class="text-color-light mb-3">Detailed information for Process Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}</p>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Step Information</h2>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Name:</dt>
+                <dd class="col-sm-9">{{ step.name }}</dd>
+                <dt class="col-sm-3">BI_ID:</dt>
+                <dd class="col-sm-9">{{ step.bi_id }}</dd>
+                <dt class="col-sm-3">Parent Area:</dt>
+                <dd class="col-sm-9">
+                    {% if step.area %}
+                        <a href="{{ url_for('areas.view_area', area_id=step.area.id) }}">{{ step.area.name }}</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
+                <dt class="col-sm-3">Summary:</dt>
+                <dd class="col-sm-9">{{ step.summary | default('N/A', true) }}</dd>
+                <dt class="col-sm-3">Raw Content:</dt>
+                <dd class="col-sm-9">
+                    {% if step.raw_content %}
+                        <pre class="bg-light p-2 rounded small">{{ step.raw_content }}</pre>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
+                <dt class="col-sm-3">LLM Comments:</dt>
+                <dd class="col-sm-9">
+                    <small>
+                    LLM1: {{ step.llm_comment_1 | default('N/A', true) }}<br>
+                    LLM2: {{ step.llm_comment_2 | default('N/A', true) }}<br>
+                    LLM3: {{ step.llm_comment_3 | default('N/A', true) }}<br>
+                    LLM4: {{ step.llm_comment_4 | default('N/A', true) }}<br>
+                    LLM5: {{ step.llm_comment_5 | default('N/A', true) }}
+                    </small>
+                </dd>
+                <dt class="col-sm-3">Created At:</dt>
+                <dd class="col-sm-9">{{ step.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if step.created_at else 'N/A' }}</dd>
+                <dt class="col-sm-3">Updated At:</dt>
+                <dd class="col-sm-9">{{ step.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if step.updated_at else 'N/A' }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Use Cases under this Process Step</h2>
+        </div>
+        <div class="card-body">
+            {% if step.use_cases %}
+                <ul class="list-unstyled">
+                    {% for uc in step.use_cases | sort(attribute='name') %}
+                        <li class="mb-1">
+                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                            <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="mb-0"><em>No use cases found directly under this process step.</em></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="relevance-section card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Use Cases Relevant to this Process Step</h2>
+        </div>
+        <div class="card-body">
+            {% if step.usecase_relevance %}
+                <ul class="list-unstyled">
+                    {% for rel in step.usecase_relevance | sort(attribute='relevance_score', reverse=True) %}
+                        {% if rel.source_usecase %}
+                        <li class="relevance-item border-bottom pb-2 mb-2">
+                            <strong>Use Case:</strong>
+                            <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
+                                {{ rel.source_usecase.name }}
+                            </a>
+                            <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
+                            <br>
+                            <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
+                            {% if rel.relevance_content %}
+                                <strong class="d-block mt-1">Relevance Content:</strong>
+                                <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                            {% endif %}
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="mb-0"><em>No use cases found that are marked as relevant to this process step.</em></p>
+            {% endif %}
+        </div>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Overview</a>
+    {% if step.area %}
+        <a href="{{ url_for('areas.view_area', area_id=step.area.id) }}" class="btn btn-outline-secondary mt-3">Back to Area: {{ step.area.name }}</a>
+    {% endif %}
+</div>
+{% endblock %}

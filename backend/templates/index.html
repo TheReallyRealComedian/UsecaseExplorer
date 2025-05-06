@@ -3,67 +3,58 @@
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
-<div class="welcome-message">
-    <h1>{% if current_user.is_authenticated %}Welcome, {{ current_user.username }}!{% else %}Usecase Explorer{% endif %}</h1>
-    <p>Explore and manage your business areas, process steps, and use cases.</p>
-</div>
+    <div class="welcome-message">
+        <h1>{% if current_user.is_authenticated %}Welcome, {{ current_user.username }}!{% else %}Usecase Explorer{% endif %}</h1>
+        <p>Explore and manage your business areas, process steps, and use cases.</p>
+    </div>
 
-{# Flash Messages are likely handled in base.html, keeping this structure for reference if needed #}
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        <div>
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
+    {# Flash Messages are handled in base.html #}
 
-
-<div class="data-section">
-    <h2>Areas & Process Steps Overview</h2>
-    {% if areas %}
-        {% for area in areas %}
-            <div class="area-card">
-                <h3>{{ area.name }} <span class="step-details">(Area ID: {{ area.id }})</span></h3>
-                {% if area.process_steps %}
-                    <ul>
-                        {% for step in area.process_steps | sort(attribute='name') %}
-                            <li>
-                                <strong>{{ step.name }}</strong> <span class="step-details">(Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }})</span>
-                                {% if step.use_cases %}
-                                    <ul class="usecase-list">
-                                        {% for uc in step.use_cases | sort(attribute='name') %}
-                                        <li>
-                                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
-                                            <span class="uc-details">(UC ID: {{ uc.id }}, BI_ID: {{ uc.bi_id }})</span>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                {% else %}
-                                    <p style="margin-left: 20px; margin-top: 5px;"><em>No use cases found for this step.</em></p>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p><em>No process steps found for this area.</em></p>
-                {% endif %}
-            </div>
-        {% else %} {# This 'else' corresponds to the 'for area in areas' #}
-            <div class="card">
-                 <p>No areas found in the database.</p>
-                 {% if current_user.is_authenticated %}
-                 {# Link to Data Injection might be in the main navigation now, but keeping this conditional info #}
-                 <p>You can add areas using the <a href="{{ url_for('injection.handle_injection') }}">Data Injection</a> page.</p>
-                 {% endif %}
-            </div>
-        {% endfor %}
-    {% else %}
-         <div class="card">
-             <p>No areas loaded or an error occurred while retrieving data.</p>
-         </div>
-    {% endif %}
-</div>
+    <div class="data-section">
+        <h2>Areas & Process Steps Overview</h2>
+        {% if areas %}
+            {% for area in areas %}
+                <div class="area-card">
+                    <h3><a href="{{ url_for('areas.view_area', area_id=area.id) }}">{{ area.name }}</a> <span class="step-details">(Area ID: {{ area.id }})</span></h3>
+                    {% if area.process_steps %}
+                        <ul>
+                            {% for step in area.process_steps | sort(attribute='name') %}
+                                <li>
+                                    <strong><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></strong>
+                                    <span class="step-details">(Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }})</span>
+                                    {% if step.use_cases %}
+                                        <ul class="usecase-list">
+                                            {% for uc in step.use_cases | sort(attribute='name') %}
+                                            <li>
+                                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                                <span class="uc-details">(UC ID: {{ uc.id }}, BI_ID: {{ uc.bi_id }})</span>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p style="margin-left: 20px; margin-top: 5px;"><em>No use cases found for this step.</em></p>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p><em>No process steps found for this area.</em></p>
+                    {% endif %}
+                </div>
+            {% else %} {# This 'else' corresponds to the 'for area in areas' #}
+                <div class="card">
+                     <p>No areas found in the database.</p>
+                     {% if current_user.is_authenticated %}
+                     {# Link to Data Injection might be in the main navigation now, but keeping this conditional info #}
+                     <p>You can add areas using the <a href="{{ url_for('injection.handle_injection') }}">Data Injection</a> page.</p>
+                     {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+             <div class="card">
+                 <p>No areas loaded or an error occurred while retrieving data.</p>
+             </div>
+        {% endif %}
+    </div>
 
 {% endblock %}

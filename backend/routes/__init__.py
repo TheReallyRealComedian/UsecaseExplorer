@@ -1,14 +1,11 @@
 # backend/routes/__init__.py
+# This file is intentionally left minimal.
+# Blueprint objects (e.g., for areas, steps, usecases, etc.)
+# are now defined in their respective modules within the 'routes' package
+# (e.g., backend/routes/area_routes.py, backend/routes/step_routes.py)
+# and are imported directly into app.py for registration.
 
-from flask import Blueprint
-
-# Define Blueprint objects for each functional area
-# auth_routes definition is moved to routes/auth_routes.py
-area_routes = Blueprint('areas', __name__, url_prefix='/api/areas')
-step_routes = Blueprint('steps', __name__, url_prefix='/api/steps')
-usecase_routes = Blueprint('usecases', __name__, url_prefix='/api/usecases')
-injection_routes = Blueprint('injection', __name__, url_prefix='/api/injection')
-
-# Note: The actual route definitions (@blueprint_name.route(...)) will go into
-# their respective files (e.g., area_routes.py, step_routes.py etc.)
-# These blueprint *objects* are imported into app.py to register them.
+# For example:
+# from .area_routes import area_routes
+# from .step_routes import step_routes
+# ... and so on, would be found in app.py or the main application factory.
