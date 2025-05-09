@@ -17,15 +17,16 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(80) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL, -- Store hashed passwords!
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create the 'areas' table
 CREATE TABLE areas (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL,
-    -- Add other area-specific fields if needed later
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create the 'process_steps' table
@@ -34,6 +35,7 @@ CREATE TABLE process_steps (
     bi_id VARCHAR(255) UNIQUE NOT NULL, -- Business Identifier
     name VARCHAR(255) NOT NULL,
     area_id INTEGER NOT NULL,
+    step_description TEXT,
     raw_content TEXT,
     summary TEXT,
     llm_comment_1 TEXT, -- Placeholder 1
@@ -41,9 +43,8 @@ CREATE TABLE process_steps (
     llm_comment_3 TEXT, -- Placeholder 3
     llm_comment_4 TEXT, -- Placeholder 4
     llm_comment_5 TEXT, -- Placeholder 5
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (area_id) REFERENCES areas (id) ON DELETE CASCADE
 );
 
@@ -53,6 +54,7 @@ CREATE TABLE use_cases (
     bi_id VARCHAR(255) UNIQUE NOT NULL, -- Business Identifier
     name VARCHAR(255) NOT NULL,
     process_step_id INTEGER NOT NULL,
+    priority INTEGER,
     raw_content TEXT,
     summary TEXT,
     inspiration TEXT,
@@ -61,10 +63,10 @@ CREATE TABLE use_cases (
     llm_comment_3 TEXT, -- Placeholder 3
     llm_comment_4 TEXT, -- Placeholder 4
     llm_comment_5 TEXT, -- Placeholder 5
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (process_step_id) REFERENCES process_steps (id) ON DELETE CASCADE
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (process_step_id) REFERENCES process_steps (id) ON DELETE CASCADE,
+    CONSTRAINT priority_range_check CHECK (priority IS NULL OR (priority >= 1 AND priority <= 4))
 );
 
 -- Create the 'usecase_area_relevance' table
@@ -74,12 +76,10 @@ CREATE TABLE usecase_area_relevance (
     target_area_id INTEGER NOT NULL,
     relevance_score INTEGER CHECK (relevance_score >= 0 AND relevance_score <= 100), -- Score between 0 and 100
     relevance_content TEXT, -- Markdown description of relevance
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_usecase_id) REFERENCES use_cases (id) ON DELETE CASCADE,
     FOREIGN KEY (target_area_id) REFERENCES areas (id) ON DELETE CASCADE,
-
     -- Ensure a specific use case has only one relevance entry towards a specific area
     UNIQUE (source_usecase_id, target_area_id)
 );
@@ -91,12 +91,10 @@ CREATE TABLE usecase_step_relevance (
     target_process_step_id INTEGER NOT NULL,
     relevance_score INTEGER CHECK (relevance_score >= 0 AND relevance_score <= 100), -- Score between 0 and 100
     relevance_content TEXT, -- Markdown description of relevance
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_usecase_id) REFERENCES use_cases (id) ON DELETE CASCADE,
     FOREIGN KEY (target_process_step_id) REFERENCES process_steps (id) ON DELETE CASCADE,
-
     -- Ensure a specific use case has only one relevance entry towards a specific step
     UNIQUE (source_usecase_id, target_process_step_id)
 );
@@ -108,15 +106,12 @@ CREATE TABLE usecase_usecase_relevance (
     target_usecase_id INTEGER NOT NULL,
     relevance_score INTEGER CHECK (relevance_score >= 0 AND relevance_score <= 100), -- Score between 0 and 100
     relevance_content TEXT, -- Markdown description of relevance
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (source_usecase_id) REFERENCES use_cases (id) ON DELETE CASCADE,
     FOREIGN KEY (target_usecase_id) REFERENCES use_cases (id) ON DELETE CASCADE,
-
     -- Prevent a use case from being relevant to itself via this table
     CHECK (source_usecase_id != target_usecase_id),
-
     -- Ensure a specific use case has only one relevance entry towards another specific use case
     UNIQUE (source_usecase_id, target_usecase_id)
 );

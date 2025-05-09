@@ -33,6 +33,7 @@ class Area(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), unique=True, nullable=False)
+    description = Column(Text, nullable=True) # <<< ADD THIS LINE
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     process_steps = relationship("ProcessStep", back_populates="area")
@@ -49,13 +50,14 @@ class ProcessStep(Base):
     bi_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
     area_id = Column(Integer, ForeignKey('areas.id'), nullable=False)
-    raw_content = Column(Text)
-    summary = Column(Text)
-    llm_comment_1 = Column(Text)
+    step_description = Column(Text, nullable=True) # <<< ADD THIS LINE
+    raw_content = Column(Text, nullable=True) # Ensure nullable=True if it can be empty
+    summary = Column(Text, nullable=True)     # Ensure nullable=True if it can be empty
+    llm_comment_1 = Column(Text, nullable=True)
     llm_comment_2 = Column(Text)
     llm_comment_3 = Column(Text)
     llm_comment_4 = Column(Text)
-    llm_comment_5 = Column(Text)
+    llm_comment_5 = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
@@ -74,16 +76,21 @@ class UseCase(Base):
     bi_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
     process_step_id = Column(Integer, ForeignKey('process_steps.id'), nullable=False)
-    raw_content = Column(Text)
-    summary = Column(Text)
-    inspiration = Column(Text)
-    llm_comment_1 = Column(Text)
-    llm_comment_2 = Column(Text)
-    llm_comment_3 = Column(Text)
-    llm_comment_4 = Column(Text)
-    llm_comment_5 = Column(Text)
+    priority = Column(Integer, nullable=True)
+    raw_content = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    inspiration = Column(Text, nullable=True)
+    llm_comment_1 = Column(Text, nullable=True)
+    llm_comment_2 = Column(Text, nullable=True) # Assuming these were intended
+    llm_comment_3 = Column(Text, nullable=True) # Assuming these were intended
+    llm_comment_4 = Column(Text, nullable=True) # Assuming these were intended
+    llm_comment_5 = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint('priority IS NULL OR (priority >= 1 AND priority <= 4)', name='priority_range_check'),
+    )
 
     process_step = relationship("ProcessStep", back_populates="use_cases")
 
@@ -112,7 +119,8 @@ class UseCase(Base):
 
     @property
     def area(self):
-        return self.process_step.area if self.process_step else None
+        # This will work once 'process_step' relationship is correctly defined
+        return self.process_step.area if self.process_step and self.process_step.area else None
 
     def __repr__(self):
         return f"<UseCase(name='{self.name}', bi_id='{self.bi_id}')>"
