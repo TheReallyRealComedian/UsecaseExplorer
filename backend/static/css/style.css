@@ -30,6 +30,7 @@ html, body {
     color: var(--text-color);
     font-size: 14px; /* Base font size */
     line-height: 1.5;
+    overflow-x: hidden; /* Prevent horizontal scroll on body */
 }
 
 a {
@@ -58,8 +59,11 @@ ul {
     color: var(--text-color-sidebar);
     display: flex;
     flex-direction: column;
-    padding: 20px 0;
+    padding: 20px 0; /* Existing padding */
     flex-shrink: 0; /* Prevent sidebar from shrinking */
+    height: 100vh; /* MODIFIED: Ensure sidebar takes full viewport height */
+    position: sticky; /* MODIFIED: Make sidebar sticky to the viewport top left */
+    top: 0;           /* MODIFIED: Stick to top */
 }
 
 .sidebar-header {
@@ -76,6 +80,9 @@ ul {
 
 .sidebar-menu {
     flex-grow: 1;
+    /* If menu items were to overflow, this would enable scrolling within the menu area
+    overflow-y: auto;
+    */
 }
 
 .sidebar-menu li a,
@@ -116,6 +123,7 @@ ul {
     margin-top: auto; /* Pushes to the bottom */
     padding-top: 15px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px; /* Add some bottom padding within the footer menu area */
 }
 
 /* Main Content Area Styles */
@@ -124,17 +132,22 @@ ul {
     display: flex;
     flex-direction: column;
     background-color: var(--secondary-color);
+    /* max-width: calc(100% - 250px); /* If sidebar is sticky, prevent overlap if not handled by flex */
+    /* The above max-width is not strictly necessary with the current flex setup for app-container */
 }
 
 /* Header Styles */
 .main-header {
     display: flex;
-    justify-content: space-between;
+    /* justify-content: space-between; /* MODIFIED: No longer needed as search is pushed right */
     align-items: center;
     padding: 15px 30px;
     background-color: var(--white);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--box-shadow);
+    position: sticky; /* MODIFIED: Make header sticky */
+    top: 0;           /* MODIFIED: Stick to the top of its scrolling container (.main-content) */
+    z-index: 1000;    /* MODIFIED: Ensure it's above other content in .page-content */
 }
 
 .search-bar {
@@ -144,6 +157,7 @@ ul {
     padding: 8px 15px;
     border-radius: var(--border-radius);
     width: 300px; /* Adjust as needed */
+    margin-left: auto; /* MODIFIED: Push search bar to the right */
 }
 
 .search-bar i {
@@ -159,7 +173,7 @@ ul {
     font-size: 0.9rem;
 }
 
-.header-actions {
+.header-actions { /* This class might be unused now, but kept for completeness if referenced elsewhere */
     display: flex;
     align-items: center;
     gap: 15px;

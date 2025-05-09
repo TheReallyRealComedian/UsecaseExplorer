@@ -11,7 +11,8 @@
 <div class="injection-form-section">
     <h2>Inject Areas</h2>
     <p>Upload a JSON file containing a list of area objects, each with a <code>"name"</code> key.<br>
-       Example: <code>[{"name": "Area One"}, {"name": "Area Two"}]</code>
+       Optional key: <code>"description"</code> (string).<br>
+       Example: <code>[{"name": "Area One", "description": "Desc of Area One"}, {"name": "Area Two"}]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
          <div>
@@ -28,8 +29,8 @@
     <h2>Inject Process Steps</h2>
     <p>Upload a JSON file containing a list of process step objects.<br>
        Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match existing Area).<br>
-       Optional keys: <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
-       Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "summary": "Summary one"}, ...]</code>
+       Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
+       Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
          <div>
@@ -46,8 +47,8 @@
     <h2>Inject Use Cases</h2>
     <p>Upload a JSON file containing a list of use case objects.<br>
        Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match existing Step BI_ID).<br>
-       Optional keys: <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
-       Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "summary": "Summary one"}, ...]</code>
+       Optional keys: <code>"priority"</code> (integer 1-4), <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
+       Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "priority": 1, "summary": "Summary one"}, ...]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
          <div>

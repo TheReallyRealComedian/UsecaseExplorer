@@ -18,6 +18,16 @@
             <dt>Business ID (BI_ID):</dt>
             <dd>{{ usecase.bi_id }}</dd>
 
+            <dt>Priority:</dt>
+            <dd>
+                {% if usecase.priority == 1 %}High
+                {% elif usecase.priority == 2 %}Medium
+                {% elif usecase.priority == 3 %}Low
+                {% elif usecase.priority == 4 %}Waiting List
+                {% else %}N/A
+                {% endif %}
+            </dd>
+
             <dt>Area:</dt>
             <dd>
                 {% if usecase.process_step and usecase.process_step.area %}
@@ -32,6 +42,15 @@
                 {% if usecase.process_step %}
                     <a href="{{ url_for('steps.view_step', step_id=usecase.process_step.id) }}">{{ usecase.process_step.name }}</a>
                      (BI_ID: {{ usecase.process_step.bi_id }})
+                {% else %}
+                    N/A
+                {% endif %}
+            </dd>
+
+            <dt>Process Step Description:</dt>
+            <dd>
+                {% if usecase.process_step and usecase.process_step.step_description %}
+                    <pre>{{ usecase.process_step.step_description }}</pre>
                 {% else %}
                     N/A
                 {% endif %}

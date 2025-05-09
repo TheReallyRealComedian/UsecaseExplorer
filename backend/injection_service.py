@@ -36,19 +36,19 @@ def process_area_file(file_stream):
 
         for item in data:
             # Validate item structure
-            if not isinstance(item, dict):
-                skipped_count += 1
-                continue
-            if 'name' not in item:
-                skipped_count += 1
-                continue
-
-            area_name = item['name']
-            if not isinstance(area_name, str) or not area_name.strip():
+            if not (isinstance(item, dict) and
+                    'name' in item and
+                    isinstance(item['name'], str) and
+                    item['name'].strip()):
                 skipped_count += 1
                 continue
 
-            area_name = area_name.strip()
+            area_name = item['name'].strip()
+            description = item.get('description')
+
+            # Ensure description is a string or None
+            if description is not None and not isinstance(description, str):
+                description = None
 
             # Check for duplicates
             if area_name in existing_names:
@@ -57,22 +57,24 @@ def process_area_file(file_stream):
                 skipped_count += 1
             else:
                 # Add new Area
-                new_area = Area(name=area_name)
+                new_area = Area(
+                    name=area_name,
+                    description=description
+                )
                 session.add(new_area)
-                existing_names.add(area_name) # Add to set to catch intra-file duplicates
+                existing_names.add(area_name)
                 added_count += 1
 
         session.commit()
         success = True
 
-        # Construct result message
         if added_count == 0 and skipped_count > 0:
              message = "Processing complete. No new areas were added."
              if duplicates:
                 message += f" {len(duplicates)} duplicate name(s) found."
         elif added_count > 0 and skipped_count == 0:
              message = f"Successfully added {added_count} new area(s)."
-        else: # Mix of added and skipped or only skipped with no duplicates
+        else:
              message = f"Processing complete. Added: {added_count}, Skipped: {skipped_count}."
              if duplicates:
                 message += f" Duplicate name(s) found: {len(duplicates)}."
@@ -126,7 +128,6 @@ def process_step_file(file_stream):
     success = False
 
     try:
-        # Pre-fetch existing data for efficiency
         area_lookup = {
             area.name: area.id for area in session.query(Area.name, Area.id).all()
         }
@@ -134,7 +135,6 @@ def process_step_file(file_stream):
             step.bi_id for step in session.query(ProcessStep.bi_id).all()
         }
 
-        # Load and parse JSON data
         try:
             data = json.load(file_stream)
         except UnicodeDecodeError:
@@ -145,62 +145,52 @@ def process_step_file(file_stream):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
         for item in data:
-            # Validate item format
-            if not isinstance(item, dict):
-                skipped_invalid_format += 1
-                continue
-            if not all(k in item for k in ('bi_id', 'name', 'area_name')):
-                skipped_invalid_format += 1
-                continue
-
-            bi_id = item['bi_id']
-            name = item['name']
-            area_name = item['area_name']
-
-            # Validate required field types and content
-            if not (isinstance(bi_id, str) and bi_id.strip() and
-                    isinstance(name, str) and name.strip() and
-                    isinstance(area_name, str) and area_name.strip()):
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('bi_id', 'name', 'area_name')) and
+                    isinstance(item['bi_id'], str) and item['bi_id'].strip() and
+                    isinstance(item['name'], str) and item['name'].strip() and
+                    isinstance(item['area_name'], str) and item['area_name'].strip()):
                 skipped_invalid_format += 1
                 continue
 
-            bi_id = bi_id.strip()
-            name = name.strip()
-            area_name = area_name.strip()
+            bi_id = item['bi_id'].strip()
+            name = item['name'].strip()
+            area_name = item['area_name'].strip()
 
-            # Get optional fields safely
             raw_content = item.get('raw_content')
             summary = item.get('summary')
+            step_description = item.get('step_description')
+
             if raw_content is not None and not isinstance(raw_content, str):
                 raw_content = None
             if summary is not None and not isinstance(summary, str):
                 summary = None
+            if step_description is not None and not isinstance(step_description, str):
+                step_description = None
 
-            # Check for duplicate bi_id
             if bi_id in existing_bi_ids:
                 skipped_duplicate_bi_id += 1
                 if bi_id not in duplicates_bi_ids:
                     duplicates_bi_ids.append(bi_id)
                 continue
 
-            # Check if Area exists
             if area_name not in area_lookup:
                 skipped_missing_area += 1
                 if area_name not in missing_area_names:
                     missing_area_names.append(area_name)
                 continue
 
-            # If all checks pass, add the new Process Step
             area_id = area_lookup[area_name]
             new_step = ProcessStep(
                 bi_id=bi_id,
                 name=name,
                 area_id=area_id,
-                raw_content=raw_content if raw_content else None,
-                summary=summary if summary else None
+                step_description=step_description,
+                raw_content=raw_content,
+                summary=summary
             )
             session.add(new_step)
-            existing_bi_ids.add(bi_id) # Add to set to catch intra-file duplicates
+            existing_bi_ids.add(bi_id)
             added_count += 1
 
         session.commit()
@@ -219,7 +209,6 @@ def process_step_file(file_stream):
     finally:
         SessionLocal.remove()
 
-    # Construct the result message
     if error_message:
          message = error_message
     else:
@@ -243,7 +232,6 @@ def process_step_file(file_stream):
          if missing_area_names:
              message += f" Missing areas: {', '.join(missing_area_names)}."
 
-    # Final result dictionary
     return {
         "success": success and error_message is None,
         "message": message,
@@ -256,7 +244,7 @@ def process_step_file(file_stream):
         "missing_area_names": missing_area_names
     }
 
-# --- ADD NEW FUNCTION for Use Cases ---
+
 def process_usecase_file(file_stream):
     """
     Processes an uploaded JSON file stream to add new Use Cases.
@@ -275,10 +263,9 @@ def process_usecase_file(file_stream):
     duplicate_uc_bi_ids = []
     missing_step_bi_ids = []
     error_message = None
-    success = False # Default to False
+    success = False
 
     try:
-        # Pre-fetch existing data
         step_lookup = {
             step.bi_id: step.id
             for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()
@@ -287,7 +274,6 @@ def process_usecase_file(file_stream):
             uc.bi_id for uc in session.query(UseCase.bi_id).all()
         }
 
-        # Load and parse JSON
         try:
             data = json.load(file_stream)
         except UnicodeDecodeError:
@@ -298,34 +284,23 @@ def process_usecase_file(file_stream):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
         for item in data:
-            # Validate item format
-            if not isinstance(item, dict):
-                skipped_invalid_format += 1
-                continue
-            if not all(k in item for k in ('bi_id', 'name', 'process_step_bi_id')):
-                skipped_invalid_format += 1
-                continue
-
-            uc_bi_id = item['bi_id']
-            name = item['name']
-            process_step_bi_id = item['process_step_bi_id']
-
-            # Validate required field types/content
-            if not (isinstance(uc_bi_id, str) and uc_bi_id.strip() and
-                    isinstance(name, str) and name.strip() and
-                    isinstance(process_step_bi_id, str) and process_step_bi_id.strip()):
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('bi_id', 'name', 'process_step_bi_id')) and
+                    isinstance(item['bi_id'], str) and item['bi_id'].strip() and
+                    isinstance(item['name'], str) and item['name'].strip() and
+                    isinstance(item['process_step_bi_id'], str) and item['process_step_bi_id'].strip()):
                 skipped_invalid_format += 1
                 continue
 
-            uc_bi_id = uc_bi_id.strip()
-            name = name.strip()
-            process_step_bi_id = process_step_bi_id.strip()
+            uc_bi_id = item['bi_id'].strip()
+            name = item['name'].strip()
+            process_step_bi_id = item['process_step_bi_id'].strip()
 
-            # Get optional fields
             raw_content = item.get('raw_content')
             summary = item.get('summary')
             inspiration = item.get('inspiration')
-            # Ensure optional fields are strings or None
+            priority_str = item.get('priority')
+
             if raw_content is not None and not isinstance(raw_content, str):
                 raw_content = None
             if summary is not None and not isinstance(summary, str):
@@ -333,33 +308,46 @@ def process_usecase_file(file_stream):
             if inspiration is not None and not isinstance(inspiration, str):
                 inspiration = None
 
+            priority = None
+            if priority_str is not None:
+                try:
+                    priority_val = int(priority_str)
+                    # Assuming priority 1-4 based on typical Pydantic model constraints or DB
+                    if 1 <= priority_val <= 4:
+                        priority = priority_val
+                    else:
+                        print(f"Skipping item with invalid priority value '{priority_str}': {item}")
+                        skipped_invalid_format += 1
+                        continue
+                except ValueError:
+                    print(f"Skipping item with non-integer priority '{priority_str}': {item}")
+                    skipped_invalid_format += 1
+                    continue
 
-            # Check for duplicate Use Case bi_id
             if uc_bi_id in existing_uc_bi_ids:
                 skipped_duplicate_uc_bi_id += 1
                 if uc_bi_id not in duplicate_uc_bi_ids:
                     duplicate_uc_bi_ids.append(uc_bi_id)
                 continue
 
-            # Check if Process Step exists
             if process_step_bi_id not in step_lookup:
                 skipped_missing_step += 1
                 if process_step_bi_id not in missing_step_bi_ids:
                     missing_step_bi_ids.append(process_step_bi_id)
                 continue
 
-            # All checks pass, add new Use Case
             process_step_id = step_lookup[process_step_bi_id]
             new_uc = UseCase(
                 bi_id=uc_bi_id,
                 name=name,
                 process_step_id=process_step_id,
+                priority=priority,
                 raw_content=raw_content,
                 summary=summary,
                 inspiration=inspiration
             )
             session.add(new_uc)
-            existing_uc_bi_ids.add(uc_bi_id) # Add to set for intra-file check
+            existing_uc_bi_ids.add(uc_bi_id)
             added_count += 1
 
         session.commit()
@@ -378,7 +366,6 @@ def process_usecase_file(file_stream):
     finally:
         SessionLocal.remove()
 
-    # Construct result message
     if error_message:
          message = error_message
     else:
@@ -386,7 +373,7 @@ def process_usecase_file(file_stream):
          if added_count > 0:
              parts.append(f"Added: {added_count}")
          if skipped_invalid_format > 0:
-             parts.append(f"Skipped (Invalid Format): {skipped_invalid_format}")
+             parts.append(f"Skipped (Invalid Format/Priority): {skipped_invalid_format}")
          if skipped_duplicate_uc_bi_id > 0:
              parts.append(f"Skipped (Duplicate UC BI_ID): {skipped_duplicate_uc_bi_id}")
          if skipped_missing_step > 0:
@@ -402,7 +389,6 @@ def process_usecase_file(file_stream):
          if missing_step_bi_ids:
              message += f" Missing Step IDs: {', '.join(missing_step_bi_ids)}."
 
-    # Final result
     return {
         "success": success and error_message is None,
         "message": message,
@@ -414,4 +400,3 @@ def process_usecase_file(file_stream):
         "duplicate_uc_bi_ids": duplicate_uc_bi_ids,
         "missing_step_bi_ids": missing_step_bi_ids
     }
-# --- END Use Case Function ---
