@@ -4,80 +4,43 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{% block title %}Usecase Explorer{% endblock %}</title>
-    <!-- Link to your CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Add Google Fonts (Optional, but helps match the look) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Add Font Awesome (Optional, for icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
         <nav class="sidebar">
             <div class="sidebar-header">
                 <a href="{{ url_for('index') }}" class="logo">UsecaseExplorer</a>
-                 {# In the image it's Inventor.io, changed to match app #}
             </div>
             <ul class="sidebar-menu">
-                 {# --- Add class="active" based on current page later --- #}
                 <li class="{{ 'active' if request.endpoint == 'index' else '' }}">
                     <a href="{{ url_for('index') }}">
-                        <i class="fas fa-home"></i> {# Icon Placeholder #}
+                        <i class="fas fa-home"></i>
                         <span>Home</span>
                     </a>
                 </li>
-                 {# Add other relevant nav items for YOUR app #}
                 <li class="{{ 'active' if request.endpoint == 'injection.handle_injection' else '' }}">
                      <a href="{{ url_for('injection.handle_injection') }}">
-                         <i class="fas fa-upload"></i> {# Icon Placeholder #}
+                         <i class="fas fa-upload"></i>
                          <span>Data Injection</span>
                      </a>
                  </li>
-                {# Example: Add links to future list views if created #}
-                {#
-                <li>
-                    <a href="#">
-                        <i class="fas fa-list"></i>
-                        <span>Areas</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <i class="fas fa-shoe-prints"></i>
-                        <span>Process Steps</span>
-                    </a>
-                </li>
-                 <li>
-                    <a href="#">
-                        <i class="fas fa-lightbulb"></i>
-                        <span>Use Cases</span>
-                    </a>
-                </li>
-                 #}
                   <li>
-                    <a href="#"> {# Placeholder for future Settings #}
-                        <i class="fas fa-cog"></i> {# Icon Placeholder #}
+                    <a href="#">
+                        <i class="fas fa-cog"></i>
                         <span>Settings</span>
                     </a>
                 </li>
             </ul>
             <ul class="sidebar-footer-menu">
-                {# Example: Add Product is not relevant here #}
-                {#
-                <li>
-                    <a href="#">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>Add product</span>
-                    </a>
-                </li>
-                 #}
                  {% if current_user.is_authenticated %}
                 <li>
                     <a href="{{ url_for('auth.logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> {# Icon Placeholder #}
+                        <i class="fas fa-sign-out-alt"></i>
                         <span>Log out</span>
                     </a>
                 </li>
@@ -85,21 +48,55 @@
             </ul>
         </nav>
 
-        <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Header -->
             <header class="main-header">
-                <!-- Search bar will be pushed to the right by CSS -->
+                <div class="breadcrumbs">
+                    <a href="{{ url_for('index') }}"
+                       class="breadcrumb-item {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+
+                    {# Determine navigation context from passed variables #}
+                    {% set nav_area = current_area %}
+                    {% set nav_step = current_step %}
+                    {% set nav_usecase = current_usecase %}
+
+                    {# Area Segment #}
+                    {% if nav_area %}
+                        <a href="{{ url_for('areas.view_area', area_id=nav_area.id) }}"
+                           class="breadcrumb-item {% if request.endpoint == 'areas.view_area' %}active{% endif %}">
+                            {{ nav_area.name }}
+                        </a>
+                    {% elif request.endpoint != 'auth.login' and request.endpoint != 'auth.register' %} {# Show placeholder if not on auth pages and no area context #}
+                        <span class="breadcrumb-item disabled">Area</span>
+                    {% endif %}
+
+                    {# Process Step Segment #}
+                    {% if nav_step %}
+                        <a href="{{ url_for('steps.view_step', step_id=nav_step.id) }}"
+                           class="breadcrumb-item {% if request.endpoint == 'steps.view_step' %}active{% endif %}">
+                            {{ nav_step.name }}
+                        </a>
+                    {% elif nav_area or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register') %}
+                        <span class="breadcrumb-item disabled">Process Step</span>
+                    {% endif %}
+
+                    {# Use Case Segment #}
+                    {% if nav_usecase %}
+                        <a href="{{ url_for('usecases.view_usecase', usecase_id=nav_usecase.id) }}"
+                           class="breadcrumb-item {% if request.endpoint == 'usecases.view_usecase' %}active{% endif %}">
+                            {{ nav_usecase.name }}
+                        </a>
+                    {% elif nav_step or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register') %}
+                        <span class="breadcrumb-item disabled">Use Case</span>
+                    {% endif %}
+                </div>
+
                 <div class="search-bar">
                     <i class="fas fa-search"></i>
                     <input type="search" placeholder="Search...">
                 </div>
-                <!-- Removed header-actions div and its icon buttons -->
             </header>
 
-            <!-- Page Content -->
             <main class="page-content">
-                 <!-- Flash Messages -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="flash-messages">
@@ -109,16 +106,10 @@
                         </div>
                     {% endif %}
                 {% endwith %}
-
-                {% block content %}
-                <!-- Specific page content goes here -->
-                {% endblock %}
+                {% block content %}{% endblock %}
             </main>
         </div>
     </div>
-
-    <!-- Link to your JS (Optional) -->
-    <!-- <script src="{{ url_for('static', filename='js/main.js') }}"></script> -->
     {% block scripts %}{% endblock %}
 </body>
 </html>

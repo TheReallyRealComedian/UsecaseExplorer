@@ -18,12 +18,8 @@ def view_step(step_id):
     session = SessionLocal()
     try:
         step = session.query(ProcessStep).options(
-            # Load parent Area for breadcrumbs/info
             joinedload(ProcessStep.area),
-            # Load UseCases directly under this ProcessStep
             selectinload(ProcessStep.use_cases),
-            # Load UsecaseStepRelevance records where this Step is the target,
-            # and also load the source UseCase for each of those relevance links.
             selectinload(ProcessStep.usecase_relevance)
                 .joinedload(UsecaseStepRelevance.source_usecase)
         ).get(step_id)
@@ -32,16 +28,12 @@ def view_step(step_id):
             flash(f"Process Step with ID {step_id} not found.", "warning")
             return redirect(url_for('index'))
 
-        # The step object now contains:
-        # - step.area (the parent Area object)
-        # - step.use_cases (list of UseCase objects directly under this step)
-        # - step.usecase_relevance (list of UsecaseStepRelevance objects)
-        #   - each rel in step.usecase_relevance has rel.source_usecase (the UseCase relevant to this step)
-
         return render_template(
             'step_detail.html',
             title=f"Process Step: {step.name}",
-            step=step
+            step=step,
+            current_step=step,        # For breadcrumbs
+            current_area=step.area    # For breadcrumbs
         )
     except Exception as e:
         print(f"Error fetching step {step_id}: {e}")

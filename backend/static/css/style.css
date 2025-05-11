@@ -1,19 +1,104 @@
 /* style.css */
 :root {
-    --primary-color: #6a0dad; /* Purple */
-    --primary-color-dark: #5a0bad;
-    --primary-color-light: #f3e8fd; /* Lighter purple for backgrounds/hover */
-    --secondary-color: #f8f9fa; /* Light grey background for main content */
-    --card-bg: #ffffff;
-    --text-color: #333333;
-    --text-color-light: #6c757d;
-    --text-color-sidebar: #e0e0e0;
-    --text-color-sidebar-active: #ffffff;
-    --border-color: #dee2e6;
-    --white: #ffffff;
-    --font-family: 'Inter', sans-serif;
-    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    /* --- Raw Color Definitions --- */
+    --raw-white: #ffffff;
+    --raw-black: #000000;
+
+    /* Greys */
+    --raw-light-grey-100: #F4F6F8; /* Lightest - Body background, main content */
+    --raw-light-grey-200: #E9ECEF; /* UI elements, Search bar bg, Code bg, disabled bg */
+    --raw-light-grey-300: #DEE2E6; /* Borders on light backgrounds */
+    --raw-medium-grey-100: #777777; /* Light text, disabled text */
+    --raw-medium-grey-200: #6c757d; /* Medium text, Breadcrumb default bg */
+    --raw-medium-grey-300: #5a6268; /* Breadcrumb hover bg, secondary button hover */
+    --raw-dark-grey-100: #555555;  /* Darker medium text */
+    --raw-dark-grey-200: #333333;  /* Main text color */
+    --raw-dark-grey-panel: #2C3E50; /* Left panel bg */
+    --raw-panel-text: #BDC3C7;     /* Text on dark panel */
+    --raw-panel-border-subtle: rgba(255, 255, 255, 0.1); /* Subtle border on dark panel */
+
+    /* Earthish Green Highlight */
+    --raw-green-primary: #5D8C7B;
+    --raw-green-dark: #4A7062;
+    --raw-green-light: #D4E2DE;
+
+    /* Alert Colors (original values maintained as per request scope) */
+    --raw-alert-success-text: #155724;
+    --raw-alert-success-bg: #d4edda;
+    --raw-alert-success-border: #c3e6cb;
+    --raw-alert-danger-text: #721c24;
+    --raw-alert-danger-bg: #f8d7da;
+    --raw-alert-danger-border: #f5c6cb;
+    --raw-alert-warning-text: #856404;
+    --raw-alert-warning-bg: #fff3cd;
+    --raw-alert-warning-border: #ffeeba;
+    --raw-alert-info-text: #0c5460;
+    --raw-alert-info-bg: #d1ecf1;
+    --raw-alert-info-border: #bee5eb;
+
+    /* Shadow Color */
+    --raw-shadow-color: rgba(0, 0, 0, 0.07);
+
+    /* --- Color Definitions END --- */
+    /* --- Variable Names START --- */
+
+    /* Theme Colors (Highlight) */
+    --primary-color: var(--raw-green-primary);
+    --primary-color-dark: var(--raw-green-dark);
+    --primary-color-light: var(--raw-green-light);
+
+    /* Backgrounds */
+    --body-bg-color: var(--raw-light-grey-100);         /* Light grey for major areas */
+    --main-content-bg: var(--raw-light-grey-100);       /* Light grey for major areas */
+    --left-panel-bg: var(--raw-dark-grey-panel);        /* Dark grey for left panel */
+    --card-bg: var(--raw-white);                        /* White for cards */
+    --header-bg: var(--raw-white);                      /* White for main header */
+    --element-bg-light: var(--raw-light-grey-200);      /* e.g. search bar, code block bg */
+
+    /* Text Colors */
+    --text-color: var(--raw-dark-grey-200);
+    --text-color-light: var(--raw-medium-grey-100);
+    --text-color-medium: var(--raw-medium-grey-200);
+    --text-color-sidebar: var(--raw-panel-text);
+    --text-color-sidebar-active: var(--raw-white);
+    --text-color-on-primary: var(--raw-white);          /* Text on green highlight buttons/elements */
+    --text-color-on-dark: var(--raw-white);             /* General text on dark backgrounds (e.g. breadcrumbs) */
+
+    /* Borders */
+    --border-color: var(--raw-light-grey-300);
+    --sidebar-border-color: var(--raw-panel-border-subtle);
+
+    /* Generic */
+    --white: var(--raw-white); /* Retained for explicit white usage if any */
+
+    /* Component Specific */
+    --box-shadow: 0 2px 10px var(--raw-shadow-color);
     --border-radius: 8px;
+    --font-family: 'Inter', sans-serif;
+
+    /* Breadcrumb variables */
+    --breadcrumb-arrow-width: 15px;
+    --breadcrumb-active-bg: var(--primary-color);
+    --breadcrumb-default-bg: var(--raw-medium-grey-200);
+    --breadcrumb-disabled-bg: var(--raw-light-grey-200); /* Consistent with element-bg-light */
+    --breadcrumb-text-color: var(--text-color-on-dark);
+    --breadcrumb-disabled-text-color: var(--text-color-light);
+    --breadcrumb-hover-bg: var(--raw-medium-grey-300);
+    --breadcrumb-active-hover-bg: var(--primary-color-dark);
+
+    /* Alert variables */
+    --alert-success-text: var(--raw-alert-success-text);
+    --alert-success-bg: var(--raw-alert-success-bg);
+    --alert-success-border: var(--raw-alert-success-border);
+    --alert-danger-text: var(--raw-alert-danger-text);
+    --alert-danger-bg: var(--raw-alert-danger-bg);
+    --alert-danger-border: var(--raw-alert-danger-border);
+    --alert-warning-text: var(--raw-alert-warning-text);
+    --alert-warning-bg: var(--raw-alert-warning-bg);
+    --alert-warning-border: var(--raw-alert-warning-border);
+    --alert-info-text: var(--raw-alert-info-text);
+    --alert-info-bg: var(--raw-alert-info-bg);
+    --alert-info-border: var(--raw-alert-info-border);
 }
 
 /* Reset and Base Styles */
@@ -26,7 +111,7 @@
 html, body {
     height: 100%;
     font-family: var(--font-family);
-    background-color: var(--secondary-color);
+    background-color: var(--body-bg-color); /* UPDATED */
     color: var(--text-color);
     font-size: 14px; /* Base font size */
     line-height: 1.5;
@@ -55,34 +140,31 @@ ul {
 /* Sidebar Styles */
 .sidebar {
     width: 250px;
-    background-color: var(--primary-color);
+    background-color: var(--left-panel-bg); /* UPDATED */
     color: var(--text-color-sidebar);
     display: flex;
     flex-direction: column;
-    padding: 20px 0; /* Existing padding */
-    flex-shrink: 0; /* Prevent sidebar from shrinking */
-    height: 100vh; /* MODIFIED: Ensure sidebar takes full viewport height */
-    position: sticky; /* MODIFIED: Make sidebar sticky to the viewport top left */
-    top: 0;           /* MODIFIED: Stick to top */
+    padding: 20px 0;
+    flex-shrink: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
 }
 
 .sidebar-header {
     padding: 0 25px 20px 25px;
     margin-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--sidebar-border-color); /* UPDATED */
 }
 
 .sidebar-header .logo {
     font-size: 1.4rem;
     font-weight: 700;
-    color: var(--white);
+    color: var(--text-color-sidebar-active); /* UPDATED */
 }
 
 .sidebar-menu {
     flex-grow: 1;
-    /* If menu items were to overflow, this would enable scrolling within the menu area
-    overflow-y: auto;
-    */
 }
 
 .sidebar-menu li a,
@@ -94,36 +176,36 @@ ul {
     transition: background-color 0.2s ease, color 0.2s ease;
     font-size: 0.95rem;
     font-weight: 500;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0; /* Rounded on the right */
-    margin-right: 15px; /* Space before rounding */
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    margin-right: 15px;
 }
 
 .sidebar-menu li a i,
 .sidebar-footer-menu li a i {
     margin-right: 15px;
     font-size: 1.1rem;
-    width: 20px; /* Ensure icons align */
+    width: 20px;
     text-align: center;
 }
 
 .sidebar-menu li a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-color-sidebar-active);
+    background-color: var(--primary-color-light); /* UPDATED */
+    color: var(--primary-color); /* UPDATED for better contrast on light green */
 }
 
 .sidebar-menu li.active a {
-    background-color: var(--primary-color-dark); /* Or slightly darker purple */
-    color: var(--text-color-sidebar-active);
+    background-color: var(--primary-color); /* UPDATED */
+    color: var(--text-color-on-primary); /* UPDATED */
     font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset; /* Subtle inset shadow */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset; /* Kept, should look ok on green */
 }
 
 
 .sidebar-footer-menu {
-    margin-top: auto; /* Pushes to the bottom */
+    margin-top: auto;
     padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 15px; /* Add some bottom padding within the footer menu area */
+    border-top: 1px solid var(--sidebar-border-color); /* UPDATED */
+    padding-bottom: 15px;
 }
 
 /* Main Content Area Styles */
@@ -131,33 +213,100 @@ ul {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--secondary-color);
-    /* max-width: calc(100% - 250px); /* If sidebar is sticky, prevent overlap if not handled by flex */
-    /* The above max-width is not strictly necessary with the current flex setup for app-container */
+    background-color: var(--main-content-bg); /* UPDATED */
 }
 
 /* Header Styles */
 .main-header {
     display: flex;
-    /* justify-content: space-between; /* MODIFIED: No longer needed as search is pushed right */
     align-items: center;
     padding: 15px 30px;
-    background-color: var(--white);
+    background-color: var(--header-bg); /* UPDATED */
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--box-shadow);
-    position: sticky; /* MODIFIED: Make header sticky */
-    top: 0;           /* MODIFIED: Stick to the top of its scrolling container (.main-content) */
-    z-index: 1000;    /* MODIFIED: Ensure it's above other content in .page-content */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    gap: 20px;
+    min-height: 64px;
+}
+
+/* Breadcrumbs Styles */
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.breadcrumb-item {
+    background-color: var(--breadcrumb-default-bg);
+    color: var(--breadcrumb-text-color);
+    padding: 8px calc(var(--breadcrumb-arrow-width) + 8px) 8px calc(var(--breadcrumb-arrow-width) + 12px);
+    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px);
+    clip-path: polygon(
+        0% 0%,
+        calc(100% - var(--breadcrumb-arrow-width)) 0%,
+        100% 50%,
+        calc(100% - var(--breadcrumb-arrow-width)) 100%,
+        0% 100%,
+        var(--breadcrumb-arrow-width) 50%
+    );
+    position: relative;
+    text-decoration: none;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+    background-color: var(--breadcrumb-hover-bg);
+    z-index: 5;
+}
+
+.breadcrumb-item:first-child {
+    clip-path: polygon(
+        0% 0%,
+        calc(100% - var(--breadcrumb-arrow-width)) 0%,
+        100% 50%,
+        calc(100% - var(--breadcrumb-arrow-width)) 100%,
+        0% 100%
+    );
+    padding-left: 15px;
+    margin-left: 0;
+}
+
+.breadcrumb-item.active {
+    background-color: var(--breadcrumb-active-bg);
+    color: var(--breadcrumb-text-color); /* Ensure good contrast on active (green) bg */
+    z-index: 10;
+}
+.breadcrumb-item.active:hover {
+    background-color: var(--breadcrumb-active-hover-bg);
+}
+
+.breadcrumb-item.disabled {
+    background-color: var(--breadcrumb-disabled-bg);
+    color: var(--breadcrumb-disabled-text-color);
+    cursor: default;
+    z-index: 1;
+}
+.breadcrumb-item.disabled:hover {
+    background-color: var(--breadcrumb-disabled-bg);
 }
 
 .search-bar {
     display: flex;
     align-items: center;
-    background-color: var(--secondary-color);
+    background-color: var(--element-bg-light); /* UPDATED */
     padding: 8px 15px;
     border-radius: var(--border-radius);
-    width: 300px; /* Adjust as needed */
-    margin-left: auto; /* MODIFIED: Push search bar to the right */
+    width: 300px;
+    flex-shrink: 0;
 }
 
 .search-bar i {
@@ -171,9 +320,14 @@ ul {
     background-color: transparent;
     width: 100%;
     font-size: 0.9rem;
+    color: var(--text-color); /* Ensure input text is readable */
+}
+.search-bar input::placeholder {
+    color: var(--text-color-light);
 }
 
-.header-actions { /* This class might be unused now, but kept for completeness if referenced elsewhere */
+
+.header-actions {
     display: flex;
     align-items: center;
     gap: 15px;
@@ -195,10 +349,10 @@ ul {
 .page-content {
     padding: 30px;
     flex-grow: 1;
-    overflow-y: auto; /* Allow scrolling if content exceeds height */
+    overflow-y: auto;
 }
 
-/* Card Styles (Generic card for content blocks) */
+/* Card Styles */
 .card {
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
@@ -259,11 +413,21 @@ form textarea {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 0.9rem;
+    background-color: var(--white); /* Ensure form fields are typically white */
+    color: var(--text-color);
 }
+form input[type="text"]::placeholder,
+form input[type="password"]::placeholder,
+form input[type="email"]::placeholder,
+form input[type="number"]::placeholder,
+form textarea::placeholder {
+    color: var(--text-color-light);
+}
+
 
 form input[type="checkbox"] {
     margin-right: 5px;
-    align-self: flex-start; /* Align checkbox properly */
+    align-self: flex-start;
 }
 form div.checkbox-group label {
     margin-bottom: 0;
@@ -282,7 +446,7 @@ form textarea {
 form button[type="submit"],
 .btn {
     background-color: var(--primary-color);
-    color: var(--white);
+    color: var(--text-color-on-primary); /* UPDATED */
     border: none;
     padding: 10px 20px;
     border-radius: var(--border-radius);
@@ -290,7 +454,7 @@ form button[type="submit"],
     font-size: 0.95rem;
     font-weight: 500;
     transition: background-color 0.2s ease;
-    align-self: flex-start; /* Prevent button from stretching */
+    align-self: flex-start;
 }
 
 form button[type="submit"]:hover,
@@ -299,10 +463,11 @@ form button[type="submit"]:hover,
 }
 
 .btn-secondary {
-     background-color: var(--text-color-light);
+     background-color: var(--raw-medium-grey-200); /* UPDATED */
+     color: var(--white);
 }
 .btn-secondary:hover {
-    background-color: #5a6268;
+    background-color: var(--raw-medium-grey-300); /* UPDATED */
 }
 
 
@@ -320,30 +485,30 @@ form button[type="submit"]:hover,
 }
 
 .alert-success {
-    color: #155724;
-    background-color: #d4edda;
-    border-color: #c3e6cb;
+    color: var(--alert-success-text);
+    background-color: var(--alert-success-bg);
+    border-color: var(--alert-success-border);
 }
 
 .alert-danger {
-    color: #721c24;
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
+    color: var(--alert-danger-text);
+    background-color: var(--alert-danger-bg);
+    border-color: var(--alert-danger-border);
 }
 
 .alert-warning {
-    color: #856404;
-    background-color: #fff3cd;
-    border-color: #ffeeba;
+    color: var(--alert-warning-text);
+    background-color: var(--alert-warning-bg);
+    border-color: var(--alert-warning-border);
 }
 
 .alert-info {
-    color: #0c5460;
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
+    color: var(--alert-info-text);
+    background-color: var(--alert-info-bg);
+    border-color: var(--alert-info-border);
 }
 
-/* Index page specific styles (Example Adaptation) */
+/* Index page specific styles */
 .welcome-message {
     margin-bottom: 20px;
 }
@@ -357,23 +522,23 @@ form button[type="submit"]:hover,
 }
 
 .data-section {
-    margin-bottom: 30px; /* Add more space between sections */
+    margin-bottom: 30px;
 }
 
 .data-section h2 {
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 15px;
-    color: var(--primary-color); /* Make section titles stand out */
+    color: var(--primary-color);
 }
 
-.area-card { /* Style for each Area block */
+.area-card {
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
     margin-bottom: 20px;
-    border-left: 5px solid var(--primary-color-light); /* Add a subtle left border */
+    border-left: 5px solid var(--primary-color); /* UPDATED */
 }
 .area-card h3 {
     font-size: 1.1rem;
@@ -381,13 +546,13 @@ form button[type="submit"]:hover,
     font-weight: 600;
 }
 .area-card ul {
-    padding-left: 20px; /* Indent step list */
-    list-style: disc; /* Use bullets for steps */
+    padding-left: 20px;
+    list-style: disc;
 }
 .area-card li {
     margin-bottom: 8px;
 }
-.area-card strong { /* Step name */
+.area-card strong {
     font-weight: 500;
 }
 .area-card .step-details {
@@ -395,9 +560,9 @@ form button[type="submit"]:hover,
     color: var(--text-color-light);
 }
 .area-card .usecase-list {
-    padding-left: 25px; /* Further indent use case list */
+    padding-left: 25px;
     margin-top: 5px;
-    list-style: circle; /* Different bullet for use cases */
+    list-style: circle;
 }
 .area-card .usecase-list li a {
     font-weight: 500;
@@ -407,7 +572,7 @@ form button[type="submit"]:hover,
     color: var(--text-color-light);
     margin-left: 5px;
 }
-.area-card p em { /* "No steps/use cases found" */
+.area-card p em {
     color: var(--text-color-light);
     font-style: italic;
 }
@@ -416,8 +581,8 @@ form button[type="submit"]:hover,
 /* Use Case Detail Styles */
 .usecase-detail-page dl {
     display: grid;
-    grid-template-columns: max-content auto; /* Label column sized to content, value takes rest */
-    gap: 10px 20px; /* Row gap, Column gap */
+    grid-template-columns: max-content auto;
+    gap: 10px 20px;
     margin-bottom: 20px;
 }
 .usecase-detail-page dt {
@@ -425,18 +590,19 @@ form button[type="submit"]:hover,
     color: var(--text-color-light);
 }
 .usecase-detail-page dd {
-    margin-left: 0; /* Reset default margin */
+    margin-left: 0;
 }
 .usecase-detail-page pre {
-    background-color: #f8f9fa;
+    background-color: var(--element-bg-light); /* UPDATED */
     padding: 10px;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-color); /* UPDATED */
     border-radius: 4px;
     white-space: pre-wrap;
     word-wrap: break-word;
     font-size: 0.85rem;
-    max-height: 200px; /* Limit height */
-    overflow-y: auto; /* Add scroll if needed */
+    max-height: 200px;
+    overflow-y: auto;
+    color: var(--text-color);
 }
 
 .relevance-section {
@@ -462,21 +628,22 @@ form button[type="submit"]:hover,
     margin-bottom: 10px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    border-left: 3px solid var(--primary-color-light);
+    border-left: 3px solid var(--primary-color); /* UPDATED */
 }
 .relevance-section li strong {
     display: inline-block;
-    min-width: 50px; /* Align labels */
+    min-width: 50px;
 }
-.relevance-section li pre { /* Relevance content */
-     background-color: #f8f9fa;
+.relevance-section li pre {
+     background-color: var(--element-bg-light); /* UPDATED */
      padding: 8px;
      margin-top: 5px;
-     border: 1px solid #dee2e6;
+     border: 1px solid var(--border-color); /* UPDATED */
      border-radius: 4px;
      white-space: pre-wrap;
      word-wrap: break-word;
      font-size: 0.85rem;
+     color: var(--text-color);
 }
 
 .add-relevance-form {
@@ -485,14 +652,14 @@ form button[type="submit"]:hover,
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     margin-bottom: 20px;
-    border: 1px solid var(--border-color); /* Add subtle border */
+    border: 1px solid var(--border-color);
 }
 .add-relevance-form h3 {
     margin-top: 0;
     margin-bottom: 15px;
     font-size: 1.1rem;
 }
-.add-relevance-form h4 { /* Sub-title for each form */
+.add-relevance-form h4 {
      font-size: 1rem;
      font-weight: 600;
      margin-bottom: 15px;
@@ -504,9 +671,9 @@ form button[type="submit"]:hover,
 /* Login/Register Page Styles */
 .auth-container {
     max-width: 400px;
-    margin: 50px auto; /* Center vertically and horizontally */
+    margin: 50px auto;
     padding: 30px;
-    background-color: var(--white);
+    background-color: var(--card-bg); /* UPDATED */
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -519,7 +686,7 @@ form button[type="submit"]:hover,
 }
 
 .auth-container form button[type="submit"] {
-    width: 100%; /* Make button full width */
+    width: 100%;
     padding: 12px;
     margin-top: 10px;
 }
@@ -556,10 +723,11 @@ form button[type="submit"]:hover,
     margin-bottom: 15px;
 }
 .injection-form-section code {
-    background-color: #e9ecef;
+    background-color: var(--element-bg-light); /* UPDATED */
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.85rem;
+    color: var(--text-color); /* Ensure code text is readable */
 }
 
 /* Utility Classes */

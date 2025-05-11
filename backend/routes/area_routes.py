@@ -39,7 +39,8 @@ def view_area(area_id):
         return render_template(
             'area_detail.html',
             title=f"Area: {area.name}",
-            area=area
+            area=area,
+            current_area=area  # For breadcrumbs
         )
     except Exception as e:
         print(f"Error fetching area {area_id}: {e}")
