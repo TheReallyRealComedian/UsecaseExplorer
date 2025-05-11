@@ -4,19 +4,18 @@ from flask import Flask, render_template, redirect, url_for, flash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, joinedload
 from flask_login import LoginManager, current_user
+import markupsafe # For the nl2br filter
 
-# Use relative imports for modules within the same package (backend)
 from .config import get_config
-# Import models needed, including ProcessStep for the joinedload path
 from .models import Base, User, Area, ProcessStep, UseCase
 
 # Database setup
 SessionLocal = scoped_session(sessionmaker())
-engine = None # Engine will be created in create_app
+engine = None
 
 # Flask-Login setup
 login_manager = LoginManager()
-login_manager.login_view = 'auth.login' # Use the blueprint name ('auth') and function name ('login')
+login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
@@ -38,6 +37,18 @@ def load_user(user_id):
     # No finally needed here; teardown_request handles removal
 
 
+# --- CUSTOM JINJA FILTER ---
+def nl2br(value):
+    """Converts newlines in a string to HTML <br> tags."""
+    if value is None:
+        return ''
+    # Ensure the value is escaped before replacing newlines to prevent XSS
+    # if it contains user-provided HTML. If it's plain text, simple replace is fine.
+    # For safety with potentially complex text, markupsafe.escape is good.
+    escaped_value = markupsafe.escape(value)
+    return markupsafe.Markup(escaped_value.replace('\n', '<br>\n'))
+
+
 def create_app():
     """
     Flask application factory function.
@@ -51,15 +62,14 @@ def create_app():
     try:
         os.makedirs(app.instance_path)
     except OSError:
-        pass # Directory already exists
+        pass
 
-    # Load configuration
     app.config.from_object(get_config())
-
-    # Initialize Flask-Login
     login_manager.init_app(app)
 
-    # Database engine setup
+    # --- REGISTER CUSTOM FILTER ---
+    app.jinja_env.filters['nl2br'] = nl2br
+
     global engine
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
     if not db_url:
@@ -67,84 +77,55 @@ def create_app():
     print("Attempting to connect to database using URI from config.")
     engine = create_engine(db_url)
 
-    # Bind the scoped session to the engine
     SessionLocal.configure(bind=engine)
 
-    # Test database connection
     try:
         with engine.connect() as connection:
             print("Database connection successful!")
     except Exception as e:
         print(f"Database connection failed: {e}")
-        # raise e # Consider raising the error during startup
 
-    # Teardown database session after each request
     @app.teardown_request
     def remove_session(exception=None):
         SessionLocal.remove()
 
-    # --- Register Blueprints ---
     print("Importing and registering blueprints...")
-
-    # Import and register blueprints defined in their own modules
     from .routes.auth_routes import auth_routes
     app.register_blueprint(auth_routes)
-
     from .routes.injection_routes import injection_routes
     app.register_blueprint(injection_routes)
-
     from .routes.usecase_routes import usecase_routes
     app.register_blueprint(usecase_routes)
-
     from .routes.relevance_routes import relevance_routes
     app.register_blueprint(relevance_routes)
-
     from .routes.llm_routes import llm_routes
     app.register_blueprint(llm_routes)
-
-    # MODIFIED: Import and register area_routes and step_routes from their own modules
     from .routes.area_routes import area_routes
     app.register_blueprint(area_routes)
-
     from .routes.step_routes import step_routes
     app.register_blueprint(step_routes)
-
-    # REMOVE or COMMENT OUT the old way of importing these if they were grouped:
-    # from .routes import (
-    #     area_routes,  # This line and its registration below are now handled above
-    #     step_routes,  # This line and its registration below are now handled above
-    # )
-    # app.register_blueprint(area_routes)
-    # app.register_blueprint(step_routes)
-
     print("Blueprint registration complete.")
 
-
-    # --- Basic Root Route ---
     @app.route('/')
     def index():
         if current_user.is_authenticated:
             session = SessionLocal()
-            areas = [] # Initialize areas to an empty list
+            areas = []
             try:
-                # Eagerly load Areas, their ProcessSteps, and the UseCases associated with those steps
                 areas = session.query(Area).options(
                     joinedload(Area.process_steps).joinedload(ProcessStep.use_cases)
                 ).order_by(Area.name).all()
             except Exception as e:
                 print(f"Error querying areas with steps and use cases: {e}")
                 flash("Could not load necessary data from the database.", "danger")
-                # Keep areas as an empty list on error
             finally:
-                SessionLocal.remove() # Ensure session is removed even if query fails
+                SessionLocal.remove()
 
-            # Pass areas to the template
             return render_template('index.html', title='Home', areas=areas)
         else:
-            # User is not logged in, redirect to login
             return redirect(url_for('auth.login'))
 
-    # --- Debug Check Route ---
+
     @app.route('/debug-check')
     def debug_check():
         print("Accessing /debug-check route")
@@ -153,7 +134,8 @@ def create_app():
             # Test relative imports needed by this app context
             from .config import Config # noqa: F401 (unused import)
             results["checks"]["config_import"] = "OK"
-            from .models import User # noqa: F401 (unused import)
+            # Renamed to avoid potential conflict if User model is used later in this function
+            from .models import User as DebugUser # noqa: F401 (unused import)
             results["checks"]["models_import"] = "OK"
 
             # Test access to blueprint objects AFTER registration
@@ -170,7 +152,6 @@ def create_app():
             step_bp_registered = app.blueprints.get('steps') is not None # Added check for steps
             results["checks"]["step_blueprint_registered"] = step_bp_registered
 
-
             # Test config access
             secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
@@ -185,28 +166,20 @@ def create_app():
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                # Example: list_llms_url = url_for('llm.list_llms')
-                # results["checks"]["url_for_llm_list"] = f"OK ({list_llms_url})"
                 list_areas_url = url_for('areas.list_areas') # Check for an area route
                 results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
-                # You might need to add a specific step route to check here if available
-                # e.g., list_steps_url = url_for('steps.list_steps')
-                # results["checks"]["url_for_steps_list"] = f"OK ({list_steps_url})"
-
 
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
 
-
-            # Test database connection again within request context
             try:
-                # Using SessionLocal() directly ensures teardown is handled
+                # Using SessionLocal() ensures teardown is handled
                 user_count = SessionLocal().query(User).count()
                 results["checks"]["db_connection_request_context"] = f"OK (User count: {user_count})"
                 SessionLocal.remove() # Manually remove session used just for count
             except Exception as db_err:
                 results["checks"]["db_connection_request_context"] = f"FAILED ({db_err})"
-                results["status"] = "warning" # Downgrade status if only DB fails here
+                results["status"] = "warning"
 
 
         except Exception as e:
@@ -214,7 +187,6 @@ def create_app():
             results["message"] = f"Debug check failed: {e}"
             results["error_type"] = type(e).__name__
             print(f"Error in /debug-check: {e}")
-            # Return 500 for significant errors during debug check
             return results, 500
 
         return results

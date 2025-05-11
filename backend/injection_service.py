@@ -145,6 +145,7 @@ def process_step_file(file_stream):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
         for item in data:
+            # Basic validation for required fields
             if not (isinstance(item, dict) and
                     all(k in item for k in ('bi_id', 'name', 'area_name')) and
                     isinstance(item['bi_id'], str) and item['bi_id'].strip() and
@@ -157,16 +158,43 @@ def process_step_file(file_stream):
             name = item['name'].strip()
             area_name = item['area_name'].strip()
 
+            # Existing optional fields
             raw_content = item.get('raw_content')
             summary = item.get('summary')
-            step_description = item.get('step_description')
+            step_description = item.get('step_description') # This can hold "Short Description"
 
-            if raw_content is not None and not isinstance(raw_content, str):
-                raw_content = None
-            if summary is not None and not isinstance(summary, str):
-                summary = None
-            if step_description is not None and not isinstance(step_description, str):
-                step_description = None
+            # New optional fields from schema update
+            vision_statement = item.get('vision_statement')
+            in_scope = item.get('in_scope')
+            out_of_scope = item.get('out_of_scope')
+            interfaces_text = item.get('interfaces_text') # Renamed from "Interfaces"
+            what_is_actually_done = item.get('what_is_actually_done')
+            pain_points = item.get('pain_points')
+            targets_text = item.get('targets_text') # Renamed from "Targets"
+
+
+            # Ensure string type for TEXT fields, or set to None
+            optional_text_fields = {
+                "raw_content": raw_content,
+                "summary": summary,
+                "step_description": step_description,
+                "vision_statement": vision_statement,
+                "in_scope": in_scope,
+                "out_of_scope": out_of_scope,
+                "interfaces_text": interfaces_text,
+                "what_is_actually_done": what_is_actually_done,
+                "pain_points": pain_points,
+                "targets_text": targets_text,
+            }
+            
+            processed_optional_fields = {}
+            for key, value in optional_text_fields.items():
+                if value is not None and not isinstance(value, str):
+                    print(f"Warning: Field '{key}' for BI_ID '{bi_id}' was not a string, setting to None. Value: {value}")
+                    processed_optional_fields[key] = None
+                else:
+                    processed_optional_fields[key] = value
+
 
             if bi_id in existing_bi_ids:
                 skipped_duplicate_bi_id += 1
@@ -185,9 +213,18 @@ def process_step_file(file_stream):
                 bi_id=bi_id,
                 name=name,
                 area_id=area_id,
-                step_description=step_description,
-                raw_content=raw_content,
-                summary=summary
+                # Assign processed optional fields
+                step_description=processed_optional_fields.get('step_description'),
+                raw_content=processed_optional_fields.get('raw_content'),
+                summary=processed_optional_fields.get('summary'),
+                vision_statement=processed_optional_fields.get('vision_statement'),
+                in_scope=processed_optional_fields.get('in_scope'),
+                out_of_scope=processed_optional_fields.get('out_of_scope'),
+                interfaces_text=processed_optional_fields.get('interfaces_text'),
+                what_is_actually_done=processed_optional_fields.get('what_is_actually_done'),
+                pain_points=processed_optional_fields.get('pain_points'),
+                targets_text=processed_optional_fields.get('targets_text')
+                # LLM comments are typically not set during initial injection, but could be added here if needed
             )
             session.add(new_step)
             existing_bi_ids.add(bi_id)

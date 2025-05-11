@@ -33,7 +33,7 @@ class Area(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), unique=True, nullable=False)
-    description = Column(Text, nullable=True) # <<< ADD THIS LINE
+    description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     process_steps = relationship("ProcessStep", back_populates="area")
@@ -50,19 +50,33 @@ class ProcessStep(Base):
     bi_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
     area_id = Column(Integer, ForeignKey('areas.id'), nullable=False)
-    step_description = Column(Text, nullable=True) # <<< ADD THIS LINE
-    raw_content = Column(Text, nullable=True) # Ensure nullable=True if it can be empty
-    summary = Column(Text, nullable=True)     # Ensure nullable=True if it can be empty
+
+    # Existing descriptive fields
+    step_description = Column(Text, nullable=True) # Can hold the "Short Description"
+    raw_content = Column(Text, nullable=True) # Can hold the full original markdown/text if needed
+    summary = Column(Text, nullable=True)     # Existing field, you can decide its new purpose or deprecate
+
+    # New structured fields
+    vision_statement = Column(Text, nullable=True)
+    in_scope = Column(Text, nullable=True) # For "In Scope" markdown
+    out_of_scope = Column(Text, nullable=True) # For "Out-of-scope" markdown
+    interfaces_text = Column(Text, nullable=True) # For "Interfaces" markdown
+    what_is_actually_done = Column(Text, nullable=True) # For "What is actually done in this step" markdown
+    pain_points = Column(Text, nullable=True) # For "Pain Points" markdown
+    targets_text = Column(Text, nullable=True) # For "Targets" markdown
+
+    # LLM comments
     llm_comment_1 = Column(Text, nullable=True)
-    llm_comment_2 = Column(Text)
-    llm_comment_3 = Column(Text)
-    llm_comment_4 = Column(Text)
+    llm_comment_2 = Column(Text, nullable=True)
+    llm_comment_3 = Column(Text, nullable=True)
+    llm_comment_4 = Column(Text, nullable=True)
     llm_comment_5 = Column(Text, nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     area = relationship("Area", back_populates="process_steps")
-    use_cases = relationship("UseCase", back_populates="process_step")
+    use_cases = relationship("UseCase", back_populates="process_step") # This handles the "## Use Cases" section by linking actual UseCase objects
     usecase_relevance = relationship("UsecaseStepRelevance", back_populates="target_process_step")
 
     def __repr__(self):
@@ -81,9 +95,9 @@ class UseCase(Base):
     summary = Column(Text, nullable=True)
     inspiration = Column(Text, nullable=True)
     llm_comment_1 = Column(Text, nullable=True)
-    llm_comment_2 = Column(Text, nullable=True) # Assuming these were intended
-    llm_comment_3 = Column(Text, nullable=True) # Assuming these were intended
-    llm_comment_4 = Column(Text, nullable=True) # Assuming these were intended
+    llm_comment_2 = Column(Text, nullable=True)
+    llm_comment_3 = Column(Text, nullable=True)
+    llm_comment_4 = Column(Text, nullable=True)
     llm_comment_5 = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
@@ -119,7 +133,6 @@ class UseCase(Base):
 
     @property
     def area(self):
-        # This will work once 'process_step' relationship is correctly defined
         return self.process_step.area if self.process_step and self.process_step.area else None
 
     def __repr__(self):

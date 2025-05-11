@@ -48,12 +48,12 @@
     --primary-color-light: var(--raw-green-light);
 
     /* Backgrounds */
-    --body-bg-color: var(--raw-light-grey-100);         /* Light grey for major areas */
-    --main-content-bg: var(--raw-light-grey-100);       /* Light grey for major areas */
-    --left-panel-bg: var(--raw-dark-grey-panel);        /* Dark grey for left panel */
-    --card-bg: var(--raw-white);                        /* White for cards */
-    --header-bg: var(--raw-white);                      /* White for main header */
-    --element-bg-light: var(--raw-light-grey-200);      /* e.g. search bar, code block bg */
+    --body-bg-color: var(--raw-light-grey-100);
+    --main-content-bg: var(--raw-light-grey-100);
+    --left-panel-bg: var(--raw-dark-grey-panel);
+    --card-bg: var(--raw-white);
+    --header-bg: var(--raw-white);
+    --element-bg-light: var(--raw-light-grey-200);
 
     /* Text Colors */
     --text-color: var(--raw-dark-grey-200);
@@ -61,15 +61,15 @@
     --text-color-medium: var(--raw-medium-grey-200);
     --text-color-sidebar: var(--raw-panel-text);
     --text-color-sidebar-active: var(--raw-white);
-    --text-color-on-primary: var(--raw-white);          /* Text on green highlight buttons/elements */
-    --text-color-on-dark: var(--raw-white);             /* General text on dark backgrounds (e.g. breadcrumbs) */
+    --text-color-on-primary: var(--raw-white);
+    --text-color-on-dark: var(--raw-white);
 
     /* Borders */
     --border-color: var(--raw-light-grey-300);
     --sidebar-border-color: var(--raw-panel-border-subtle);
 
     /* Generic */
-    --white: var(--raw-white); /* Retained for explicit white usage if any */
+    --white: var(--raw-white);
 
     /* Component Specific */
     --box-shadow: 0 2px 10px var(--raw-shadow-color);
@@ -80,7 +80,7 @@
     --breadcrumb-arrow-width: 15px;
     --breadcrumb-active-bg: var(--primary-color);
     --breadcrumb-default-bg: var(--raw-medium-grey-200);
-    --breadcrumb-disabled-bg: var(--raw-light-grey-200); /* Consistent with element-bg-light */
+    --breadcrumb-disabled-bg: var(--raw-light-grey-200);
     --breadcrumb-text-color: var(--text-color-on-dark);
     --breadcrumb-disabled-text-color: var(--text-color-light);
     --breadcrumb-hover-bg: var(--raw-medium-grey-300);
@@ -111,11 +111,11 @@
 html, body {
     height: 100%;
     font-family: var(--font-family);
-    background-color: var(--body-bg-color); /* UPDATED */
+    background-color: var(--body-bg-color);
     color: var(--text-color);
-    font-size: 14px; /* Base font size */
+    font-size: 14px;
     line-height: 1.5;
-    overflow-x: hidden; /* Prevent horizontal scroll on body */
+    overflow-x: hidden;
 }
 
 a {
@@ -140,7 +140,7 @@ ul {
 /* Sidebar Styles */
 .sidebar {
     width: 250px;
-    background-color: var(--left-panel-bg); /* UPDATED */
+    background-color: var(--left-panel-bg);
     color: var(--text-color-sidebar);
     display: flex;
     flex-direction: column;
@@ -154,13 +154,13 @@ ul {
 .sidebar-header {
     padding: 0 25px 20px 25px;
     margin-bottom: 20px;
-    border-bottom: 1px solid var(--sidebar-border-color); /* UPDATED */
+    border-bottom: 1px solid var(--sidebar-border-color);
 }
 
 .sidebar-header .logo {
     font-size: 1.4rem;
     font-weight: 700;
-    color: var(--text-color-sidebar-active); /* UPDATED */
+    color: var(--text-color-sidebar-active);
 }
 
 .sidebar-menu {
@@ -189,22 +189,22 @@ ul {
 }
 
 .sidebar-menu li a:hover {
-    background-color: var(--primary-color-light); /* UPDATED */
-    color: var(--primary-color); /* UPDATED for better contrast on light green */
+    background-color: var(--primary-color-light);
+    color: var(--primary-color);
 }
 
 .sidebar-menu li.active a {
-    background-color: var(--primary-color); /* UPDATED */
-    color: var(--text-color-on-primary); /* UPDATED */
+    background-color: var(--primary-color);
+    color: var(--text-color-on-primary);
     font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset; /* Kept, should look ok on green */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) inset;
 }
 
 
 .sidebar-footer-menu {
     margin-top: auto;
     padding-top: 15px;
-    border-top: 1px solid var(--sidebar-border-color); /* UPDATED */
+    border-top: 1px solid var(--sidebar-border-color);
     padding-bottom: 15px;
 }
 
@@ -213,7 +213,7 @@ ul {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--main-content-bg); /* UPDATED */
+    background-color: var(--main-content-bg);
 }
 
 /* Header Styles */
@@ -221,7 +221,7 @@ ul {
     display: flex;
     align-items: center;
     padding: 15px 30px;
-    background-color: var(--header-bg); /* UPDATED */
+    background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--box-shadow);
     position: sticky;
@@ -282,7 +282,7 @@ ul {
 
 .breadcrumb-item.active {
     background-color: var(--breadcrumb-active-bg);
-    color: var(--breadcrumb-text-color); /* Ensure good contrast on active (green) bg */
+    color: var(--breadcrumb-text-color);
     z-index: 10;
 }
 .breadcrumb-item.active:hover {
@@ -302,7 +302,7 @@ ul {
 .search-bar {
     display: flex;
     align-items: center;
-    background-color: var(--element-bg-light); /* UPDATED */
+    background-color: var(--element-bg-light);
     padding: 8px 15px;
     border-radius: var(--border-radius);
     width: 300px;
@@ -320,7 +320,7 @@ ul {
     background-color: transparent;
     width: 100%;
     font-size: 0.9rem;
-    color: var(--text-color); /* Ensure input text is readable */
+    color: var(--text-color);
 }
 .search-bar input::placeholder {
     color: var(--text-color-light);
@@ -413,7 +413,7 @@ form textarea {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 0.9rem;
-    background-color: var(--white); /* Ensure form fields are typically white */
+    background-color: var(--white);
     color: var(--text-color);
 }
 form input[type="text"]::placeholder,
@@ -446,7 +446,7 @@ form textarea {
 form button[type="submit"],
 .btn {
     background-color: var(--primary-color);
-    color: var(--text-color-on-primary); /* UPDATED */
+    color: var(--text-color-on-primary);
     border: none;
     padding: 10px 20px;
     border-radius: var(--border-radius);
@@ -463,11 +463,11 @@ form button[type="submit"]:hover,
 }
 
 .btn-secondary {
-     background-color: var(--raw-medium-grey-200); /* UPDATED */
+     background-color: var(--raw-medium-grey-200);
      color: var(--white);
 }
 .btn-secondary:hover {
-    background-color: var(--raw-medium-grey-300); /* UPDATED */
+    background-color: var(--raw-medium-grey-300);
 }
 
 
@@ -538,7 +538,7 @@ form button[type="submit"]:hover,
     box-shadow: var(--box-shadow);
     padding: 20px;
     margin-bottom: 20px;
-    border-left: 5px solid var(--primary-color); /* UPDATED */
+    border-left: 5px solid var(--primary-color);
 }
 .area-card h3 {
     font-size: 1.1rem;
@@ -592,10 +592,11 @@ form button[type="submit"]:hover,
 .usecase-detail-page dd {
     margin-left: 0;
 }
+
 .usecase-detail-page pre {
-    background-color: var(--element-bg-light); /* UPDATED */
+    background-color: var(--element-bg-light);
     padding: 10px;
-    border: 1px solid var(--border-color); /* UPDATED */
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -604,6 +605,23 @@ form button[type="submit"]:hover,
     overflow-y: auto;
     color: var(--text-color);
 }
+
+/* Styles for <pre> within <dd> on detail pages */
+.step-detail-page dd pre,
+.usecase-detail-page dd pre {
+    background-color: var(--element-bg-light);
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius); /* Consistent with theme */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 0.85rem;
+    max-height: 300px; /* Increased max-height */
+    overflow-y: auto;
+    margin-top: 5px; /* Added margin for spacing */
+    color: var(--text-color); /* Ensure text is readable */
+}
+
 
 .relevance-section {
     margin-top: 30px;
@@ -628,17 +646,17 @@ form button[type="submit"]:hover,
     margin-bottom: 10px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    border-left: 3px solid var(--primary-color); /* UPDATED */
+    border-left: 3px solid var(--primary-color);
 }
 .relevance-section li strong {
     display: inline-block;
     min-width: 50px;
 }
 .relevance-section li pre {
-     background-color: var(--element-bg-light); /* UPDATED */
+     background-color: var(--element-bg-light);
      padding: 8px;
      margin-top: 5px;
-     border: 1px solid var(--border-color); /* UPDATED */
+     border: 1px solid var(--border-color);
      border-radius: 4px;
      white-space: pre-wrap;
      word-wrap: break-word;
@@ -673,7 +691,7 @@ form button[type="submit"]:hover,
     max-width: 400px;
     margin: 50px auto;
     padding: 30px;
-    background-color: var(--card-bg); /* UPDATED */
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -723,11 +741,11 @@ form button[type="submit"]:hover,
     margin-bottom: 15px;
 }
 .injection-form-section code {
-    background-color: var(--element-bg-light); /* UPDATED */
+    background-color: var(--element-bg-light);
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 0.85rem;
-    color: var(--text-color); /* Ensure code text is readable */
+    color: var(--text-color);
 }
 
 /* Utility Classes */
