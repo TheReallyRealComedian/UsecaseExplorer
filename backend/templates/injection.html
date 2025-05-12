@@ -14,7 +14,7 @@
        Optional key: <code>"description"</code> (string).<br>
        Example: <code>[{"name": "Area One", "description": "Desc of Area One"}, {"name": "Area Two"}]</code>
     </p>
-    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="areaForm">
          <div>
              <label for="area_file">Area JSON File:</label>
              <input type="file" id="area_file" name="area_file" accept=".json" required>
@@ -32,7 +32,7 @@
        Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
        Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
     </p>
-    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="stepForm">
          <div>
              <label for="step_file">Process Step JSON File:</label>
              <input type="file" id="step_file" name="step_file" accept=".json" required>
@@ -50,7 +50,7 @@
        Optional keys: <code>"priority"</code> (integer 1-4), <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
        Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "priority": 1, "summary": "Summary one"}, ...]</code>
     </p>
-    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="usecaseForm">
          <div>
              <label for="usecase_file">Use Case JSON File:</label>
              <input type="file" id="usecase_file" name="usecase_file" accept=".json" required>
@@ -60,6 +60,23 @@
          </div>
     </form>
 </div>
+
+<script>
+document.getElementById('areaForm').onsubmit = function() {
+    console.log('Area form submitted');
+    return true;
+};
+
+document.getElementById('stepForm').onsubmit = function() {
+    console.log('Step form submitted');
+    return true;
+};
+
+document.getElementById('usecaseForm').onsubmit = function() {
+    console.log('Use Case form submitted');
+    return true;
+};
+</script>
 
 {# Removed Back to Home link, use sidebar now #}
 
