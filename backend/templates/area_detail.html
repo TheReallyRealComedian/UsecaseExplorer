@@ -19,8 +19,8 @@
         <div class="card-header">
             <h2 class="card-title">Area Information</h2>
         </div>
-        <div class="card-body"> <!-- Changed from dl to div.card-body for consistency -->
-            <dl class="row"> <!-- Bootstrap's dl styling -->
+        <div class="card-body">
+            <dl class="info-list">
                 <dt class="col-sm-3">Name:</dt>
                 <dd class="col-sm-9">{{ area.name }}</dd>
 
@@ -39,12 +39,15 @@
         </div>
         <div class="card-body">
             {% if area.process_steps %}
-                <ul class="list-unstyled">
+                <ul class="list-unstyled item-list">
                     {% for step in area.process_steps | sort(attribute='name') %}
                         <li class="mb-2">
-                            <h5><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
+                            <div class="item-title">
+                                <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
+                            </div>
+                            <div class="item-meta">
                                 <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
-                            </h5>
+                            </div>
                             {% if step.use_cases %}
                                 <ul class="usecase-list mt-1" style="padding-left: 20px; list-style: circle;">
                                     {% for uc in step.use_cases | sort(attribute='name') %}

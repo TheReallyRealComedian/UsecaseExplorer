@@ -20,7 +20,7 @@
             <h2 class="card-title">Step Information</h2>
         </div>
         <div class="card-body">
-             <dl class="usecase-detail-page-dl">
+             <dl class="info-list"> {# CHANGED CLASS HERE #}
                 <dt>Name:</dt>
                 <dd>{{ step.name }}</dd>
 
@@ -112,11 +112,15 @@
         </div>
         <div class="card-body">
             {% if step.use_cases %}
-                <ul class="list-unstyled">
+                <ul class="list-unstyled item-list"> {# ADDED item-list CLASS #}
                     {% for uc in step.use_cases | sort(attribute='name') %}
-                        <li class="mb-1">
-                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
-                            <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                        <li> {# REMOVED mb-1, styling handled by item-list li CSS #}
+                            <div class="item-title"> {# ADDED wrapper for title styling #}
+                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                            </div>
+                            <div class="item-meta"> {# ADDED wrapper for meta styling #}
+                                <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                            </div>
                         </li>
                     {% endfor %}
                 </ul>
@@ -126,27 +130,34 @@
         </div>
     </div>
 
-    <div class="relevance-section card mb-3">
+    <div class="relevance-section card mb-3"> {# REMOVED card and mb-3, as relevance-section can be a card itself if needed, or CSS can target .relevance-section directly #}
+                                           {# UPDATE: Kept card mb-3 here, as relevance-section itself is not a card. The inner items are cards or list items. #}
         <div class="card-header">
             <h2 class="card-title">Use Cases Relevant to this Process Step</h2>
         </div>
         <div class="card-body">
             {% if step.usecase_relevance %}
-                <ul class="list-unstyled">
+                <ul class="list-unstyled"> {# This list will contain relevance-item li elements #}
                     {% for rel in step.usecase_relevance | sort(attribute='relevance_score', reverse=True) %}
                         {% if rel.source_usecase %}
-                        <li class="relevance-item border-bottom pb-2 mb-2">
-                            <strong>Use Case:</strong>
-                            <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
-                                {{ rel.source_usecase.name }}
-                            </a>
-                            <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
-                            <br>
-                            <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
-                            {% if rel.relevance_content %}
-                                <strong class="d-block mt-1">Relevance Content:</strong>
-                                <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
-                            {% endif %}
+                        <li class="relevance-item"> {# ENSURED relevance-item class, REMOVED border-bottom pb-2 mb-2, styling handled by relevance-item CSS #}
+                            <div class="item-title"> {# Using item-title consistently for the main link #}
+                                <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
+                                    {{ rel.source_usecase.name }}
+                                </a>
+                            </div>
+                            <div class="item-meta">
+                                <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
+                            </div>
+                            
+                            <div> {# Wrapper for score and content #}
+                                <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
+                                {% if rel.relevance_content %}
+                                    <strong class="d-block mt-1">Relevance Content:</strong>
+                                    <pre>{{ rel.relevance_content }}</pre> {# REMOVED extra classes, will inherit from parent or specific CSS #}
+                                {% endif %}
+                            </div>
+                             {# Action buttons (edit/delete for relevance) would go here if applicable on this page #}
                         </li>
                         {% endif %}
                     {% endfor %}
@@ -156,9 +167,11 @@
             {% endif %}
         </div>
     </div>
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Overview</a>
-    {% if step.area %}
-        <a href="{{ url_for('areas.view_area', area_id=step.area.id) }}" class="btn btn-outline-secondary mt-3">Back to Area: {{ step.area.name }}</a>
-    {% endif %}
+    <div class="mt-3"> {# Added a wrapper for bottom buttons for potential future styling #}
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Overview</a> {# REMOVED mt-3, handled by wrapper or direct button margin if needed #}
+        {% if step.area %}
+            <a href="{{ url_for('areas.view_area', area_id=step.area.id) }}" class="btn btn-outline-secondary">Back to Area: {{ step.area.name }}</a> {# REMOVED mt-3 #}
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
