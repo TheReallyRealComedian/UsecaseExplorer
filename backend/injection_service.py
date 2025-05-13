@@ -2,8 +2,8 @@
 import json
 import traceback
 from sqlalchemy.exc import IntegrityError
-from .app import SessionLocal
-from .models import Area, ProcessStep, UseCase # Add UseCase here
+from .db import SessionLocal # CHANGED
+from .models import Area, ProcessStep, UseCase 
 
 def process_area_file(file_stream):
     """
@@ -24,7 +24,6 @@ def process_area_file(file_stream):
 
     try:
         print("Processing area file") # Debug log
-        # Ensure the stream is read correctly
         try:
             data = json.load(file_stream)
         except UnicodeDecodeError:
@@ -72,23 +71,23 @@ def process_area_file(file_stream):
                 message += f" {len(duplicates)} duplicate name(s) found."
         elif added_count > 0 and skipped_count == 0:
             message = f"Successfully added {added_count} new area(s)."
-        elif added_count > 0 or skipped_count > 0 or duplicates: # Catches various combinations
+        elif added_count > 0 or skipped_count > 0 or duplicates: 
              message = f"Processing complete. Added: {added_count}, Skipped: {skipped_count}."
              if duplicates:
                 message += f" Duplicate name(s) found: {len(duplicates)}."
-        else: # No data processed implies added_count=0, skipped_count=0, no duplicates
+        else: 
             message = "Processing complete. No data found or processed in the file."
 
 
     except json.JSONDecodeError:
-        print("JSON Decode Error in process_area_file") # Debug log
+        print("JSON Decode Error in process_area_file") 
         session.rollback()
         success = False
         message = "Invalid JSON format in the uploaded file."
         added_count = 0
         skipped_count = 0
         duplicates = []
-    except ValueError as ve: # Keep specific ValueError for format issues as in original
+    except ValueError as ve: 
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -96,7 +95,7 @@ def process_area_file(file_stream):
         skipped_count = 0
         duplicates = []
     except Exception as e:
-        traceback.print_exc() # This will print the full stack trace
+        traceback.print_exc() 
         session.rollback()
         success = False
         message = f"An error occurred: {str(e)}"
@@ -136,7 +135,7 @@ def process_step_file(file_stream):
     success = False
 
     try:
-        print("Processing step file") # Debug log
+        print("Processing step file") 
         area_lookup = {
             area.name: area.id for area in session.query(Area.name, Area.id).all()
         }
@@ -247,7 +246,7 @@ def process_step_file(file_stream):
 
 
     except json.JSONDecodeError:
-        print("JSON Decode Error in process_step_file") # Debug log
+        print("JSON Decode Error in process_step_file") 
         session.rollback()
         success = False
         message = "Invalid JSON format in the uploaded file."
@@ -268,7 +267,7 @@ def process_step_file(file_stream):
         duplicates_bi_ids = []
         missing_area_names = []
     except Exception as e:
-        traceback.print_exc() # This will print the full stack trace
+        traceback.print_exc() 
         session.rollback()
         success = False
         message = f"An error occurred: {str(e)}"
@@ -315,7 +314,7 @@ def process_usecase_file(file_stream):
     success = False
 
     try:
-        print("Processing use case file") # Debug log
+        print("Processing use case file") 
         step_lookup = {
             step.bi_id: step.id
             for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()
@@ -362,7 +361,7 @@ def process_usecase_file(file_stream):
             if priority_str is not None:
                 try:
                     priority_val = int(priority_str)
-                    if 1 <= priority_val <= 4: # Assuming priority 1-4
+                    if 1 <= priority_val <= 4: 
                         priority = priority_val
                     else:
                         print(f"Skipping item with invalid priority value '{priority_str}': {item}")
@@ -418,7 +417,7 @@ def process_usecase_file(file_stream):
             message += f" Missing Step IDs: {', '.join(missing_step_bi_ids)}."
 
     except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_file") # Debug log
+        print("JSON Decode Error in process_usecase_file") 
         session.rollback()
         success = False
         message = "Invalid JSON format in the uploaded file."
@@ -439,7 +438,7 @@ def process_usecase_file(file_stream):
         duplicate_uc_bi_ids = []
         missing_step_bi_ids = []
     except Exception as e:
-        traceback.print_exc() # This will print the full stack trace
+        traceback.print_exc() 
         session.rollback()
         success = False
         message = f"An error occurred: {str(e)}"

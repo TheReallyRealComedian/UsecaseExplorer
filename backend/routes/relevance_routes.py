@@ -2,7 +2,7 @@
 from flask import Blueprint, request, flash, redirect, url_for, abort, render_template
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
-from ..app import SessionLocal
+from ..db import SessionLocal # CHANGED
 from ..models import UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance, UseCase
 from sqlalchemy.exc import IntegrityError
 
@@ -332,7 +332,7 @@ def edit_area_relevance(relevance_id):
         return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
 
     # GET request:
-    SessionLocal.remove()
+    SessionLocal.remove() # remove session explicitly for GET if not using teardown_request strictly
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='area')
@@ -386,7 +386,7 @@ def edit_step_relevance(relevance_id):
         return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
 
     # GET request:
-    SessionLocal.remove()
+    SessionLocal.remove() # remove session explicitly for GET
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='step')
@@ -440,7 +440,7 @@ def edit_usecase_relevance(relevance_id):
         return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
 
     # GET request:
-    SessionLocal.remove()
+    SessionLocal.remove() # remove session explicitly for GET
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='usecase')

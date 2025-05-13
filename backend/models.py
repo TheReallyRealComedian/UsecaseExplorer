@@ -36,8 +36,8 @@ class Area(Base):
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    process_steps = relationship("ProcessStep", back_populates="area")
-    usecase_relevance = relationship("UsecaseAreaRelevance", back_populates="target_area")
+    process_steps = relationship("ProcessStep", back_populates="area", cascade="all, delete-orphan")
+    usecase_relevance = relationship("UsecaseAreaRelevance", back_populates="target_area", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Area(name='{self.name}')>"
@@ -52,18 +52,18 @@ class ProcessStep(Base):
     area_id = Column(Integer, ForeignKey('areas.id'), nullable=False)
 
     # Existing descriptive fields
-    step_description = Column(Text, nullable=True) # Can hold the "Short Description"
-    raw_content = Column(Text, nullable=True) # Can hold the full original markdown/text if needed
-    summary = Column(Text, nullable=True)     # Existing field, you can decide its new purpose or deprecate
+    step_description = Column(Text, nullable=True)
+    raw_content = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
 
     # New structured fields
     vision_statement = Column(Text, nullable=True)
-    in_scope = Column(Text, nullable=True) # For "In Scope" markdown
-    out_of_scope = Column(Text, nullable=True) # For "Out-of-scope" markdown
-    interfaces_text = Column(Text, nullable=True) # For "Interfaces" markdown
-    what_is_actually_done = Column(Text, nullable=True) # For "What is actually done in this step" markdown
-    pain_points = Column(Text, nullable=True) # For "Pain Points" markdown
-    targets_text = Column(Text, nullable=True) # For "Targets" markdown
+    in_scope = Column(Text, nullable=True)
+    out_of_scope = Column(Text, nullable=True)
+    interfaces_text = Column(Text, nullable=True)
+    what_is_actually_done = Column(Text, nullable=True)
+    pain_points = Column(Text, nullable=True)
+    targets_text = Column(Text, nullable=True)
 
     # LLM comments
     llm_comment_1 = Column(Text, nullable=True)
@@ -76,8 +76,8 @@ class ProcessStep(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 
     area = relationship("Area", back_populates="process_steps")
-    use_cases = relationship("UseCase", back_populates="process_step") # This handles the "## Use Cases" section by linking actual UseCase objects
-    usecase_relevance = relationship("UsecaseStepRelevance", back_populates="target_process_step")
+    use_cases = relationship("UseCase", back_populates="process_step", cascade="all, delete-orphan")
+    usecase_relevance = relationship("UsecaseStepRelevance", back_populates="target_process_step", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<ProcessStep(name='{self.name}', bi_id='{self.bi_id}')>"
@@ -144,8 +144,8 @@ class UsecaseAreaRelevance(Base):
     __tablename__ = 'usecase_area_relevance'
 
     id = Column(Integer, primary_key=True)
-    source_usecase_id = Column(Integer, ForeignKey('use_cases.id'), nullable=False)
-    target_area_id = Column(Integer, ForeignKey('areas.id'), nullable=False)
+    source_usecase_id = Column(Integer, ForeignKey('use_cases.id', ondelete='CASCADE'), nullable=False)
+    target_area_id = Column(Integer, ForeignKey('areas.id', ondelete='CASCADE'), nullable=False)
     relevance_score = Column(Integer, nullable=False)
     relevance_content = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -166,8 +166,8 @@ class UsecaseStepRelevance(Base):
     __tablename__ = 'usecase_step_relevance'
 
     id = Column(Integer, primary_key=True)
-    source_usecase_id = Column(Integer, ForeignKey('use_cases.id'), nullable=False)
-    target_process_step_id = Column(Integer, ForeignKey('process_steps.id'), nullable=False)
+    source_usecase_id = Column(Integer, ForeignKey('use_cases.id', ondelete='CASCADE'), nullable=False)
+    target_process_step_id = Column(Integer, ForeignKey('process_steps.id', ondelete='CASCADE'), nullable=False)
     relevance_score = Column(Integer, nullable=False)
     relevance_content = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -188,8 +188,8 @@ class UsecaseUsecaseRelevance(Base):
     __tablename__ = 'usecase_usecase_relevance'
 
     id = Column(Integer, primary_key=True)
-    source_usecase_id = Column(Integer, ForeignKey('use_cases.id'), nullable=False)
-    target_usecase_id = Column(Integer, ForeignKey('use_cases.id'), nullable=False)
+    source_usecase_id = Column(Integer, ForeignKey('use_cases.id', ondelete='CASCADE'), nullable=False)
+    target_usecase_id = Column(Integer, ForeignKey('use_cases.id', ondelete='CASCADE'), nullable=False)
     relevance_score = Column(Integer, nullable=False)
     relevance_content = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -214,9 +214,3 @@ class UsecaseUsecaseRelevance(Base):
 
     def __repr__(self):
         return f"<UCUCRelevance(source_uc_id={self.source_usecase_id}, target_uc_id={self.target_usecase_id}, score={self.relevance_score})>"
-
-# --- DB Engine and Session (Setup in app.py) ---
-# DATABASE_URL = "postgresql://user:password@db:5432/usecase_explorer_db"
-# engine = create_engine(DATABASE_URL)
-# Base.metadata.create_all(engine)
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

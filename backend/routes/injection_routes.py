@@ -6,7 +6,7 @@ from flask_login import login_required
 from werkzeug.utils import secure_filename
 import json
 
-from ..app import SessionLocal
+# SessionLocal is not directly used here, it's used by injection_service
 from ..models import Area, ProcessStep, UseCase
 from ..injection_service import process_area_file, process_step_file, process_usecase_file
 

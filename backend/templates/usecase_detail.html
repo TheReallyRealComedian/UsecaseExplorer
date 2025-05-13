@@ -4,85 +4,95 @@
 
 {% block content %}
 <div class="usecase-detail-page">
-    <h1>Use Case: {{ usecase.name }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Use Case: {{ usecase.name }}</h1>
+        <div>
+            <a href="{{ url_for('usecases.edit_usecase', usecase_id=usecase.id) }}" class="btn btn-sm btn-primary">Edit Use Case</a>
+            <form action="{{ url_for('usecases.delete_usecase', usecase_id=usecase.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this use case? This action cannot be undone.');">
+                <button type="submit" class="btn btn-sm btn-danger">Delete Use Case</button>
+            </form>
+        </div>
+    </div>
     <p class="text-color-light mb-3">Detailed information and relevance links for this use case.</p>
 
     <div class="card mb-3">
         <div class="card-header">
              <h2 class="card-title">Details</h2>
         </div>
-        <dl class="p-3"> {# Using p-3 for padding #}
-            <dt>Use Case ID:</dt>
-            <dd>{{ usecase.id }}</dd>
+        <div class="card-body"> <!-- Wrap dl in card-body -->
+            <dl class="usecase-detail-page-dl"> {# Or dl class="row" if you prefer Bootstrap's styling #}
+                <dt>Use Case ID:</dt>
+                <dd>{{ usecase.id }}</dd>
 
-            <dt>Business ID (BI_ID):</dt>
-            <dd>{{ usecase.bi_id }}</dd>
+                <dt>Business ID (BI_ID):</dt>
+                <dd>{{ usecase.bi_id }}</dd>
 
-            <dt>Priority:</dt>
-            <dd>
-                {% if usecase.priority == 1 %}High
-                {% elif usecase.priority == 2 %}Medium
-                {% elif usecase.priority == 3 %}Low
-                {% elif usecase.priority == 4 %}Waiting List
-                {% else %}N/A
-                {% endif %}
-            </dd>
+                <dt>Priority:</dt>
+                <dd>
+                    {% if usecase.priority == 1 %}High
+                    {% elif usecase.priority == 2 %}Medium
+                    {% elif usecase.priority == 3 %}Low
+                    {% elif usecase.priority == 4 %}Waiting List
+                    {% else %}N/A
+                    {% endif %}
+                </dd>
 
-            <dt>Area:</dt>
-            <dd>
-                {% if usecase.process_step and usecase.process_step.area %}
-                    <a href="{{ url_for('areas.view_area', area_id=usecase.process_step.area.id) }}">{{ usecase.process_step.area.name }}</a>
-                {% else %}
-                    N/A
-                {% endif %}
-            </dd>
+                <dt>Area:</dt>
+                <dd>
+                    {% if usecase.process_step and usecase.process_step.area %}
+                        <a href="{{ url_for('areas.view_area', area_id=usecase.process_step.area.id) }}">{{ usecase.process_step.area.name }}</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
 
-            <dt>Process Step:</dt>
-            <dd>
-                {% if usecase.process_step %}
-                    <a href="{{ url_for('steps.view_step', step_id=usecase.process_step.id) }}">{{ usecase.process_step.name }}</a>
-                     (BI_ID: {{ usecase.process_step.bi_id }})
-                {% else %}
-                    N/A
-                {% endif %}
-            </dd>
+                <dt>Process Step:</dt>
+                <dd>
+                    {% if usecase.process_step %}
+                        <a href="{{ url_for('steps.view_step', step_id=usecase.process_step.id) }}">{{ usecase.process_step.name }}</a>
+                        (BI_ID: {{ usecase.process_step.bi_id }})
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
 
-            <dt>Process Step Description:</dt>
-            <dd>
-                {% if usecase.process_step and usecase.process_step.step_description %}
-                    <pre>{{ usecase.process_step.step_description }}</pre>
-                {% else %}
-                    N/A
-                {% endif %}
-            </dd>
+                <dt>Process Step Description:</dt>
+                <dd>
+                    {% if usecase.process_step and usecase.process_step.step_description %}
+                        <pre>{{ usecase.process_step.step_description }}</pre>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
 
-            <dt>Summary:</dt>
-            <dd>{{ usecase.summary | default('N/A', true) }}</dd>
+                <dt>Summary:</dt>
+                <dd>{{ usecase.summary | default('N/A', true) }}</dd>
 
-            <dt>Inspiration:</dt>
-            <dd>{{ usecase.inspiration | default('N/A', true) }}</dd>
+                <dt>Inspiration:</dt>
+                <dd>{{ usecase.inspiration | default('N/A', true) }}</dd>
 
-            <dt>Raw Content:</dt>
-            <dd>
-                {% if usecase.raw_content %}
-                    <pre>{{ usecase.raw_content }}</pre>
-                {% else %}
-                    N/A
-                {% endif %}
-            </dd>
+                <dt>Raw Content:</dt>
+                <dd>
+                    {% if usecase.raw_content %}
+                        <pre>{{ usecase.raw_content }}</pre>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </dd>
 
-            <dt>LLM Comment 1:</dt> <dd>{{ usecase.llm_comment_1 | default('N/A', true) }}</dd>
-            <dt>LLM Comment 2:</dt> <dd>{{ usecase.llm_comment_2 | default('N/A', true) }}</dd>
-            <dt>LLM Comment 3:</dt> <dd>{{ usecase.llm_comment_3 | default('N/A', true) }}</dd>
-            <dt>LLM Comment 4:</dt> <dd>{{ usecase.llm_comment_4 | default('N/A', true) }}</dd>
-            <dt>LLM Comment 5:</dt> <dd>{{ usecase.llm_comment_5 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 1:</dt> <dd>{{ usecase.llm_comment_1 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 2:</dt> <dd>{{ usecase.llm_comment_2 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 3:</dt> <dd>{{ usecase.llm_comment_3 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 4:</dt> <dd>{{ usecase.llm_comment_4 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 5:</dt> <dd>{{ usecase.llm_comment_5 | default('N/A', true) }}</dd>
 
-            <dt>Created At:</dt>
-            <dd>{{ usecase.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.created_at else 'N/A' }}</dd>
+                <dt>Created At:</dt>
+                <dd>{{ usecase.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.created_at else 'N/A' }}</dd>
 
-            <dt>Updated At:</dt>
-            <dd>{{ usecase.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.updated_at else 'N/A' }}</dd>
-        </dl>
+                <dt>Updated At:</dt>
+                <dd>{{ usecase.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if usecase.updated_at else 'N/A' }}</dd>
+            </dl>
+        </div>
     </div>
 
 
@@ -302,8 +312,11 @@
         </div>
     </div>
 
-    <div class="mt-4">
-        {# Intentionally empty or for future buttons like "Back to List" if that exists #}
+    <div class="mt-4 d-flex justify-content-start">
+        {% if usecase.process_step %}
+            <a href="{{ url_for('steps.view_step', step_id=usecase.process_step.id) }}" class="btn btn-secondary me-2">Back to Process Step: {{ usecase.process_step.name }}</a>
+        {% endif %}
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Back to Overview</a>
     </div>
-</div> {# End usecase-detail-page wrapper #}
+</div>
 {% endblock %}

@@ -1,16 +1,15 @@
 # backend/routes/usecase_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for
+from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import login_required
 from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.exc import IntegrityError
 
-# Import Session/Models needed
-from ..app import SessionLocal
+from ..db import SessionLocal # CHANGED
 from ..models import (
     UseCase, ProcessStep, Area,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
 )
 
-# Define the blueprint
 usecase_routes = Blueprint(
     'usecases',
     __name__,
@@ -22,47 +21,147 @@ usecase_routes = Blueprint(
 @login_required
 def view_usecase(usecase_id):
     session = SessionLocal()
-    usecase = session.query(UseCase).options(
-        joinedload(UseCase.process_step).joinedload(ProcessStep.area),
-        selectinload(UseCase.relevant_to_areas)
-            .joinedload(UsecaseAreaRelevance.target_area),
-        selectinload(UseCase.relevant_to_steps)
-            .joinedload(UsecaseStepRelevance.target_process_step),
-        selectinload(UseCase.relevant_to_usecases_as_source)
-            .joinedload(UsecaseUsecaseRelevance.target_usecase),
-        selectinload(UseCase.relevant_to_usecases_as_target)
-            .joinedload(UsecaseUsecaseRelevance.source_usecase)
-    ).get(usecase_id)
+    try:
+        usecase = session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area),
+            selectinload(UseCase.relevant_to_areas)
+                .joinedload(UsecaseAreaRelevance.target_area),
+            selectinload(UseCase.relevant_to_steps)
+                .joinedload(UsecaseStepRelevance.target_process_step),
+            selectinload(UseCase.relevant_to_usecases_as_source)
+                .joinedload(UsecaseUsecaseRelevance.target_usecase),
+            selectinload(UseCase.relevant_to_usecases_as_target)
+                .joinedload(UsecaseUsecaseRelevance.source_usecase)
+        ).get(usecase_id)
+
+        if usecase is None:
+            flash(f"Use Case with ID {usecase_id} not found.", "warning")
+            return redirect(url_for('index'))
+
+        all_areas = session.query(Area).order_by(Area.name).all()
+        all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+        other_usecases = session.query(UseCase)\
+            .filter(UseCase.id != usecase_id)\
+            .order_by(UseCase.name)\
+            .all()
+
+        current_step_for_bc = usecase.process_step
+        current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+
+        return render_template(
+            'usecase_detail.html',
+            title=f"Use Case: {usecase.name}",
+            usecase=usecase,
+            all_areas=all_areas,
+            all_steps=all_steps,
+            other_usecases=other_usecases,
+            current_usecase=usecase,
+            current_step=current_step_for_bc,
+            current_area=current_area_for_bc
+        )
+    except Exception as e:
+        print(f"Error fetching usecase {usecase_id}: {e}")
+        flash("An error occurred while fetching usecase details.", "danger")
+        return redirect(url_for('index'))
+    finally:
+        SessionLocal.remove()
+
+
+@usecase_routes.route('/<int:usecase_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_usecase(usecase_id):
+    session = SessionLocal()
+    usecase = session.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).get(usecase_id)
+    all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
 
     if usecase is None:
         flash(f"Use Case with ID {usecase_id} not found.", "warning")
         SessionLocal.remove()
         return redirect(url_for('index'))
 
-    all_areas = session.query(Area).order_by(Area.name).all()
-    all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
-    other_usecases = session.query(UseCase)\
-        .filter(UseCase.id != usecase_id)\
-        .order_by(UseCase.name)\
-        .all()
+    if request.method == 'POST':
+        original_bi_id = usecase.bi_id
+        usecase.name = request.form.get('name', '').strip()
+        usecase.bi_id = request.form.get('bi_id', '').strip()
+        usecase.process_step_id = request.form.get('process_step_id', type=int)
+        
+        priority_str = request.form.get('priority')
+        if priority_str and priority_str.isdigit():
+            usecase.priority = int(priority_str)
+        elif not priority_str: 
+            usecase.priority = None
+        else: 
+            flash("Invalid priority value. Must be a number (1-4) or empty.", "danger")
+            SessionLocal.remove()
+            current_step_for_bc = usecase.process_step
+            current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+            return render_template('edit_usecase.html', title=f"Edit Use Case: {usecase.name}", usecase=usecase, all_steps=all_steps, current_usecase=usecase, current_step=current_step_for_bc, current_area=current_area_for_bc)
 
-    # Context for breadcrumbs
-    current_step_for_bc = usecase.process_step if usecase else None
-    current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
 
-    response = render_template(
-        'usecase_detail.html',
-        title=f"Use Case: {usecase.name}",
-        usecase=usecase,
-        all_areas=all_areas,
-        all_steps=all_steps,
-        other_usecases=other_usecases,
-        current_usecase=usecase,           # For breadcrumbs
-        current_step=current_step_for_bc,  # For breadcrumbs
-        current_area=current_area_for_bc   # For breadcrumbs
-    )
+        usecase.raw_content = request.form.get('raw_content', '').strip() or None
+        usecase.summary = request.form.get('summary', '').strip() or None
+        usecase.inspiration = request.form.get('inspiration', '').strip() or None
+
+        if not usecase.name or not usecase.bi_id or not usecase.process_step_id:
+            flash("Use Case Name, BI_ID, and Process Step are required.", "danger")
+        elif usecase.priority is not None and not (1 <= usecase.priority <= 4):
+            flash("Priority must be between 1 and 4, or empty.", "danger")
+        else:
+            if usecase.bi_id != original_bi_id:
+                existing_uc = session.query(UseCase).filter(UseCase.bi_id == usecase.bi_id, UseCase.id != usecase_id).first()
+                if existing_uc:
+                    flash(f"Another use case with BI_ID '{usecase.bi_id}' already exists.", "danger")
+                    SessionLocal.remove()
+                    current_step_for_bc = usecase.process_step
+                    current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+                    return render_template('edit_usecase.html', title=f"Edit Use Case: {usecase.name}", usecase=usecase, all_steps=all_steps, current_usecase=usecase, current_step=current_step_for_bc, current_area=current_area_for_bc)
+            
+            try:
+                session.commit()
+                flash("Use Case updated successfully!", "success")
+                SessionLocal.remove()
+                return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
+            except IntegrityError as e:
+                session.rollback()
+                if 'priority_range_check' in str(e):
+                     flash("Priority must be between 1 and 4, or empty.", "danger")
+                else:
+                    flash("Database error: Could not update use case. BI_ID might already exist or step is invalid.", "danger")
+            except Exception as e:
+                session.rollback()
+                flash(f"An unexpected error occurred: {e}", "danger")
+                print(f"Error updating use case {usecase_id}: {e}")
+    
     SessionLocal.remove()
-    return response
+    current_step_for_bc = usecase.process_step
+    current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+    return render_template('edit_usecase.html', title=f"Edit Use Case: {usecase.name}", usecase=usecase, all_steps=all_steps, current_usecase=usecase, current_step=current_step_for_bc, current_area=current_area_for_bc)
 
-# Add other use case related routes below (e.g., list, create, edit, delete)
-# ...
+
+@usecase_routes.route('/<int:usecase_id>/delete', methods=['POST'])
+@login_required
+def delete_usecase(usecase_id):
+    session = SessionLocal()
+    usecase = session.query(UseCase).options(joinedload(UseCase.process_step)).get(usecase_id)
+    redirect_url = url_for('index')
+
+    if usecase is None:
+        flash(f"Use Case with ID {usecase_id} not found.", "warning")
+    else:
+        step_id_for_redirect = usecase.process_step_id
+        uc_name = usecase.name
+        try:
+            session.delete(usecase)
+            session.commit()
+            flash(f"Use Case '{uc_name}' deleted successfully.", "success")
+            if step_id_for_redirect:
+                redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
+        except Exception as e:
+            session.rollback()
+            flash(f"Error deleting use case: {e}", "danger")
+            print(f"Error deleting use case {usecase_id}: {e}")
+            if usecase.process_step_id: 
+                 redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
+    
+    SessionLocal.remove()
+    return redirect(redirect_url)

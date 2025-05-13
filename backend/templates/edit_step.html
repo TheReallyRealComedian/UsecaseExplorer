@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="edit-step-page">
+    <h1>{{ title }}</h1>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">Edit Process Step Details</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="name" class="form-label">Step Name:</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ step.name }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="bi_id" class="form-label">Business ID (BI_ID):</label>
+                        <input type="text" class="form-control" id="bi_id" name="bi_id" value="{{ step.bi_id }}" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="area_id" class="form-label">Parent Area:</label>
+                    <select class="form-select" id="area_id" name="area_id" required>
+                        {% for area_opt in all_areas %}
+                            <option value="{{ area_opt.id }}" {% if step.area_id == area_opt.id %}selected{% endif %}>
+                                {{ area_opt.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="step_description" class="form-label">Short Description:</label>
+                    <textarea class="form-control" id="step_description" name="step_description" rows="3">{{ step.step_description | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="vision_statement" class="form-label">Vision Statement:</label>
+                    <textarea class="form-control" id="vision_statement" name="vision_statement" rows="3">{{ step.vision_statement | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="what_is_actually_done" class="form-label">What is Actually Done:</label>
+                    <textarea class="form-control" id="what_is_actually_done" name="what_is_actually_done" rows="3">{{ step.what_is_actually_done | default('', true) }}</textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="in_scope" class="form-label">In Scope:</label>
+                        <textarea class="form-control" id="in_scope" name="in_scope" rows="4">{{ step.in_scope | default('', true) }}</textarea>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="out_of_scope" class="form-label">Out of Scope:</label>
+                        <textarea class="form-control" id="out_of_scope" name="out_of_scope" rows="4">{{ step.out_of_scope | default('', true) }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="interfaces_text" class="form-label">Interfaces:</label>
+                    <textarea class="form-control" id="interfaces_text" name="interfaces_text" rows="3">{{ step.interfaces_text | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="pain_points" class="form-label">Pain Points:</label>
+                    <textarea class="form-control" id="pain_points" name="pain_points" rows="3">{{ step.pain_points | default('', true) }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="targets_text" class="form-label">Targets:</label>
+                    <textarea class="form-control" id="targets_text" name="targets_text" rows="3">{{ step.targets_text | default('', true) }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="summary" class="form-label">Generic Summary:</label>
+                    <textarea class="form-control" id="summary" name="summary" rows="3">{{ step.summary | default('', true) }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="raw_content" class="form-label">Raw Content:</label>
+                    <textarea class="form-control" id="raw_content" name="raw_content" rows="5">{{ step.raw_content | default('', true) }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

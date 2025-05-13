@@ -4,7 +4,15 @@
 
 {% block content %}
 <div class="step-detail-page">
-    <h1>Process Step: {{ step.name }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Process Step: {{ step.name }}</h1>
+        <div>
+            <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-primary">Edit Step</a>
+            <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this process step and all its use cases? This action cannot be undone.');">
+                <button type="submit" class="btn btn-sm btn-danger">Delete Step</button>
+            </form>
+        </div>
+    </div>
     <p class="text-color-light mb-3">Detailed information for Process Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}</p>
 
     <div class="card mb-3">
@@ -12,7 +20,7 @@
             <h2 class="card-title">Step Information</h2>
         </div>
         <div class="card-body">
-            <dl class="usecase-detail-page-dl"> {# Changed to a more generic class or use the existing one if it fits well #}
+             <dl class="usecase-detail-page-dl">
                 <dt>Name:</dt>
                 <dd>{{ step.name }}</dd>
 
@@ -28,14 +36,14 @@
                     {% endif %}
                 </dd>
 
+                {% if step.step_description %}
+                <dt>Short Description:</dt>
+                <dd><p>{{ step.step_description | nl2br }}</p></dd>
+                {% endif %}
+
                 {% if step.vision_statement %}
                 <dt>Vision Statement:</dt>
                 <dd><pre>{{ step.vision_statement }}</pre></dd>
-                {% endif %}
-
-                {% if step.step_description %} {# Existing "Short Description" #}
-                <dt>Short Description:</dt>
-                <dd><p>{{ step.step_description | nl2br }}</p></dd> {# Using nl2br for paragraph-like text #}
                 {% endif %}
 
                 {% if step.what_is_actually_done %}
@@ -68,12 +76,12 @@
                 <dd><pre>{{ step.targets_text }}</pre></dd>
                 {% endif %}
 
-                {% if step.summary %} {# Existing summary, if you still use it #}
+                {% if step.summary %}
                 <dt>Generic Summary:</dt>
                 <dd><p>{{ step.summary | nl2br }}</p></dd>
                 {% endif %}
 
-                {% if step.raw_content %} {# Existing raw_content, useful for full original text #}
+                {% if step.raw_content %}
                 <dt>Raw Content:</dt>
                 <dd><pre>{{ step.raw_content }}</pre></dd>
                 {% endif %}

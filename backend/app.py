@@ -1,17 +1,13 @@
 # backend/app.py
 import os
 from flask import Flask, render_template, redirect, url_for, flash
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker, joinedload
+from sqlalchemy.orm import joinedload # Kept for use in index route
 from flask_login import LoginManager, current_user
 import markupsafe # For the nl2br filter
 
 from .config import get_config
 from .models import Base, User, Area, ProcessStep, UseCase
-
-# Database setup
-SessionLocal = scoped_session(sessionmaker())
-engine = None
+from .db import SessionLocal, init_engine as init_db_engine # Updated import
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -27,24 +23,21 @@ def load_user(user_id):
     except (ValueError, TypeError):
         return None
 
-    session = SessionLocal()
+    session = SessionLocal() # SessionLocal is now imported from .db
     try:
         user = session.query(User).get(user_id)
         return user
     except Exception as e:
         print(f"Error loading user {user_id}: {e}")
         return None
-    # No finally needed here; teardown_request handles removal
-
+    finally:
+        SessionLocal.remove() # Ensure session is removed as per CHANGE
 
 # --- CUSTOM JINJA FILTER ---
 def nl2br(value):
     """Converts newlines in a string to HTML <br> tags."""
     if value is None:
         return ''
-    # Ensure the value is escaped before replacing newlines to prevent XSS
-    # if it contains user-provided HTML. If it's plain text, simple replace is fine.
-    # For safety with potentially complex text, markupsafe.escape is good.
     escaped_value = markupsafe.escape(value)
     return markupsafe.Markup(escaped_value.replace('\n', '<br>\n'))
 
@@ -67,27 +60,24 @@ def create_app():
     app.config.from_object(get_config())
     login_manager.init_app(app)
 
-    # --- REGISTER CUSTOM FILTER ---
     app.jinja_env.filters['nl2br'] = nl2br
 
-    global engine
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
-    if not db_url:
-        raise ValueError("SQLALCHEMY_DATABASE_URI is not set in the configuration!")
-    print("Attempting to connect to database using URI from config.")
-    engine = create_engine(db_url)
-
-    SessionLocal.configure(bind=engine)
+    # Initialize the engine using the function from db.py
+    # This also configures SessionLocal in db.py
+    current_engine = init_db_engine(db_url)
 
     try:
-        with engine.connect() as connection:
+        # Use the returned engine from init_db_engine
+        with current_engine.connect() as connection:
             print("Database connection successful!")
     except Exception as e:
         print(f"Database connection failed: {e}")
+        # Potentially raise a more critical error or exit if DB is essential for startup
 
     @app.teardown_request
     def remove_session(exception=None):
-        SessionLocal.remove()
+        SessionLocal.remove() # SessionLocal is imported from .db
 
     print("Importing and registering blueprints...")
     from .routes.auth_routes import auth_routes
@@ -109,7 +99,7 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            session = SessionLocal()
+            session = SessionLocal() # SessionLocal from .db
             areas = []
             try:
                 areas = session.query(Area).options(
@@ -118,9 +108,7 @@ def create_app():
             except Exception as e:
                 print(f"Error querying areas with steps and use cases: {e}")
                 flash("Could not load necessary data from the database.", "danger")
-            finally:
-                SessionLocal.remove()
-
+            # The finally block with SessionLocal.remove() is handled by @app.teardown_request
             return render_template('index.html', title='Home', areas=areas)
         else:
             return redirect(url_for('auth.login'))
@@ -130,12 +118,11 @@ def create_app():
     def debug_check():
         print("Accessing /debug-check route")
         results = {"status": "success", "checks": {}}
+        session_for_debug = SessionLocal() # SessionLocal from .db, create once for this route
         try:
-            # Test relative imports needed by this app context
             from .config import Config # noqa: F401 (unused import)
             results["checks"]["config_import"] = "OK"
-            # Renamed to avoid potential conflict if User model is used later in this function
-            from .models import User as DebugUser # noqa: F401 (unused import)
+            from .models import User as DebugUser # noqa: F401 (unused import), aliased
             results["checks"]["models_import"] = "OK"
 
             # Test access to blueprint objects AFTER registration
@@ -147,47 +134,47 @@ def create_app():
             results["checks"]["relevance_blueprint_registered"] = relevance_bp_registered
             llm_bp_registered = app.blueprints.get('llm') is not None
             results["checks"]["llm_blueprint_registered"] = llm_bp_registered
-            area_bp_registered = app.blueprints.get('areas') is not None # Added check for areas
+            area_bp_registered = app.blueprints.get('areas') is not None
             results["checks"]["area_blueprint_registered"] = area_bp_registered
-            step_bp_registered = app.blueprints.get('steps') is not None # Added check for steps
+            step_bp_registered = app.blueprints.get('steps') is not None
             results["checks"]["step_blueprint_registered"] = step_bp_registered
 
             # Test config access
             secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
-            openai_key_present = 'OPENAI_API_KEY' in app.config and bool(app.config.get('OPENAI_API_KEY'))
+            openai_key_present = 'OPENAI_API_KEY' in app.config and \
+                                 bool(app.config.get('OPENAI_API_KEY'))
             results["checks"]["secret_key_loaded"] = secret_key_present
             results["checks"]["db_url_loaded"] = db_url_present
             results["checks"]["openai_key_loaded"] = openai_key_present
 
-            # Verify URL generation for known registered routes
+
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                list_areas_url = url_for('areas.list_areas') # Check for an area route
+                list_areas_url = url_for('areas.list_areas')
                 results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
-
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
 
             try:
-                # Using SessionLocal() ensures teardown is handled
-                user_count = SessionLocal().query(User).count()
-                results["checks"]["db_connection_request_context"] = f"OK (User count: {user_count})"
-                SessionLocal.remove() # Manually remove session used just for count
+                # Use the session instance created at the start of the route
+                user_count = session_for_debug.query(User).count()
+                results["checks"]["db_connection_request_context"] = \
+                    f"OK (User count: {user_count})"
             except Exception as db_err:
                 results["checks"]["db_connection_request_context"] = f"FAILED ({db_err})"
                 results["status"] = "warning"
-
-
         except Exception as e:
             results["status"] = "error"
             results["message"] = f"Debug check failed: {e}"
             results["error_type"] = type(e).__name__
             print(f"Error in /debug-check: {e}")
             return results, 500
+        finally:
+            SessionLocal.remove() # Remove the session used for debug_check
 
         return results
 
