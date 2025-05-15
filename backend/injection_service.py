@@ -314,7 +314,7 @@ def process_usecase_file(file_stream):
     success = False
 
     try:
-        print("Processing use case file") 
+        print("Processing use case file")
         step_lookup = {
             step.bi_id: step.id
             for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()
@@ -333,13 +333,14 @@ def process_usecase_file(file_stream):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
         for item in data:
+            # Validate required fields format and presence
             if not (isinstance(item, dict) and
                     all(k in item for k in ('bi_id', 'name', 'process_step_bi_id')) and
                     isinstance(item['bi_id'], str) and item['bi_id'].strip() and
                     isinstance(item['name'], str) and item['name'].strip() and
                     isinstance(item['process_step_bi_id'], str) and item['process_step_bi_id'].strip()):
                 skipped_invalid_format += 1
-                continue
+                continue  # Skip if required fields are missing or empty or not strings
 
             uc_bi_id = item['bi_id'].strip()
             name = item['name'].strip()
@@ -361,7 +362,7 @@ def process_usecase_file(file_stream):
             if priority_str is not None:
                 try:
                     priority_val = int(priority_str)
-                    if 1 <= priority_val <= 4: 
+                    if 1 <= priority_val <= 4:
                         priority = priority_val
                     else:
                         print(f"Skipping item with invalid priority value '{priority_str}': {item}")
@@ -372,6 +373,48 @@ def process_usecase_file(file_stream):
                     skipped_invalid_format += 1
                     continue
             
+            # Extract New Fields
+            wave = item.get('wave')
+            effort_level = item.get('effort')
+            status = item.get('status')
+            business_problem_solved = item.get('BUSINESS PROBLEM SOLVED')
+            target_solution_description = item.get('TARGET / SOLUTION DESCRIPTION')
+            technologies_text = item.get('TECHNOLOGIES')
+            requirements = item.get('REQUIREMENTS')
+            relevants_text = item.get('RELEVANTS')
+            reduction_time_transfer = item.get('REDUCTION TIME FOR PRODUCT TRANSFER')
+            reduction_time_launches = item.get('REDUCTION TIME FOR PRODUCT LAUNCHES')
+            reduction_costs_supply = item.get('REDUCTION OF TOTAL COSTS OF SUPPLY')
+            quality_improvement_quant = item.get('QUALITY IMPROVEMENT')
+            ideation_notes = item.get('Original notes from ideation')
+            further_ideas = item.get('Further ideas/ input (Stickers, pictures, files, ...)')
+            effort_quantification = item.get('Effort description & quantification')
+            potential_quantification = item.get('Potential description & quantification')
+            dependencies_text = item.get('Redundancies & Dependencies')
+            contact_persons_text = item.get('Contact persons for further detailing')
+            related_projects_text = item.get('Related ongoing projects (incl. contact person)')
+
+            # Validate new text fields (ensure string or None)
+            if wave is not None and not isinstance(wave, str): wave = None
+            if effort_level is not None and not isinstance(effort_level, str): effort_level = None
+            if status is not None and not isinstance(status, str): status = None
+            if business_problem_solved is not None and not isinstance(business_problem_solved, str): business_problem_solved = None
+            if target_solution_description is not None and not isinstance(target_solution_description, str): target_solution_description = None
+            if technologies_text is not None and not isinstance(technologies_text, str): technologies_text = None
+            if requirements is not None and not isinstance(requirements, str): requirements = None
+            if relevants_text is not None and not isinstance(relevants_text, str): relevants_text = None
+            if reduction_time_transfer is not None and not isinstance(reduction_time_transfer, str): reduction_time_transfer = None
+            if reduction_time_launches is not None and not isinstance(reduction_time_launches, str): reduction_time_launches = None
+            if reduction_costs_supply is not None and not isinstance(reduction_costs_supply, str): reduction_costs_supply = None
+            if quality_improvement_quant is not None and not isinstance(quality_improvement_quant, str): quality_improvement_quant = None
+            if ideation_notes is not None and not isinstance(ideation_notes, str): ideation_notes = None
+            if further_ideas is not None and not isinstance(further_ideas, str): further_ideas = None
+            if effort_quantification is not None and not isinstance(effort_quantification, str): effort_quantification = None
+            if potential_quantification is not None and not isinstance(potential_quantification, str): potential_quantification = None
+            if dependencies_text is not None and not isinstance(dependencies_text, str): dependencies_text = None
+            if contact_persons_text is not None and not isinstance(contact_persons_text, str): contact_persons_text = None
+            if related_projects_text is not None and not isinstance(related_projects_text, str): related_projects_text = None
+
             if uc_bi_id in existing_uc_bi_ids:
                 skipped_duplicate_uc_bi_id += 1
                 if uc_bi_id not in duplicate_uc_bi_ids:
@@ -385,10 +428,41 @@ def process_usecase_file(file_stream):
                 continue
 
             process_step_id = step_lookup[process_step_bi_id]
+            
             new_uc = UseCase(
-                bi_id=uc_bi_id, name=name, process_step_id=process_step_id,
-                priority=priority, raw_content=raw_content,
-                summary=summary, inspiration=inspiration
+                bi_id=uc_bi_id, 
+                name=name, 
+                process_step_id=process_step_id,
+                priority=priority, 
+                raw_content=raw_content,
+                summary=summary, 
+                inspiration=inspiration,
+                # New fields
+                wave=wave,
+                effort_level=effort_level,
+                status=status,
+                business_problem_solved=business_problem_solved,
+                target_solution_description=target_solution_description,
+                technologies_text=technologies_text,
+                requirements=requirements,
+                relevants_text=relevants_text,
+                reduction_time_transfer=reduction_time_transfer,
+                reduction_time_launches=reduction_time_launches,
+                reduction_costs_supply=reduction_costs_supply,
+                quality_improvement_quant=quality_improvement_quant,
+                ideation_notes=ideation_notes,
+                further_ideas=further_ideas,
+                effort_quantification=effort_quantification,
+                potential_quantification=potential_quantification,
+                dependencies_text=dependencies_text,
+                contact_persons_text=contact_persons_text,
+                related_projects_text=related_projects_text,
+                # LLM comments
+                llm_comment_1=None,
+                llm_comment_2=None,
+                llm_comment_3=None,
+                llm_comment_4=None,
+                llm_comment_5=None,
             )
             session.add(new_uc)
             existing_uc_bi_ids.add(uc_bi_id)
@@ -417,39 +491,23 @@ def process_usecase_file(file_stream):
             message += f" Missing Step IDs: {', '.join(missing_step_bi_ids)}."
 
     except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_file") 
+        print("JSON Decode Error in process_usecase_file")
         session.rollback()
         success = False
         message = "Invalid JSON format in the uploaded file."
-        added_count = 0
-        skipped_invalid_format = 0
-        skipped_duplicate_uc_bi_id = 0
-        skipped_missing_step = 0
-        duplicate_uc_bi_ids = []
-        missing_step_bi_ids = []
     except ValueError as ve:
         session.rollback()
         success = False
         message = f"Error: {ve}"
-        added_count = 0
-        skipped_invalid_format = 0
-        skipped_duplicate_uc_bi_id = 0
-        skipped_missing_step = 0
-        duplicate_uc_bi_ids = []
-        missing_step_bi_ids = []
     except Exception as e:
-        traceback.print_exc() 
+        traceback.print_exc()
         session.rollback()
         success = False
         message = f"An error occurred: {str(e)}"
-        added_count = 0
-        skipped_invalid_format = 0
-        skipped_duplicate_uc_bi_id = 0
-        skipped_missing_step = 0
-        duplicate_uc_bi_ids = []
-        missing_step_bi_ids = []
     finally:
-        SessionLocal.remove()
+        if session.is_active: # Ensure session is active before trying to remove, though remove should handle it
+             SessionLocal.remove()
+
 
     return {
         "success": success,

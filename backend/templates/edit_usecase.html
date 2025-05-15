@@ -39,12 +39,108 @@
                         <input type="number" class="form-control" id="priority" name="priority" value="{{ usecase.priority | default('', true) }}" min="1" max="4">
                     </div>
                 </div>
-                
+
+                <h3>Additional Details</h3> {# Optional grouping #}
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="wave" class="form-label">Wave:</label>
+                        <input type="text" class="form-control" id="wave" name="wave" value="{{ usecase.wave | default('', true) }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="status" class="form-label">Status:</label>
+                        <input type="text" class="form-control" id="status" name="status" value="{{ usecase.status | default('', true) }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="effort_level" class="form-label">Effort Level:</label>
+                        <input type="text" class="form-control" id="effort_level" name="effort_level" value="{{ usecase.effort_level | default('', true) }}">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="reduction_time_transfer" class="form-label">Time Reduction (Transfer):</label>
+                        <input type="text" class="form-control" id="reduction_time_transfer" name="reduction_time_transfer" value="{{ usecase.reduction_time_transfer | default('', true) }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="reduction_time_launches" class="form-label">Time Reduction (Launches):</label>
+                        <input type="text" class="form-control" id="reduction_time_launches" name="reduction_time_launches" value="{{ usecase.reduction_time_launches | default('', true) }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="reduction_costs_supply" class="form-label">Cost Reduction (Supply):</label>
+                        <input type="text" class="form-control" id="reduction_costs_supply" name="reduction_costs_supply" value="{{ usecase.reduction_costs_supply | default('', true) }}">
+                    </div>
+                     <div class="col-md-3 mb-3">
+                        <label for="quality_improvement_quant" class="form-label">Quality Improvement:</label>
+                        <input type="text" class="form-control" id="quality_improvement_quant" name="quality_improvement_quant" value="{{ usecase.quality_improvement_quant | default('', true) }}">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="business_problem_solved" class="form-label">Business Problem Solved:</label>
+                    <textarea class="form-control" id="business_problem_solved" name="business_problem_solved" rows="5">{{ usecase.business_problem_solved | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="target_solution_description" class="form-label">Target / Solution Description:</label>
+                    <textarea class="form-control" id="target_solution_description" name="target_solution_description" rows="5">{{ usecase.target_solution_description | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="technologies_text" class="form-label">Technologies:</label>
+                    <textarea class="form-control" id="technologies_text" name="technologies_text" rows="3">{{ usecase.technologies_text | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="requirements" class="form-label">Requirements:</label>
+                    <textarea class="form-control" id="requirements" name="requirements" rows="5">{{ usecase.requirements | default('', true) }}</textarea>
+                </div>
+
+                 <div class="mb-3">
+                    <label for="relevants_text" class="form-label">Relevants (Tags):</label>
+                    <input type="text" class="form-control" id="relevants_text" name="relevants_text" value="{{ usecase.relevants_text | default('', true) }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="ideation_notes" class="form-label">Ideation Notes:</label>
+                    <textarea class="form-control" id="ideation_notes" name="ideation_notes" rows="5">{{ usecase.ideation_notes | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="further_ideas" class="form-label">Further Ideas:</label>
+                    <textarea class="form-control" id="further_ideas" name="further_ideas" rows="5">{{ usecase.further_ideas | default('', true) }}</textarea>
+                </div>
+
+                 <div class="mb-3">
+                    <label for="effort_quantification" class="form-label">Effort Quantification:</label>
+                    <textarea class="form-control" id="effort_quantification" name="effort_quantification" rows="5">{{ usecase.effort_quantification | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="potential_quantification" class="form-label">Potential Quantification:</label>
+                    <textarea class="form-control" id="potential_quantification" name="potential_quantification" rows="5">{{ usecase.potential_quantification | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="dependencies_text" class="form-label">Redundancies & Dependencies:</label>
+                    <textarea class="form-control" id="dependencies_text" name="dependencies_text" rows="5">{{ usecase.dependencies_text | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="contact_persons_text" class="form-label">Contact Persons:</label>
+                    <textarea class="form-control" id="contact_persons_text" name="contact_persons_text" rows="5">{{ usecase.contact_persons_text | default('', true) }}</textarea>
+                </div>
+
+                 <div class="mb-3">
+                    <label for="related_projects_text" class="form-label">Related Projects:</label>
+                    <textarea class="form-control" id="related_projects_text" name="related_projects_text" rows="5">{{ usecase.related_projects_text | default('', true) }}</textarea>
+                </div>
+
                 <div class="mb-3">
                     <label for="summary" class="form-label">Summary:</label>
                     <textarea class="form-control" id="summary" name="summary" rows="3">{{ usecase.summary | default('', true) }}</textarea>
                 </div>
-                
+
                 <div class="mb-3">
                     <label for="inspiration" class="form-label">Inspiration:</label>
                     <textarea class="form-control" id="inspiration" name="inspiration" rows="3">{{ usecase.inspiration | default('', true) }}</textarea>

@@ -80,6 +80,104 @@
                     {% endif %}
                 </dd>
 
+                {# New Fields inserted from CHANGE block #}
+                {% if usecase.wave %}
+                <dt>Wave:</dt>
+                <dd>{{ usecase.wave }}</dd>
+                {% endif %}
+
+                {% if usecase.status %}
+                <dt>Status:</dt>
+                <dd>{{ usecase.status }}</dd>
+                {% endif %}
+
+                {% if usecase.effort_level %}
+                <dt>Effort:</dt>
+                <dd>{{ usecase.effort_level }}</dd>
+                {% endif %}
+
+                {% if usecase.relevants_text %}
+                <dt>Relevants (Tags):</dt>
+                <dd>{{ usecase.relevants_text }}</dd>
+                {% endif %}
+
+                {% if usecase.reduction_time_transfer %}
+                <dt>Time Reduction (Transfer):</dt>
+                <dd>{{ usecase.reduction_time_transfer }}</dd>
+                {% endif %}
+
+                {% if usecase.reduction_time_launches %}
+                <dt>Time Reduction (Launches):</dt>
+                <dd>{{ usecase.reduction_time_launches }}</dd>
+                {% endif %}
+
+                {% if usecase.reduction_costs_supply %}
+                <dt>Cost Reduction (Supply):</dt>
+                <dd>{{ usecase.reduction_costs_supply }}</dd>
+                {% endif %}
+
+                 {% if usecase.quality_improvement_quant %}
+                <dt>Quality Improvement:</dt>
+                <dd>{{ usecase.quality_improvement_quant }}</dd>
+                {% endif %}
+
+                {# Text/Preformatted Fields #}
+                {% if usecase.business_problem_solved %}
+                <dt>Business Problem Solved:</dt>
+                <dd><pre>{{ usecase.business_problem_solved | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                 {% if usecase.target_solution_description %}
+                <dt>Target / Solution:</dt>
+                <dd><pre>{{ usecase.target_solution_description | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.technologies_text %}
+                <dt>Technologies:</dt>
+                <dd><pre>{{ usecase.technologies_text | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.requirements %}
+                <dt>Requirements:</dt>
+                <dd><pre>{{ usecase.requirements | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.ideation_notes %}
+                <dt>Ideation Notes:</dt>
+                <dd><pre>{{ usecase.ideation_notes | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.further_ideas %}
+                <dt>Further Ideas:</dt>
+                <dd><pre>{{ usecase.further_ideas | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.effort_quantification %}
+                <dt>Effort Quantification:</dt>
+                <dd><pre>{{ usecase.effort_quantification | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.potential_quantification %}
+                <dt>Potential Quantification:</dt>
+                <dd><pre>{{ usecase.potential_quantification | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.dependencies_text %}
+                <dt>Dependencies:</dt>
+                <dd><pre>{{ usecase.dependencies_text | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.contact_persons_text %}
+                <dt>Contacts:</dt>
+                <dd><pre>{{ usecase.contact_persons_text | default('N/A', true) }}</pre></dd>
+                {% endif %}
+
+                {% if usecase.related_projects_text %}
+                <dt>Related Projects:</dt>
+                <dd><pre>{{ usecase.related_projects_text | default('N/A', true) }}</pre></dd>
+                {% endif %}
+                {# End of New Fields #}
+
                 <dt>LLM Comment 1:</dt> <dd>{{ usecase.llm_comment_1 | default('N/A', true) }}</dd>
                 <dt>LLM Comment 2:</dt> <dd>{{ usecase.llm_comment_2 | default('N/A', true) }}</dd>
                 <dt>LLM Comment 3:</dt> <dd>{{ usecase.llm_comment_3 | default('N/A', true) }}</dd>

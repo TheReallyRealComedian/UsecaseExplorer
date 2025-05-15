@@ -1,6 +1,6 @@
 -- init.sql
 
--- Drop tables in reverse order of dependency if they exist (useful for development/testing)
+-- Drop tables in reverse order of dependency if they exist
 DROP TABLE IF EXISTS usecase_usecase_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_step_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_area_relevance CASCADE;
@@ -8,8 +8,6 @@ DROP TABLE IF EXISTS use_cases CASCADE;
 DROP TABLE IF EXISTS process_steps CASCADE;
 DROP TABLE IF EXISTS areas CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-
--- (Optional: CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; -- If you plan to use UUIDs later)
 
 -- Create the 'users' table for authentication
 CREATE TABLE users (
@@ -43,13 +41,14 @@ CREATE TABLE process_steps (
     what_is_actually_done TEXT,
     pain_points TEXT,
     targets_text TEXT,
+    -- Add the missing LLM comment columns here
     llm_comment_1 TEXT,
     llm_comment_2 TEXT,
     llm_comment_3 TEXT,
     llm_comment_4 TEXT,
     llm_comment_5 TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP -- Handled by SQLAlchemy onupdate or optional DB trigger
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create the 'use_cases' table
@@ -62,13 +61,34 @@ CREATE TABLE use_cases (
     raw_content TEXT,
     summary TEXT,
     inspiration TEXT,
-    llm_comment_1 TEXT,
+    -- New Fields Based on Documentation Structure
+    wave VARCHAR(255),
+    effort_level VARCHAR(255),
+    status VARCHAR(255),
+    business_problem_solved TEXT,
+    target_solution_description TEXT,
+    technologies_text TEXT,
+    requirements TEXT,
+    relevants_text TEXT,
+    reduction_time_transfer VARCHAR(255),
+    reduction_time_launches VARCHAR(255),
+    reduction_costs_supply VARCHAR(255),
+    quality_improvement_quant VARCHAR(255),
+    ideation_notes TEXT,
+    further_ideas TEXT,
+    effort_quantification TEXT,
+    potential_quantification TEXT,
+    dependencies_text TEXT,
+    contact_persons_text TEXT,
+    related_projects_text TEXT,
+    -- End New Fields
+    llm_comment_1 TEXT, -- These were already here in use_cases, which is fine
     llm_comment_2 TEXT,
     llm_comment_3 TEXT,
     llm_comment_4 TEXT,
     llm_comment_5 TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- Handled by SQLAlchemy onupdate or optional DB trigger
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT priority_range_check CHECK (priority IS NULL OR (priority >= 1 AND priority <= 4))
 );
 
@@ -80,8 +100,8 @@ CREATE TABLE usecase_area_relevance (
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- Handled by SQLAlchemy onupdate or optional DB trigger
-    UNIQUE (source_usecase_id, target_area_id) -- Constraint name defined by SQLAlchemy model if not specified here
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (source_usecase_id, target_area_id)
 );
 
 -- Create the 'usecase_step_relevance' table
@@ -92,8 +112,8 @@ CREATE TABLE usecase_step_relevance (
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- Handled by SQLAlchemy onupdate or optional DB trigger
-    UNIQUE (source_usecase_id, target_process_step_id) -- Constraint name defined by SQLAlchemy model
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (source_usecase_id, target_process_step_id)
 );
 
 -- Create the 'usecase_usecase_relevance' table
@@ -104,12 +124,12 @@ CREATE TABLE usecase_usecase_relevance (
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- Handled by SQLAlchemy onupdate or optional DB trigger
-    CHECK (source_usecase_id != target_usecase_id), -- Constraint name defined by SQLAlchemy model
-    UNIQUE (source_usecase_id, target_usecase_id) -- Constraint name defined by SQLAlchemy model
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CHECK (source_usecase_id != target_usecase_id),
+    UNIQUE (source_usecase_id, target_usecase_id)
 );
 
--- Add indexes for performance on frequently queried columns (Good practice)
+-- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_areas_name ON areas (name);
 CREATE INDEX IF NOT EXISTS idx_process_steps_area_id ON process_steps (area_id);
@@ -124,8 +144,7 @@ CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_source_uc_id ON usecase_usecase_relevan
 CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_target_uc_id ON usecase_usecase_relevance (target_usecase_id);
 
 /*
--- Optional: Trigger for automatically updating updated_at on row modification (PostgreSQL specific)
--- This is generally not needed if SQLAlchemy's onupdate mechanism is used for all modifications.
+-- Optional: Trigger for automatically updating updated_at on row modification
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -139,5 +158,5 @@ CREATE TRIGGER set_process_steps_updated_at_timestamp
 BEFORE UPDATE ON process_steps
 FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
--- You would create similar triggers for other tables if desired.
+-- Similar triggers can be created for other tables if desired.
 */
