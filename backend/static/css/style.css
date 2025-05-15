@@ -1083,13 +1083,27 @@ form button[type="submit"]:hover,
     border-bottom-color: var(--raw-light-grey-300);
 }
 
-/* Remove old .usecase-detail-page dl specific styles if they conflict */
-/* It's better to use the new .info-list consistently */
-/*
-.usecase-detail-page dl,
-.usecase-detail-page dt,
-.usecase-detail-page dd {
-    /* Consider removing these if all DLs now use .info-list */
-    /* If kept, ensure they don't override .info-list undesirably */
-/* }
-*/
+/* --- LLM Data Prep Page --- */
+.llm-data-prep-page .card-title {
+    font-size: 1.15rem; /* Slightly smaller than main page card titles */
+}
+
+.llm-data-prep-page .form-select[multiple] {
+    min-height: 150px; /* Ensure multi-selects have a decent height */
+}
+
+.llm-data-prep-page .form-check-inline {
+    margin-right: 1.5rem; /* More space between checkboxes */
+    margin-bottom: 0.5rem;
+}
+
+.llm-data-prep-page .table th,
+.llm-data-prep-page .table td {
+    vertical-align: middle;
+}
+
+.llm-data-prep-page .table pre {
+    font-size: 0.85rem; /* Smaller pre in table */
+    max-height: 150px;
+    overflow-y: auto;
+}
