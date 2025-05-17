@@ -22,7 +22,7 @@
     --raw-green-dark: #4A7062;
     --raw-green-light: #D4E2DE;
 
-    /* Alert Colors (original values maintained as per request scope) */
+    /* Alert Colors */
     --raw-alert-success-text: #155724;
     --raw-alert-success-bg: #d4edda;
     --raw-alert-success-border: #c3e6cb;
@@ -39,8 +39,7 @@
     /* Shadow Color */
     --raw-shadow-color: rgba(0, 0, 0, 0.07);
 
-    /* --- Color Definitions END --- */
-    /* --- Variable Names START --- */
+    /* --- Variable Names --- */
 
     /* Theme Colors (Highlight) */
     --primary-color: var(--raw-green-primary);
@@ -53,7 +52,7 @@
     --left-panel-bg: var(--raw-dark-grey-panel);
     --card-bg: var(--raw-white);
     --header-bg: var(--raw-white);
-    --element-bg-light: var(--raw-light-grey-200);
+    --element-bg-light: var(--raw-light-grey-200); /* For search bars, code blocks, etc. */
 
     /* Text Colors */
     --text-color: var(--raw-dark-grey-200);
@@ -62,7 +61,7 @@
     --text-color-sidebar: var(--raw-panel-text);
     --text-color-sidebar-active: var(--raw-white);
     --text-color-on-primary: var(--raw-white);
-    --text-color-on-dark: var(--raw-white);
+    --text-color-on-dark: var(--raw-white); /* For text on dark backgrounds like buttons */
 
     /* Borders */
     --border-color: var(--raw-light-grey-300);
@@ -74,7 +73,7 @@
     /* Component Specific */
     --box-shadow: 0 2px 10px var(--raw-shadow-color);
     --border-radius: 8px;
-    --border-radius-sm: 4px; /* For smaller elements */
+    --border-radius-sm: 4px;
     --font-family: 'Inter', sans-serif;
 
     /* Breadcrumb variables */
@@ -117,7 +116,7 @@ body {
     color: var(--text-color);
     font-size: 14px;
     line-height: 1.5;
-    overflow-x: hidden;
+    overflow-x: hidden; /* Prevent horizontal scroll on body */
 }
 
 a {
@@ -146,7 +145,7 @@ ul {
     color: var(--text-color-sidebar);
     display: flex;
     flex-direction: column;
-    padding: 20px 0;
+    padding: 20px 0; /* Remove horizontal padding here, apply to children */
     flex-shrink: 0;
     height: 100vh;
     position: sticky;
@@ -154,7 +153,7 @@ ul {
 }
 
 .sidebar-header {
-    padding: 0 25px 20px 25px;
+    padding: 0 25px 20px 25px; /* Horizontal padding for header content */
     margin-bottom: 20px;
     border-bottom: 1px solid var(--sidebar-border-color);
 }
@@ -162,7 +161,7 @@ ul {
 .sidebar-header .logo {
     font-size: 1.4rem;
     font-weight: 700;
-    color: var(--text-color-sidebar-active);
+    color: var(--text-color-sidebar-active); /* Using specific variable for clarity */
 }
 
 .sidebar-menu {
@@ -173,13 +172,13 @@ ul {
 .sidebar-footer-menu li a {
     display: flex;
     align-items: center;
-    padding: 12px 25px;
+    padding: 12px 25px; /* Horizontal padding for menu items */
     color: var(--text-color-sidebar);
     transition: background-color 0.2s ease, color 0.2s ease;
     font-size: 0.95rem;
     font-weight: 500;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
-    margin-right: 15px;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0; /* Rounded on right */
+    margin-right: 15px; /* Space before sidebar edge for the rounded part */
 }
 
 .sidebar-menu li a i,
@@ -192,22 +191,21 @@ ul {
 
 .sidebar-menu li a:hover {
     background-color: var(--primary-color-light);
-    color: var(--primary-color);
+    color: var(--primary-color); /* Text color change on hover */
 }
 
 .sidebar-menu li.active a {
     background-color: var(--primary-color);
-    color: var(--text-color-on-primary);
+    color: var(--text-color-on-primary); /* Text color for active item */
     font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) inset;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) inset; /* Subtle inset shadow */
 }
 
-
 .sidebar-footer-menu {
-    margin-top: auto;
+    margin-top: auto; /* Pushes footer to bottom */
     padding-top: 15px;
     border-top: 1px solid var(--sidebar-border-color);
-    padding-bottom: 15px;
+    padding-bottom: 15px; /* Space at the very bottom */
 }
 
 /* Main Content Area Styles */
@@ -216,12 +214,14 @@ ul {
     display: flex;
     flex-direction: column;
     background-color: var(--main-content-bg);
+    overflow-x: hidden; /* Prevent main content from causing horizontal scroll */
 }
 
 /* Header Styles */
 .main-header {
     display: flex;
     align-items: center;
+    justify-content: space-between; /* Distribute space */
     padding: 15px 30px;
     background-color: var(--header-bg);
     border-bottom: 1px solid var(--border-color);
@@ -230,34 +230,29 @@ ul {
     top: 0;
     z-index: 1000;
     gap: 20px;
-    min-height: 64px;
+    min-height: 64px; /* Consistent header height */
 }
 
 /* Breadcrumbs Styles */
 .breadcrumbs {
     display: flex;
     align-items: center;
-    flex-grow: 1;
-    overflow: hidden;
+    flex-grow: 1; /* Allow breadcrumbs to take available space */
+    overflow: hidden; /* Hide overflow if too many items */
     white-space: nowrap;
 }
 
 .breadcrumb-item {
     background-color: var(--breadcrumb-default-bg);
     color: var(--breadcrumb-text-color);
-    padding: 8px calc(var(--breadcrumb-arrow-width) + 8px) 8px calc(var(--breadcrumb-arrow-width) + 12px);
-    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px);
-    clip-path: polygon(0% 0%,
-            calc(100% - var(--breadcrumb-arrow-width)) 0%,
-            100% 50%,
-            calc(100% - var(--breadcrumb-arrow-width)) 100%,
-            0% 100%,
-            var(--breadcrumb-arrow-width) 50%);
+    padding: 8px calc(var(--breadcrumb-arrow-width) + 8px) 8px calc(var(--breadcrumb-arrow-width) + 12px); /* Complex padding for shape */
+    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px); /* Negative margin to overlap arrows */
+    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%, var(--breadcrumb-arrow-width) 50%);
     position: relative;
     text-decoration: none;
     font-size: 0.85rem;
     line-height: 1.3;
-    height: 34px;
+    height: 34px; /* Fixed height for alignment */
     display: flex;
     align-items: center;
     transition: background-color 0.2s ease;
@@ -265,23 +260,19 @@ ul {
 
 .breadcrumb-item:hover {
     background-color: var(--breadcrumb-hover-bg);
-    z-index: 5;
+    z-index: 5; /* Ensure hovered item is on top */
 }
 
 .breadcrumb-item:first-child {
-    clip-path: polygon(0% 0%,
-            calc(100% - var(--breadcrumb-arrow-width)) 0%,
-            100% 50%,
-            calc(100% - var(--breadcrumb-arrow-width)) 100%,
-            0% 100%);
+    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%); /* Different shape for first item */
     padding-left: 15px;
     margin-left: 0;
 }
 
 .breadcrumb-item.active {
     background-color: var(--breadcrumb-active-bg);
-    color: var(--breadcrumb-text-color);
-    z-index: 10;
+    color: var(--breadcrumb-text-color); /* Ensure text remains readable */
+    z-index: 10; /* Active item on top */
 }
 
 .breadcrumb-item.active:hover {
@@ -296,7 +287,7 @@ ul {
 }
 
 .breadcrumb-item.disabled:hover {
-    background-color: var(--breadcrumb-disabled-bg);
+    background-color: var(--breadcrumb-disabled-bg); /* No hover effect for disabled */
 }
 
 .search-bar {
@@ -305,8 +296,8 @@ ul {
     background-color: var(--element-bg-light);
     padding: 8px 15px;
     border-radius: var(--border-radius);
-    width: 300px;
-    flex-shrink: 0;
+    width: 300px; /* Fixed width for search bar */
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .search-bar i {
@@ -327,11 +318,10 @@ ul {
     color: var(--text-color-light);
 }
 
-
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 15px; /* Space between action icons */
 }
 
 .icon-button {
@@ -340,43 +330,52 @@ ul {
     cursor: pointer;
     font-size: 1.3rem;
     color: var(--text-color-light);
+    transition: color 0.2s ease;
 }
 
 .icon-button:hover {
-    color: var(--text-color);
+    color: var(--text-color); /* Darken icon on hover */
 }
 
 /* Page Content Styles */
 .page-content {
-    padding: 30px; /* Original: 30px */
+    padding: 30px 40px; /* More horizontal padding for content */
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* Allow vertical scroll for content */
 }
 
 /* Card Styles */
 .card {
     background-color: var(--card-bg);
+    border: 1px solid var(--raw-light-grey-200); /* Softer border for cards */
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow); /* Original: var(--box-shadow) */
-    padding: 20px; /* Original: 20px, new card-body padding will handle content */
-    margin-bottom: 20px; /* Original: 20px */
+    box-shadow: var(--box-shadow);
+    margin-bottom: 30px; /* Increased space between cards */
+    /* padding: 20px; Removed, handled by card-header/card-body */
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px; /* Original: 15px */
-    padding-bottom: 10px; /* Original: 10px */
-    border-bottom: 1px solid var(--border-color); /* Original: 1px solid var(--border-color) */
+    padding: 15px 25px; /* Consistent padding */
+    margin-bottom: 0; /* Remove bottom margin, border will separate */
+    border-bottom: 1px solid var(--raw-light-grey-300); /* Use lighter border */
+    background-color: var(--raw-light-grey-100); /* Slight background for header */
 }
 
 .card-title {
-    font-size: 1.1rem; /* Original: 1.1rem */
-    font-weight: 600; /* Original: 600 */
+    font-size: 1.25rem; /* Larger card titles */
+    font-weight: 600;
+    color: var(--primary-color); /* Use theme color for title */
+    margin-bottom: 0; /* Remove default margin if any */
 }
 
-.card-link {
+.card-body {
+    padding: 25px; /* More padding inside card body */
+}
+
+.card-link { /* Used for "View All" or similar links in card headers */
     font-size: 0.85rem;
     color: var(--text-color-light);
     font-weight: 500;
@@ -390,10 +389,10 @@ ul {
 form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 15px; /* Space between form groups */
 }
 
-form div {
+form div { /* General form group styling */
     display: flex;
     flex-direction: column;
 }
@@ -401,6 +400,7 @@ form div {
 form label {
     margin-bottom: 5px;
     font-weight: 500;
+    color: var(--text-color);
 }
 
 form input[type="text"],
@@ -412,10 +412,22 @@ form select,
 form textarea {
     padding: 10px;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-sm); /* Smaller radius for form elements */
     font-size: 0.9rem;
     background-color: var(--white);
     color: var(--text-color);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+form input[type="text"]:focus,
+form input[type="password"]:focus,
+form input[type="email"]:focus,
+form input[type="number"]:focus,
+form select:focus,
+form textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem var(--primary-color-light);
+    outline: none;
 }
 
 form input[type="text"]::placeholder,
@@ -426,24 +438,25 @@ form textarea::placeholder {
     color: var(--text-color-light);
 }
 
-
 form input[type="checkbox"] {
-    margin-right: 5px;
+    margin-right: 8px; /* More space for checkbox */
     align-self: flex-start;
+    width: auto; /* Override potential 100% width */
+    height: auto; /* Override potential 100% height */
+    vertical-align: middle;
 }
 
-form div.checkbox-group label {
-    margin-bottom: 0;
-    font-weight: normal;
-}
-
-form div.checkbox-group {
+form div.checkbox-group { /* For inline checkbox and label */
     flex-direction: row;
     align-items: center;
 }
+form div.checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal; /* Normal weight for checkbox labels */
+}
 
 form textarea {
-    min-height: 80px;
+    min-height: 100px; /* Slightly taller default textarea */
     resize: vertical;
 }
 
@@ -453,12 +466,13 @@ form button[type="submit"],
     color: var(--text-color-on-primary);
     border: none;
     padding: 10px 20px;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-sm); /* Consistent radius */
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
     transition: background-color 0.2s ease;
-    align-self: flex-start;
+    align-self: flex-start; /* Buttons don't stretch full width by default */
+    text-align: center;
 }
 
 form button[type="submit"]:hover,
@@ -467,7 +481,7 @@ form button[type="submit"]:hover,
 }
 
 .btn-secondary {
-    background-color: var(--raw-medium-grey-200);
+    background-color: var(--raw-medium-grey-200); /* Using raw color for consistency */
     color: var(--white);
 }
 
@@ -475,6 +489,27 @@ form button[type="submit"]:hover,
     background-color: var(--raw-medium-grey-300);
 }
 
+.btn-danger {
+    background-color: var(--raw-alert-danger-text); /* Using a more prominent danger color */
+    color: var(--white);
+}
+.btn-danger:hover {
+    background-color: #c82333; /* Darker red */
+}
+
+.btn-info {
+    background-color: var(--raw-alert-info-text);
+    color: var(--white);
+}
+.btn-info:hover {
+    background-color: #138496; /* Darker info blue */
+}
+
+.btn-sm {
+    padding: 8px 15px;
+    font-size: 0.875rem;
+    border-radius: var(--border-radius-sm);
+}
 
 /* Flash Messages */
 .flash-messages {
@@ -485,7 +520,7 @@ form button[type="submit"]:hover,
     padding: 15px;
     margin-bottom: 15px;
     border: 1px solid transparent;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-sm); /* Consistent radius */
     font-size: 0.9rem;
 }
 
@@ -517,13 +552,11 @@ form button[type="submit"]:hover,
 .welcome-message {
     margin-bottom: 20px;
 }
-
 .welcome-message h1 {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 5px;
 }
-
 .welcome-message p {
     color: var(--text-color-light);
 }
@@ -531,7 +564,6 @@ form button[type="submit"]:hover,
 .data-section {
     margin-bottom: 30px;
 }
-
 .data-section h2 {
     font-size: 1.2rem;
     font-weight: 600;
@@ -539,156 +571,261 @@ form button[type="submit"]:hover,
     color: var(--primary-color);
 }
 
-.area-card {
+.area-card { /* Card specific to index page area display */
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
     margin-bottom: 20px;
-    border-left: 5px solid var(--primary-color);
+    border-left: 5px solid var(--primary-color); /* Accent border */
 }
-
-.area-card h3 {
+.area-card h3 { /* Area name */
     font-size: 1.1rem;
     margin-bottom: 10px;
     font-weight: 600;
 }
-
-.area-card ul {
+.area-card ul { /* List of steps */
     padding-left: 20px;
     list-style: disc;
 }
-
-.area-card li {
+.area-card li { /* Individual step */
     margin-bottom: 8px;
 }
-
-.area-card strong {
+.area-card strong { /* Step name */
     font-weight: 500;
 }
-
-.area-card .step-details {
+.area-card .step-details { /* BI_ID etc. */
     font-size: 0.85rem;
     color: var(--text-color-light);
+    margin-left: 5px;
 }
-
-.area-card .usecase-list {
+.area-card .usecase-list { /* Nested list of use cases */
     padding-left: 25px;
     margin-top: 5px;
     list-style: circle;
 }
-
-.area-card .usecase-list li a {
+.area-card .usecase-list li a { /* Use case name */
     font-weight: 500;
 }
-
-.area-card .usecase-list .uc-details {
+.area-card .usecase-list .uc-details { /* Use case BI_ID */
     font-size: 0.8rem;
     color: var(--text-color-light);
     margin-left: 5px;
 }
-
-.area-card p em {
+.area-card p em { /* "No steps/use cases" message */
     color: var(--text-color-light);
     font-style: italic;
 }
 
+/* Detail Page Enhancements */
 
-/* Use Case Detail Styles - Old, consider removing if .info-list is used everywhere */
-/*
-.usecase-detail-page dl {
+/* General Page Title Structure */
+.page-content > .d-flex > h1, /* For titles like "Area: Name" */
+.page-content > h1 { /* For titles like "Data Injection" */
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--primary-color-dark);
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--primary-color-light);
+    letter-spacing: -0.5px;
+}
+
+/* Sub-description text below main titles */
+.page-content p.text-color-light,
+.page-content p.text-muted { /* Assuming text-muted is used for sub-descriptions */
+    color: var(--text-color-medium) !important; /* Ensure better contrast */
+    font-size: 0.95rem;
+    margin-top: -15px; /* Pull closer to title */
+    margin-bottom: 25px;
+}
+
+/* Definition Lists (dl.info-list) for details */
+.card-body dl.info-list {
     display: grid;
-    grid-template-columns: max-content auto;
-    gap: 10px 20px;
-    margin-bottom: 20px;
+    grid-template-columns: minmax(180px, max-content) auto; /* Increased label column width */
+    gap: 12px 20px; /* Adjusted gap */
+    margin-bottom: 0;
 }
-.usecase-detail-page dt {
+.card-body dl.info-list dt {
     font-weight: 600;
-    color: var(--text-color-light);
+    color: var(--raw-dark-grey-100);
+    font-size: 0.9rem;
+    padding-top: 3px; /* Align with first line of dd */
+    text-align: right;
+    padding-right: 15px;
 }
-.usecase-detail-page dd {
+.card-body dl.info-list dd {
     margin-left: 0;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    word-break: break-word;
 }
-
-.usecase-detail-page pre {
+.card-body dl.info-list dd a {
+    font-weight: 500;
+}
+.card-body dl.info-list dd pre, /* Preformatted text within dd */
+.relevance-section li.relevance-item pre { /* Also style pre in relevance items */
     background-color: var(--element-bg-light);
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.85rem;
-    max-height: 200px;
+    padding: 12px 15px;
+    border: 1px solid var(--raw-light-grey-200);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    max-height: 280px;
     overflow-y: auto;
     color: var(--text-color);
-}
-*/
-
-/* Styles for <pre> within <dd> on detail pages */
-/* This specific rule might be overridden by the new .card-body dd pre if elements adopt new classes */
-.step-detail-page dd pre,
-.usecase-detail-page dd pre {
-    background-color: var(--element-bg-light);
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    /* Consistent with theme */
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 0.85rem;
-    max-height: 300px;
-    /* Increased max-height */
-    overflow-y: auto;
     margin-top: 5px;
-    /* Added margin for spacing */
+    white-space: pre-wrap; /* Ensure wrapping */
+    word-break: break-word; /* Break long words */
+}
+
+/* Item Lists (ul.item-list) for lists of steps/use cases */
+.card-body ul.item-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+.card-body ul.item-list > li {
+    padding: 15px;
+    border-bottom: 1px dashed var(--raw-light-grey-200);
+    transition: background-color 0.2s ease;
+    border-radius: var(--border-radius-sm);
+}
+.card-body ul.item-list > li:last-child {
+    border-bottom: none;
+}
+.card-body ul.item-list > li:hover {
+    background-color: var(--primary-color-light);
+}
+.card-body ul.item-list > li:hover a {
+    color: var(--primary-color-dark);
+}
+.card-body ul.item-list .item-title a, /* For main link in list item */
+.card-body ul.item-list > li > a { /* If link is direct child */
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.05rem;
+    display: block;
+    margin-bottom: 4px;
+}
+.card-body ul.item-list .item-title a:hover,
+.card-body ul.item-list > li > a:hover {
+    color: var(--primary-color-dark);
+    text-decoration: none;
+}
+.card-body ul.item-list .item-meta, /* For BI_ID or other small text */
+.card-body ul.item-list small.text-muted {
+    font-size: 0.8rem;
+    color: var(--text-color-medium);
+    display: block;
+}
+
+/* Nested Use Case Lists (e.g., on Area Detail or Index) */
+.card-body ul.item-list ul.usecase-list {
+    padding-left: 25px;
+    margin-top: 10px;
+    list-style: none; /* Use custom styling or keep as is if `circle` from area-card is intended */
+}
+.card-body ul.item-list ul.usecase-list li {
+    padding: 8px 0;
+    border: none; /* No borders for sub-items */
+    font-size: 0.9rem;
+}
+.card-body ul.item-list ul.usecase-list li:hover {
+    background-color: transparent; /* No hover for sub-items */
+}
+.card-body ul.item-list ul.usecase-list li a {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+/* "No items found" messages */
+.card-body p.no-items-message, /* More specific class for these messages */
+.card-body p em { /* Fallback for existing `p em` */
+    color: var(--text-color-medium);
+    font-style: italic;
+    display: block;
+    padding: 15px 0;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+/* Action buttons (Edit/Delete) on detail pages */
+.page-content .d-flex.justify-content-between.align-items-center > div {
+    /* This targets the div holding Edit/Delete buttons next to page titles */
+    display: flex;
+    gap: 12px;
+}
+
+/* Relevance Section Styling */
+.relevance-section h2 { /* Main "Relevance Links" title */
+    font-size: 1.5rem;
+    color: var(--primary-color-dark);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--raw-light-grey-300);
+}
+.relevance-section .card .card-header .card-title { /* "Relevant Areas/Steps/Use Cases" in sub-cards */
     color: var(--text-color);
-    /* Ensure text is readable */
+    font-size: 1.1rem;
 }
-
-
-.relevance-section {
-    margin-top: 30px;
-}
-
-/* .relevance-section h2 - covered by new rules */
-/* .relevance-section h4 - covered by new rules */
-
-.relevance-section ul {
+.relevance-section ul { /* Ensure this doesn't conflict with .item-list */
     list-style: none;
     padding-left: 0;
 }
-
-/* .relevance-section li - specificity may need adjustment if .relevance-item is used */
-.relevance-section li {
-    background-color: var(--card-bg);
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    border-left: 3px solid var(--primary-color);
-}
-
-/* .relevance-section li strong - covered by new rules */
-/* .relevance-section li pre - covered by new rules */
-
-
-.add-relevance-form {
-    background-color: var(--card-bg); /* Original */
-    padding: 20px; /* Original */
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow); /* Original */
-    margin-bottom: 20px;
-    border: 1px solid var(--border-color); /* Original */
-}
-
-/* .add-relevance-form h3 - covered by new rules */
-.add-relevance-form h3 { /* Keep this for now if structure differs from .add-relevance-forms h3 */
-    margin-top: 0;
+.relevance-section li.relevance-item {
+    background-color: var(--white);
+    padding: 20px;
     margin-bottom: 15px;
-    font-size: 1.1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--raw-light-grey-200);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    /* border-left: 4px solid var(--primary-color); /* Optionally keep accent */
 }
-/* .add-relevance-form h4 - covered by new rules */
+.relevance-section li.relevance-item strong { /* "Area:", "Score:", "Content:" */
+    min-width: 90px;
+    font-weight: 600;
+    color: var(--text-color-medium);
+    display: inline-block; /* For alignment if needed */
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+}
+.relevance-section li.relevance-item .badge { /* Score badge */
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    font-weight: 600;
+}
+.relevance-section li.relevance-item > .mt-2, /* Actions div (Edit/Delete link) */
+.relevance-section li.relevance-item > div:last-child:not(:first-child) { /* More robust selector for action div */
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--raw-light-grey-200);
+}
 
+/* Forms for Adding Relevance */
+.add-relevance-forms h3 { /* Title for the "Add New Relevance Link" section */
+    font-size: 1.5rem;
+    color: var(--primary-color-dark);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--raw-light-grey-300);
+}
+.add-relevance-form { /* Individual form for Area/Step/UseCase linking */
+    background-color: var(--raw-light-grey-100);
+    padding: 25px;
+    border: 1px solid var(--raw-light-grey-300);
+    border-radius: var(--border-radius-sm); /* Consistent radius */
+    box-shadow: none;
+    margin-bottom: 20px; /* Space between these forms */
+}
+.add-relevance-form h4 { /* "Link to Area", "Link to Step" */
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 15px; /* Space below sub-form title */
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--raw-light-grey-200);
+}
 
 /* Login/Register Page Styles */
 .auth-container {
@@ -699,27 +836,23 @@ form button[type="submit"]:hover,
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
-
 .auth-container h1 {
     text-align: center;
     margin-bottom: 25px;
     font-size: 1.6rem;
     color: var(--primary-color);
 }
-
 .auth-container form button[type="submit"] {
-    width: 100%;
+    width: 100%; /* Full width button */
     padding: 12px;
     margin-top: 10px;
 }
-
-.auth-container p {
+.auth-container p { /* "New User? Click to Register!" */
     text-align: center;
     margin-top: 20px;
     font-size: 0.9rem;
     color: var(--text-color-light);
 }
-
 .auth-container p a {
     color: var(--primary-color);
     font-weight: 500;
@@ -733,377 +866,178 @@ form button[type="submit"]:hover,
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
-
 .injection-form-section h2 {
-    font-size: 1.2rem;
+    font-size: 1.3rem; /* Slightly larger */
     margin-bottom: 10px;
     color: var(--primary-color);
 }
-
 .injection-form-section p {
     font-size: 0.9rem;
-    color: var(--text-color-light);
+    color: var(--text-color-medium); /* Slightly darker for better readability */
     margin-bottom: 15px;
+    line-height: 1.6;
 }
-
 .injection-form-section code {
     background-color: var(--element-bg-light);
-    padding: 2px 4px;
-    border-radius: 3px;
+    padding: 3px 6px; /* Slightly more padding */
+    border-radius: var(--border-radius-sm);
     font-size: 0.85rem;
     color: var(--text-color);
+    border: 1px solid var(--raw-light-grey-300); /* Subtle border for code */
 }
-
-/* Utility Classes */
-.text-center {
-    text-align: center;
-}
-
-.mb-1 {
-    margin-bottom: 0.25rem !important;
-}
-
-.mb-2 {
-    margin-bottom: 0.5rem !important;
-}
-
-.mb-3 {
-    margin-bottom: 1rem !important;
-}
-
-.mt-1 {
-    margin-top: 0.25rem !important;
-}
-
-.mt-2 {
-    margin-top: 0.5rem !important;
-}
-
-.mt-3 {
-    margin-top: 1rem !important;
-}
-
-/* --- Content Area Enhancements --- */
-
-/* General Page Structure & Titles */
-.page-content {
-    padding: 30px 40px;
-    /* Slightly more horizontal padding */
-}
-
-.page-content>.d-flex>h1,
-/* For titles in area_detail, step_detail, usecase_detail */
-.page-content>h1 {
-    /* For general h1 directly in page-content if any */
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--primary-color-light);
-    letter-spacing: -0.5px;
-}
-
-/* Sub-description text below main titles */
-.page-content p.text-color-light,
-.page-content p.text-muted {
-    /* Assuming text-muted might be used similarly */
-    color: var(--text-color-medium) !important;
-    /* Better contrast */
-    font-size: 0.95rem;
-    margin-top: -15px;
-    /* Pull it closer to title */
-    margin-bottom: 25px;
-}
-
-/* Card Enhancements */
-.card {
-    border: 1px solid var(--raw-light-grey-200);
-    /* Softer overall border */
-    margin-bottom: 30px;
-    /* More space between cards */
-    box-shadow: 0 4px 12px var(--raw-shadow-color);
-    /* Slightly enhanced shadow */
-}
-
-.card-header {
-    background-color: var(--raw-light-grey-100);
-    padding: 15px 25px;
-    /* Consistent padding */
-    margin-bottom: 0;
-    border-bottom: 1px solid var(--raw-light-grey-300);
-}
-
-.card-title {
-    font-size: 1.25rem;
-    /* Larger card titles */
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.card-body {
-    padding: 25px;
-    /* More padding inside card body */
-}
-
-/* Definition Lists (for "Area Information", "Step Information", etc.) */
-.card-body dl.info-list {
-    /* New class for these lists */
-    display: grid;
-    grid-template-columns: minmax(160px, max-content) auto;
-    /* Adjust label column width */
-    gap: 15px 25px;
-    /* Row and column gap */
-    margin-bottom: 0;
-}
-
-.card-body dl.info-list dt {
-    font-weight: 600;
-    color: var(--raw-dark-grey-100);
-    font-size: 0.9rem;
-    padding-top: 3px;
-    /* Align with first line of dd */
-    text-align: right;
-    /* Align labels to the right for a cleaner look */
-    padding-right: 15px;
-    /* Space between label and value */
-}
-
-.card-body dl.info-list dd {
-    margin-left: 0;
-    font-size: 0.95rem;
-    color: var(--text-color);
-    word-break: break-word;
-}
-
-.card-body dl.info-list dd a {
-    font-weight: 500;
-    /* Make links in dd stand out a bit */
-}
-
-/* Preformatted text within definition lists or other content */
-.card-body dd pre,
-.relevance-section li pre {
-    background-color: var(--raw-light-grey-100);
-    padding: 12px 15px;
-    border: 1px solid var(--raw-light-grey-200);
-    border-radius: var(--border-radius-sm);
-    font-size: 0.88rem;
-    line-height: 1.6;
-    max-height: 280px;
-    /* Consistent max height */
-    overflow-y: auto;
-    color: var(--text-color);
-    margin-top: 5px;
-}
-
-/* Item Lists (e.g., "Process Steps in this Area") */
-.card-body ul.item-list {
-    /* New class for these lists */
+.export-section ul {
     list-style: none;
     padding-left: 0;
-    margin-bottom: 0;
 }
-
-.card-body ul.item-list>li {
-    padding: 15px;
-    border-bottom: 1px dashed var(--raw-light-grey-200);
-    /* Softer separator */
+.export-section li a {
+    display: inline-block;
+    padding: 8px 12px;
+    background-color: var(--element-bg-light);
+    border-radius: var(--border-radius-sm);
     transition: background-color 0.2s ease;
-    border-radius: var(--border-radius-sm);
 }
-
-.card-body ul.item-list>li:last-child {
-    border-bottom: none;
+.export-section li a:hover {
+    background-color: var(--raw-light-grey-300);
 }
-
-.card-body ul.item-list>li:hover {
-    background-color: var(--primary-color-light);
-}
-
-.card-body ul.item-list>li:hover a {
-    /* Change link color on hover of li */
-    color: var(--primary-color-dark);
+.export-section li a i {
+    margin-right: 8px;
 }
 
 
-.card-body ul.item-list h5,
-/* For step name in area_detail (adjust template if needed) */
-.card-body ul.item-list .item-title a,
-/* Primary link/title in a list item */
-.card-body ul.item-list>li>a {
-    /* If link is direct child */
-    font-weight: 600;
-    color: var(--primary-color);
-    font-size: 1.05rem;
-    display: block;
-    /* Make it take full width for easier clicking */
-    margin-bottom: 4px;
-}
-
-.card-body ul.item-list .item-title a:hover,
-.card-body ul.item-list>li>a:hover {
-    color: var(--primary-color-dark);
-    text-decoration: none;
-    /* Remove underline on hover, rely on bg change */
-}
-
-.card-body ul.item-list .item-meta,
-/* Container for BI_ID, small text */
-.card-body ul.item-list small.text-muted {
-    font-size: 0.8rem;
-    color: var(--text-color-medium);
-    display: block;
-}
-
-/* Nested Use Case Lists */
-.card-body ul.item-list ul.usecase-list {
-    padding-left: 25px;
-    /* Indent nested list */
-    margin-top: 10px;
-    list-style: none;
-}
-
-.card-body ul.item-list ul.usecase-list li {
-    padding: 8px 0;
-    border: none;
-    font-size: 0.9rem;
-}
-
-.card-body ul.item-list ul.usecase-list li:hover {
-    background-color: transparent;
-    /* No extra hover for sub-items */
-}
-
-.card-body ul.item-list ul.usecase-list li a {
-    font-weight: 500;
-    font-size: 0.95rem;
-}
-
-/* "No items found" messages */
-.card-body p em {
-    color: var(--text-color-medium);
-    font-style: italic;
-    display: block;
-    padding: 15px 0;
-    /* More prominent padding */
-    text-align: center;
-    font-size: 0.95rem;
-}
-
-/* Buttons on Detail Pages (Edit/Delete) */
-.btn-sm {
-    padding: 8px 15px;
-    /* Slightly larger sm buttons */
-    font-size: 0.875rem;
-    border-radius: var(--border-radius-sm);
-}
-
-.page-content .d-flex.justify-content-between.align-items-center>div {
-    display: flex;
-    gap: 12px;
-    /* Space between Edit/Delete buttons */
-}
-
-
-/* Relevance Section Enhancements */
-.relevance-section h2 {
-    /* "Relevance Links" title */
-    font-size: 1.5rem;
-    color: var(--primary-color-dark);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--raw-light-grey-300);
-}
-
-.relevance-section .card-header h4.card-title {
-    /* "Relevant Areas/Steps/Use Cases" */
-    color: var(--text-color);
-    /* Less emphasis than primary card titles */
-    font-size: 1.1rem;
-}
-
-.relevance-section li.relevance-item {
-    /* Ensure this class is on the li */
-    background-color: var(--white);
-    padding: 20px;
-    margin-bottom: 15px;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--raw-light-grey-200);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    /* Subtle shadow for each item */
-    /* border-left: 4px solid var(--primary-color); /* existing is good, or can be adopted */
-}
-
-.relevance-section li.relevance-item strong {
-    /* "Use Case:", "Score:" */
-    min-width: 90px;
-    /* Adjust as needed */
-    font-weight: 600;
-    color: var(--text-color-medium);
-    margin-bottom: 6px;
-    font-size: 0.85rem;
-}
-
-.relevance-section li.relevance-item .badge {
-    font-size: 0.9rem;
-    padding: 5px 10px;
-    font-weight: 600;
-}
-
-.relevance-section li.relevance-item>div:last-child {
-    /* Action buttons container */
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed var(--raw-light-grey-200);
-}
-
-/* Forms for Adding Relevance */
-.add-relevance-forms h3 {
-    font-size: 1.5rem;
-    color: var(--primary-color-dark);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--raw-light-grey-300);
-}
-
-.add-relevance-form {
-    /* Existing class for these forms */
-    background-color: var(--raw-light-grey-100);
-    /* Slightly different bg */
-    padding: 25px;
-    border: 1px solid var(--raw-light-grey-300);
-    box-shadow: none;
-    /* Remove if it inherits from .card styles */
-}
-
-.add-relevance-form h4 {
-    color: var(--primary-color);
-    font-size: 1.1rem;
-    border-bottom-color: var(--raw-light-grey-300);
-}
-
-/* --- LLM Data Prep Page --- */
-.llm-data-prep-page .card-title {
-    font-size: 1.15rem; /* Slightly smaller than main page card titles */
+/* --- LLM Data Prep Page Specific Styles --- */
+.llm-data-prep-page .card-header .card-title { /* Title like "Selection Criteria" */
+    font-size: 1.15rem;
+    color: var(--primary-color); /* Consistent with other card titles */
 }
 
 .llm-data-prep-page .form-select[multiple] {
-    min-height: 150px; /* Ensure multi-selects have a decent height */
+    min-height: 150px;
+    max-height: 250px; /* Cap height to prevent overly tall boxes */
+}
+
+.llm-data-prep-page .form-control-sm { /* Search inputs within LLM page */
+    font-size: 0.875rem;
+    padding: .25rem .5rem;
+    /* margin-bottom is handled by parent .mb-1 div */
+}
+
+.llm-data-prep-page .small-buttons .btn-xs { /* Select/Clear All buttons */
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.llm-data-prep-page .fieldset-dashed-border {
+    border: 1px dashed var(--border-color);
+    padding: 1rem 1.5rem; /* Consistent padding */
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 1.5rem;
+}
+
+.llm-data-prep-page .fieldset-legend {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color-medium);
+    padding: 0 0.5rem;
+    width: auto;
+    margin-bottom: 0.75rem; /* Space below legend, before checkboxes */
+    border-bottom: none;
 }
 
 .llm-data-prep-page .form-check-inline {
-    margin-right: 1.5rem; /* More space between checkboxes */
-    margin-bottom: 0.5rem;
+    margin-right: 1rem;
+    margin-bottom: 0.75rem; /* Spacing for checkboxes */
+}
+
+.llm-data-prep-page label .selected-count-display { /* Span for "(X selected)" */
+    font-weight: normal;
+    font-size: 0.8em;
+    color: var(--text-color-light);
+    margin-left: 8px;
+}
+
+/* LLM Data Prep Table Styles */
+.llm-data-prep-page .table-responsive {
+    margin-top: 1rem;
+}
+
+.llm-data-prep-page .table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .llm-data-prep-page .table th,
 .llm-data-prep-page .table td {
-    vertical-align: middle;
+    vertical-align: top; /* Align to top for better readability of multi-line text */
+    padding: 0.5rem;     /* Reduced padding slightly for more content space */
+    overflow: hidden;
+    /* word-break: break-word; /* Apply this if you want long words in ANY cell to break */
 }
 
-.llm-data-prep-page .table pre {
-    font-size: 0.85rem; /* Smaller pre in table */
-    max-height: 150px;
-    overflow-y: auto;
+.llm-data-prep-page .table thead.table-light th {
+    background-color: var(--raw-light-grey-100);
+    border-bottom-width: 2px;
+    font-weight: 600;
+    /* Allow header text to wrap if necessary, though ideally it fits */
+    white-space: normal; 
+    text-align: left; /* Default for table headers */
 }
+
+/* Specific column widths for LLM table - More conservative for fixed ones */
+.llm-data-prep-page .table .col-fixed-short { /* For Step ID */
+    width: 60px; /* Use px for very specific, small columns */
+}
+.llm-data-prep-page .table .col-fixed-name { /* For Name */
+    width: 20%;  /* Give Name a decent chunk */
+}
+.llm-data-prep-page .table .col-fixed-bi-id { /* For BI_ID */
+    width: 15%;  /* BI_ID can also be a bit long */
+}
+
+/* Default for other dynamic columns - they will share remaining space.
+   If you often have many dynamic columns, you might want a min-width or a default %
+   but table-layout:fixed will distribute remaining space among columns without explicit width.
+*/
+.llm-data-prep-page .table th:not(.col-fixed-short):not(.col-fixed-name):not(.col-fixed-bi-id),
+.llm-data-prep-page .table td:not(.col-fixed-short):not(.col-fixed-name):not(.col-fixed-bi-id) {
+    /* Example: If you want to ensure these columns get a fair share, but not too much individually
+    width: 15%; /* This would apply to each of the remaining columns */
+    /* word-break: break-word; /* Good for long text fields */
+}
+
+
+/* Truncation for single-line text in table cells */
+.llm-data-prep-page .table .truncate-text-cell {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden; /* This is important for text-overflow to work on the span itself */
+    /* max-width is implicitly handled by the td's width and overflow:hidden */
+}
+
+/* Preformatted text within table cells */
+.llm-data-prep-page .table td pre {
+    font-size: 0.85rem;
+    max-height: 80px;       /* Reduced max-height slightly for tighter rows */
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word; /* Essential for pre content */
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    line-height: 1.4;
+}
+
+/* Utility Classes (ensure these are at the end or have high specificity if needed) */
+.text-center { text-align: center !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.me-1 { margin-right: 0.25rem !important; }
+.me-2 { margin-right: 0.5rem !important; }

@@ -14,7 +14,14 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label for="area_ids" class="form-label">Filter by Areas (Optional):</label>
+                    <label for="area_ids" class="form-label">Filter by Areas (Optional):<span class="selected-count-display" id="area_ids_selected_count"></span></label>
+                    <div class="mb-1">
+                        <input type="search" id="area_search" class="form-control form-control-sm" placeholder="Search areas...">
+                    </div>
+                    <div class="d-flex justify-content-end mb-1 small-buttons">
+                        <button type="button" class="btn btn-outline-secondary btn-xs me-1" id="selectAllAreas">Select All</button>
+                        <button type="button" class="btn btn-outline-secondary btn-xs" id="clearAllAreas">Clear All</button>
+                    </div>
                     <select name="area_ids" id="area_ids" class="form-select" multiple size="5">
                         {% for area in areas %}
                             <option value="{{ area.id }}" {% if area.id in selected_area_ids %}selected{% endif %}>
@@ -26,10 +33,19 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label for="step_ids" class="form-label">Select Process Steps:</label>
+                    <label for="step_ids" class="form-label">Select Process Steps:<span class="selected-count-display" id="step_ids_selected_count"></span></label>
+                    <div class="mb-1">
+                        <input type="search" id="step_search" class="form-control form-control-sm" placeholder="Search steps...">
+                    </div>
+                    <div class="d-flex justify-content-end mb-1 small-buttons">
+                        <button type="button" class="btn btn-outline-secondary btn-xs me-1" id="selectAllSteps">Select All</button>
+                        <button type="button" class="btn btn-outline-secondary btn-xs" id="clearAllSteps">Clear All</button>
+                    </div>
                     <select name="step_ids" id="step_ids" class="form-select" multiple size="8">
                         {% for step in all_steps %}
-                            <option value="{{ step.id }}" {% if step.id in selected_step_ids %}selected{% endif %}>
+                            <option value="{{ step.id }}"
+                                    data-area-id="{{ step.area.id if step.area else '' }}"
+                                    {% if step.id in selected_step_ids %}selected{% endif %}>
                                 {{ step.name }} ({{ step.area.name if step.area else 'No Area' }} - BI_ID: {{ step.bi_id }})
                             </option>
                         {% endfor %}
@@ -38,15 +54,53 @@
                 </div>
             </div>
 
-            <div class="mb-4"> {# Increased margin for better separation #}
-                <label class="form-label d-block">Select Fields to Include:</label>
-                {% for field_key, field_name in selectable_fields.items() %}
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
-                           {% if field_key in selected_fields_form %}checked{% endif %}>
-                    <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label d-block mb-0">Select Fields to Include:</label>
+                    <div class="small-buttons">
+                        <button type="button" class="btn btn-outline-secondary btn-xs me-1" id="selectAllFields">Select All</button>
+                        <button type="button" class="btn btn-outline-secondary btn-xs" id="clearAllFields">Clear All</button>
+                    </div>
                 </div>
-                {% endfor %}
+
+                <fieldset class="fieldset-dashed-border">
+                    <legend class="fieldset-legend">Identifiers & Basic Info</legend>
+                    {% for field_key, field_name in selectable_fields.items() %}
+                        {% if field_key in ['name', 'bi_id'] %} {# Adjust this condition for your grouping #}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
+                                   {% if field_key in selected_fields_form %}checked{% endif %}>
+                            <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
+
+                <fieldset class="fieldset-dashed-border">
+                    <legend class="fieldset-legend">Descriptive Content</legend>
+                    {% for field_key, field_name in selectable_fields.items() %}
+                        {% if field_key in ['step_description', 'raw_content', 'summary', 'vision_statement'] %}  {# Adjust this condition #}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
+                                   {% if field_key in selected_fields_form %}checked{% endif %}>
+                            <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
+                
+                <fieldset class="fieldset-dashed-border">
+                    <legend class="fieldset-legend">Operational Details</legend>
+                    {% for field_key, field_name in selectable_fields.items() %}
+                        {% if field_key in ['in_scope', 'out_of_scope', 'interfaces_text', 'what_is_actually_done', 'pain_points', 'targets_text'] %}  {# Adjust this condition #}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
+                                   {% if field_key in selected_fields_form %}checked{% endif %}>
+                            <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </fieldset>
             </div>
 
             <button type="submit" class="btn btn-primary">Preview Data</button>
@@ -61,28 +115,53 @@
         <div class="card-body">
             {% if prepared_data %}
                 <p>Found {{ prepared_data|length }} process step(s) matching your criteria with the selected fields:</p>
-                <div class="table-responsive"> {# For potentially wide tables #}
+                <div class="table-responsive">
                     <table class="table table-striped table-bordered table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Step ID</th>
+                                <th class="col-fixed-short">Step ID</th> {# Class for width control #}
                                 {% for field_key in selected_fields_form %}
-                                    <th>{{ selectable_fields.get(field_key, field_key|capitalize) }}</th>
+                                    {% set field_name_display = selectable_fields.get(field_key, field_key|capitalize) %}
+                                    {# Heuristic for common column classes - adjust as needed #}
+                                    {% if field_key == 'name' %}
+                                        <th class="col-fixed-name">{{ field_name_display }}</th>
+                                    {% elif field_key == 'bi_id' %}
+                                        <th class="col-fixed-bi-id">{{ field_name_display }}</th>
+                                    {% else %}
+                                        {# Default for other potentially long text fields #}
+                                        <th>{{ field_name_display }}</th>
+                                    {% endif %}
                                 {% endfor %}
                             </tr>
                         </thead>
                         <tbody>
                             {% for step_item in prepared_data %}
                             <tr>
-                                <td>
+                                <td class="col-fixed-short"> {# Ensure td class matches th class if specific width needed #}
                                     <a href="{{ url_for('steps.view_step', step_id=step_item.id) }}" title="View full step details">{{ step_item.id }}</a>
                                 </td>
                                 {% for field_key in selected_fields_form %}
-                                    <td>
-                                        {% if step_item[field_key] is string and '\n' in step_item[field_key] %}
-                                            <pre style="white-space: pre-wrap; word-break: break-word; margin-bottom: 0; background-color: transparent; border: none; padding: 0; font-size: inherit;">{{ step_item[field_key] | default('N/A', true) }}</pre>
+                                    {% set cell_value = step_item[field_key] %}
+                                    {# Determine class for td based on th logic for consistency, or let table-layout work #}
+                                    {% if field_key == 'name' %}
+                                        <td class="col-fixed-name">
+                                    {% elif field_key == 'bi_id' %}
+                                        <td class="col-fixed-bi-id">
+                                    {% else %}
+                                        <td> {# Default, will take remaining space #}
+                                    {% endif %}
+
+                                        {% if cell_value is none %}
+                                            N/A
+                                        {% elif cell_value is string and '\n' in cell_value %}
+                                            {# Multi-line content: use <pre> for formatting and y-scroll #}
+                                            <pre>{{ cell_value }}</pre>
+                                        {% elif cell_value is string %}
+                                            {# Single-line string: use span for truncation and title tooltip #}
+                                            <span class="truncate-text-cell" title="{{ cell_value }}">{{ cell_value }}</span>
                                         {% else %}
-                                            {{ step_item[field_key] | default('N/A', true) }}
+                                            {# For numbers or other types, display directly #}
+                                            {{ cell_value }}
                                         {% endif %}
                                     </td>
                                 {% endfor %}
@@ -91,11 +170,14 @@
                         </tbody>
                     </table>
                 </div>
-                
-                {# You could add a button here to "Copy to Clipboard" or "Send to LLM" in the future #}
-                {# Example: Outputting as JSON for easier copy/paste for LLM #}
-                <h4 class="mt-4">Formatted for LLM (JSON):</h4>
-                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ prepared_data | tojson(indent=2) }}</pre>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <h4 class="mb-0">Formatted for LLM (JSON):</h4>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="copyJsonButton">
+                        <i class="fas fa-copy me-1"></i>Copy JSON
+                    </button>
+                </div>
+                <pre id="jsonDataPreview" class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ prepared_data | tojson(indent=2) }}</pre>
 
             {% else %}
                 <p class="text-muted"><em>No data to preview based on current selections. Try adjusting your filters or ensure steps exist.</em></p>
@@ -106,42 +188,8 @@
 
 </div>
 
-{# Optional: JavaScript for dynamic filtering of steps based on area selection #}
-{# This is a bit more involved, but would improve UX. For now, it's server-side filtered on submit. #}
-{#
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const areaSelect = document.getElementById('area_ids');
-    const stepSelect = document.getElementById('step_ids');
-    const allStepOptions = Array.from(stepSelect.options).map(opt => ({
-        value: opt.value,
-        text: opt.text,
-        areaId: opt.dataset.areaId // You'd need to add data-area-id="{{ step.area_id }}" to step options in the loop
-    }));
-
-    if (areaSelect && stepSelect) {
-        areaSelect.addEventListener('change', function () {
-            const selectedAreaIds = Array.from(areaSelect.selectedOptions).map(opt => opt.value);
-            const currentSelectedStepValues = Array.from(stepSelect.selectedOptions).map(opt => opt.value);
-
-            stepSelect.innerHTML = ''; // Clear current options
-
-            allStepOptions.forEach(stepOpt => {
-                if (selectedAreaIds.length === 0 || selectedAreaIds.includes(stepOpt.areaId)) {
-                    const option = new Option(stepOpt.text, stepOpt.value);
-                    if (currentSelectedStepValues.includes(stepOpt.value)) {
-                        option.selected = true;
-                    }
-                    stepSelect.add(option);
-                }
-            });
-        });
-        // Trigger change on load if areas are pre-selected (e.g., after form submission)
-        if (Array.from(areaSelect.selectedOptions).length > 0) {
-            areaSelect.dispatchEvent(new Event('change'));
-        }
-    }
-});
-</script>
-#}
+{% block scripts %}
+{{ super() }} {# If you have scripts in base.html you want to include #}
+<script src="{{ url_for('static', filename='js/llm_ui.js') }}"></script>
+{% endblock %}
 {% endblock %}
