@@ -11,6 +11,7 @@
             <form action="{{ url_for('areas.delete_area', area_id=area.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this area and all its process steps and use cases? This action cannot be undone.');">
                 <button type="submit" class="btn btn-sm btn-danger">Delete Area</button>
             </form>
+            <a href="{{ url_for('export.export_area_md', area_id=area.id) }}" class="btn btn-sm btn-info">Export to Markdown</a>
         </div>
     </div>
     <p class="text-color-light mb-3">Detailed information for Area ID: {{ area.id }}</p>

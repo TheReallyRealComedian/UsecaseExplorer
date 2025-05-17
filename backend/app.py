@@ -94,7 +94,10 @@ def create_app():
     app.register_blueprint(area_routes)
     from .routes.step_routes import step_routes
     app.register_blueprint(step_routes)
+    from .routes.export_routes import export_routes 
+    app.register_blueprint(export_routes)
     print("Blueprint registration complete.")
+
 
     @app.route('/')
     def index():

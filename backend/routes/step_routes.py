@@ -4,8 +4,8 @@ from flask_login import login_required
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
-from ..db import SessionLocal # CHANGED
-from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance 
+from ..db import SessionLocal
+from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance
 
 step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
@@ -55,12 +55,11 @@ def edit_step(step_id):
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        original_bi_id = step.bi_id # Store original for comparison
+        original_bi_id = step.bi_id
         step.name = request.form.get('name', '').strip()
         step.bi_id = request.form.get('bi_id', '').strip()
         step.area_id = request.form.get('area_id', type=int)
         
-        # Update all text fields
         step.step_description = request.form.get('step_description', '').strip() or None
         step.raw_content = request.form.get('raw_content', '').strip() or None
         step.summary = request.form.get('summary', '').strip() or None
@@ -74,30 +73,65 @@ def edit_step(step_id):
 
         if not step.name or not step.bi_id or not step.area_id:
             flash("Step Name, BI_ID, and Area are required.", "danger")
+            # Fall through to render_template at the end of the function
         else:
-            # Check for BI_ID uniqueness if changed
             if step.bi_id != original_bi_id:
-                existing_step = session.query(ProcessStep).filter(ProcessStep.bi_id == step.bi_id, ProcessStep.id != step_id).first()
+                existing_step = session.query(ProcessStep).filter(
+                    ProcessStep.bi_id == step.bi_id, 
+                    ProcessStep.id != step_id
+                ).first()
                 if existing_step:
                     flash(f"Another process step with BI_ID '{step.bi_id}' already exists.", "danger")
                     SessionLocal.remove()
-                    return render_template('edit_step.html', title=f"Edit Step: {step.name}", step=step, all_areas=all_areas, current_step=step, current_area=step.area)
+                    return render_template(
+                        'edit_step.html',
+                        title=f"Edit Step: {step.name}",
+                        step=step,
+                        all_areas=all_areas,
+                        current_step=step,
+                        current_area=step.area
+                    )
             
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
-                SessionLocal.remove()
+                # SessionLocal.remove() # REMOVED THIS LINE
                 return redirect(url_for('steps.view_step', step_id=step.id))
             except IntegrityError:
                 session.rollback()
                 flash("Database error: Could not update step. BI_ID might already exist or area is invalid.", "danger")
+                SessionLocal.remove() 
+                return render_template(
+                    'edit_step.html',
+                    title=f"Edit Step: {step.name}",
+                    step=step,
+                    all_areas=all_areas,
+                    current_step=step,
+                    current_area=step.area
+                )
             except Exception as e:
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating step {step_id}: {e}")
+                SessionLocal.remove()
+                return render_template(
+                    'edit_step.html',
+                    title=f"Edit Step: {step.name}",
+                    step=step,
+                    all_areas=all_areas,
+                    current_step=step,
+                    current_area=step.area
+                )
     
     SessionLocal.remove() 
-    return render_template('edit_step.html', title=f"Edit Step: {step.name}", step=step, all_areas=all_areas, current_step=step, current_area=step.area)
+    return render_template(
+        'edit_step.html',
+        title=f"Edit Step: {step.name}",
+        step=step,
+        all_areas=all_areas,
+        current_step=step,
+        current_area=step.area
+    )
 
 
 @step_routes.route('/<int:step_id>/delete', methods=['POST'])

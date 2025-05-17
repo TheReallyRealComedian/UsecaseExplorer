@@ -8,7 +8,7 @@ import json
 
 # SessionLocal is not directly used here, it's used by injection_service
 from ..models import Area, ProcessStep, UseCase
-from ..injection_service import process_area_file, process_step_file, process_usecase_file
+from ..injection_service import process_area_file, process_step_file, process_usecase_file, import_database_from_json
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
@@ -122,3 +122,34 @@ def handle_injection():
 
     # --- GET Logic ---
     return render_template('injection.html', title='Data Injection')
+
+
+@injection_routes.route('/database/json', methods=['POST'])
+@login_required
+def import_db_json_route():
+    if 'database_file' not in request.files:
+        flash('No database file part in the request.', 'danger')
+        return redirect(request.referrer or url_for('injection.handle_injection'))
+
+    file = request.files['database_file']
+    if file.filename == '':
+        flash('No selected database file.', 'warning')
+        return redirect(request.referrer or url_for('injection.handle_injection'))
+
+    if file and '.' in file.filename and \
+       file.filename.rsplit('.', 1)[1].lower() == 'json':
+        
+        clear_data = request.form.get('clear_existing_data') == 'on' # Checkbox value
+        
+        try:
+            result = import_database_from_json(file.stream, clear_existing_data=clear_data)
+            flash_category = 'success' if result['success'] else 'danger'
+            flash(result['message'], flash_category)
+        except Exception as e:
+            print(f"Error during database import: {str(e)}")
+            traceback.print_exc()
+            flash(f"An error occurred during database import: {str(e)}", 'danger')
+    else:
+        flash('Invalid file type for database import. Please upload a .json file.', 'danger')
+    
+    return redirect(request.referrer or url_for('injection.handle_injection'))

@@ -4,15 +4,16 @@
 
 {% block content %}
 <h1>{{ title }}</h1>
-<p class="mb-3">Upload JSON files to bulk-add Areas, Process Steps, or Use Cases.</p>
+<p class="mb-3">Upload JSON files to bulk-add Areas, Process Steps, or Use Cases. You can also import a full database backup.</p>
 
 {# Flash messages are now in base.html #}
 
 <div class="injection-form-section">
     <h2>Inject Areas</h2>
-    <p>Upload a JSON file containing a list of area objects, each with a <code>"name"</code> key.<br>
-       Optional key: <code>"description"</code> (string).<br>
-       Example: <code>[{"name": "Area One", "description": "Desc of Area One"}, {"name": "Area Two"}]</code>
+    <p>
+        Upload a JSON file containing a list of area objects, each with a <code>"name"</code> key.<br>
+        Optional key: <code>"description"</code> (string).<br>
+        Example: <code>[{"name": "Area One", "description": "Desc of Area One"}, {"name": "Area Two"}]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="areaForm">
          <div>
@@ -27,10 +28,11 @@
 
 <div class="injection-form-section">
     <h2>Inject Process Steps</h2>
-    <p>Upload a JSON file containing a list of process step objects.<br>
-       Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match existing Area).<br>
-       Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
-       Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
+    <p>
+        Upload a JSON file containing a list of process step objects.<br>
+        Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match existing Area).<br>
+        Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
+        Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="stepForm">
          <div>
@@ -45,10 +47,11 @@
 
 <div class="injection-form-section">
     <h2>Inject Use Cases</h2>
-    <p>Upload a JSON file containing a list of use case objects.<br>
-       Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match existing Step BI_ID).<br>
-       Optional keys: <code>"priority"</code> (integer 1-4), <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
-       Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "priority": 1, "summary": "Summary one"}, ...]</code>
+    <p>
+        Upload a JSON file containing a list of use case objects.<br>
+        Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match existing Step BI_ID).<br>
+        Optional keys: <code>"priority"</code> (integer 1-4), <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
+        Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "priority": 1, "summary": "Summary one"}, ...]</code>
     </p>
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="usecaseForm">
          <div>
@@ -59,6 +62,39 @@
              <button type="submit">Upload Use Cases</button>
          </div>
     </form>
+</div>
+
+<div class="injection-form-section">
+    <h2>Import Full Database (JSON)</h2>
+    <p>
+       Upload a previously exported database JSON file.
+       <strong>Warning:</strong> This can overwrite existing data if "Clear existing data" is checked.
+    </p>
+    <form action="{{ url_for('injection.import_db_json_route') }}" method="post" enctype="multipart/form-data">
+         <div>
+             <label for="database_file">Database JSON File:</label>
+             <input type="file" id="database_file" name="database_file" accept=".json" required>
+         </div>
+         <div class="checkbox-group" style="flex-direction: row; align-items: center; margin-top: 10px; margin-bottom: 10px;">
+             <input type="checkbox" id="clear_existing_data" name="clear_existing_data" style="margin-right: 5px;">
+             <label for="clear_existing_data" style="margin-bottom: 0;">Clear ALL existing data before import (USE WITH CAUTION!)</label>
+         </div>
+         <div>
+             <button type="submit" class="btn-danger">Import Database</button>
+         </div>
+    </form>
+</div>
+
+<div class="export-section mb-3">
+    <h2>Data Export</h2>
+    <ul>
+        <li>
+            <a href="{{ url_for('export.export_db_json') }}">
+                <i class="fas fa-download"></i>
+                <span>Export Full Database (JSON)</span>
+            </a>
+        </li>
+    </ul>
 </div>
 
 <script>
