@@ -28,6 +28,7 @@ class Config:
     ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
     GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
     OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL')
+    MAX_CHAT_HISTORY_LENGTH = int(os.environ.get('MAX_CHAT_HISTORY_LENGTH', 10))
 
     # Add other configuration variables here
     # Example: UPLOAD_FOLDER = os.path.join(basedir, 'uploads')

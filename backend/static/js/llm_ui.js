@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const areaSearchInput = document.getElementById('area_search');
     const stepSearchInput = document.getElementById('step_search');
 
+    // Chat elements
+    const chatDisplay = document.getElementById('chatDisplay');
+    const chatInput = document.getElementById('chatInput');
+    const sendMessageButton = document.getElementById('sendMessageButton');
+    const clearChatButton = document.getElementById('clearChatButton');
+    const llmModelSelect = document.getElementById('llmModelSelect');
+
     // Store original options for filtering
     let originalAreaOptions = [];
     if (areaSelect) {
@@ -28,12 +35,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Helper: Update selected counts ---
     function updateSelectedCount(selectElement) {
-        // Derives the span ID from the select element's ID (e.g., 'area_ids' -> 'area_ids_selected_count')
         if (!selectElement) return;
         const displayElementId = selectElement.id + '_selected_count';
         const displayElement = document.getElementById(displayElementId);
 
-        if (displayElement) { // Check if the span element actually exists
+        if (displayElement) {
             const count = selectElement.selectedOptions.length;
             displayElement.textContent = count > 0 ? ` (${count} selected)` : '';
         }
@@ -48,18 +54,14 @@ document.addEventListener('DOMContentLoaded', function () {
         originalOptions.forEach(optData => {
             const matchesSearch = !searchTerm || optData.text.toLowerCase().includes(searchTerm.toLowerCase());
             let matchesArea = true;
-            // If areaFilterIds is provided (meaning we are filtering steps based on areas)
-            // and there are selected areas, and the current option has an areaId
             if (areaFilterIds && areaFilterIds.length > 0 && optData.areaId) {
                 matchesArea = areaFilterIds.includes(optData.areaId);
             } else if (areaFilterIds && areaFilterIds.length > 0 && !optData.areaId && selectElement.id === 'step_ids') {
-                // Special case for steps: if areas are selected, but a step has no areaId, it shouldn't match
                 matchesArea = false;
             }
 
-
             if (matchesSearch && matchesArea) {
-                const newOption = optData.element.cloneNode(true); // Use the stored clone
+                const newOption = optData.element.cloneNode(true);
                 if (selectedValues.includes(newOption.value)) {
                     newOption.selected = true;
                 }
@@ -78,20 +80,19 @@ document.addEventListener('DOMContentLoaded', function () {
     if (stepSearchInput && stepSelect) {
         stepSearchInput.addEventListener('input', () => {
             const selectedAreaIds = areaSelect ? Array.from(areaSelect.selectedOptions).map(opt => opt.value) : [];
-            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput.value, selectedAreaIds);
+            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
         });
     }
 
     if (areaSelect) {
         areaSelect.addEventListener('change', () => {
             const selectedAreaIds = Array.from(areaSelect.selectedOptions).map(opt => opt.value);
-            // When areas change, re-filter steps based on new area selection AND current step search term
             filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
-            updateSelectedCount(areaSelect); // Update area count
+            updateSelectedCount(areaSelect);
         });
     }
     
-    if (stepSelect) { // Listener for stepSelect to update its own count when its selection changes
+    if (stepSelect) {
         stepSelect.addEventListener('change', () => {
              updateSelectedCount(stepSelect);
         });
@@ -105,12 +106,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         selectAllButton.addEventListener('click', () => {
             Array.from(selectElement.options).forEach(opt => {
-                // Only select options that are currently visible (not filtered out by search)
-                // Checking opt.style.display might be unreliable if not explicitly set.
-                // A better way is to rely on the options currently in the selectElement after filtering.
                 opt.selected = true;
             });
-            selectElement.dispatchEvent(new Event('change')); // Trigger 'change' to update counts and dependent filters
+            selectElement.dispatchEvent(new Event('change'));
         });
 
         clearAllButton.addEventListener('click', () => {
@@ -126,55 +124,269 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectAllFieldsBtn = document.getElementById('selectAllFields');
     const clearAllFieldsBtn = document.getElementById('clearAllFields');
 
-    if (selectAllFieldsBtn && fieldCheckboxes.length > 0) { // check fieldCheckboxes.length
+    if (selectAllFieldsBtn && fieldCheckboxes.length > 0) {
         selectAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = true));
     }
-    if (clearAllFieldsBtn && fieldCheckboxes.length > 0) { // check fieldCheckboxes.length
+    if (clearAllFieldsBtn && fieldCheckboxes.length > 0) {
         clearAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = false));
     }
 
-    // Copy JSON to Clipboard
+    // JSON Preview Control
     const copyJsonButton = document.getElementById('copyJsonButton');
-    const jsonDataPreview = document.getElementById('jsonDataPreview');
+    const jsonDataPreview = document.getElementById('jsonDataPreview'); // The <pre> tag
+    const jsonPreviewContainer = document.getElementById('jsonPreviewContainer'); // The wrapping div
+    const toggleJsonPreviewButton = document.getElementById('toggleJsonPreview');
+    const tokenCountDisplay = document.getElementById('tokenCountDisplay'); // The token count paragraph
 
-    if (copyJsonButton && jsonDataPreview) {
+    // Determine if there is actual data to display/copy
+    // The `prepared_data` variable is passed from Flask. If it's [], it means no data.
+    // If it's None, it means the form hasn't been submitted yet.
+    // So, `prepared_data.length > 0` (via template rendering to `tojson`) is the most reliable check.
+    const hasData = jsonDataPreview && jsonDataPreview.textContent.trim() !== '[]' && jsonDataPreview.textContent.trim() !== 'null' && jsonDataPreview.textContent.trim() !== '';
+
+    // Conditionally show/hide buttons and token count based on whether data exists
+    // These buttons are now in the card-header, so they are always visible if data exists
+    // and we only hide them if hasData is false.
+    if (copyJsonButton) copyJsonButton.style.display = hasData ? 'inline-block' : 'none';
+    if (toggleJsonPreviewButton) toggleJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none';
+    if (tokenCountDisplay) tokenCountDisplay.style.display = hasData ? 'block' : 'none';
+
+
+    // Toggle JSON Preview visibility
+    if (toggleJsonPreviewButton && jsonPreviewContainer) { // No need to check hasData here, display handled by previous block
+        toggleJsonPreviewButton.addEventListener('click', () => {
+            const isHidden = jsonPreviewContainer.style.display === 'none';
+            if (isHidden) {
+                jsonPreviewContainer.style.display = 'block';
+                toggleJsonPreviewButton.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Hide JSON';
+            } else {
+                jsonPreviewContainer.style.display = 'none';
+                toggleJsonPreviewButton.innerHTML = '<i class="fas fa-eye me-1"></i>Show JSON';
+            }
+        });
+    }
+
+    // Copy JSON to Clipboard
+    if (copyJsonButton && jsonDataPreview) { // No need to check hasData here, display handled by previous block
         copyJsonButton.addEventListener('click', () => {
+            if (!hasData) { // Double check if data actually exists before trying to copy
+                alert('No data to copy.');
+                return;
+            }
             navigator.clipboard.writeText(jsonDataPreview.textContent)
                 .then(() => {
-                    const originalText = copyJsonButton.innerHTML; // Use innerHTML to preserve icon
+                    const originalHTML = copyJsonButton.innerHTML;
                     copyJsonButton.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                    copyJsonButton.classList.remove('btn-outline-secondary', 'btn-danger');
                     copyJsonButton.classList.add('btn-success');
-                    copyJsonButton.classList.remove('btn-outline-secondary');
                     setTimeout(() => {
-                        copyJsonButton.innerHTML = originalText;
+                        copyJsonButton.innerHTML = originalHTML;
                         copyJsonButton.classList.remove('btn-success');
                         copyJsonButton.classList.add('btn-outline-secondary');
                     }, 2000);
                 })
                 .catch(err => {
                     console.error('Failed to copy JSON: ', err);
-                    const originalText = copyJsonButton.innerHTML;
+                    const originalHTML = copyJsonButton.innerHTML;
                     copyJsonButton.innerHTML = '<i class="fas fa-times me-1"></i>Failed!';
+                    copyJsonButton.classList.remove('btn-outline-secondary', 'btn-success');
                     copyJsonButton.classList.add('btn-danger');
-                    copyJsonButton.classList.remove('btn-outline-secondary');
                      setTimeout(() => {
-                        copyJsonButton.innerHTML = originalText;
+                        copyJsonButton.innerHTML = originalHTML;
                         copyJsonButton.classList.remove('btn-danger');
                         copyJsonButton.classList.add('btn-outline-secondary');
                     }, 2000);
-                    // alert('Failed to copy. Please copy manually or check browser permissions.');
                 });
         });
     }
 
-    // Initial setup calls after DOM is ready
+    // Initial setup calls for selected counts after DOM is ready
     if (areaSelect) {
-        filterAndRebuildSelect(areaSelect, originalAreaOptions, areaSearchInput ? areaSearchInput.value : ''); // Initial filter for areas based on its search
-        areaSelect.dispatchEvent(new Event('change')); // This will trigger updateSelectedCount for areas AND filter steps
+        filterAndRebuildSelect(areaSelect, originalAreaOptions, areaSearchInput ? areaSearchInput.value : '');
+        areaSelect.dispatchEvent(new Event('change')); 
     }
-    if (stepSelect) {
-         // Steps are initially filtered by the areaSelect's 'change' event.
-         // We still need to update its count based on pre-selected values (if any from server-side render).
-         updateSelectedCount(stepSelect);
+    if (stepSelect) { 
+        updateSelectedCount(stepSelect);
     }
-});
+
+
+    // --- LLM Chat Window Logic ---
+
+    // Function to convert markdown to HTML
+    function markdownToHtml(markdownText) {
+        // Check if 'marked' exists and if 'marked.parse' is a function
+        if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+            return marked.parse(markdownText);
+        }
+        console.warn("Marked.js not loaded or 'marked.parse' function not found. Markdown will not be rendered.");
+        return markdownText; // Return original text if converter not available
+    }
+
+    // Function to add a message to the chat display
+    function addMessageToChat(role, content) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('chat-bubble', `chat-bubble-${role}`);
+        messageElement.innerHTML = markdownToHtml(content); // Render markdown
+        chatDisplay.appendChild(messageElement);
+        chatDisplay.scrollTop = chatDisplay.scrollHeight; // Scroll to bottom
+    }
+
+    // Populate chat history on load (from Flask template)
+    if (chatDisplay) {
+        // Clear initial "Start a conversation" message if history exists
+        if (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('text-muted')) {
+            chatDisplay.innerHTML = '';
+        }
+        // Flask renders initial chat history directly into the HTML, so we don't need to re-add here
+        // We just need to scroll to bottom if there's history
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    }
+
+
+    // Handle sending message
+    if (sendMessageButton && chatInput && llmModelSelect) {
+        sendMessageButton.addEventListener('click', async () => {
+            const message = chatInput.value.trim();
+            const selectedModel = llmModelSelect.value;
+
+            if (!message || !selectedModel) {
+                alert('Please enter a message and select a model.');
+                return;
+            }
+
+            addMessageToChat('user', message);
+            chatInput.value = ''; // Clear input
+
+            sendMessageButton.disabled = true; // Disable button while loading
+            chatInput.disabled = true; // Disable input
+            llmModelSelect.disabled = true; // Disable model select
+            const loadingBubble = document.createElement('div');
+            loadingBubble.classList.add('chat-bubble', 'chat-bubble-assistant');
+            loadingBubble.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Thinking...';
+            chatDisplay.appendChild(loadingBubble);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+
+            try {
+                const response = await fetch('/llm/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, model: selectedModel }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    loadingBubble.remove(); // Remove loading bubble
+                    addMessageToChat('assistant', data.message);
+                } else {
+                    loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.message}`;
+                    loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
+                    loadingBubble.style.color = 'var(--raw-alert-danger-text)';
+                    console.error('LLM Chat Error:', data.message);
+                }
+            } catch (error) {
+                console.error('Network or server error:', error);
+                loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Network Error: Could not reach LLM service.`;
+                loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
+                loadingBubble.style.color = 'var(--raw-alert-danger-text)';
+            } finally {
+                sendMessageButton.disabled = false; // Re-enable button
+                chatInput.disabled = false; // Re-enable input
+                llmModelSelect.disabled = false; // Re-enable model select
+                chatInput.focus(); // Focus input for next message
+            }
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessageButton.click(); // Trigger send on Enter
+            }
+        });
+    }
+
+    // Handle clear chat button
+    if (clearChatButton && chatDisplay) {
+        clearChatButton.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear the entire chat history? This cannot be undone.')) {
+                try {
+                    const response = await fetch('/llm/chat/clear', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success) {
+                        chatDisplay.innerHTML = '<p class="text-muted text-center mt-3">Start a conversation with the LLM.</p>';
+                        alert('Chat history cleared!');
+                    } else {
+                        alert(`Failed to clear chat history: ${data.message}`);
+                    }
+                } catch (error) {
+                    console.error('Error clearing chat history:', error);
+                    alert('Network error: Could not clear chat history.');
+                }
+            }
+        });
+    }
+
+    // --- Bootstrap Collapse Icon Toggle ---
+    const selectionCriteriaHeader = document.getElementById('selectionCriteriaHeader');
+    const preparedDataHeader = document.getElementById('preparedDataHeader');
+    const llmChatHeader = document.getElementById('llmChatHeader');
+
+    // Function to update icon based on collapse state
+    function updateCollapseIcon(headerElement, targetId) {
+        const collapseElement = document.getElementById(targetId);
+        const iconElement = headerElement.querySelector('i');
+        
+        // This class is added by Bootstrap when the element is actually collapsing/expanding
+        collapseElement.addEventListener('shown.bs.collapse', () => {
+            iconElement.classList.remove('fa-chevron-down');
+            iconElement.classList.add('fa-chevron-up');
+        });
+        collapseElement.addEventListener('hidden.bs.collapse', () => {
+            iconElement.classList.remove('fa-chevron-up');
+            iconElement.classList.add('fa-chevron-down');
+        });
+
+        // Set initial icon state based on 'show' class
+        if (collapseElement.classList.contains('show')) {
+            iconElement.classList.remove('fa-chevron-down');
+            iconElement.classList.add('fa-chevron-up');
+        } else {
+            iconElement.classList.remove('fa-chevron-up');
+            iconElement.classList.add('fa-chevron-down');
+        }
+    }
+
+    if (selectionCriteriaHeader) updateCollapseIcon(selectionCriteriaHeader, 'selectionCriteriaBody');
+    if (preparedDataHeader) updateCollapseIcon(preparedDataHeader, 'preparedDataBody');
+    if (llmChatHeader) updateCollapseIcon(llmChatHeader, 'llmChatBody');
+
+    // --- Explicitly initialize Bootstrap Collapses (as a fallback/diagnostic) ---
+    // This finds all elements with data-bs-toggle="collapse"
+    const collapseToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    collapseToggles.forEach(toggle => {
+        const targetId = toggle.getAttribute('data-bs-target');
+        const collapseElement = document.querySelector(targetId);
+
+        if (collapseElement) {
+            // Bootstrap's JS will attach its own listeners to these toggles automatically.
+            // This explicit initialization is mostly for components that don't auto-init,
+            // or if the DOM is modified *after* Bootstrap's initial scan.
+            // For collapse, the data attributes usually suffice, but this ensures they're "seen".
+            // No direct 'new bootstrap.Collapse(element)' is usually needed for data-attributes.
+            // However, ensuring the elements are ready for Bootstrap's auto-scan can be key.
+            
+            // The issue is likely *not* that the component isn't being explicitly instantiated,
+            // but rather that Bootstrap's core event listeners aren't firing on the toggle.
+            // This often points to a JS error or bad cached script.
+
+            // Let's add a console log to confirm these toggles are found.
+            console.log("Found collapse toggle:", toggle, "for target:", collapseElement);
+        }
+    });
+
+    // You can remove the individual updateCollapseIcon calls above if you prefer,
+    // as they are already called by the existing code.
+    // Ensure Bootstrap's JS is loaded before this script, which it is.
+
+}); // End of DOMContentLoaded

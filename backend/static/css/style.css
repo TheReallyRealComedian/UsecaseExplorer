@@ -906,6 +906,25 @@ form button[type="submit"]:hover,
     color: var(--primary-color);
 }
 
+/* Collapsible Card Header Button Styling */
+.card-header button.btn-link {
+    padding: 0;
+    font-size: 1rem;
+    color: var(--text-color-medium);
+}
+.card-header button.btn-link:hover {
+    color: var(--primary-color);
+}
+.card-header button.btn-link i {
+    transition: transform 0.3s ease;
+}
+.card-header button.btn-link[aria-expanded="true"] i {
+    transform: rotate(0deg); /* Up arrow when expanded */
+}
+.card-header button.btn-link[aria-expanded="false"] i {
+    transform: rotate(180deg); /* Down arrow when collapsed */
+}
+
 .llm-data-prep-page .form-select[multiple] {
     min-height: 150px;
     max-height: 250px;
@@ -953,24 +972,23 @@ form button[type="submit"]:hover,
 
 /* LLM Data Prep Table Styles */
 .llm-data-prep-page .table-responsive {
-    overflow-x: auto; /* Enables horizontal scrolling for the table if content overflows */
+    overflow-x: auto;
     margin-top: 1rem;
 }
 
 .llm-data-prep-page .table {
-    /* No table-layout: fixed; allows browser to determine column widths */
-    width: 100%; /* Important: Keeps table within container but allows it to grow if content demands */
+    width: 100%;
     border-collapse: collapse;
-    min-width: 900px; /* Increased minimum width to prevent squashing when many columns are displayed. Adjust as needed.*/
+    min-width: 900px; /* Adjust as needed for column content */
 }
 
 .llm-data-prep-page .table th,
 .llm-data-prep-page .table td {
     vertical-align: top;
-    padding: 0.5rem; /* Standard padding for table cells */
-    white-space: normal; /* Allow text to wrap naturally */
-    word-wrap: break-word; /* Ensure words break if they don't fit */
-    word-break: break-word; /* More aggressive word breaking for long unbroken strings */
+    padding: 0.5rem;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .llm-data-prep-page .table thead.table-light th {
@@ -980,62 +998,52 @@ form button[type="submit"]:hover,
     text-align: left;
 }
 
-/* Column minimum widths - these guide the browser but allow flexibility */
-.llm-data-prep-page .table .col-fixed-short { /* For Step ID */
-    width: 60px; /* fixed for a very small column */
+/* Column minimum widths */
+.llm-data-prep-page .table .col-fixed-short {
+    width: 60px;
     min-width: 60px;
 }
-.llm-data-prep-page .table .col-name { /* For Name */
-    min-width: 150px; /* Enough space for multi-line name */
+.llm-data-prep-page .table .col-name {
+    min-width: 150px;
 }
-.llm-data-prep-page .table .col-bi-id { /* For BI_ID */
-    min-width: 120px; /* Enough space for BI_ID */
+.llm-data-prep-page .table .col-bi-id {
+    min-width: 120px;
 }
-.llm-data-prep-page .table .col-content { /* For general content columns */
-    min-width: 200px; /* Give more space to content columns */
+.llm-data-prep-page .table .col-content {
+    min-width: 200px;
 }
 
 /* Styles for the new content wrapper divs INSIDE <td> */
 .llm-data-prep-page .table .scrollable-cell-content,
 .llm-data-prep-page .table .cell-display-content {
-    display: block; /* Important: makes the div behave like a block inside the table cell */
-    width: 100%;    /* Ensures the div takes the full width of its parent td */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
     padding-right: 5px; /* Add some padding to avoid scrollbar overlapping text */
 }
 
 .llm-data-prep-page .table .scrollable-cell-content {
     max-height: 100px; /* Max height for content before scrolling */
     overflow-y: auto;  /* Enable vertical scrollbar */
-    /* background-color: var(--raw-light-grey-100); Optional: visually distinguish scrollable cells */
-    /* border-radius: var(--border-radius-sm); Optional: add slight border-radius */
 }
 
 .llm-data-prep-page .table .cell-display-content {
-    /* For shorter content that doesn't need vertical scrolling */
     max-height: 100px; /* Match scrollable height for row consistency, but content will just hide if overflows */
     overflow-y: hidden; /* Hide overflow without scrollbar */
-    /* text-overflow: ellipsis; Optional: add ellipsis for single line overflow.
-                             Requires white-space: nowrap; which conflicts with wrapping.
-                             Better to let text wrap and hide if height is exceeded. */
 }
 
 /* Preformatted text within table cells */
 .llm-data-prep-page .table td pre {
     font-size: 0.85rem;
-    /* max-height and overflow-y are now handled by .scrollable-cell-content parent */
     margin: 0;
     padding: 0;
     background-color: transparent;
     border: none;
     color: var(--text-color);
     line-height: 1.4;
-    white-space: pre-wrap;   /* Preserve line breaks and wrap text */
-    word-break: break-word;  /* Break long words */
+    white-space: pre-wrap;
+    word-break: break-word;
 }
-
-/* Remove old truncation rule as it's no longer used */
-
 
 /* JSON Preview container */
 #jsonPreviewContainer {
@@ -1079,7 +1087,95 @@ form button[type="submit"]:hover,
     color: var(--white) !important;
 }
 
-/* Utility Classes (ensure these are at the end or have high specificity if needed) */
+/* LLM Chat Window Styles */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px; /* Minimum height for the chat area */
+}
+
+.chat-display {
+    flex-grow: 1; /* Takes available space */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    overflow-y: auto; /* Scroll for chat history */
+    background-color: var(--raw-light-grey-100);
+    max-height: 500px; /* Cap overall chat display height */
+    margin-bottom: 15px;
+}
+
+.chat-bubble {
+    padding: 10px 15px;
+    border-radius: 15px; /* Rounded corners for chat bubbles */
+    margin-bottom: 10px;
+    max-width: 85%; /* Don't take full width */
+    line-height: 1.6;
+    word-wrap: break-word; /* Ensure long words break */
+    white-space: pre-wrap; /* Preserve line breaks and wrap content */
+}
+
+.chat-bubble-user {
+    background-color: var(--primary-color-light); /* Light green for user messages */
+    color: var(--primary-color-dark);
+    margin-left: auto; /* Align to right */
+    border-bottom-right-radius: 2px; /* Slightly square off one corner */
+}
+
+.chat-bubble-assistant {
+    background-color: var(--card-bg); /* White for assistant messages */
+    color: var(--text-color);
+    margin-right: auto; /* Align to left */
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 2px; /* Slightly square off one corner */
+}
+
+/* Markdown formatting within chat bubbles */
+.chat-bubble pre {
+    background-color: var(--element-bg-light);
+    border: 1px solid var(--raw-light-grey-300);
+    border-radius: var(--border-radius-sm);
+    padding: 10px;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    word-break: break-all; /* More aggressive for code blocks */
+    font-size: 0.8em;
+    overflow-x: auto; /* Horizontal scroll for wide code blocks */
+}
+.chat-bubble code {
+    background-color: var(--element-bg-light);
+    border-radius: var(--border-radius-sm);
+    padding: 2px 5px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+.chat-bubble strong {
+    font-weight: 600;
+}
+.chat-bubble em {
+    font-style: italic;
+}
+.chat-bubble p:last-child {
+    margin-bottom: 0; /* Remove extra margin from last paragraph in bubble */
+}
+
+
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+    width: 100%; /* Take full width of parent */
+}
+.chat-input-area .form-control {
+    flex-grow: 1; /* Input field takes most space */
+}
+.chat-input-area .btn {
+    flex-shrink: 0; /* Buttons don't shrink */
+}
+.chat-input-area .form-select {
+    flex-shrink: 0; /* Select doesn't shrink */
+}
+
+/* Utility Classes */
 .text-center { text-align: center !important; }
 .mb-1 { margin-bottom: 0.25rem !important; }
 .mb-2 { margin-bottom: 0.5rem !important; }
@@ -1102,3 +1198,48 @@ form button[type="submit"]:hover,
 #relevanceChart {
     min-width: 600px;
 }
+
+
+/* TEMPORARY DIAGNOSTIC STYLES FOR COLLAPSE - REMOVE AFTER FIX */
+
+/* Styles for the collapsed state */
+.collapse:not(.show) {
+    height: 0 !important;
+    overflow: hidden !important;
+    transition: height 0.35s ease !important; /* Ensure transition is applied */
+    /* Add a visual cue to see if this rule is active */
+    box-sizing: border-box !important; /* Ensure padding/border doesn't cause overflow */
+}
+
+/* Styles during the transition (collapsing or expanding) */
+.collapsing {
+    height: 0 !important; /* Initial height for collapsing, final height for expanding */
+    overflow: hidden !important;
+    transition: height 0.35s ease !important;
+    /* Add a visual cue to see if this class is active */
+    background-color: rgba(255, 255, 0, 0.2) !important; /* Light yellow overlay */
+    box-sizing: border-box !important;
+}
+
+/* Styles for the expanded state */
+.collapse.show {
+    /* Bootstrap calculates the natural height, setting height: auto is usually the final state */
+    /* For animation, it usually sets an explicit height then transitions to auto or 0. */
+    height: auto !important; 
+    overflow: visible !important;
+    /* Add a visual cue to see if this rule is active */
+    box-sizing: border-box !important;
+}
+
+/* If the element has an inline style that overrides height or display, remove it. */
+/* You had style="" in your HTML, if it gets populated, it's a problem. */
+/* For example, if some JS sets style="height: Xpx; display: block;" */
+#selectionCriteriaBody[style],
+#preparedDataBody[style],
+#llmChatBody[style] {
+    /* If Bootstrap adds its own inline styles during transition, that's fine. */
+    /* But if *other* JS adds conflicting inline styles, this could override. */
+    /* This rule is just a placeholder; inspect the live DOM to see if it's needed. */
+}
+
+/* END TEMPORARY DIAGNOSTIC STYLES */

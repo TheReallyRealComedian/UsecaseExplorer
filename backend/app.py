@@ -9,6 +9,9 @@ from .config import get_config
 from .models import Base, User, Area, ProcessStep, UseCase
 from .db import SessionLocal, init_engine as init_db_engine # Updated import
 
+# NEW: Import llm_service to ensure it's loaded and can access Flask's session proxy
+from . import llm_service # This line is important
+
 # Flask-Login setup
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
