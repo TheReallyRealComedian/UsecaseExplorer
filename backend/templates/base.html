@@ -35,6 +35,13 @@
                         <span>LLM Data Prep</span>
                     </a>
                 </li>
+                {# NEW ITEM FOR RELEVANCE VISUALIZATION #}
+                <li class="{{ 'active' if request.endpoint == 'relevance.visualize' else '' }}">
+                    <a href="{{ url_for('relevance.visualize_relevance') }}">
+                        <i class="fas fa-network-wired"></i> {# A suitable icon #}
+                        <span>Relevance Map</span>
+                    </a>
+                </li>
                   <li>
                     <a href="#">
                         <i class="fas fa-cog"></i>

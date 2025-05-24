@@ -1041,3 +1041,18 @@ form button[type="submit"]:hover,
 .mt-3 { margin-top: 1rem !important; }
 .me-1 { margin-right: 0.25rem !important; }
 .me-2 { margin-right: 0.5rem !important; }
+
+
+/* Added for Relevance Map page */
+.relevance-visualize-page .card-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 600px; /* Ensure space for chart even if data is empty */
+    overflow-x: auto; /* Allow horizontal scroll if chart is too wide */
+}
+
+/* Ensure the chart container doesn't cause overflow on narrow screens if it needs to be wider */
+#relevanceChart {
+    min-width: 600px; /* Or a suitable minimum width */
+}
