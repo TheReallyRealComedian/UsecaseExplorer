@@ -1,10 +1,14 @@
 # backend/export_service.py
 import json
 from datetime import datetime
-import traceback # Added for export_area_to_markdown
-from sqlalchemy.orm import joinedload, selectinload # Added selectinload
+import traceback
+from sqlalchemy.orm import joinedload, selectinload
 from .db import SessionLocal
-from .models import User, Area, ProcessStep, UseCase, UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
+from .models import (
+    User, Area, ProcessStep, UseCase,
+    UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
+    ProcessStepProcessStepRelevance # NEW import
+)
 
 def datetime_serializer(obj):
     if isinstance(obj, datetime):
@@ -97,6 +101,16 @@ def export_database_to_json_string():
             } for r in uur
         ]
 
+        # NEW: Export ProcessStepProcessStepRelevance
+        pspsr = session.query(ProcessStepProcessStepRelevance).all()
+        export_data["data"]["process_step_process_step_relevance"] = [
+            {
+                "id": r.id, "source_process_step_id": r.source_process_step_id,
+                "target_process_step_id": r.target_process_step_id, "relevance_score": r.relevance_score,
+                "relevance_content": r.relevance_content, "created_at": r.created_at, "updated_at": r.updated_at
+            } for r in pspsr
+        ]
+
         return json.dumps(export_data, default=datetime_serializer, indent=2)
 
     except Exception as e:
@@ -171,7 +185,7 @@ def export_area_to_markdown(area_id: int):
                         md_content.append(f"- **UC BI_ID:** {uc.bi_id}")
                         priority_map = {1: "High", 2: "Medium", 3: "Low", 4: "Waiting List"}
                         md_content.append(f"- **Priority:** {priority_map.get(uc.priority, 'N/A')}")
-                        
+
                         if uc.wave: md_content.append(f"- **Wave:** {uc.wave}")
                         if uc.status: md_content.append(f"- **Status:** {uc.status}")
                         if uc.effort_level: md_content.append(f"- **Effort Level:** {uc.effort_level}")
@@ -196,7 +210,7 @@ def export_area_to_markdown(area_id: int):
                         for label, value in text_fields_uc.items():
                             if value:
                                 md_content.append(f"- **{label}:** {format_text_for_markdown(value)}")
-                        
+
                         quant_fields_uc = {
                             "Time Reduction (Transfer)": uc.reduction_time_transfer,
                             "Time Reduction (Launches)": uc.reduction_time_launches,
@@ -207,9 +221,9 @@ def export_area_to_markdown(area_id: int):
                             if value:
                                 md_content.append(f"- **{label}:** {value}")
 
-                        md_content.append("\n") 
-                md_content.append("---\n") 
-        
+                        md_content.append("\n")
+                md_content.append("---\n")
+
         return "".join(md_content)
     except Exception as e:
         print(f"Error exporting area {area_id} to markdown: {e}")

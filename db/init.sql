@@ -1,6 +1,7 @@
 -- init.sql
 
 -- Drop tables in reverse order of dependency if they exist
+DROP TABLE IF EXISTS process_step_process_step_relevance CASCADE; -- Added for consistency
 DROP TABLE IF EXISTS usecase_usecase_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_step_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_area_relevance CASCADE;
@@ -129,6 +130,22 @@ CREATE TABLE usecase_usecase_relevance (
     UNIQUE (source_usecase_id, target_usecase_id)
 );
 
+-- NEW: Table for ProcessStep to ProcessStep Relevance
+CREATE TABLE IF NOT EXISTS process_step_process_step_relevance (
+    id SERIAL PRIMARY KEY,
+    source_process_step_id INTEGER NOT NULL,
+    target_process_step_id INTEGER NOT NULL,
+    relevance_score INTEGER NOT NULL,
+    relevance_content TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (source_process_step_id) REFERENCES process_steps(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_process_step_id) REFERENCES process_steps(id) ON DELETE CASCADE,
+    CONSTRAINT relevance_ps_ps_score_check CHECK (relevance_score >= 0 AND relevance_score <= 100),
+    CONSTRAINT no_self_step_relevance CHECK (source_process_step_id != target_process_step_id),
+    CONSTRAINT unique_process_step_process_step_relevance UNIQUE (source_process_step_id, target_process_step_id)
+);
+
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_areas_name ON areas (name);
@@ -142,6 +159,9 @@ CREATE INDEX IF NOT EXISTS idx_uc_step_rev_source_uc_id ON usecase_step_relevanc
 CREATE INDEX IF NOT EXISTS idx_uc_step_rev_target_step_id ON usecase_step_relevance (target_process_step_id);
 CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_source_uc_id ON usecase_usecase_relevance (source_usecase_id);
 CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_target_uc_id ON usecase_usecase_relevance (target_usecase_id);
+-- Add indexes for the new process_step_process_step_relevance table
+CREATE INDEX IF NOT EXISTS idx_ps_ps_rev_source_ps_id ON process_step_process_step_relevance (source_process_step_id);
+CREATE INDEX IF NOT EXISTS idx_ps_ps_rev_target_ps_id ON process_step_process_step_relevance (target_process_step_id);
 
 /*
 -- Optional: Trigger for automatically updating updated_at on row modification

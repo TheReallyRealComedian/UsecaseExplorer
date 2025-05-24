@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
-from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance
+from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance # NEW Import
 
 step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
@@ -20,17 +20,29 @@ def view_step(step_id):
             joinedload(ProcessStep.area),
             selectinload(ProcessStep.use_cases),
             selectinload(ProcessStep.usecase_relevance)
-                .joinedload(UsecaseStepRelevance.source_usecase)
+                .joinedload(UsecaseStepRelevance.source_usecase),
+            # NEW: Load ProcessStep-ProcessStep relevance links (as source and target)
+            selectinload(ProcessStep.relevant_to_steps_as_source)
+                .joinedload(ProcessStepProcessStepRelevance.target_process_step),
+            selectinload(ProcessStep.relevant_to_steps_as_target)
+                .joinedload(ProcessStepProcessStepRelevance.source_process_step)
         ).get(step_id)
 
         if step is None:
             flash(f"Process Step with ID {step_id} not found.", "warning")
             return redirect(url_for('index'))
 
+        # NEW: Fetch other steps for the "Add Relevance Link" form
+        other_steps = session.query(ProcessStep)\
+            .filter(ProcessStep.id != step_id)\
+            .order_by(ProcessStep.name)\
+            .all()
+
         return render_template(
             'step_detail.html',
             title=f"Process Step: {step.name}",
             step=step,
+            other_steps=other_steps, # Pass other steps to the template
             current_step=step,
             current_area=step.area
         )

@@ -2,8 +2,12 @@
 from flask import Blueprint, request, flash, redirect, url_for, abort, render_template
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
-from ..db import SessionLocal # CHANGED
-from ..models import UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance, UseCase
+from ..db import SessionLocal
+from ..models import (
+    UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
+    ProcessStepProcessStepRelevance, # NEW import
+    UseCase, ProcessStep # Needed for fetching related objects in edit/view
+)
 from sqlalchemy.exc import IntegrityError
 
 relevance_routes = Blueprint('relevance', __name__, url_prefix='/relevance')
@@ -195,6 +199,72 @@ def add_usecase_relevance():
 
     return redirect(redirect_url_fallback)
 
+@relevance_routes.route('/add/step_to_step', methods=['POST'])
+@login_required
+def add_step_to_step_relevance():
+    """Handles the form submission for adding ProcessStep-ProcessStep relevance."""
+    source_process_step_id = request.form.get('source_process_step_id', type=int)
+    target_process_step_id = request.form.get('target_process_step_id', type=int)
+    score_str = request.form.get('relevance_score')
+    content = request.form.get('relevance_content', '').strip()
+
+    redirect_url_fallback = url_for('index')
+    if source_process_step_id:
+        redirect_url_fallback = url_for('steps.view_step', step_id=source_process_step_id)
+
+    if not all([source_process_step_id, target_process_step_id, score_str is not None]):
+        flash("Missing required fields (Source Step ID, Target Step ID, Score).", "danger")
+        return redirect(request.referrer or redirect_url_fallback)
+
+    if source_process_step_id == target_process_step_id:
+        flash("Cannot link a Process Step to itself.", "warning")
+        return redirect(redirect_url_fallback)
+
+    try:
+        score = int(score_str)
+        if not (0 <= score <= 100):
+            flash("Score must be between 0 and 100.", "danger")
+            return redirect(request.referrer or redirect_url_fallback)
+    except ValueError:
+        flash("Invalid score format. Score must be a number.", "danger")
+        return redirect(request.referrer or redirect_url_fallback)
+
+    session = SessionLocal()
+    try:
+        existing_link = session.query(ProcessStepProcessStepRelevance).filter_by(
+            source_process_step_id=source_process_step_id,
+            target_process_step_id=target_process_step_id
+        ).first()
+
+        if existing_link:
+            flash("Relevance link between these Process Steps already exists.", "warning")
+        else:
+            new_link = ProcessStepProcessStepRelevance(
+                source_process_step_id=source_process_step_id,
+                target_process_step_id=target_process_step_id,
+                relevance_score=score,
+                relevance_content=content if content else None
+            )
+            session.add(new_link)
+            session.commit()
+            flash("Process Step relevance link added successfully!", "success")
+
+    except IntegrityError as ie:
+        session.rollback()
+        if 'no_self_step_relevance' in str(ie).lower() or 'chk_process_step_process_step_relevance_no_self_step_relevance' in str(ie).lower():
+            flash("Database error: Cannot link a Process Step to itself.", "danger")
+        else:
+            flash("Database error: Could not add link. It might already exist or violate constraints.", "danger")
+            print(f"IntegrityError adding step-to-step relevance: {ie}")
+    except Exception as e:
+        session.rollback()
+        flash(f"An unexpected error occurred: {e}", "danger")
+        print(f"Error adding step-to-step relevance: {e}")
+    finally:
+        SessionLocal.remove()
+
+    return redirect(redirect_url_fallback)
+
 # --- DELETE ROUTES ---
 
 @relevance_routes.route('/delete/area/<int:relevance_id>', methods=['POST'])
@@ -280,6 +350,35 @@ def delete_usecase_relevance(relevance_id):
 
     if redirect_uc_id:
         return redirect(url_for('usecases.view_usecase', usecase_id=redirect_uc_id))
+    return redirect(url_for('index'))
+
+@relevance_routes.route('/delete/step_to_step/<int:relevance_id>', methods=['POST'])
+@login_required
+def delete_step_to_step_relevance(relevance_id):
+    source_process_step_id_form = request.form.get('source_process_step_id', type=int)
+    session = SessionLocal()
+    redirect_ps_id = source_process_step_id_form
+
+    try:
+        link = session.query(ProcessStepProcessStepRelevance).get(relevance_id)
+        if link:
+            if not redirect_ps_id and hasattr(link, 'source_process_step_id') and link.source_process_step_id:
+                redirect_ps_id = link.source_process_step_id
+
+            session.delete(link)
+            session.commit()
+            flash("Process Step relevance link deleted successfully.", "success")
+        else:
+            flash("Process Step relevance link not found.", "warning")
+    except Exception as e:
+        session.rollback()
+        flash(f"Error deleting process step relevance link: {e}", "danger")
+        print(f"Error deleting step-to-step relevance {relevance_id}: {e}")
+    finally:
+        SessionLocal.remove()
+
+    if redirect_ps_id:
+        return redirect(url_for('steps.view_step', step_id=redirect_ps_id))
     return redirect(url_for('index'))
 
 # --- EDIT ROUTES ---
@@ -444,3 +543,56 @@ def edit_usecase_relevance(relevance_id):
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='usecase')
+
+@relevance_routes.route('/edit/step_to_step/<int:relevance_id>', methods=['GET', 'POST'])
+@login_required
+def edit_step_to_step_relevance(relevance_id):
+    session = SessionLocal()
+    link = session.query(ProcessStepProcessStepRelevance).options(
+        joinedload(ProcessStepProcessStepRelevance.source_process_step),
+        joinedload(ProcessStepProcessStepRelevance.target_process_step)
+    ).get(relevance_id)
+
+    if not link:
+        flash("Process Step relevance link not found.", "danger")
+        SessionLocal.remove()
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        score_str = request.form.get('relevance_score')
+        content = request.form.get('relevance_content', '').strip()
+        source_process_step_id_form = request.form.get('source_process_step_id', type=int)
+
+        try:
+            score = int(score_str)
+            if not (0 <= score <= 100):
+                flash("Score must be between 0 and 100.", "danger")
+                return render_template('edit_relevance.html',
+                                       relevance_link=link,
+                                       link_type='step_to_step') # Indicate link type
+        except (ValueError, TypeError):
+            flash("Invalid score format. Score must be a number.", "danger")
+            return render_template('edit_relevance.html',
+                                   relevance_link=link,
+                                   link_type='step_to_step') # Indicate link type
+
+        link.relevance_score = score
+        link.relevance_content = content if content else None
+        try:
+            session.commit()
+            flash("Process Step relevance link updated successfully!", "success")
+        except Exception as e:
+            session.rollback()
+            flash(f"Error updating link: {e}", "danger")
+            print(f"Error updating step-to-step relevance {relevance_id}: {e}")
+        finally:
+            SessionLocal.remove()
+
+        redirect_id = source_process_step_id_form or link.source_process_step_id
+        return redirect(url_for('steps.view_step', step_id=redirect_id))
+
+    # GET request:
+    SessionLocal.remove()
+    return render_template('edit_relevance.html',
+                           relevance_link=link,
+                           link_type='step_to_step') # Indicate link type

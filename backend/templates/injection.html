@@ -3,8 +3,10 @@
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
+
 <h1>{{ title }}</h1>
 <p class="mb-3">Upload JSON files to bulk-add Areas, Process Steps, or Use Cases. You can also import a full database backup.</p>
+
 
 {# Flash messages are now in base.html #}
 
@@ -65,6 +67,26 @@
 </div>
 
 <div class="injection-form-section">
+    <h2>Inject Process Step Relevance Links</h2>
+    <p>
+        Upload a JSON file containing a list of relevance links between process steps.<br>
+        Required keys: <code>"source_process_step_bi_id"</code> (string), <code>"target_process_step_bi_id"</code> (string), <code>"relevance_score"</code> (integer 0-100).<br>
+        Optional key: <code>"relevance_content"</code> (string).<br>
+        Note: Both source and target steps must exist. A step cannot be linked to itself.<br>
+        Example: <code>[{"source_process_step_bi_id": "PS-001", "target_process_step_bi_id": "PS-002", "relevance_score": 85, "relevance_content": "Shared dependency"}, ...]</code>
+    </p>
+    <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="psPsRelevanceForm">
+         <div>
+             <label for="ps_ps_relevance_file">Process Step Relevance JSON File:</label>
+             <input type="file" id="ps_ps_relevance_file" name="ps_ps_relevance_file" accept=".json" required>
+         </div>
+         <div>
+             <button type="submit">Upload Step-to-Step Relevance</button>
+         </div>
+    </form>
+</div>
+
+<div class="injection-form-section">
     <h2>Import Full Database (JSON)</h2>
     <p>
        Upload a previously exported database JSON file.
@@ -112,7 +134,13 @@ document.getElementById('usecaseForm').onsubmit = function() {
     console.log('Use Case form submitted');
     return true;
 };
+
+document.getElementById('psPsRelevanceForm').onsubmit = function() {
+    console.log('Process Step Relevance form submitted');
+    return true;
+};
 </script>
+
 
 {# Removed Back to Home link, use sidebar now #}
 

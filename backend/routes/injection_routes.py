@@ -8,7 +8,13 @@ import json
 
 # SessionLocal is not directly used here, it's used by injection_service
 from ..models import Area, ProcessStep, UseCase
-from ..injection_service import process_area_file, process_step_file, process_usecase_file, import_database_from_json
+from ..injection_service import (
+    process_area_file,
+    process_step_file,
+    process_usecase_file,
+    process_ps_ps_relevance_file, # NEW import
+    import_database_from_json
+)
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
@@ -24,12 +30,13 @@ def handle_injection():
             # Check if any file was uploaded
             if 'area_file' not in request.files and \
                'step_file' not in request.files and \
-               'usecase_file' not in request.files:
+               'usecase_file' not in request.files and \
+               'ps_ps_relevance_file' not in request.files: # NEW check
                 flash('No file part in the request.', 'danger')
                 print("No file part in the request") # Debug log
                 return redirect(request.url)
 
-            # --- Area File Processing ---
+            # --- Area File Processing (existing) ---
             if 'area_file' in request.files:
                 print("Area file detected") # Debug log
                 file = request.files['area_file']
@@ -50,7 +57,7 @@ def handle_injection():
                     flash('Invalid file type or name for Areas. Please upload a .json file.', 'danger')
                     return redirect(request.url)
 
-            # --- Process Step File Processing ---
+            # --- Process Step File Processing (existing) ---
             elif 'step_file' in request.files:
                 print("Step file detected") # Debug log
                 file = request.files['step_file']
@@ -80,7 +87,7 @@ def handle_injection():
                      flash('Invalid file type or name for Process Steps. Please upload a .json file.', 'danger')
                      return redirect(request.url)
 
-            # --- Use Case File Processing ---
+            # --- Use Case File Processing (existing) ---
             elif 'usecase_file' in request.files:
                 print("Use Case file detected") # Debug log
                 file = request.files['usecase_file']
@@ -108,6 +115,39 @@ def handle_injection():
                      flash('Invalid file type or name for Use Cases. Please upload a .json file.', 'danger')
                      return redirect(request.url)
             # --- END Use Case File Processing ---
+
+            # NEW: Process Step-to-Step Relevance File Processing
+            elif 'ps_ps_relevance_file' in request.files: # NEW condition
+                print("Process Step Relevance file detected") # Debug log
+                file = request.files['ps_ps_relevance_file']
+                if file.filename == '' or not file:
+                    print("No selected file for Process Step Relevance") # Debug log
+                    flash('No selected file for Process Step Relevance.', 'warning')
+                    return redirect(request.url)
+
+                if file and '.' in file.filename and \
+                   file.filename.rsplit('.', 1)[1].lower() == 'json':
+                    result = process_ps_ps_relevance_file(file.stream) # NEW function call
+
+                    flash_category = 'danger' # Default to danger
+                    if result['success'] and result['added_count'] > 0:
+                        flash_category = 'success'
+                    elif result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                        flash_category = 'warning'
+                    elif not result['success'] and 'Error:' not in result.get('message', ''):
+                         flash_category = 'warning'
+
+                    flash(result['message'], flash_category)
+                    # Optionally, log detailed skipped errors for debugging:
+                    if result.get('skipped_errors'):
+                        for err_msg in result['skipped_errors']:
+                            print(f"PS-PS Relevance Skip Detail: {err_msg}")
+                    print(f"Process Step Relevance injection result: {result}")
+                    return redirect(url_for('injection.handle_injection'))
+                else:
+                     flash('Invalid file type or name for Process Step Relevance. Please upload a .json file.', 'danger')
+                     return redirect(request.url)
+            # END NEW Process Step-to-Step Relevance File Processing
 
             else:
                 print("No known file input found") # Debug log

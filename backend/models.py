@@ -79,6 +79,20 @@ class ProcessStep(Base):
     use_cases = relationship("UseCase", back_populates="process_step", cascade="all, delete-orphan")
     usecase_relevance = relationship("UsecaseStepRelevance", back_populates="target_process_step", cascade="all, delete-orphan")
 
+    # Relationships for ProcessStepProcessStepRelevance
+    relevant_to_steps_as_source = relationship(
+        "ProcessStepProcessStepRelevance",
+        foreign_keys='[ProcessStepProcessStepRelevance.source_process_step_id]',
+        back_populates="source_process_step",
+        cascade="all, delete-orphan"
+    )
+    relevant_to_steps_as_target = relationship(
+        "ProcessStepProcessStepRelevance",
+        foreign_keys='[ProcessStepProcessStepRelevance.target_process_step_id]',
+        back_populates="target_process_step",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<ProcessStep(name='{self.name}', bi_id='{self.bi_id}')>"
 
@@ -240,3 +254,34 @@ class UsecaseUsecaseRelevance(Base):
 
     def __repr__(self):
         return f"<UCUCRelevance(source_uc_id={self.source_usecase_id}, target_uc_id={self.target_usecase_id}, score={self.relevance_score})>"
+
+class ProcessStepProcessStepRelevance(Base):
+    __tablename__ = 'process_step_process_step_relevance'
+
+    id = Column(Integer, primary_key=True)
+    source_process_step_id = Column(Integer, ForeignKey('process_steps.id', ondelete='CASCADE'), nullable=False)
+    target_process_step_id = Column(Integer, ForeignKey('process_steps.id', ondelete='CASCADE'), nullable=False)
+    relevance_score = Column(Integer, nullable=False)
+    relevance_content = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("relevance_score >= 0 AND relevance_score <= 100", name='relevance_ps_ps_score_check'),
+        CheckConstraint("source_process_step_id != target_process_step_id", name='no_self_step_relevance'),
+        UniqueConstraint('source_process_step_id', 'target_process_step_id', name='unique_process_step_process_step_relevance')
+    )
+
+    source_process_step = relationship(
+        "ProcessStep",
+        foreign_keys=[source_process_step_id],
+        back_populates="relevant_to_steps_as_source"
+    )
+    target_process_step = relationship(
+        "ProcessStep",
+        foreign_keys=[target_process_step_id],
+        back_populates="relevant_to_steps_as_target"
+    )
+
+    def __repr__(self):
+        return f"<PSPSRelevance(source_ps_id={self.source_process_step_id}, target_ps_id={self.target_process_step_id}, score={self.relevance_score})>"

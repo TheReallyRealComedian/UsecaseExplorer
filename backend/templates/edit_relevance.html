@@ -10,10 +10,18 @@
         <div class="card mb-3">
             <div class="card-header">
                 <h2 class="card-title">
-                    Editing Link from Use Case:
-                    <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase.id) }}">
-                        {{ relevance_link.source_usecase.name }}
-                    </a>
+                    Editing Link from
+                    {% if link_type == 'area' or link_type == 'step' or link_type == 'usecase' %}
+                        Use Case:
+                        <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase.id) }}">
+                            {{ relevance_link.source_usecase.name }}
+                        </a>
+                    {% elif link_type == 'step_to_step' %} {# NEW condition #}
+                        Process Step:
+                        <a href="{{ url_for('steps.view_step', step_id=relevance_link.source_process_step.id) }}">
+                            {{ relevance_link.source_process_step.name }}
+                        </a>
+                    {% endif %}
                 </h2>
             </div>
             <div class="card-body">
@@ -25,12 +33,18 @@
                         Process Step: <a href="{{ url_for('steps.view_step', step_id=relevance_link.target_process_step.id) }}">{{ relevance_link.target_process_step.name }}</a> ({{ relevance_link.target_process_step.bi_id }})
                     {% elif link_type == 'usecase' %}
                         Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.target_usecase.id) }}">{{ relevance_link.target_usecase.name }}</a> ({{ relevance_link.target_usecase.bi_id }})
+                    {% elif link_type == 'step_to_step' %} {# NEW condition #}
+                        Process Step: <a href="{{ url_for('steps.view_step', step_id=relevance_link.target_process_step.id) }}">{{ relevance_link.target_process_step.name }}</a> ({{ relevance_link.target_process_step.bi_id }})
                     {% endif %}
                 </p>
 
                 <form method="POST">
-                    {# CSRF token if you add Flask-WTF later #}
-                    <input type="hidden" name="source_usecase_id" value="{{ relevance_link.source_usecase_id }}">
+                    {# Pass the correct source ID based on link type #}
+                    {% if link_type == 'step_to_step' %}
+                        <input type="hidden" name="source_process_step_id" value="{{ relevance_link.source_process_step_id }}">
+                    {% else %}
+                        <input type="hidden" name="source_usecase_id" value="{{ relevance_link.source_usecase_id }}">
+                    {% endif %}
 
                     <div class="mb-3">
                         <label for="relevance_score" class="form-label">Relevance Score (0-100):</label>
@@ -44,7 +58,12 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase_id) }}" class="btn btn-secondary">Cancel</a>
+                    {# Adjust the cancel button URL based on link type #}
+                    {% if link_type == 'step_to_step' %}
+                        <a href="{{ url_for('steps.view_step', step_id=relevance_link.source_process_step_id) }}" class="btn btn-secondary">Cancel</a>
+                    {% else %}
+                        <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase_id) }}" class="btn btn-secondary">Cancel</a>
+                    {% endif %}
                 </form>
             </div>
         </div>

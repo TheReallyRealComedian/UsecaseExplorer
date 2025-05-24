@@ -6,7 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from .db import SessionLocal
 from .models import (
     Base, User, Area, ProcessStep, UseCase,
-    UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
+    UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
+    ProcessStepProcessStepRelevance
 )
 
 def process_area_file(file_stream):
@@ -486,6 +487,154 @@ def process_usecase_file(file_stream):
         "missing_step_bi_ids": missing_step_bi_ids
     }
 
+# NEW FUNCTION: process_ps_ps_relevance_file
+def process_ps_ps_relevance_file(file_stream):
+    session = SessionLocal()
+    added_count = 0
+    skipped_invalid_format = 0
+    skipped_existing_link = 0
+    skipped_missing_step = 0
+    skipped_self_link = 0
+    skipped_errors = []
+    message = ""
+    success = False
+
+    try:
+        print("Processing process step relevance links file...")
+        step_lookup = {
+            step.bi_id: step.id
+            for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()
+        }
+
+        try:
+            data = json.load(file_stream)
+        except UnicodeDecodeError:
+            file_stream.seek(0)
+            data = json.loads(file_stream.read().decode('utf-8'))
+
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON format: Top level must be a list.")
+
+        for item in data:
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('source_process_step_bi_id', 'target_process_step_bi_id', 'relevance_score')) and
+                    isinstance(item['source_process_step_bi_id'], str) and item['source_process_step_bi_id'].strip() and
+                    isinstance(item['target_process_step_bi_id'], str) and item['target_process_step_bi_id'].strip()):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Invalid format for item: {item.get('source_process_step_bi_id', 'N/A')} -> {item.get('target_process_step_bi_id', 'N/A')}")
+                continue
+
+            source_bi_id = item['source_process_step_bi_id'].strip()
+            target_bi_id = item['target_process_step_bi_id'].strip()
+            relevance_score_raw = item['relevance_score']
+            relevance_content = item.get('relevance_content')
+
+            # Convert content to string and handle empty
+            if relevance_content is not None:
+                if not isinstance(relevance_content, str):
+                    print(f"Warning: Relevance content for {source_bi_id} -> {target_bi_id} was not a string, setting to None. Value: {relevance_content}")
+                    relevance_content = None
+                else:
+                    stripped_content = relevance_content.strip()
+                    relevance_content = stripped_content if stripped_content else None
+
+
+            if source_bi_id == target_bi_id:
+                skipped_self_link += 1
+                skipped_errors.append(f"Self-relevance link: {source_bi_id} -> {target_bi_id}")
+                continue
+
+            source_id = step_lookup.get(source_bi_id)
+            target_id = step_lookup.get(target_bi_id)
+
+            if source_id is None:
+                skipped_missing_step += 1
+                skipped_errors.append(f"Missing source step BI_ID: {source_bi_id}")
+                continue
+            if target_id is None:
+                skipped_missing_step += 1
+                skipped_errors.append(f"Missing target step BI_ID: {target_bi_id}")
+                continue
+
+            try:
+                score = int(relevance_score_raw)
+                if not (0 <= score <= 100):
+                    skipped_invalid_format += 1
+                    skipped_errors.append(f"Invalid score for {source_bi_id} -> {target_bi_id}: {relevance_score_raw}")
+                    continue
+            except (ValueError, TypeError):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Non-integer score for {source_bi_id} -> {target_bi_id}: {relevance_score_raw}")
+                continue
+
+            existing_link = session.query(ProcessStepProcessStepRelevance).filter_by(
+                source_process_step_id=source_id,
+                target_process_step_id=target_id
+            ).first()
+
+            if existing_link:
+                skipped_existing_link += 1
+                # You could add update logic here if desired, but for simplicity, we skip duplicates
+                skipped_errors.append(f"Existing link skipped: {source_bi_id} -> {target_bi_id}")
+                continue
+            
+            # Check for reverse link already existing to avoid inserting A->B and then B->A if only one direction is desired.
+            # Your unique constraint (source, target) allows A->B and B->A to exist separately.
+            # If you want to prevent both, you'd need more complex logic or a different constraint.
+            # For now, we only check for exact duplicates (source=S, target=T).
+
+            new_link = ProcessStepProcessStepRelevance(
+                source_process_step_id=source_id,
+                target_process_step_id=target_id,
+                relevance_score=score,
+                relevance_content=relevance_content
+            )
+            session.add(new_link)
+            added_count += 1
+
+        session.commit()
+        success = True
+
+        parts = []
+        if added_count > 0: parts.append(f"Added: {added_count}")
+        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
+        if skipped_self_link > 0: parts.append(f"Skipped (Self-Links): {skipped_self_link}")
+        if skipped_missing_step > 0: parts.append(f"Skipped (Missing Steps): {skipped_missing_step}")
+        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+
+        if not parts:
+            message = "Processing complete. No process step relevance links found or processed."
+        else:
+            message = f"Processing complete. {', '.join(parts)}."
+
+    except json.JSONDecodeError:
+        print("JSON Decode Error in process_ps_ps_relevance_file")
+        session.rollback()
+        success = False
+        message = "Invalid JSON format in the uploaded file."
+    except ValueError as ve:
+        session.rollback()
+        success = False
+        message = f"Error: {ve}"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        success = False
+        message = f"An unexpected error occurred: {str(e)}"
+    finally:
+        SessionLocal.remove()
+
+    return {
+        "success": success,
+        "message": message,
+        "added_count": added_count,
+        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_step + skipped_self_link,
+        "skipped_invalid_format": skipped_invalid_format,
+        "skipped_existing_link": skipped_existing_link,
+        "skipped_missing_step": skipped_missing_step,
+        "skipped_self_link": skipped_self_link,
+        "skipped_errors": skipped_errors # Provide detailed skipped errors for debugging
+    }
 
 def import_database_from_json(file_stream, clear_existing_data=False):
     session = SessionLocal()
@@ -501,6 +650,7 @@ def import_database_from_json(file_stream, clear_existing_data=False):
 
         if clear_existing_data:
             print("Clearing existing data...")
+            session.execute(text("TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;"))
             session.execute(text("TRUNCATE TABLE usecase_usecase_relevance RESTART IDENTITY CASCADE;"))
             session.execute(text("TRUNCATE TABLE usecase_step_relevance RESTART IDENTITY CASCADE;"))
             session.execute(text("TRUNCATE TABLE usecase_area_relevance RESTART IDENTITY CASCADE;"))
@@ -622,6 +772,17 @@ def import_database_from_json(file_stream, clear_existing_data=False):
                 rel = UsecaseUsecaseRelevance(
                     source_usecase_id=r_data["source_usecase_id"], 
                     target_usecase_id=r_data["target_usecase_id"], 
+                    relevance_score=r_data["relevance_score"],
+                    relevance_content=r_data.get("relevance_content")
+                )
+                session.add(rel)
+
+        # NEW: Import ProcessStepProcessStepRelevance
+        if "process_step_process_step_relevance" in imported_data:
+             for r_data in imported_data["process_step_process_step_relevance"]:
+                rel = ProcessStepProcessStepRelevance(
+                    source_process_step_id=r_data["source_process_step_id"],
+                    target_process_step_id=r_data["target_process_step_id"],
                     relevance_score=r_data["relevance_score"],
                     relevance_content=r_data.get("relevance_content")
                 )

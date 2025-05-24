@@ -1,0 +1,698 @@
+[
+  {
+    "source_process_step_bi_id": "PS-MFG-001",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 95,
+    "relevance_content": "Production Planning & Scheduling (ID:1) directly provides production orders and schedules to Manufacturing Processes (ID:2), forming the foundational input for execution on the factory floor."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-001",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_score": 90,
+    "relevance_content": "Production Planning & Scheduling (ID:1) defines and provides changeover schedules, which are executed by the Change Overs process (ID:20)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-001",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 85,
+    "relevance_content": "Production Planning & Scheduling (ID:1) provides production schedules and IPC requirements to Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-MFG-005",
+    "relevance_score": 95,
+    "relevance_content": "Manufacturing Processes (ID:2) generates the core production, equipment, and batch record data that is consumed and utilized by Product, Site, Process Data Usage (ID:3)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 85,
+    "relevance_content": "Manufacturing Processes (ID:2) provides feedback on equipment performance and issues to Equipment & Automation Lifecycle Process (ID:5)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_score": 90,
+    "relevance_content": "Manufacturing Processes (ID:2) initiates the need for changeovers upon completion of a batch, feeding into the Change Overs process (ID:20)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 95,
+    "relevance_content": "Manufacturing Processes (ID:2) is a primary source of deviations and events that require management by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 90,
+    "relevance_content": "Manufacturing Processes (ID:2) involves the execution of aseptic processes and generates environmental monitoring data, which is directly controlled and overseen by Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 85,
+    "relevance_content": "Manufacturing Processes (ID:2) involves processes, equipment, and systems that require validation and qualification by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 95,
+    "relevance_content": "Manufacturing Processes (ID:2) generates batch records, packaging information, and production data that are essential for Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 75,
+    "relevance_content": "Manufacturing Processes (ID:2) provides production schedules and incoming goods information to Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 70,
+    "relevance_content": "Manufacturing Processes (ID:2) provides samples for In-Process Controls (IPCs) tested by Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-002",
+    "target_process_step_bi_id": "PS-QC-003",
+    "relevance_score": 85,
+    "relevance_content": "Manufacturing Processes (ID:2) is the origin point for samples that undergo Sampling and Sample Storage (ID:19)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_score": 70,
+    "relevance_content": "Insights from Product, Site, Process Data Usage (ID:3) inform and optimize Production Planning & Scheduling (ID:1) by providing historical production times and performance data for predictive planning."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-MFG-006",
+    "relevance_score": 40,
+    "relevance_content": "Insights from Product, Site, Process Data Usage (ID:3) can inform the content and focus of operator assistance and training programs (ID:4)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 60,
+    "relevance_content": "Product, Site, Process Data Usage (ID:3) analyzes equipment performance data, providing insights that feedback into the Equipment & Automation Lifecycle Process (ID:5) for predictive maintenance and optimization."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 80,
+    "relevance_content": "AI and real-time data pools from Product, Site, Process Data Usage (ID:3) are used to speed up deviation investigations and CAPA management in Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 80,
+    "relevance_content": "Product, Site, Process Data Usage (ID:3) provides critical production and quality data that is needed for batch release decisions in Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 70,
+    "relevance_content": "Digital tools for Control Strategy management in Product, Site, Process Data Usage (ID:3) are used in Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-005",
+    "target_process_step_bi_id": "PS-QC-006",
+    "relevance_score": 90,
+    "relevance_content": "Product, Site, Process Data Usage (ID:3) provides the overarching framework and platform for comprehensive data from manufacturing and QC, serving as a data source for QC Data Analysis and Trending (ID:17)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-006",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 90,
+    "relevance_content": "Workplace & Operator Assistance (ID:4) provides digital tools and support directly to operators performing Manufacturing Processes (ID:2), enhancing efficiency and safety."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-006",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 70,
+    "relevance_content": "Workplace & Operator Assistance (ID:4) provides digital aids and AR/VR tools to support operators and mechanics in tasks related to Equipment & Automation Lifecycle Process (ID:5), such as troubleshooting and maintenance."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-006",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_score": 85,
+    "relevance_content": "Workplace & Operator Assistance (ID:4) provides AR-assisted guidance and digital checklists to operators during Change Overs (ID:20), improving accuracy and efficiency."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_score": 75,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) provides critical data on equipment availability and status, which is essential for Production Planning & Scheduling (ID:1) to create feasible and optimized plans."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 95,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) ensures that manufacturing equipment and automation are qualified, maintained, and ready for use in Manufacturing Processes (ID:2)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-MFG-005",
+    "relevance_score": 60,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) generates equipment data, including performance and maintenance records, which are consumed by Product, Site, Process Data Usage (ID:3)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-MFG-006",
+    "relevance_score": 60,
+    "relevance_content": "Information on equipment functionality and maintenance from Equipment & Automation Lifecycle Process (ID:5) is used to develop training and assistance content for operators (ID:4)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_score": 75,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) ensures that equipment is qualified, maintained, and correctly configured (e.g., automated recipe loading) for efficient Change Overs (ID:20)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 90,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) provides equipment and automation systems that require extensive qualification (IQ, OQ, PQ) and validation (CSV) by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-004",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 80,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) provides detailed equipment lifecycle data that feeds into the broader Facility and equipment lifecycle (ID:10) management."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 80,
+    "relevance_content": "Product related QA enabling processes (ID:6), particularly change control, may lead to deviations and CAPAs managed by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 75,
+    "relevance_content": "Changes managed by Product related QA enabling processes (ID:6) often trigger re-validation or qualification activities in Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 70,
+    "relevance_content": "Control Strategies (CSS) defined in Product related QA enabling processes (ID:6) influence Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-002",
+    "relevance_score": 70,
+    "relevance_content": "Findings from Audit and intelligence (ID:7) can inform risk assessments and trigger changes managed by Product related QA enabling processes (ID:6)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 90,
+    "relevance_content": "Audit and intelligence (ID:7) generates audit findings and observations that frequently lead to non-conformances and CAPAs managed by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 60,
+    "relevance_content": "Regulatory intelligence from Audit and intelligence (ID:7) can influence the definition and management of Control Strategies in Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 65,
+    "relevance_content": "Audit and intelligence (ID:7) conducts audits that review the effectiveness and compliance of Validation and qualification (ID:13) activities."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 70,
+    "relevance_content": "Audit and intelligence (ID:7) performs audits that assess the compliance and status of Facility and equipment lifecycle (ID:10)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 65,
+    "relevance_content": "Regulatory intelligence from Audit and intelligence (ID:7) and audit findings can impact Product release, packaging & labelling (ID:11) decisions."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 75,
+    "relevance_content": "Manufacturing Processes (ID:2) are subject to audits performed by Audit and intelligence (ID:7)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 70,
+    "relevance_content": "Equipment & Automation Lifecycle Process (ID:5) is subject to audits performed by Audit and intelligence (ID:7)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 70,
+    "relevance_content": "Lab Planning and Scheduling (ID:18) and other QC operations are subject to audits performed by Audit and intelligence (ID:7)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-004",
+    "target_process_step_bi_id": "PS-QA-002",
+    "relevance_score": 85,
+    "relevance_content": "Non-conformance and event management (ID:8) processes often trigger change controls and risk reviews managed by Product related QA enabling processes (ID:6)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-004",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 90,
+    "relevance_content": "Open deviations and investigations managed by Non-conformance and event management (ID:8) directly impact product release decisions in Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-002",
+    "relevance_score": 85,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) manages SOPs and documentation, which directly influence and may trigger change controls in Product related QA enabling processes (ID:6)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-003",
+    "relevance_score": 80,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides internal standards (SOPs) that are assessed against external requirements by Audit and intelligence (ID:7)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 85,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) establishes the SOPs and documentation standards that govern Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 60,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides general quality documentation and principles that influence the lifecycle management and transparency of Facility and equipment lifecycle (ID:10)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 70,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides overarching quality system processes and data integrity principles that support Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 80,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides the necessary documentation and standards for maintaining the Contamination Control Strategy and Control Strategy in Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 85,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides the core documentation management and quality system framework essential for Validation and Qualification (ID:13) processes."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 80,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs and training essential for Manufacturing Processes (ID:2) to ensure GMP compliance."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-MFG-006",
+    "relevance_score": 75,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs, training records, and compliance oversight for Workplace & Operator Assistance (ID:4)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-002",
+    "relevance_score": 75,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs that govern Specification Creation and Handling (ID:14) processes."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 75,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs that govern Testing Preparation and Execution (ID:15) processes."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 75,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs that govern Result Generation, Evaluation & Release (ID:16)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-003",
+    "relevance_score": 75,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides SOPs that govern Sampling and Sample Storage (ID:19)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 70,
+    "relevance_content": "Quality Assurance enabling processes (ID:9) provides the quality framework for QC Equipment Readiness (ID:21)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 75,
+    "relevance_content": "Incidents or non-compliance related to Facility and equipment lifecycle (ID:10) can trigger non-conformances and events managed by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 60,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) ensures facility readiness and compliance, which supports Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 70,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) design and status directly impact environmental monitoring and contamination control strategies in Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 85,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) generates data and provides assets that require qualification and validation by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 80,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) receives feedback on equipment usage and room cleaning status from Manufacturing Processes (ID:2)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 80,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) oversees the general management of equipment, complementing the Equipment & Automation Lifecycle Process (ID:5) by ensuring global transparency and standardization."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 90,
+    "relevance_content": "Facility and equipment lifecycle (ID:10) provides global digital transparency and management for QC Equipment Readiness (ID:21), including lab equipment status and calibration."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-005",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 90,
+    "relevance_content": "Production deviations and EM excursions identified in Production and process control (ID:12) are managed as non-conformances and events by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-005",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 60,
+    "relevance_content": "Insights from Production and process control (ID:12), such as environmental monitoring data, can inform Facility and equipment lifecycle (ID:10) management."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-005",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 75,
+    "relevance_content": "Effective Production and process control (ID:12) ensures product quality, which is essential for accurate batch disposition in Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-005",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 75,
+    "relevance_content": "Production and process control (ID:12) generates data and process conditions that are validated by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 70,
+    "relevance_content": "Validation and Qualification (ID:13) processes may uncover issues that become non-conformances or deviations handled by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 80,
+    "relevance_content": "Validation and qualification (ID:13) ensures that facilities and equipment are qualified, which is crucial for their effective management throughout the Facility and equipment lifecycle (ID:10)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 65,
+    "relevance_content": "Process validation and cleaning validation activities managed by Validation and qualification (ID:13) underpin the quality assurance for Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 85,
+    "relevance_content": "Validation and qualification (ID:13) activities, particularly for aseptic processes and cleaning, are directly linked to and ensure the effectiveness of the Contamination Control Strategy in Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 85,
+    "relevance_content": "Validation and qualification (ID:13) defines and oversees process, equipment, and system validations for Manufacturing Processes (ID:2)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 80,
+    "relevance_content": "Validation and qualification (ID:13) provides the qualification documentation (URS, IQ, OQ, PQ) and validation for Equipment & Automation Lifecycle Process (ID:5)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_score": 70,
+    "relevance_content": "Validation and qualification (ID:13) defines and oversees cleaning validation protocols that are critical for effective Change Overs (ID:20)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-002",
+    "relevance_score": 80,
+    "relevance_content": "Analytical methods and specifications from Specification Creation and Handling (ID:14) require validation managed by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 75,
+    "relevance_content": "Testing Preparation and Execution (ID:15) processes and equipment are subject to validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 70,
+    "relevance_content": "QC result evaluation and release (ID:16) rely on validated methods and systems, which are ensured by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 80,
+    "relevance_content": "QC Equipment Readiness (ID:21) relies on equipment that has undergone qualification by Validation and qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 95,
+    "relevance_content": "Specification Creation and Handling (ID:14) provides the essential test methods and specifications to Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 90,
+    "relevance_content": "Specification Creation and Handling (ID:14) provides the limits and specifications against which results are evaluated in Result Generation, Evaluation & Release (ID:16)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 70,
+    "relevance_content": "Specifications and inspection plans from Specification Creation and Handling (ID:14) are crucial inputs for Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-003",
+    "relevance_score": 65,
+    "relevance_content": "Specification Creation and Handling (ID:14) influences sampling plans and requirements managed by Sampling and Sample Storage (ID:19)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-006",
+    "relevance_score": 60,
+    "relevance_content": "Specifications from Specification Creation and Handling (ID:14) provide context for the trending and analysis of QC data (ID:17)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-002",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 60,
+    "relevance_content": "Analytical methods and specifications from Specification Creation and Handling (ID:14) require lab equipment to be qualified and ready as ensured by QC Equipment Readiness (ID:21)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 85,
+    "relevance_content": "Testing Preparation and Execution (ID:15) generates quality events (OOS, discrepancies) that are automatically documented and managed by Non-conformance and event management (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 95,
+    "relevance_content": "Testing Preparation and Execution (ID:15) produces the raw data and test execution records that are forwarded to Result Generation, Evaluation & Release (ID:16)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 80,
+    "relevance_content": "Testing Preparation and Execution (ID:15) provides feedback on test execution status to Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QC-006",
+    "relevance_score": 70,
+    "relevance_content": "Raw data and test execution records from Testing Preparation and Execution (ID:15) are a source for QC Data Analysis and Trending (ID:17)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QC-003",
+    "relevance_score": 70,
+    "relevance_content": "Testing Preparation and Execution (ID:15) may generate new samples (e.g., retain samples) or consume existing ones from Sampling and Sample Storage (ID:19)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-004",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 90,
+    "relevance_content": "Testing Preparation and Execution (ID:15) requires lab equipment to be ready and calibrated as ensured by QC Equipment Readiness (ID:21)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-005",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 95,
+    "relevance_content": "OOS results and critical data from Result Generation, Evaluation & Release (ID:16) are directly fed into Non-conformance and event management (ID:8) for investigation."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-005",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 95,
+    "relevance_content": "Batch testing results and evaluations from Result Generation, Evaluation & Release (ID:16) are the primary input for batch release decisions in Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-005",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 60,
+    "relevance_content": "QC results from Result Generation, Evaluation & Release (ID:16) (e.g., micro-testing) feed into Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-005",
+    "target_process_step_bi_id": "PS-QC-006",
+    "relevance_score": 95,
+    "relevance_content": "Result Generation, Evaluation & Release (ID:16) provides the primary analytical data and results for QC Data Analysis and Trending (ID:17)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QA-002",
+    "relevance_score": 75,
+    "relevance_content": "QC Data Analysis and Trending (ID:17) provides data for APQR and risk assessments to Product related QA enabling processes (ID:6)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QA-004",
+    "relevance_score": 70,
+    "relevance_content": "Non-analytical data trends from QC Data Analysis and Trending (ID:17) can contribute to identifying and managing non-conformances (ID:8)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QA-008",
+    "relevance_score": 70,
+    "relevance_content": "QC Data Analysis and Trending (ID:17) can provide trends and insights relevant to batch release decisions in Product release, packaging & labelling (ID:11)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QA-005",
+    "relevance_score": 70,
+    "relevance_content": "EM data analysis and trending from QC Data Analysis and Trending (ID:17) directly supports Production and process control (ID:12)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 70,
+    "relevance_content": "Insights from QC Data Analysis and Trending (ID:17) can inform future planning and resource allocation in Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-006",
+    "target_process_step_bi_id": "PS-QC-007",
+    "relevance_score": 75,
+    "relevance_content": "Trending results from QC Data Analysis and Trending (ID:17) can highlight issues with equipment performance, feeding back into QC Equipment Readiness (ID:21)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-001",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 90,
+    "relevance_content": "Lab Planning and Scheduling (ID:18) provides test orders and schedules to Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-003",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 90,
+    "relevance_content": "Sampling and Sample Storage (ID:19) provides the necessary samples to Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-003",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 75,
+    "relevance_content": "Sampling and Sample Storage (ID:19) provides information on sample status and availability, which is essential for Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-003",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_score": 85,
+    "relevance_content": "Change Overs (ID:20) provides feedback on actual changeover durations and disruptions back to Production Planning & Scheduling (ID:1), essential for re-planning and future optimization."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-003",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 95,
+    "relevance_content": "Change Overs (ID:20) ensures that production lines and equipment are prepared and ready for the next batch run in Manufacturing Processes (ID:2)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-003",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_score": 65,
+    "relevance_content": "Change Overs (ID:20) involve reconfiguring and testing equipment, providing feedback loops for the Equipment & Automation Lifecycle Process (ID:5)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-003",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 75,
+    "relevance_content": "Change Overs (ID:20) are subject to Cleaning Validation procedures and documentation managed by Validation and Qualification (ID:13)."
+  },
+  {
+    "source_process_step_bi_id": "PS-MFG-003",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 70,
+    "relevance_content": "Change Overs (ID:20) generate cleaning validation samples that need to be tested as part of Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QA-007",
+    "relevance_score": 85,
+    "relevance_content": "QC Equipment Readiness (ID:21) feeds detailed lab equipment status and maintenance data into the broader Facility and equipment lifecycle (ID:10) system."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 90,
+    "relevance_content": "QC Equipment Readiness (ID:21) ensures that lab equipment is ready and calibrated for use in Testing Preparation and Execution (ID:15)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 60,
+    "relevance_content": "QC Equipment Readiness (ID:21) ensures the reliability of equipment used to generate results for Result Generation, Evaluation & Release (ID:16)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QC-006",
+    "relevance_score": 85,
+    "relevance_content": "QC Equipment Readiness (ID:21) provides equipment availability and maintenance data which is crucial for QC Data Analysis and Trending (ID:17) to assess equipment health and trends."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QC-001",
+    "relevance_score": 95,
+    "relevance_content": "QC Equipment Readiness (ID:21) provides real-time equipment availability, status, and maintenance schedules, which are critical for accurate Lab Planning and Scheduling (ID:18)."
+  },
+  {
+    "source_process_step_bi_id": "PS-QC-007",
+    "target_process_step_bi_id": "PS-QC-003",
+    "relevance_score": 60,
+    "relevance_content": "QC Equipment Readiness (ID:21) ensures availability and proper functioning of sampling equipment for Sampling and Sample Storage (ID:19)."
+  }
+]
