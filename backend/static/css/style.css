@@ -489,12 +489,8 @@ form button[type="submit"]:hover,
     background-color: var(--raw-medium-grey-300);
 }
 
-.btn-danger {
-    background-color: var(--raw-alert-danger-text); /* Using a more prominent danger color */
-    color: var(--white);
-}
 .btn-danger:hover {
-    background-color: #c82333; /* Darker red */
+    background-color: #c82333; /* Darker red (original hover, not overridden by !important) */
 }
 
 .btn-info {
@@ -905,23 +901,22 @@ form button[type="submit"]:hover,
 
 
 /* --- LLM Data Prep Page Specific Styles --- */
-.llm-data-prep-page .card-header .card-title { /* Title like "Selection Criteria" */
+.llm-data-prep-page .card-header .card-title {
     font-size: 1.15rem;
-    color: var(--primary-color); /* Consistent with other card titles */
+    color: var(--primary-color);
 }
 
 .llm-data-prep-page .form-select[multiple] {
     min-height: 150px;
-    max-height: 250px; /* Cap height to prevent overly tall boxes */
+    max-height: 250px;
 }
 
-.llm-data-prep-page .form-control-sm { /* Search inputs within LLM page */
+.llm-data-prep-page .form-control-sm {
     font-size: 0.875rem;
     padding: .25rem .5rem;
-    /* margin-bottom is handled by parent .mb-1 div */
 }
 
-.llm-data-prep-page .small-buttons .btn-xs { /* Select/Clear All buttons */
+.llm-data-prep-page .small-buttons .btn-xs {
     padding: 0.2rem 0.5rem;
     font-size: 0.75rem;
     line-height: 1.5;
@@ -929,7 +924,7 @@ form button[type="submit"]:hover,
 
 .llm-data-prep-page .fieldset-dashed-border {
     border: 1px dashed var(--border-color);
-    padding: 1rem 1.5rem; /* Consistent padding */
+    padding: 1rem 1.5rem;
     border-radius: var(--border-radius-sm);
     margin-bottom: 1.5rem;
 }
@@ -940,16 +935,16 @@ form button[type="submit"]:hover,
     color: var(--text-color-medium);
     padding: 0 0.5rem;
     width: auto;
-    margin-bottom: 0.75rem; /* Space below legend, before checkboxes */
+    margin-bottom: 0.75rem;
     border-bottom: none;
 }
 
 .llm-data-prep-page .form-check-inline {
     margin-right: 1rem;
-    margin-bottom: 0.75rem; /* Spacing for checkboxes */
+    margin-bottom: 0.75rem;
 }
 
-.llm-data-prep-page label .selected-count-display { /* Span for "(X selected)" */
+.llm-data-prep-page label .selected-count-display {
     font-weight: normal;
     font-size: 0.8em;
     color: var(--text-color-light);
@@ -958,77 +953,130 @@ form button[type="submit"]:hover,
 
 /* LLM Data Prep Table Styles */
 .llm-data-prep-page .table-responsive {
+    overflow-x: auto; /* Enables horizontal scrolling for the table if content overflows */
     margin-top: 1rem;
 }
 
 .llm-data-prep-page .table {
-    table-layout: fixed;
-    width: 100%;
+    /* No table-layout: fixed; allows browser to determine column widths */
+    width: 100%; /* Important: Keeps table within container but allows it to grow if content demands */
     border-collapse: collapse;
+    min-width: 900px; /* Increased minimum width to prevent squashing when many columns are displayed. Adjust as needed.*/
 }
 
 .llm-data-prep-page .table th,
 .llm-data-prep-page .table td {
-    vertical-align: top; /* Align to top for better readability of multi-line text */
-    padding: 0.5rem;     /* Reduced padding slightly for more content space */
-    overflow: hidden;
-    /* word-break: break-word; /* Apply this if you want long words in ANY cell to break */
+    vertical-align: top;
+    padding: 0.5rem; /* Standard padding for table cells */
+    white-space: normal; /* Allow text to wrap naturally */
+    word-wrap: break-word; /* Ensure words break if they don't fit */
+    word-break: break-word; /* More aggressive word breaking for long unbroken strings */
 }
 
 .llm-data-prep-page .table thead.table-light th {
     background-color: var(--raw-light-grey-100);
     border-bottom-width: 2px;
     font-weight: 600;
-    /* Allow header text to wrap if necessary, though ideally it fits */
-    white-space: normal; 
-    text-align: left; /* Default for table headers */
+    text-align: left;
 }
 
-/* Specific column widths for LLM table - More conservative for fixed ones */
+/* Column minimum widths - these guide the browser but allow flexibility */
 .llm-data-prep-page .table .col-fixed-short { /* For Step ID */
-    width: 60px; /* Use px for very specific, small columns */
+    width: 60px; /* fixed for a very small column */
+    min-width: 60px;
 }
-.llm-data-prep-page .table .col-fixed-name { /* For Name */
-    width: 20%;  /* Give Name a decent chunk */
+.llm-data-prep-page .table .col-name { /* For Name */
+    min-width: 150px; /* Enough space for multi-line name */
 }
-.llm-data-prep-page .table .col-fixed-bi-id { /* For BI_ID */
-    width: 15%;  /* BI_ID can also be a bit long */
+.llm-data-prep-page .table .col-bi-id { /* For BI_ID */
+    min-width: 120px; /* Enough space for BI_ID */
 }
-
-/* Default for other dynamic columns - they will share remaining space.
-   If you often have many dynamic columns, you might want a min-width or a default %
-   but table-layout:fixed will distribute remaining space among columns without explicit width.
-*/
-.llm-data-prep-page .table th:not(.col-fixed-short):not(.col-fixed-name):not(.col-fixed-bi-id),
-.llm-data-prep-page .table td:not(.col-fixed-short):not(.col-fixed-name):not(.col-fixed-bi-id) {
-    /* Example: If you want to ensure these columns get a fair share, but not too much individually
-    width: 15%; /* This would apply to each of the remaining columns */
-    /* word-break: break-word; /* Good for long text fields */
+.llm-data-prep-page .table .col-content { /* For general content columns */
+    min-width: 200px; /* Give more space to content columns */
 }
 
+/* Styles for the new content wrapper divs INSIDE <td> */
+.llm-data-prep-page .table .scrollable-cell-content,
+.llm-data-prep-page .table .cell-display-content {
+    display: block; /* Important: makes the div behave like a block inside the table cell */
+    width: 100%;    /* Ensures the div takes the full width of its parent td */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    padding-right: 5px; /* Add some padding to avoid scrollbar overlapping text */
+}
 
-/* Truncation for single-line text in table cells */
-.llm-data-prep-page .table .truncate-text-cell {
-    display: block;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden; /* This is important for text-overflow to work on the span itself */
-    /* max-width is implicitly handled by the td's width and overflow:hidden */
+.llm-data-prep-page .table .scrollable-cell-content {
+    max-height: 100px; /* Max height for content before scrolling */
+    overflow-y: auto;  /* Enable vertical scrollbar */
+    /* background-color: var(--raw-light-grey-100); Optional: visually distinguish scrollable cells */
+    /* border-radius: var(--border-radius-sm); Optional: add slight border-radius */
+}
+
+.llm-data-prep-page .table .cell-display-content {
+    /* For shorter content that doesn't need vertical scrolling */
+    max-height: 100px; /* Match scrollable height for row consistency, but content will just hide if overflows */
+    overflow-y: hidden; /* Hide overflow without scrollbar */
+    /* text-overflow: ellipsis; Optional: add ellipsis for single line overflow.
+                             Requires white-space: nowrap; which conflicts with wrapping.
+                             Better to let text wrap and hide if height is exceeded. */
 }
 
 /* Preformatted text within table cells */
 .llm-data-prep-page .table td pre {
     font-size: 0.85rem;
-    max-height: 80px;       /* Reduced max-height slightly for tighter rows */
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-word; /* Essential for pre content */
+    /* max-height and overflow-y are now handled by .scrollable-cell-content parent */
     margin: 0;
     padding: 0;
     background-color: transparent;
     border: none;
     color: var(--text-color);
     line-height: 1.4;
+    white-space: pre-wrap;   /* Preserve line breaks and wrap text */
+    word-break: break-word;  /* Break long words */
+}
+
+/* Remove old truncation rule as it's no longer used */
+
+
+/* JSON Preview container */
+#jsonPreviewContainer {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    margin-top: 1rem;
+    background-color: var(--element-bg-light);
+}
+
+#jsonDataPreview {
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    background-color: transparent;
+    padding: 1rem;
+    border-radius: 0;
+}
+
+/* Button styling for copy/toggle JSON */
+#copyJsonButton, #toggleJsonPreview {
+    border: 1px solid var(--border-color);
+    background-color: var(--white);
+    color: var(--text-color);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+#copyJsonButton:hover, #toggleJsonPreview:hover {
+    background-color: var(--raw-light-grey-200);
+    color: var(--text-color);
+}
+.btn.btn-success {
+    background-color: var(--raw-alert-success-text) !important;
+    border-color: var(--raw-alert-success-border) !important;
+    color: var(--white) !important;
+}
+.btn.btn-danger {
+    background-color: var(--raw-alert-danger-text) !important;
+    border-color: var(--raw-alert-danger-border) !important;
+    color: var(--white) !important;
 }
 
 /* Utility Classes (ensure these are at the end or have high specificity if needed) */
@@ -1042,17 +1090,15 @@ form button[type="submit"]:hover,
 .me-1 { margin-right: 0.25rem !important; }
 .me-2 { margin-right: 0.5rem !important; }
 
-
 /* Added for Relevance Map page */
 .relevance-visualize-page .card-body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 600px; /* Ensure space for chart even if data is empty */
-    overflow-x: auto; /* Allow horizontal scroll if chart is too wide */
+    min-height: 600px;
+    overflow-x: auto;
 }
 
-/* Ensure the chart container doesn't cause overflow on narrow screens if it needs to be wider */
 #relevanceChart {
-    min-width: 600px; /* Or a suitable minimum width */
+    min-width: 600px;
 }

@@ -7,6 +7,7 @@
     <h1>{{ title }}</h1>
     <p class="text-color-light mb-4">
         Visual representation of relevance links between Process Steps.
+        Nodes represent process steps, grouped and colored by their parent area.
         Node size indicates the number of associated use cases.
         Link width and value show the relevance score (0-100).
     </p>
@@ -16,7 +17,12 @@
             <h2 class="card-title">Relevance Map</h2>
         </div>
         <div class="card-body">
-            <div id="relevanceChart" style="width: 100%; height: 600px;"></div>
+            {# Conditional rendering: show chart container only if data exists #}
+            {% if echarts_data.nodes %}
+                <div id="relevanceChart" style="width: 100%; height: 600px;"></div>
+            {% else %}
+                <p class="text-muted text-center"><em>No process steps or relevance data available for visualization. Please ensure you have areas, steps, and step-to-step relevance links in the database.</em></p>
+            {% endif %}
         </div>
     </div>
 
@@ -31,8 +37,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         var chartDom = document.getElementById('relevanceChart');
         if (!chartDom) {
-            console.error("Chart container #relevanceChart not found.");
-            return;
+            console.error("Chart container #relevanceChart not found or no data to render.");
+            return; // Exit if no chart container (e.g., no data rendered)
         }
 
         var myChart = echarts.init(chartDom);
@@ -40,19 +46,28 @@
         // @ts-ignore
         var echartsData = {{ echarts_data | tojson }}; // Data passed from Flask
 
+        // Defensive check: only proceed if echartsData contains valid nodes
+        if (!echartsData || !echartsData.nodes || echartsData.nodes.length === 0) {
+            console.warn("No valid data provided for ECharts. Skipping chart rendering.");
+            return;
+        }
+
         var option;
 
         option = {
             tooltip: {
                 trigger: 'item',
+                confine: true, // Keep tooltip within chart boundaries
                 formatter: function (params) {
                     if (params.dataType === 'node') {
-                        return params.data.tooltip.formatter; // Use custom node tooltip
+                        // Use the custom tooltip formatter stored in node.tooltip.formatter
+                        return params.data.tooltip.formatter;
                     } else if (params.dataType === 'edge') {
+                        // Use the custom tooltip formatter stored in edge.tooltip.formatter
+                        // Prepend source -> target names for clarity
                         var sourceName = echartsData.nodes.find(n => n.id === params.data.source)?.name || params.data.source;
                         var targetName = echartsData.nodes.find(n => n.id === params.data.target)?.name || params.data.target;
-                        // Using a plain right arrow character to avoid potential encoding issues with HTML entities
-                        return `<strong>${sourceName}</strong> → <strong>${targetName}</strong><br>` + params.data.tooltip.formatter; // Use custom link tooltip
+                        return `<strong>${sourceName}</strong> → <strong>${targetName}</strong><br>` + params.data.tooltip.formatter;
                     }
                     return '';
                 }
@@ -61,7 +76,14 @@
                 data: echartsData.categories.map(c => c.name),
                 bottom: 0,
                 orient: 'horizontal',
-                type: 'scroll'
+                type: 'scroll', // Enable scrolling for many categories
+                itemGap: 10, // Spacing between legend items
+                itemWidth: 15,
+                itemHeight: 15,
+                textStyle: {
+                    fontSize: 12,
+                    color: '#333'
+                }
             },
             series: [
                 {
@@ -69,7 +91,7 @@
                     type: 'graph',
                     layout: 'circular',
                     circular: {
-                        rotateLabel: true
+                        rotateLabel: true // Labels rotate with the node
                     },
                     data: echartsData.nodes,
                     links: echartsData.links,
@@ -77,29 +99,38 @@
                     roam: true, // Enable dragging and zooming
                     label: {
                         show: true,
-                        position: 'right',
-                        formatter: '{b}', // Display node name
-                        fontSize: 10
+                        position: 'right', // Position node labels to the right of the node
+                        formatter: '{b}', // Display node name (from 'name' property)
+                        fontSize: 10, // Smaller font size for node labels for better fit
+                        color: '#333', // Darker color for readability
+                        textBorderColor: '#fff', // White border for text to stand out against colored nodes
+                        textBorderWidth: 2,
+                        distance: 5 // Distance from node symbol
                     },
                     labelLayout: {
-                        hideOverlap: true
+                        hideOverlap: true // Hide overlapping labels automatically
                     },
                     lineStyle: {
                         opacity: 0.8,
-                        width: 2, // Default width, overridden by link.lineStyle.width
-                        curveness: 0.3 // Default curveness, overridden by link.lineStyle.curveness
+                        width: 2, // Default width for lines, overridden by link.lineStyle.width
+                        curveness: 0.3, // Default curveness for lines, overridden by link.lineStyle.curveness
+                        color: '#999' // Default line color
                     },
                     emphasis: {
-                        focus: 'adjacency',
+                        focus: 'adjacency', // Highlight connected nodes/edges on hover
                         lineStyle: {
-                            width: 5 // Thicker line on hover
+                            width: 5, // Thicker line on hover
+                            color: '#5D8C7B' // Primary color highlight
+                        },
+                        label: {
+                             show: true,
+                             color: '#000',
+                             fontWeight: 'bold'
                         }
                     },
-                    force: {
-                        // Adjust force layout parameters if needed for better circular distribution
-                        // repulsion: 500, // Node repulsion force
-                        // edgeLength: 100 // Edge length
-                    }
+                    // Animation settings for smoother transitions on data update (not used in this static view, but good practice)
+                    animationDurationUpdate: 750, 
+                    animationEasingUpdate: 'quinticInOut'
                 }
             ]
         };
@@ -109,6 +140,17 @@
         // Optional: Resize chart with window
         window.addEventListener('resize', function() {
             myChart.resize();
+        });
+
+        // Add click event listener to chart nodes for navigation
+        myChart.on('click', function (params) {
+            if (params.dataType === 'node') {
+                // Redirect to the step detail page using the node's ID
+                var stepId = params.data.id; 
+                if (stepId) {
+                    window.location.href = `/steps/${stepId}`;
+                }
+            }
         });
     });
 </script>

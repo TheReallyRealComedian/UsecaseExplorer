@@ -2,9 +2,25 @@
 from flask import Blueprint, request, flash, redirect, url_for, render_template
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
-
 from ..db import SessionLocal
 from ..models import ProcessStep, Area
+import json # For json.dumps
+import tiktoken # For token counting
+
+# Helper function to count tokens
+def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
+    """
+    Counts tokens in a given text using tiktoken.
+    Default model 'cl100k_base' is used for GPT-4, GPT-3.5-turbo, etc.
+    """
+    try:
+        # For robustness, try to get the specified encoding, fall back to a common one.
+        encoding = tiktoken.get_encoding(model_name)
+    except KeyError:
+        # Fallback if the model_name encoding is not found
+        encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(text))
+
 
 # Define the blueprint
 llm_routes = Blueprint('llm', __name__,
@@ -39,10 +55,11 @@ def llm_data_prep_page():
         # Fetch steps with their area for potential filtering display
         all_steps = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
 
-        prepared_data = None
+        prepared_data = None # Initialize as None, will be list only if data is found
         selected_area_ids_int = []
         selected_step_ids_int = []
         selected_fields_form = []
+        total_tokens = 0 # Initialize token count
 
         if request.method == 'POST':
             selected_area_ids_str = request.form.getlist('area_ids')
@@ -54,6 +71,7 @@ def llm_data_prep_page():
 
             if not selected_fields_form:
                 flash("Please select at least one field to preview.", "warning")
+                # Ensure prepared_data remains None if no fields are selected
             else:
                 query = session.query(ProcessStep)
                 if selected_step_ids_int:
@@ -66,6 +84,7 @@ def llm_data_prep_page():
 
                 if not steps_for_preview:
                     flash("No process steps found matching your criteria.", "info")
+                    prepared_data = [] # Explicitly set to empty list to differentiate from None
                 else:
                     prepared_data = []
                     for step in steps_for_preview:
@@ -76,9 +95,14 @@ def llm_data_prep_page():
                             else:
                                 step_data[field_key] = "N/A (invalid field)"
                         prepared_data.append(step_data)
-                    
-                    if not prepared_data:
+
+                    if not prepared_data: # Should not happen if steps_for_preview was not empty, but safety check
                          flash("No data to preview after filtering fields.", "info")
+                    else:
+                        # Convert the prepared data to a JSON string and count tokens
+                        # Only convert to JSON string if prepared_data is not empty
+                        json_string_for_tokens = json.dumps(prepared_data, indent=2)
+                        total_tokens = count_tokens(json_string_for_tokens)
 
         return render_template(
             'llm_data_prep.html',
@@ -86,7 +110,8 @@ def llm_data_prep_page():
             areas=areas,
             all_steps=all_steps,
             selectable_fields=SELECTABLE_STEP_FIELDS,
-            prepared_data=prepared_data,
+            prepared_data=prepared_data, # This will be None, [], or a list of dicts
+            total_tokens=total_tokens, # Pass token count to template
             selected_area_ids=selected_area_ids_int,
             selected_step_ids=selected_step_ids_int,
             selected_fields_form=selected_fields_form
@@ -101,7 +126,8 @@ def llm_data_prep_page():
             areas=[],
             all_steps=[],
             selectable_fields=SELECTABLE_STEP_FIELDS,
-            prepared_data=None,
+            prepared_data=None, # Default to None on error
+            total_tokens=0,
             selected_area_ids=[],
             selected_step_ids=[],
             selected_fields_form=[]

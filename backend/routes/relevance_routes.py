@@ -604,13 +604,20 @@ def visualize_relevance():
     session = SessionLocal()
     try:
         areas = session.query(Area).order_by(Area.name).all()
-        steps = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        # Fetch steps and eager load their associated area and use cases.
+        # Order by area_id and then step name to group steps from the same area together.
+        steps = session.query(ProcessStep).options(
+            joinedload(ProcessStep.area),
+            joinedload(ProcessStep.use_cases) # Load use cases to count them for node size
+        ).order_by(ProcessStep.area_id, ProcessStep.name).all()
+        
         relevances = session.query(ProcessStepProcessStepRelevance).all()
 
         echarts_categories = []
         area_id_to_category_index = {}
-        # Define a consistent set of colors for areas. Add more if you expect many areas.
-        # These colors are picked to complement your existing style.css
+        # Define a consistent set of colors for areas.
+        # These colors are chosen to complement your existing style.css and provide
+        # enough distinct values for a reasonable number of areas.
         area_colors = [
             '#5D8C7B',  # Primary Green
             '#4A7062',  # Dark Green
@@ -621,10 +628,16 @@ def visualize_relevance():
             '#8C9A8C',  # Darker green-grey
             '#455A64',  # Dark blue-grey
             '#CFD8DC',  # Very light grey
-            '#FFB6C1'   # A distinct color for overflow, if any
+            '#FFB6C1',  # Pink
+            '#FFD700',  # Gold
+            '#FFA07A',  # Light Salmon
+            '#87CEEB',  # Sky Blue
+            '#DA70D6',  # Orchid
+            '#CD5C5C',  # Indian Red
+            '#4682B4'   # Steel Blue
         ]
 
-        # 1. Prepare Categories (Areas)
+        # 1. Prepare Categories (Areas) for ECharts legend and node coloring
         for i, area in enumerate(areas):
             echarts_categories.append({
                 'name': area.name,
@@ -642,42 +655,61 @@ def visualize_relevance():
                 print(f"Warning: Process step {step.name} (ID: {step.id}) has no valid area or area not found. Skipping node.")
                 continue
 
-            # Calculate symbol size based on number of associated use cases (simple example)
-            # You can refine this logic based on relevance score magnitude or other metrics
+            # Calculate symbol size based on number of associated use cases
+            # Base size of 15, plus 1.5px per use case. Adjust as needed.
             num_use_cases = len(step.use_cases) if step.use_cases else 0
-            symbol_size = 15 + (num_use_cases * 1.5) # Base size + 1.5px per use case
+            symbol_size = 15 + (num_use_cases * 1.5) 
+
+            # For the node label, use only the step name to keep it concise.
+            # The full name and BI_ID are moved to the tooltip for detailed info on hover.
+            node_display_name = step.name
+            # Optional: Truncate very long names for display on the node label
+            # This helps prevent labels from overlapping too much, especially in circular layouts.
+            if len(node_display_name) > 25: # Adjust threshold as needed
+                node_display_name = node_display_name[:22] + '...'
+
 
             echarts_nodes.append({
                 'id': str(step.id), # ECharts graph often works best with string IDs
-                'name': f"{step.name} ({step.bi_id})",
-                'value': num_use_cases, # Could represent node importance, used for sorting or layout
-                'category': category_index,
-                'symbolSize': symbol_size,
-                'tooltip': { # Custom tooltip for node
-                    'formatter': f'<strong>{step.name}</strong><br>BI_ID: {step.bi_id}<br>Area: {step.area.name if step.area else "N/A"}<br>Use Cases: {num_use_cases}'
+                'name': node_display_name, # Display only the name, potentially truncated
+                'value': num_use_cases, # Can be used for sorting, layout, or other visual encoding
+                'category': category_index, # Link node to its area category
+                'symbolSize': symbol_size, # Vary node size based on use case count
+                'tooltip': { # Custom tooltip for node, including BI_ID and other details
+                    'formatter': (
+                        f'<strong>{step.name}</strong><br>'
+                        f'BI_ID: {step.bi_id}<br>'
+                        f'Area: {step.area.name if step.area else "N/A"}<br>'
+                        f'Use Cases: {num_use_cases}<br>'
+                        f'<i>Click for details</i>'
+                    )
+                },
+                'itemStyle': {
+                    'color': echarts_categories[category_index]['itemStyle']['color'] # Assign node color based on its category's color
                 }
             })
 
         echarts_links = []
         # 3. Prepare Links (Process Step Relevance)
         for rel in relevances:
-            # Only include links if both source and target nodes exist in our prepared list
-            # A more robust check would involve pre-creating a set of valid node IDs
-            source_node_exists = any(node['id'] == str(rel.source_process_step_id) for node in echarts_nodes)
-            target_node_exists = any(node['id'] == str(rel.target_process_step_id) for node in echarts_nodes)
+            # Ensure both source and target nodes exist in our prepared list
+            source_node = next((node for node in echarts_nodes if node['id'] == str(rel.source_process_step_id)), None)
+            target_node = next((node for node in echarts_nodes if node['id'] == str(rel.target_process_step_id)), None)
 
-            if source_node_exists and target_node_exists:
-                link_width = max(0.5, rel.relevance_score / 25) # Scale score 0-100 to width 0.5-4, min 0.5 for visibility
+            if source_node and target_node: # Only add links if both ends are valid nodes
+                # Scale relevance score (0-100) to link width (e.g., 0.5 to 4).
+                # Minimum width 0.5 for visibility.
+                link_width = max(0.5, rel.relevance_score / 25) 
                 echarts_links.append({
                     'source': str(rel.source_process_step_id),
                     'target': str(rel.target_process_step_id),
-                    'value': rel.relevance_score, # Used by formatter and width
+                    'value': rel.relevance_score, # Used by link label formatter and width
                     'label': {
                         'show': True,
                         'formatter': '{c}', # Display relevance score on the link
                         'fontSize': 10,
                         'color': '#333',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.7)',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.7)', # Semi-transparent background for label
                         'padding': [2, 4],
                         'borderRadius': 2
                     },
@@ -687,7 +719,10 @@ def visualize_relevance():
                         'curveness': 0.3 # Make links curved
                     },
                     'tooltip': { # Custom tooltip for link
-                        'formatter': f'Relevance: {rel.relevance_score}/100<br>Content: {rel.relevance_content or "N/A"}'
+                        'formatter': (
+                            f'Relevance: <strong>{rel.relevance_score}/100</strong><br>'
+                            f'Content: {rel.relevance_content or "N/A"}'
+                        )
                     }
                 })
 
@@ -704,7 +739,7 @@ def visualize_relevance():
     except Exception as e:
         print(f"Error fetching data for ECharts visualization: {e}")
         flash("An error occurred while preparing data for the relevance map.", "danger")
-        # Redirect to a safe page or render an empty visualization
+        # Return an empty data structure to prevent chart rendering errors
         return render_template(
             'relevance_visualize.html',
             title='Process Relevance Map',
