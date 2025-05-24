@@ -397,6 +397,16 @@ form div { /* General form group styling */
     flex-direction: column;
 }
 
+/* EXCEPTION: Don't apply column layout to checkbox containers */
+form div.form-check,
+form div.row,
+form div.col,
+form .form-check {
+    display: flex;
+    flex-direction: row; /* Override for checkboxes */
+    align-items: center;
+}
+
 form label {
     margin-bottom: 5px;
     font-weight: 500;
@@ -899,14 +909,13 @@ form button[type="submit"]:hover,
     margin-right: 8px;
 }
 
-
 /* --- LLM Data Prep Page Specific Styles --- */
 .llm-data-prep-page .card-header .card-title {
     font-size: 1.15rem;
     color: var(--primary-color);
 }
 
-/* Collapsible Card Header Button Styling */
+/* Collapsible Card Header Button Styling - RESTORED */
 .card-header button.btn-link {
     padding: 0;
     font-size: 1rem;
@@ -935,12 +944,6 @@ form button[type="submit"]:hover,
     padding: .25rem .5rem;
 }
 
-.llm-data-prep-page .small-buttons .btn-xs {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.75rem;
-    line-height: 1.5;
-}
-
 .llm-data-prep-page .fieldset-dashed-border {
     border: 1px dashed var(--border-color);
     padding: 1rem 1.5rem;
@@ -958,9 +961,11 @@ form button[type="submit"]:hover,
     border-bottom: none;
 }
 
+/* Remove default Bootstrap margin-right and margin-bottom from form-check-inline for better grid integration */
 .llm-data-prep-page .form-check-inline {
-    margin-right: 1rem;
-    margin-bottom: 0.75rem;
+    margin-right: 0;
+    margin-bottom: 0;
+    padding: 0; /* Bootstrap's p-0 m-0 utility classes are often good, but explicit CSS ensures */
 }
 
 .llm-data-prep-page label .selected-count-display {
@@ -968,6 +973,44 @@ form button[type="submit"]:hover,
     font-size: 0.8em;
     color: var(--text-color-light);
     margin-left: 8px;
+}
+
+/* FIXED SEARCH + BUTTON LAYOUT */
+.llm-data-prep-page .search-button-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.llm-data-prep-page .search-button-row .search-input {
+    flex: 1 1 auto !important;
+    min-width: 120px !important;
+    max-width: 300px !important;
+}
+
+.llm-data-prep-page .search-button-row .button-group {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+}
+
+.llm-data-prep-page .button-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+}
+
+.llm-data-prep-page .button-group button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    float: none !important;
+    clear: none !important;
 }
 
 /* LLM Data Prep Table Styles */
@@ -1159,7 +1202,6 @@ form button[type="submit"]:hover,
     margin-bottom: 0; /* Remove extra margin from last paragraph in bubble */
 }
 
-
 .chat-input-area {
     display: flex;
     gap: 10px;
@@ -1199,47 +1241,47 @@ form button[type="submit"]:hover,
     min-width: 600px;
 }
 
-
-/* TEMPORARY DIAGNOSTIC STYLES FOR COLLAPSE - REMOVE AFTER FIX */
-
-/* Styles for the collapsed state */
-.collapse:not(.show) {
-    height: 0 !important;
-    overflow: hidden !important;
-    transition: height 0.35s ease !important; /* Ensure transition is applied */
-    /* Add a visual cue to see if this rule is active */
-    box-sizing: border-box !important; /* Ensure padding/border doesn't cause overflow */
+/* Enhance System Prompt Textarea on LLM Data Prep page to fix rendering issues */
+.llm-data-prep-page #systemPromptInput {
+    display: block; /* Ensure it behaves as a block element */
+    width: 100%; /* Ensure it takes the full width of its container */
+    white-space: pre-wrap; /* Forces text to wrap within the element */
+    word-break: break-word; /* Breaks long words to prevent horizontal overflow */
+    overflow: auto; /* Shows scrollbars if content exceeds dimensions */
+    box-sizing: border-box; /* Ensures padding and border are included in the width */
 }
 
-/* Styles during the transition (collapsing or expanding) */
-.collapsing {
-    height: 0 !important; /* Initial height for collapsing, final height for expanding */
-    overflow: hidden !important;
-    transition: height 0.35s ease !important;
-    /* Add a visual cue to see if this class is active */
-    background-color: rgba(255, 255, 0, 0.2) !important; /* Light yellow overlay */
-    box-sizing: border-box !important;
+/* Adjustments for checkbox columns in fieldsets - FIXED COMPLETELY */
+.llm-data-prep-page .fieldset-dashed-border .row {
+    display: flex !important;
+    flex-wrap: wrap !important;
 }
 
-/* Styles for the expanded state */
-.collapse.show {
-    /* Bootstrap calculates the natural height, setting height: auto is usually the final state */
-    /* For animation, it usually sets an explicit height then transitions to auto or 0. */
-    height: auto !important; 
-    overflow: visible !important;
-    /* Add a visual cue to see if this rule is active */
-    box-sizing: border-box !important;
+.llm-data-prep-page .fieldset-dashed-border .col {
+    display: block !important; /* Reset to block for column behavior */
+    flex-direction: unset !important; /* Remove any inherited flex-direction */
 }
 
-/* If the element has an inline style that overrides height or display, remove it. */
-/* You had style="" in your HTML, if it gets populated, it's a problem. */
-/* For example, if some JS sets style="height: Xpx; display: block;" */
-#selectionCriteriaBody[style],
-#preparedDataBody[style],
-#llmChatBody[style] {
-    /* If Bootstrap adds its own inline styles during transition, that's fine. */
-    /* But if *other* JS adds conflicting inline styles, this could override. */
-    /* This rule is just a placeholder; inspect the live DOM to see if it's needed. */
+.llm-data-prep-page .form-check {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-bottom: 0.5rem !important;
+    padding: 0.25rem 0 !important;
 }
 
-/* END TEMPORARY DIAGNOSTIC STYLES */
+.llm-data-prep-page .form-check .form-check-input {
+    margin-top: 0 !important;
+    margin-right: 0.5rem !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+    position: static !important; /* Override Bootstrap positioning */
+}
+
+.llm-data-prep-page .form-check .form-check-label {
+    margin-bottom: 0 !important;
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+    padding-left: 0 !important; /* Remove any default Bootstrap padding */
+}

@@ -13,6 +13,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const clearChatButton = document.getElementById('clearChatButton');
     const llmModelSelect = document.getElementById('llmModelSelect');
 
+    // System Prompt elements
+    const systemPromptInput = document.getElementById('systemPromptInput');
+    const saveSystemPromptButton = document.getElementById('saveSystemPromptButton');
+    const saveSystemPromptMessage = document.getElementById('saveSystemPromptMessage');
+
     // Store original options for filtering
     let originalAreaOptions = [];
     if (areaSelect) {
@@ -248,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
         sendMessageButton.addEventListener('click', async () => {
             const message = chatInput.value.trim();
             const selectedModel = llmModelSelect.value;
+            const systemPrompt = systemPromptInput ? systemPromptInput.value.trim() : ''; // Get system prompt
 
             if (!message || !selectedModel) {
                 alert('Please enter a message and select a model.');
@@ -260,6 +266,9 @@ document.addEventListener('DOMContentLoaded', function () {
             sendMessageButton.disabled = true; // Disable button while loading
             chatInput.disabled = true; // Disable input
             llmModelSelect.disabled = true; // Disable model select
+            if (systemPromptInput) systemPromptInput.disabled = true; // Disable system prompt input too
+            if (saveSystemPromptButton) saveSystemPromptButton.disabled = true; // Disable save button
+
             const loadingBubble = document.createElement('div');
             loadingBubble.classList.add('chat-bubble', 'chat-bubble-assistant');
             loadingBubble.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Thinking...';
@@ -272,7 +281,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message: message, model: selectedModel }),
+                    body: JSON.stringify({
+                        message: message,
+                        model: selectedModel,
+                        // No need to explicitly send system_prompt here, it's fetched on backend from current_user
+                        // system_prompt: systemPrompt // This was my initial thought but the backend already fetches it
+                    }),
                 });
 
                 const data = await response.json();
@@ -295,6 +309,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 sendMessageButton.disabled = false; // Re-enable button
                 chatInput.disabled = false; // Re-enable input
                 llmModelSelect.disabled = false; // Re-enable model select
+                if (systemPromptInput) systemPromptInput.disabled = false; // Re-enable
+                if (saveSystemPromptButton) saveSystemPromptButton.disabled = false; // Re-enable
                 chatInput.focus(); // Focus input for next message
             }
         });
@@ -327,10 +343,53 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Handle saving system prompt
+    if (saveSystemPromptButton && systemPromptInput && saveSystemPromptMessage) {
+        saveSystemPromptButton.addEventListener('click', async () => {
+            const prompt = systemPromptInput.value.trim();
+            saveSystemPromptButton.disabled = true;
+            systemPromptInput.disabled = true;
+            saveSystemPromptMessage.textContent = 'Saving...';
+            saveSystemPromptMessage.style.color = 'var(--text-color-medium)';
+
+            try {
+                const response = await fetch('/llm/system-prompt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: prompt }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    saveSystemPromptMessage.textContent = 'Saved!';
+                    saveSystemPromptMessage.style.color = 'var(--alert-success-text)';
+                } else {
+                    saveSystemPromptMessage.textContent = `Error: ${data.message}`;
+                    saveSystemPromptMessage.style.color = 'var(--alert-danger-text)';
+                    console.error('Save System Prompt Error:', data.message);
+                }
+            } catch (error) {
+                saveSystemPromptMessage.textContent = `Network Error: Could not save prompt.`;
+                saveSystemPromptMessage.style.color = 'var(--alert-danger-text)';
+                console.error('Network Error saving system prompt:', error);
+            } finally {
+                saveSystemPromptButton.disabled = false;
+                systemPromptInput.disabled = false;
+                setTimeout(() => {
+                    saveSystemPromptMessage.textContent = ''; // Clear message after a few seconds
+                }, 3000);
+            }
+        });
+    }
+
     // --- Bootstrap Collapse Icon Toggle ---
     const selectionCriteriaHeader = document.getElementById('selectionCriteriaHeader');
     const preparedDataHeader = document.getElementById('preparedDataHeader');
     const llmChatHeader = document.getElementById('llmChatHeader');
+    const systemPromptHeader = document.getElementById('systemPromptHeader'); // NEW
 
     // Function to update icon based on collapse state
     function updateCollapseIcon(headerElement, targetId) {
@@ -360,6 +419,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (selectionCriteriaHeader) updateCollapseIcon(selectionCriteriaHeader, 'selectionCriteriaBody');
     if (preparedDataHeader) updateCollapseIcon(preparedDataHeader, 'preparedDataBody');
     if (llmChatHeader) updateCollapseIcon(llmChatHeader, 'llmChatBody');
+    if (systemPromptHeader) updateCollapseIcon(systemPromptHeader, 'systemPromptBody'); // NEW
 
     // --- Explicitly initialize Bootstrap Collapses (as a fallback/diagnostic) ---
     // This finds all elements with data-bs-toggle="collapse"
@@ -384,9 +444,5 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log("Found collapse toggle:", toggle, "for target:", collapseElement);
         }
     });
-
-    // You can remove the individual updateCollapseIcon calls above if you prefer,
-    // as they are already called by the existing code.
-    // Ensure Bootstrap's JS is loaded before this script, which it is.
 
 }); // End of DOMContentLoaded

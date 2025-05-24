@@ -1,13 +1,14 @@
 # backend/routes/llm_routes.py
 from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
-from flask_login import login_required
+from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-import json # For json.dumps
-import tiktoken # For token counting
-import traceback # Import traceback for detailed error logging
+import json
+import tiktoken
+import traceback
 
-# NEW: Import llm_service
 from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
+from ..db import SessionLocal
+from ..models import ProcessStep, Area, User
 
 # Helper function to count tokens
 def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
@@ -24,12 +25,9 @@ def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
     return len(encoding.encode(text))
 
 
-from ..db import SessionLocal
-from ..models import ProcessStep, Area
-
 # Define the blueprint
 llm_routes = Blueprint('llm', __name__,
-                       template_folder='../templates', # Ensure templates can be found
+                       template_folder='../templates',
                        url_prefix='/llm')
 
 # Define which ProcessStep fields are selectable by the user
@@ -133,10 +131,13 @@ def llm_data_prep_page():
                         total_tokens = count_tokens(json_string_for_tokens)
                         print(f"Prepared data for {len(prepared_data)} steps. Total tokens: {total_tokens}")
 
+        # NEW: Get the current user's system prompt for the template
+        user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
+
         # NEW: Get available Ollama models
         ollama_models = get_available_ollama_models()
         # NEW: Get current chat history for initial render
-        chat_history = list(get_chat_history()) # Convert deque to list
+        chat_history = list(get_chat_history())
 
         return render_template(
             'llm_data_prep.html',
@@ -151,7 +152,8 @@ def llm_data_prep_page():
             selected_fields_form=selected_fields_form,
             ollama_models=ollama_models, # NEW: Pass models to template
             chat_history=chat_history, # NEW: Pass chat history to template
-            config=current_app.config # NEW: Pass the Flask application config
+            config=current_app.config, # NEW: Pass the Flask application config
+            user_system_prompt=user_system_prompt # PASS TO TEMPLATE
         )
 
     except Exception as e:
@@ -163,8 +165,8 @@ def llm_data_prep_page():
         print("-------------------------------------------\n")
 
         flash("An error occurred while preparing data. Please try again.", "danger")
-        # Ensure current_app is available for config even in an error state
-        # from flask import current_app # Import current_app here to access config in except block - not needed, already imported globally
+        # Ensure user_system_prompt is passed even on error
+        user_system_prompt_on_error = current_user.system_prompt if current_user.is_authenticated else ""
         return render_template(
             'llm_data_prep.html',
             title="LLM Data Preparation",
@@ -178,7 +180,8 @@ def llm_data_prep_page():
             selected_fields_form=[],
             ollama_models=[], # NEW: Empty list on error
             chat_history=[], # NEW: Empty list on error
-            config=current_app.config # NEW: Pass the Flask application config on error
+            config=current_app.config, # NEW: Pass the Flask application config on error
+            user_system_prompt=user_system_prompt_on_error # PASS TO TEMPLATE
         )
     finally:
         SessionLocal.remove()
@@ -198,11 +201,42 @@ def llm_chat():
     user_message = request.json.get('message')
     model_name = request.json.get('model')
     
+    # NEW: Get system prompt from current_user
+    system_prompt = current_user.system_prompt if current_user.is_authenticated else None
+    if system_prompt == "": # Treat empty string as None
+        system_prompt = None
+
     if not user_message or not model_name:
         return jsonify({"success": False, "message": "Message and model are required."}), 400
 
-    response = generate_ollama_chat_response(model_name, user_message)
+    # Pass system_prompt to the service function
+    response = generate_ollama_chat_response(model_name, user_message, system_prompt)
     return jsonify(response)
+
+# NEW ROUTE: Save System Prompt
+@llm_routes.route('/system-prompt', methods=['POST'])
+@login_required
+def save_system_prompt():
+    prompt_content = request.json.get('prompt')
+    if prompt_content is None: # Allow empty string, but treat None as error
+        return jsonify({"success": False, "message": "Prompt content is required."}), 400
+
+    session = SessionLocal()
+    try:
+        user = session.query(User).get(current_user.id)
+        if user:
+            user.system_prompt = prompt_content.strip() if prompt_content else None # Save as None if empty
+            session.commit()
+            return jsonify({"success": True, "message": "System prompt saved."})
+        else:
+            return jsonify({"success": False, "message": "User not found."}), 404
+    except Exception as e:
+        session.rollback()
+        print(f"Error saving system prompt for user {current_user.id}: {e}")
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"Failed to save system prompt: {e}"}), 500
+    finally:
+        SessionLocal.remove()
 
 # NEW ROUTE: Clear chat history
 @llm_routes.route('/chat/clear', methods=['POST'])

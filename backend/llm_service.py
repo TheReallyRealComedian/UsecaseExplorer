@@ -67,30 +67,41 @@ def clear_chat_history():
     """Clears the chat history from the Flask session."""
     flask_session.pop('llm_chat_history', None)
 
-def generate_ollama_chat_response(model_name, user_message):
+def generate_ollama_chat_response(model_name, user_message, system_prompt=None):
     """
     Sends a chat message to Ollama and returns the assistant's response.
     Includes memory from the session.
     """
     ollama_url = get_ollama_base_url()
     
-    # Initialize history if it doesn't exist or is empty
     history_deque = _get_history_deque()
     
-    # Add user message to history before sending
+    # Add the current user message to history. This ensures it's saved in the session
+    # and is included in the history for the LLM API call.
     history_deque.append({'role': 'user', 'content': user_message})
-    _save_history_deque(history_deque)
+    _save_history_deque(history_deque) # Save updated history immediately
+
+    # Construct messages for Ollama, starting with system prompt if provided
+    messages_to_send = []
+    if system_prompt:
+        messages_to_send.append({'role': 'system', 'content': system_prompt})
+
+    # Add the full chat history (which now includes the latest user message)
+    # The final `messages_to_send` for the API call will be:
+    # [system_prompt (if any), ...old_history..., user_message]
+    messages_to_send.extend(list(history_deque))
 
     try:
         payload = {
             "model": model_name,
-            "messages": list(history_deque), # Convert deque to list for JSON serialization
+            "messages": messages_to_send, # Use the combined list
             "stream": False # We want the full response at once
         }
         
         headers = {"Content-Type": "application/json"}
         
-        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=420)
+        # Changed timeout from 420 to 120 as per instructions
+        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=120)
         response.raise_for_status()
         
         response_data = response.json()

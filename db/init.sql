@@ -1,7 +1,7 @@
 -- init.sql
 
 -- Drop tables in reverse order of dependency if they exist
-DROP TABLE IF EXISTS process_step_process_step_relevance CASCADE; -- Added for consistency
+DROP TABLE IF EXISTS process_step_process_step_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_usecase_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_step_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_area_relevance CASCADE;
@@ -49,7 +49,7 @@ CREATE TABLE process_steps (
     llm_comment_4 TEXT,
     llm_comment_5 TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTamptz DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create the 'use_cases' table
@@ -180,3 +180,12 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 -- Similar triggers can be created for other tables if desired.
 */
+
+-- ALTER TABLE to add system_prompt to users table if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'system_prompt') THEN
+        ALTER TABLE users ADD COLUMN system_prompt TEXT;
+    END IF;
+END
+$$;
