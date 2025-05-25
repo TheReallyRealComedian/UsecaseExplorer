@@ -1,10 +1,15 @@
+// backend/static/js/ui.js
 document.addEventListener('DOMContentLoaded', function () {
     const areaSelect = document.getElementById('area_ids');
     const stepSelect = document.getElementById('step_ids');
-    const fieldCheckboxes = document.querySelectorAll('input[name="fields"]');
+    const usecaseSelect = document.getElementById('usecase_ids'); // NEW
+
+    const stepFieldCheckboxes = document.querySelectorAll('input[name="step_fields"]'); // RENAMED
+    const usecaseFieldCheckboxes = document.querySelectorAll('input[name="usecase_fields"]'); // NEW
 
     const areaSearchInput = document.getElementById('area_search');
     const stepSearchInput = document.getElementById('step_search');
+    const usecaseSearchInput = document.getElementById('usecase_search'); // NEW
 
     // Store original options for filtering
     let originalAreaOptions = [];
@@ -12,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
         originalAreaOptions = Array.from(areaSelect.options).map(opt => ({
             value: opt.value,
             text: opt.text,
-            element: opt.cloneNode(true) // Keep a clone of the original option element
+            element: opt.cloneNode(true)
         }));
     }
 
@@ -22,6 +27,17 @@ document.addEventListener('DOMContentLoaded', function () {
             value: opt.value,
             text: opt.text,
             areaId: opt.dataset.areaId || '',
+            element: opt.cloneNode(true)
+        }));
+    }
+
+    let originalUsecaseOptions = []; // NEW
+    if (usecaseSelect) {
+        originalUsecaseOptions = Array.from(usecaseSelect.options).map(opt => ({
+            value: opt.value,
+            text: opt.text,
+            areaId: opt.dataset.areaId || '',
+            stepId: opt.dataset.stepId || '',
             element: opt.cloneNode(true)
         }));
     }
@@ -38,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- Filtering and Select/Clear All Logic ---
-    function filterAndRebuildSelect(selectElement, originalOptions, searchTerm, areaFilterIds = null) {
+    // --- Filtering and Rebuilding Selects ---
+    function filterAndRebuildSelect(selectElement, originalOptions, searchTerm, areaFilterIds = null, stepFilterIds = null) {
         if (!selectElement) return;
         const selectedValues = Array.from(selectElement.selectedOptions).map(opt => opt.value);
         selectElement.innerHTML = ''; // Clear current options
@@ -47,13 +63,27 @@ document.addEventListener('DOMContentLoaded', function () {
         originalOptions.forEach(optData => {
             const matchesSearch = !searchTerm || optData.text.toLowerCase().includes(searchTerm.toLowerCase());
             let matchesArea = true;
-            if (areaFilterIds && areaFilterIds.length > 0 && optData.areaId) {
-                matchesArea = areaFilterIds.includes(optData.areaId);
-            } else if (areaFilterIds && areaFilterIds.length > 0 && !optData.areaId && selectElement.id === 'step_ids') {
-                matchesArea = false;
+            let matchesStep = true; // NEW
+
+            // Apply area filter if provided
+            if (areaFilterIds && areaFilterIds.length > 0) {
+                if (optData.areaId) {
+                    matchesArea = areaFilterIds.includes(optData.areaId);
+                } else if (selectElement.id === 'step_ids' || selectElement.id === 'usecase_ids') {
+                    matchesArea = false;
+                }
             }
 
-            if (matchesSearch && matchesArea) {
+            // NEW: Apply step filter if provided (only for usecases)
+            if (stepFilterIds && stepFilterIds.length > 0 && selectElement.id === 'usecase_ids') {
+                if (optData.stepId) {
+                    matchesStep = stepFilterIds.includes(optData.stepId);
+                } else {
+                    matchesStep = false;
+                }
+            }
+
+            if (matchesSearch && matchesArea && matchesStep) {
                 const newOption = optData.element.cloneNode(true);
                 if (selectedValues.includes(newOption.value)) {
                     newOption.selected = true;
@@ -64,16 +94,31 @@ document.addEventListener('DOMContentLoaded', function () {
         updateSelectedCount(selectElement); // Update count after rebuilding
     }
 
+    // --- Event Listeners for Filtering ---
     if (areaSearchInput && areaSelect) {
         areaSearchInput.addEventListener('input', () => {
             filterAndRebuildSelect(areaSelect, originalAreaOptions, areaSearchInput.value);
+            const selectedAreaIds = Array.from(areaSelect.selectedOptions).map(opt => opt.value);
+            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput.value, selectedAreaIds);
+            const selectedStepIds = Array.from(stepSelect.selectedOptions).map(opt => opt.value);
+            filterAndRebuildSelect(usecaseSelect, originalUsecaseOptions, usecaseSearchInput.value, selectedAreaIds, selectedStepIds); // NEW
         });
     }
 
     if (stepSearchInput && stepSelect) {
         stepSearchInput.addEventListener('input', () => {
             const selectedAreaIds = areaSelect ? Array.from(areaSelect.selectedOptions).map(opt => opt.value) : [];
-            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
+            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput.value, selectedAreaIds);
+            const selectedStepIds = Array.from(stepSelect.selectedOptions).map(opt => opt.value);
+            filterAndRebuildSelect(usecaseSelect, originalUsecaseOptions, usecaseSearchInput.value, selectedAreaIds, selectedStepIds); // NEW
+        });
+    }
+
+    if (usecaseSearchInput && usecaseSelect) { // NEW
+        usecaseSearchInput.addEventListener('input', () => {
+            const selectedAreaIds = areaSelect ? Array.from(areaSelect.selectedOptions).map(opt => opt.value) : [];
+            const selectedStepIds = stepSelect ? Array.from(stepSelect.selectedOptions).map(opt => opt.value) : [];
+            filterAndRebuildSelect(usecaseSelect, originalUsecaseOptions, usecaseSearchInput.value, selectedAreaIds, selectedStepIds);
         });
     }
 
@@ -81,13 +126,24 @@ document.addEventListener('DOMContentLoaded', function () {
         areaSelect.addEventListener('change', () => {
             const selectedAreaIds = Array.from(areaSelect.selectedOptions).map(opt => opt.value);
             filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
+            const selectedStepIds = Array.from(stepSelect.selectedOptions).map(opt => opt.value);
+            filterAndRebuildSelect(usecaseSelect, originalUsecaseOptions, usecaseSearchInput ? usecaseSearchInput.value : '', selectedAreaIds, selectedStepIds); // NEW
             updateSelectedCount(areaSelect);
         });
     }
     
     if (stepSelect) {
         stepSelect.addEventListener('change', () => {
-             updateSelectedCount(stepSelect);
+            const selectedAreaIds = areaSelect ? Array.from(areaSelect.selectedOptions).map(opt => opt.value) : [];
+            const selectedStepIds = Array.from(stepSelect.selectedOptions).map(opt => opt.value);
+            filterAndRebuildSelect(usecaseSelect, originalUsecaseOptions, usecaseSearchInput ? usecaseSearchInput.value : '', selectedAreaIds, selectedStepIds); // NEW
+            updateSelectedCount(stepSelect);
+        });
+    }
+
+    if (usecaseSelect) { // NEW
+        usecaseSelect.addEventListener('change', () => {
+             updateSelectedCount(usecaseSelect);
         });
     }
 
@@ -112,28 +168,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setupSelectControls(areaSelect, 'selectAllAreas', 'clearAllAreas');
     setupSelectControls(stepSelect, 'selectAllSteps', 'clearAllSteps');
+    setupSelectControls(usecaseSelect, 'selectAllUsecases', 'clearAllUsecases'); // NEW
 
     // Select All / Clear All for Field Checkboxes
-    const selectAllFieldsBtn = document.getElementById('selectAllFields');
-    const clearAllFieldsBtn = document.getElementById('clearAllFields');
+    const selectAllStepFieldsBtn = document.getElementById('selectAllStepFields'); // RENAMED
+    const clearAllStepFieldsBtn = document.getElementById('clearAllStepFields'); // RENAMED
+    const selectAllUsecaseFieldsBtn = document.getElementById('selectAllUsecaseFields'); // NEW
+    const clearAllUsecaseFieldsBtn = document.getElementById('clearAllUsecaseFields'); // NEW
 
-    if (selectAllFieldsBtn && fieldCheckboxes.length > 0) {
-        selectAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = true));
+    if (selectAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
+        selectAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = true));
     }
-    if (clearAllFieldsBtn && fieldCheckboxes.length > 0) {
-        clearAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = false));
+    if (clearAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
+        clearAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = false));
+    }
+
+    if (selectAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) { // NEW
+        selectAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = true));
+    }
+    if (clearAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) { // NEW
+        clearAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = false));
     }
 
     // JSON Preview Control
     const copyJsonButton = document.getElementById('copyJsonButton');
-    const jsonDataPreview = document.getElementById('jsonDataPreview'); // The <pre> tag
-    const jsonPreviewContainer = document.getElementById('jsonPreviewContainer'); // The wrapping div
+    const jsonDataPreview = document.getElementById('jsonDataPreview');
+    const jsonPreviewContainer = document.getElementById('jsonPreviewContainer');
     const toggleJsonPreviewButton = document.getElementById('toggleJsonPreview');
-    const tokenCountDisplay = document.getElementById('tokenCountDisplay'); // The token count paragraph
+    const tokenCountDisplay = document.getElementById('tokenCountDisplay');
 
     // Determine if there is actual data to display/copy
     const hasData = jsonDataPreview && 
-                    jsonDataPreview.textContent.trim() !== '[]' && 
+                    jsonDataPreview.textContent.trim() !== '{"process_steps": [], "use_cases": []}' && // Check for empty JSON dict
                     jsonDataPreview.textContent.trim() !== 'null' && 
                     jsonDataPreview.textContent.trim() !== '';
 
@@ -195,5 +261,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Update step count. The step options are already filtered by the areaSelect.dispatchEvent('change') above.
     if (stepSelect) { 
         updateSelectedCount(stepSelect);
+    }
+    // NEW: Update usecase count
+    if (usecaseSelect) {
+        updateSelectedCount(usecaseSelect);
     }
 });

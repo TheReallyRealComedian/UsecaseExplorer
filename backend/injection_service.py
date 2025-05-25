@@ -1,4 +1,4 @@
-# backend/injection_service.py
+# UsecaseExplorer/backend/injection_service.py
 import json
 import traceback
 from sqlalchemy import text
@@ -635,6 +635,406 @@ def process_ps_ps_relevance_file(file_stream):
         "skipped_self_link": skipped_self_link,
         "skipped_errors": skipped_errors # Provide detailed skipped errors for debugging
     }
+
+# --- NEW FUNCTIONS FOR USECASE RELEVANCE INJECTION ---
+
+def process_usecase_area_relevance_file(file_stream):
+    session = SessionLocal()
+    added_count = 0
+    skipped_invalid_format = 0
+    skipped_existing_link = 0
+    skipped_missing_entities = 0
+    skipped_errors = []
+    message = ""
+    success = False
+
+    try:
+        print("Processing Use Case-Area relevance links file...")
+        usecase_lookup = {uc.bi_id: uc.id for uc in session.query(UseCase.bi_id, UseCase.id).all()}
+        area_lookup = {area.name: area.id for area in session.query(Area.name, Area.id).all()}
+
+        try:
+            data = json.load(file_stream)
+        except UnicodeDecodeError:
+            file_stream.seek(0)
+            data = json.loads(file_stream.read().decode('utf-8'))
+
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON format: Top level must be a list.")
+
+        for item in data:
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('source_usecase_bi_id', 'target_area_name', 'relevance_score')) and
+                    isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
+                    isinstance(item['target_area_name'], str) and item['target_area_name'].strip()):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Invalid format for item: {item}")
+                continue
+
+            source_uc_bi_id = item['source_usecase_bi_id'].strip()
+            target_area_name = item['target_area_name'].strip()
+            relevance_score_raw = item['relevance_score']
+            relevance_content = item.get('relevance_content')
+
+            if relevance_content is not None and not isinstance(relevance_content, str):
+                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_area_name} was not a string, setting to None. Value: {relevance_content}")
+                relevance_content = None
+            elif isinstance(relevance_content, str):
+                stripped_content = relevance_content.strip()
+                relevance_content = stripped_content if stripped_content else None
+            
+
+            source_uc_id = usecase_lookup.get(source_uc_bi_id)
+            target_area_id = area_lookup.get(target_area_name)
+
+            if source_uc_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                continue
+            if target_area_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing target Area Name: {target_area_name}")
+                continue
+            
+            try:
+                score = int(relevance_score_raw)
+                if not (0 <= score <= 100):
+                    skipped_invalid_format += 1
+                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_area_name}: {relevance_score_raw}")
+                    continue
+            except (ValueError, TypeError):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_area_name}: {relevance_score_raw}")
+                continue
+
+            existing_link = session.query(UsecaseAreaRelevance).filter_by(
+                source_usecase_id=source_uc_id,
+                target_area_id=target_area_id
+            ).first()
+
+            if existing_link:
+                skipped_existing_link += 1
+                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_area_name}")
+                continue
+
+            new_link = UsecaseAreaRelevance(
+                source_usecase_id=source_uc_id,
+                target_area_id=target_area_id,
+                relevance_score=score,
+                relevance_content=relevance_content
+            )
+            session.add(new_link)
+            added_count += 1
+
+        session.commit()
+        success = True
+
+        parts = []
+        if added_count > 0: parts.append(f"Added: {added_count}")
+        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
+        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
+        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+
+        if not parts:
+            message = "Processing complete. No Use Case-Area relevance links found or processed."
+        else:
+            message = f"Processing complete. {', '.join(parts)}."
+
+    except json.JSONDecodeError:
+        print("JSON Decode Error in process_usecase_area_relevance_file")
+        session.rollback()
+        success = False
+        message = "Invalid JSON format in the uploaded file."
+    except ValueError as ve:
+        session.rollback()
+        success = False
+        message = f"Error: {ve}"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        success = False
+        message = f"An unexpected error occurred: {str(e)}"
+    finally:
+        SessionLocal.remove()
+
+    return {
+        "success": success,
+        "message": message,
+        "added_count": added_count,
+        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities,
+        "skipped_invalid_format": skipped_invalid_format,
+        "skipped_existing_link": skipped_existing_link,
+        "skipped_missing_entities": skipped_missing_entities,
+        "skipped_errors": skipped_errors
+    }
+
+def process_usecase_step_relevance_file(file_stream):
+    session = SessionLocal()
+    added_count = 0
+    skipped_invalid_format = 0
+    skipped_existing_link = 0
+    skipped_missing_entities = 0
+    skipped_errors = []
+    message = ""
+    success = False
+
+    try:
+        print("Processing Use Case-Step relevance links file...")
+        usecase_lookup = {uc.bi_id: uc.id for uc in session.query(UseCase.bi_id, UseCase.id).all()}
+        step_lookup = {step.bi_id: step.id for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()}
+
+        try:
+            data = json.load(file_stream)
+        except UnicodeDecodeError:
+            file_stream.seek(0)
+            data = json.loads(file_stream.read().decode('utf-8'))
+
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON format: Top level must be a list.")
+
+        for item in data:
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('source_usecase_bi_id', 'target_process_step_bi_id', 'relevance_score')) and
+                    isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
+                    isinstance(item['target_process_step_bi_id'], str) and item['target_process_step_bi_id'].strip()):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Invalid format for item: {item}")
+                continue
+
+            source_uc_bi_id = item['source_usecase_bi_id'].strip()
+            target_ps_bi_id = item['target_process_step_bi_id'].strip()
+            relevance_score_raw = item['relevance_score']
+            relevance_content = item.get('relevance_content')
+
+            if relevance_content is not None and not isinstance(relevance_content, str):
+                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_ps_bi_id} was not a string, setting to None. Value: {relevance_content}")
+                relevance_content = None
+            elif isinstance(relevance_content, str):
+                stripped_content = relevance_content.strip()
+                relevance_content = stripped_content if stripped_content else None
+
+
+            source_uc_id = usecase_lookup.get(source_uc_bi_id)
+            target_ps_id = step_lookup.get(target_ps_bi_id)
+
+            if source_uc_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                continue
+            if target_ps_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing target Process Step BI_ID: {target_ps_bi_id}")
+                continue
+            
+            try:
+                score = int(relevance_score_raw)
+                if not (0 <= score <= 100):
+                    skipped_invalid_format += 1
+                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_ps_bi_id}: {relevance_score_raw}")
+                    continue
+            except (ValueError, TypeError):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_ps_bi_id}: {relevance_score_raw}")
+                continue
+
+            existing_link = session.query(UsecaseStepRelevance).filter_by(
+                source_usecase_id=source_uc_id,
+                target_process_step_id=target_ps_id
+            ).first()
+
+            if existing_link:
+                skipped_existing_link += 1
+                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_ps_bi_id}")
+                continue
+
+            new_link = UsecaseStepRelevance(
+                source_usecase_id=source_uc_id,
+                target_process_step_id=target_ps_id,
+                relevance_score=score,
+                relevance_content=relevance_content
+            )
+            session.add(new_link)
+            added_count += 1
+
+        session.commit()
+        success = True
+
+        parts = []
+        if added_count > 0: parts.append(f"Added: {added_count}")
+        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
+        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
+        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+
+        if not parts:
+            message = "Processing complete. No Use Case-Step relevance links found or processed."
+        else:
+            message = f"Processing complete. {', '.join(parts)}."
+
+    except json.JSONDecodeError:
+        print("JSON Decode Error in process_usecase_step_relevance_file")
+        session.rollback()
+        success = False
+        message = "Invalid JSON format in the uploaded file."
+    except ValueError as ve:
+        session.rollback()
+        success = False
+        message = f"Error: {ve}"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        success = False
+        message = f"An unexpected error occurred: {str(e)}"
+    finally:
+        SessionLocal.remove()
+
+    return {
+        "success": success,
+        "message": message,
+        "added_count": added_count,
+        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities,
+        "skipped_invalid_format": skipped_invalid_format,
+        "skipped_existing_link": skipped_existing_link,
+        "skipped_missing_entities": skipped_missing_entities,
+        "skipped_errors": skipped_errors
+    }
+
+def process_usecase_usecase_relevance_file(file_stream):
+    session = SessionLocal()
+    added_count = 0
+    skipped_invalid_format = 0
+    skipped_existing_link = 0
+    skipped_missing_entities = 0
+    skipped_self_link = 0
+    skipped_errors = []
+    message = ""
+    success = False
+
+    try:
+        print("Processing Use Case-Use Case relevance links file...")
+        usecase_lookup = {uc.bi_id: uc.id for uc in session.query(UseCase.bi_id, UseCase.id).all()}
+
+        try:
+            data = json.load(file_stream)
+        except UnicodeDecodeError:
+            file_stream.seek(0)
+            data = json.loads(file_stream.read().decode('utf-8'))
+
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON format: Top level must be a list.")
+
+        for item in data:
+            if not (isinstance(item, dict) and
+                    all(k in item for k in ('source_usecase_bi_id', 'target_usecase_bi_id', 'relevance_score')) and
+                    isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
+                    isinstance(item['target_usecase_bi_id'], str) and item['target_usecase_bi_id'].strip()):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Invalid format for item: {item}")
+                continue
+
+            source_uc_bi_id = item['source_usecase_bi_id'].strip()
+            target_uc_bi_id = item['target_usecase_bi_id'].strip()
+            relevance_score_raw = item['relevance_score']
+            relevance_content = item.get('relevance_content')
+
+            if relevance_content is not None and not isinstance(relevance_content, str):
+                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_uc_bi_id} was not a string, setting to None. Value: {relevance_content}")
+                relevance_content = None
+            elif isinstance(relevance_content, str):
+                stripped_content = relevance_content.strip()
+                relevance_content = stripped_content if stripped_content else None
+
+
+            if source_uc_bi_id == target_uc_bi_id:
+                skipped_self_link += 1
+                skipped_errors.append(f"Self-relevance link: {source_uc_bi_id} -> {target_uc_bi_id}")
+                continue
+
+            source_uc_id = usecase_lookup.get(source_uc_bi_id)
+            target_uc_id = usecase_lookup.get(target_uc_bi_id)
+
+            if source_uc_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                continue
+            if target_uc_id is None:
+                skipped_missing_entities += 1
+                skipped_errors.append(f"Missing target Use Case BI_ID: {target_uc_bi_id}")
+                continue
+            
+            try:
+                score = int(relevance_score_raw)
+                if not (0 <= score <= 100):
+                    skipped_invalid_format += 1
+                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_uc_bi_id}: {relevance_score_raw}")
+                    continue
+            except (ValueError, TypeError):
+                skipped_invalid_format += 1
+                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_uc_bi_id}: {relevance_score_raw}")
+                continue
+
+            existing_link = session.query(UsecaseUsecaseRelevance).filter_by(
+                source_usecase_id=source_uc_id,
+                target_usecase_id=target_uc_id
+            ).first()
+
+            if existing_link:
+                skipped_existing_link += 1
+                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_uc_bi_id}")
+                continue
+
+            new_link = UsecaseUsecaseRelevance(
+                source_usecase_id=source_uc_id,
+                target_usecase_id=target_uc_id,
+                relevance_score=score,
+                relevance_content=relevance_content
+            )
+            session.add(new_link)
+            added_count += 1
+
+        session.commit()
+        success = True
+
+        parts = []
+        if added_count > 0: parts.append(f"Added: {added_count}")
+        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
+        if skipped_self_link > 0: parts.append(f"Skipped (Self-Links): {skipped_self_link}")
+        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
+        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+
+        if not parts:
+            message = "Processing complete. No Use Case-Use Case relevance links found or processed."
+        else:
+            message = f"Processing complete. {', '.join(parts)}."
+
+    except json.JSONDecodeError:
+        print("JSON Decode Error in process_usecase_usecase_relevance_file")
+        session.rollback()
+        success = False
+        message = "Invalid JSON format in the uploaded file."
+    except ValueError as ve:
+        session.rollback()
+        success = False
+        message = f"Error: {ve}"
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        success = False
+        message = f"An unexpected error occurred: {str(e)}"
+    finally:
+        SessionLocal.remove()
+
+    return {
+        "success": success,
+        "message": message,
+        "added_count": added_count,
+        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities + skipped_self_link,
+        "skipped_invalid_format": skipped_invalid_format,
+        "skipped_existing_link": skipped_existing_link,
+        "skipped_missing_entities": skipped_missing_entities,
+        "skipped_self_link": skipped_self_link,
+        "skipped_errors": skipped_errors
+    }
+
 
 def import_database_from_json(file_stream, clear_existing_data=False):
     session = SessionLocal()

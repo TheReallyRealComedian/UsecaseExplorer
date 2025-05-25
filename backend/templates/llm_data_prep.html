@@ -1,163 +1,202 @@
+<!-- backend/templates/llm_data_prep.html -->
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
 <div class="llm-data-prep-page">
-    <h1>{{ title }}</h1>
-    <p class="mb-3">Select process steps and fields to prepare data for LLM comparison or analysis.</p>
+    <div class="page-header">
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-subtitle">Configure and prepare your data for AI analysis and comparison</p>
+    </div>
 
-    {# Selection Criteria Card - Collapsible #}
+    {# Selection Criteria Card - Improved Layout #}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center" id="selectionCriteriaHeader">
             <h2 class="card-title mb-0">Selection Criteria</h2>
-            <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#selectionCriteriaBody" aria-expanded="true" aria-controls="selectionCriteriaBody">
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#selectionCriteriaBody" aria-expanded="true" aria-controls="selectionCriteriaBody">
                 <i class="fas fa-chevron-up"></i>
             </button>
         </div>
         <div id="selectionCriteriaBody" class="card-body collapse show">
-            <form method="POST"> {# Added the form tag here #}
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="area_ids" class="form-label">Filter by Areas (Optional):<span class="selected-count-display" id="area_ids_selected_count"></span></label>
-                        {# FIXED: Search and buttons horizontal layout #}
-                        <div class="search-button-row mb-1">
-                            <input type="search" id="area_search" class="form-control form-control-sm search-input" placeholder="Search areas...">
+            <form method="POST">
+                {# Improved Selection Grid #}
+                <div class="selection-grid">
+                    {# Areas Selection #}
+                    <div class="selection-item">
+                        <div class="selection-label">
+                            <span>Filter by Areas</span>
+                            <span class="count-badge" id="area_ids_selected_count">0 selected</span>
+                        </div>
+                        <div class="search-button-row">
+                            <input type="search" id="area_search" class="search-input" placeholder="Search areas...">
                             <div class="button-group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllAreas">Select All</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="clearAllAreas">Clear All</button>
+                                <button type="button" class="btn btn-sm" id="selectAllAreas">All</button>
+                                <button type="button" class="btn btn-sm" id="clearAllAreas">None</button>
                             </div>
                         </div>
-                        <select name="area_ids" id="area_ids" class="form-select" multiple size="5">
+                        <div class="custom-select" id="area-select-container">
                             {% for area in areas %}
-                                <option value="{{ area.id }}" {% if area.id in selected_area_ids %}selected{% endif %}>
+                                <div class="select-option {% if area.id in selected_area_ids %}selected{% endif %}"
+                                     data-value="{{ area.id }}"
+                                     data-name="area_ids">
                                     {{ area.name }}
-                                </option>
+                                </div>
                             {% endfor %}
-                        </select>
-                        <small class="form-text text-muted">If no areas are selected, steps from all areas (or only specifically selected steps) will be considered.</small>
+                        </div>
+                        <div class="help-text">Optional filter - leave empty to include all areas</div>
+                        {# Hidden inputs for form submission #}
+                        <div id="area_hidden_inputs"></div>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="step_ids" class="form-label">Select Process Steps:<span class="selected-count-display" id="step_ids_selected_count"></span></label>
-                        {# FIXED: Search and buttons horizontal layout #}
-                        <div class="search-button-row mb-1">
-                            <input type="search" id="step_search" class="form-control form-control-sm search-input" placeholder="Search steps...">
+                    {# Process Steps Selection #}
+                    <div class="selection-item">
+                        <div class="selection-label">
+                            <span>Select Process Steps</span>
+                            <span class="count-badge" id="step_ids_selected_count">0 selected</span>
+                        </div>
+                        <div class="search-button-row">
+                            <input type="search" id="step_search" class="search-input" placeholder="Search steps...">
                             <div class="button-group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllSteps">Select All</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="clearAllSteps">Clear All</button>
+                                <button type="button" class="btn btn-sm" id="selectAllSteps">All</button>
+                                <button type="button" class="btn btn-sm" id="clearAllSteps">None</button>
                             </div>
                         </div>
-                        <select name="step_ids" id="step_ids" class="form-select" multiple size="8">
+                        <div class="custom-select" id="step-select-container">
                             {% for step in all_steps %}
-                                <option value="{{ step.id }}"
-                                        data-area-id="{{ step.area.id if step.area else '' }}"
-                                        {% if step.id in selected_step_ids %}selected{% endif %}>
+                                <div class="select-option {% if step.id in selected_step_ids %}selected{% endif %}"
+                                     data-value="{{ step.id }}"
+                                     data-name="step_ids"
+                                     data-area-id="{{ step.area.id if step.area else '' }}">
                                     {{ step.name }} ({{ step.area.name if step.area else 'No Area' }} - BI_ID: {{ step.bi_id }})
-                                </option>
+                                </div>
                             {% endfor %}
-                        </select>
-                        <small class="form-text text-muted">Select specific steps. If none selected here but areas are selected above, all steps from those areas will be included.</small>
+                        </div>
+                        <div class="help-text">Choose specific process steps to analyze</div>
+                        <div id="step_hidden_inputs"></div>
+                    </div>
+
+                    {# Use Cases Selection #}
+                    <div class="selection-item">
+                        <div class="selection-label">
+                            <span>Select Use Cases</span>
+                            <span class="count-badge" id="usecase_ids_selected_count">0 selected</span>
+                        </div>
+                        <div class="search-button-row">
+                            <input type="search" id="usecase_search" class="search-input" placeholder="Search use cases...">
+                            <div class="button-group">
+                                <button type="button" class="btn btn-sm" id="selectAllUsecases">All</button>
+                                <button type="button" class="btn btn-sm" id="clearAllUsecases">None</button>
+                            </div>
+                        </div>
+                        <div class="custom-select" id="usecase-select-container">
+                            {% for uc in all_usecases %}
+                                <div class="select-option {% if uc.id in selected_usecase_ids %}selected{% endif %}"
+                                     data-value="{{ uc.id }}"
+                                     data-name="usecase_ids"
+                                     data-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}"
+                                     data-step-id="{{ uc.process_step.id if uc.process_step else '' }}">
+                                    {{ uc.name }} ({{ uc.process_step.name if uc.process_step else 'No Step' }} - BI_ID: {{ uc.bi_id }})
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="help-text">Choose specific use cases to include</div>
+                        <div id="usecase_hidden_inputs"></div>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="form-label d-block mb-0">Select Fields to Include:</label>
-                        <div class="small-buttons">
-                            <button type="button" class="btn btn-outline-secondary btn-xs me-1" id="selectAllFields">Select All</button>
-                            <button type="button" class="btn btn-outline-secondary btn-xs" id="clearAllFields">Clear All</button>
+                {# Improved Field Selection #}
+                <div class="field-groups">
+                    <!-- Process Step Fields -->
+                    <div class="field-group">
+                        <div class="field-group-header">
+                            <span class="field-group-title">Process Step Fields</span>
+                            <div class="field-group-controls">
+                                <button type="button" class="btn btn-sm" onclick="selectAllFields('step-fields-content')">All</button>
+                                <button type="button" class="btn btn-sm" onclick="clearAllFields('step-fields-content')">None</button>
+                                <!-- Use Bootstrap collapse button -->
+                                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#step-fields-content" aria-expanded="true" aria-controls="step-fields-content">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Use Bootstrap collapse classes -->
+                        <div class="field-group-content collapse show" id="step-fields-content">
+                            {% for field_key, field_name in selectable_fields_steps.items() %}
+                            <div class="checkbox-item">
+                                <input class="form-check-input" type="checkbox" name="step_fields" value="{{ field_key }}" id="step_field_{{ field_key }}"
+                                       {% if field_key in selected_step_fields_form %}checked{% endif %}>
+                                <label class="form-check-label" for="step_field_{{ field_key }}">{{ field_name }}</label>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <fieldset class="fieldset-dashed-border">
-                        <legend class="fieldset-legend">Identifiers & Basic Info</legend>
-                        {# Use Bootstrap grid for 2 columns #}
-                        <div class="row row-cols-md-2 g-2"> {# `row-cols-md-2` creates 2 columns on medium screens and up, `g-2` adds gap #}
-                            {% for field_key, field_name in selectable_fields.items() %}
-                                {% if field_key in ['name', 'bi_id'] %}
-                                <div class="col"> {# Each checkbox item is now a column #}
-                                    <div class="form-check"> {# Standard form-check for proper checkbox + label alignment #}
-                                        <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
-                                               {% if field_key in selected_fields_form %}checked{% endif %}>
-                                        <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
-                                    </div>
-                                </div>
-                                {% endif %}
+                    <!-- Use Case Fields -->
+                    <div class="field-group">
+                        <div class="field-group-header">
+                            <span class="field-group-title">Use Case Fields</span>
+                            <div class="field-group-controls">
+                                <button type="button" class="btn btn-sm" onclick="selectAllFields('usecase-fields-content')">All</button>
+                                <button type="button" class="btn btn-sm" onclick="clearAllFields('usecase-fields-content')">None</button>
+                                <!-- Use Bootstrap collapse button -->
+                                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#usecase-fields-content" aria-expanded="true" aria-controls="usecase-fields-content">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Use Bootstrap collapse classes -->
+                        <div class="field-group-content collapse show" id="usecase-fields-content">
+                            {% for field_key, field_name in selectable_fields_usecases.items() %}
+                            <div class="checkbox-item">
+                                <input class="form-check-input" type="checkbox" name="usecase_fields" value="{{ field_key }}" id="usecase_field_{{ field_key }}"
+                                       {% if field_key in selected_usecase_fields_form %}checked{% endif %}>
+                                <label class="form-check-label" for="usecase_field_{{ field_key }}">{{ field_name }}</label>
+                            </div>
                             {% endfor %}
                         </div>
-                    </fieldset>
-
-                    <fieldset class="fieldset-dashed-border">
-                        <legend class="fieldset-legend">Descriptive Content</legend>
-                        {# Use Bootstrap grid for 2 columns #}
-                        <div class="row row-cols-md-2 g-2"> {# `row-cols-md-2` creates 2 columns on medium screens and up, `g-2` adds gap #}
-                            {% for field_key, field_name in selectable_fields.items() %}
-                                {% if field_key in ['step_description', 'raw_content', 'summary', 'vision_statement'] %}
-                                <div class="col"> {# Each checkbox item is now a column #}
-                                    <div class="form-check"> {# Standard form-check for proper checkbox + label alignment #}
-                                        <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
-                                               {% if field_key in selected_fields_form %}checked{% endif %}>
-                                        <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-                    
-                    <fieldset class="fieldset-dashed-border">
-                        <legend class="fieldset-legend">Operational Details</legend>
-                        {# Use Bootstrap grid for 2 columns #}
-                        <div class="row row-cols-md-2 g-2"> {# `row-cols-md-2` creates 2 columns on medium screens and up, `g-2` adds gap #}
-                            {% for field_key, field_name in selectable_fields.items() %}
-                                {% if field_key in ['in_scope', 'out_of_scope', 'interfaces_text', 'what_is_actually_done', 'pain_points', 'targets_text'] %}
-                                <div class="col"> {# Each checkbox item is now a column #}
-                                    <div class="form-check"> {# Standard form-check for proper checkbox + label alignment #}
-                                        <input class="form-check-input" type="checkbox" name="fields" value="{{ field_key }}" id="field_{{ field_key }}"
-                                               {% if field_key in selected_fields_form %}checked{% endif %}>
-                                        <label class="form-check-label" for="field_{{ field_key }}">{{ field_name }}</label>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    </fieldset>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Preview Data</button>
-            </form> {# Closed form tag here #}
+                <div style="margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        Generate Preview
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    {# System Prompt Card - Collapsible #}
+    {# System Prompt Card #}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center" id="systemPromptHeader">
             <h2 class="card-title mb-0">System Prompt (Global)</h2>
-            <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#systemPromptBody" aria-expanded="false" aria-controls="systemPromptBody">
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#systemPromptBody" aria-expanded="false" aria-controls="systemPromptBody">
                 <i class="fas fa-chevron-down"></i>
             </button>
         </div>
-        <div id="systemPromptBody" class="card-body collapse"> {# Starts collapsed by default #}
-            <div class="mb-3">
-                <label for="systemPromptInput" class="form-label">This prompt is prepended to *every* LLM conversation.</label>
+        <div id="systemPromptBody" class="card-body collapse">
+            <div class="system-prompt">
+                <label for="systemPromptInput" class="form-label">This prompt is prepended to every LLM conversation</label>
                 <textarea class="form-control" id="systemPromptInput" rows="5" placeholder="e.g., 'You are a helpful assistant. Provide concise answers.'">{{ user_system_prompt | default('', true) }}</textarea>
-                <small class="form-text text-muted">Keep this prompt focused on guiding the LLM's behavior or persona.</small>
+                <div class="help-text">Keep this prompt focused on guiding the LLM's behavior or persona.</div>
+                <div style="margin-top: 1rem;">
+                    <button type="button" class="btn btn-primary" id="saveSystemPromptButton">
+                        <i class="fas fa-save"></i>Save System Prompt
+                    </button>
+                    <span id="saveSystemPromptMessage" class="ms-3 small text-muted"></span>
+                </div>
             </div>
-            <button type="button" class="btn btn-primary btn-sm" id="saveSystemPromptButton">
-                <i class="fas fa-save me-1"></i>Save System Prompt
-            </button>
-            <span id="saveSystemPromptMessage" class="ms-3 small text-muted"></span> {# For save feedback #}
         </div>
     </div>
 
-    {# Prepared Data Preview Card - Collapsible. JSON copy buttons visible when collapsed. #}
+    {# Prepared Data Preview Card #}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center" id="preparedDataHeader">
             <h2 class="card-title mb-0">Prepared Data Preview</h2>
             <div class="d-flex align-items-center">
-                {# JSON buttons moved here #}
-                {% if prepared_data %}
+                {% if prepared_data.process_steps or prepared_data.use_cases %}
                     <div class="d-flex align-items-center me-3" id="jsonControlsOnHeader">
                         <p class="text-end text-muted mt-2 mb-0 me-2" id="tokenCountDisplay" style="display: none;"><strong>Estimated Token Count: {{ total_tokens }}</strong></p>
                         <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="toggleJsonPreview" style="display: none;">
@@ -168,76 +207,119 @@
                         </button>
                     </div>
                 {% endif %}
-                <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#preparedDataBody" aria-expanded="true" aria-controls="preparedDataBody">
+                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#preparedDataBody" aria-expanded="true" aria-controls="preparedDataBody">
                     <i class="fas fa-chevron-up"></i>
                 </button>
             </div>
         </div>
-        <div id="preparedDataBody" class="card-body collapse show"> {# Initially expanded #}
-            {% if prepared_data is not none %}
-                {% if prepared_data %}
-                    <p>Found {{ prepared_data|length }} process step(s) matching your criteria with the selected fields:</p>
-                    <div class="table-responsive">
+        <div id="preparedDataBody" class="card-body collapse show">
+            {% if prepared_data.process_steps or prepared_data.use_cases %}
+                {# Keep your existing table structure here #}
+                {% if prepared_data.process_steps %}
+                    <h3 class="mb-3">Process Steps ({{ prepared_data.process_steps|length }})</h3>
+                    <div class="table-responsive mb-4">
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="col-fixed-short">Step ID</th>
-                                    {% for field_key in selected_fields_form %}
-                                        {% set field_name_display = selectable_fields.get(field_key, field_key|capitalize) %}
-                                        {% if field_key == 'name' %}
-                                            <th class="col-name">{{ field_name_display }}</th>
-                                        {% elif field_key == 'bi_id' %}
-                                            <th class="col-bi-id">{{ field_name_display }}</th>
-                                        {% else %}
-                                            <th class="col-content">{{ field_name_display }}</th>
-                                        {% endif %}
+                                    <th class="col-fixed-short">ID</th>
+                                    <th class="col-name">Area</th>
+                                    {% for field_key in selected_step_fields_form %}
+                                        {% set field_name_display = selectable_fields_steps.get(field_key, field_key|capitalize) %}
+                                        <th class="col-content">{{ field_name_display }}</th>
                                     {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for step_item in prepared_data %}
+                                {% for step_item in prepared_data.process_steps %}
                                 <tr>
                                     <td class="col-fixed-short">
                                         <a href="{{ url_for('steps.view_step', step_id=step_item.id) }}" title="View full step details">{{ step_item.id }}</a>
                                     </td>
-                                    {% for field_key in selected_fields_form %}
+                                    <td class="col-name">
+                                         <span title="{{ step_item.area_name }}">{{ step_item.area_name }}</span>
+                                    </td>
+                                    {% for field_key in selected_step_fields_form %}
                                         {% set cell_value = step_item[field_key] %}
-                                        {% if field_key in ['name', 'bi_id'] %}
-                                            <td class="col-{{ field_key }}">
-                                                <div class="cell-display-content">
-                                                    <span title="{{ cell_value }}">{{ cell_value if cell_value is not none else 'N/A' }}</span>
-                                                </div>
-                                            </td>
-                                        {% else %}
-                                            <td class="col-content">
-                                                <div class="scrollable-cell-content">
-                                                    {% if cell_value is none %}
-                                                        N/A
-                                                    {% elif field_key in ['raw_content', 'step_description', 'summary', 'vision_statement', 'in_scope', 'out_of_scope', 'interfaces_text', 'what_is_actually_done', 'pain_points', 'targets_text'] %}
-                                                        <pre>{{ cell_value }}</pre>
-                                                    {% else %}
-                                                        <span title="{{ cell_value }}">{{ cell_value }}</span>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                        {% endif %}
+                                        <td class="col-content">
+                                            <div class="scrollable-cell-content">
+                                                {% if cell_value is none %}
+                                                    N/A
+                                                {% elif field_key in ['raw_content', 'step_description', 'summary', 'vision_statement', 'in_scope', 'out_of_scope', 'interfaces_text', 'what_is_actually_done', 'pain_points', 'targets_text'] %}
+                                                    <pre>{{ cell_value }}</pre>
+                                                {% else %}
+                                                    <span title="{{ cell_value }}">{{ cell_value }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
                                     {% endfor %}
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-
-                    {# JSON preview itself is now inside the body #}
-                    <div id="jsonPreviewContainer" class="mt-4" style="display: none;">
-                        <pre id="jsonDataPreview" class="p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ prepared_data | tojson(indent=2) }}</pre>
-                    </div>
-
                 {% else %}
-                    <p class="text-muted"><em>No data to preview based on current selections. Try adjusting your filters or ensure steps exist.</em></p>
+                    <p class="text-muted"><em>No Process Steps included in the preview.</em></p>
                 {% endif %}
-            {% else %} {# This 'else' is for `prepared_data is none`, meaning before first submission #}
-                <p class="text-muted"><em>Submit the form above to preview data.</em></p>
+
+                {% if prepared_data.use_cases %}
+                    <h3 class="mb-3 mt-4">Use Cases ({{ prepared_data.use_cases|length }})</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="col-fixed-short">ID</th>
+                                    <th class="col-name">Area</th>
+                                    <th class="col-name">Process Step</th>
+                                    {% for field_key in selected_usecase_fields_form %}
+                                        {% set field_name_display = selectable_fields_usecases.get(field_key, field_key|capitalize) %}
+                                        <th class="col-content">{{ field_name_display }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for uc_item in prepared_data.use_cases %}
+                                <tr>
+                                    <td class="col-fixed-short">
+                                        <a href="{{ url_for('usecases.view_usecase', usecase_id=uc_item.id) }}" title="View full use case details">{{ uc_item.id }}</a>
+                                    </td>
+                                    <td class="col-name">
+                                         <span title="{{ uc_item.area_name }}">{{ uc_item.area_name }}</span>
+                                    </td>
+                                    <td class="col-name">
+                                         <span title="{{ uc_item.process_step_name }}">{{ uc_item.process_step_name }}</span>
+                                    </td>
+                                    {% for field_key in selected_usecase_fields_form %}
+                                        {% set cell_value = uc_item[field_key] %}
+                                        <td class="col-content">
+                                            <div class="scrollable-cell-content">
+                                                {% if cell_value is none %}
+                                                    N/A
+                                                {% elif field_key in ['raw_content', 'summary', 'inspiration', 'business_problem_solved', 'target_solution_description', 'technologies_text', 'requirements', 'ideation_notes', 'further_ideas', 'effort_quantification', 'potential_quantification', 'dependencies_text', 'contact_persons_text', 'related_projects_text'] %}
+                                                    <pre>{{ cell_value }}</pre>
+                                                {% else %}
+                                                    <span title="{{ cell_value }}">{{ cell_value }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted"><em>No Use Cases included in the preview.</em></p>
+                {% endif %}
+
+                <div id="jsonPreviewContainer" class="mt-4" style="display: none;">
+                    <pre id="jsonDataPreview" class="p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ prepared_data | tojson(indent=2) }}</pre>
+                </div>
+            {% else %}
+                <div class="preview-empty">
+                    <i class="fas fa-database"></i>
+                    <h3>No data to preview</h3>
+                    <p>Make your selections above and click "Generate Preview" to see prepared data</p>
+                </div>
             {% endif %}
         </div>
     </div>
@@ -246,56 +328,59 @@
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center" id="llmChatHeader">
             <h2 class="card-title mb-0">LLM Chat</h2>
-            <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#llmChatBody" aria-expanded="true" aria-controls="llmChatBody">
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#llmChatBody" aria-expanded="true" aria-controls="llmChatBody">
                 <i class="fas fa-chevron-up"></i>
             </button>
         </div>
-        <div id="llmChatBody" class="card-body collapse show chat-container"> {# Initially expanded #}
-            <div class="chat-display" id="chatDisplay">
-                {# Chat messages will be appended here by JS #}
-                {% if chat_history %}
-                    {% for msg in chat_history %}
-                        <div class="chat-bubble chat-bubble-{{ msg.role }}">
-                            {{ msg.content | safe }}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted text-center mt-3">Start a conversation with the LLM.</p>
-                {% endif %}
-            </div>
-            <div class="chat-input-area mt-3 d-flex align-items-center">
-                <select id="llmModelSelect" class="form-select me-2" style="width: 200px;">
-                    {% if ollama_models %}
-                        {% for model in ollama_models %}
-                            <option value="{{ model }}">{{ model }}</option>
+        <div id="llmChatBody" class="card-body collapse show">
+            <div class="chat-container">
+                <div class="chat-display" id="chatDisplay">
+                    {% if chat_history %}
+                        {% for msg in chat_history %}
+                            <div class="chat-bubble chat-bubble-{{ msg.role }}">
+                                {{ msg.content | safe }}
+                            </div>
                         {% endfor %}
                     {% else %}
-                        <option value="">No models found</option>
+                        <div class="chat-placeholder">
+                            <i class="fas fa-comments"></i>
+                            <p>Start a conversation with the LLM about your prepared data</p>
+                        </div>
                     {% endif %}
-                </select>
-                <input type="text" id="chatInput" class="form-control me-2" placeholder="Type your message...">
-                <button class="btn btn-primary me-2" id="sendMessageButton">
-                    <i class="fas fa-paper-plane"></i> Send
-                </button>
-                <button class="btn btn-secondary" id="clearChatButton">
-                    <i class="fas fa-eraser"></i> Clear
-                </button>
+                </div>
+                <div class="chat-input-area">
+                    <select id="llmModelSelect" class="form-select">
+                        {% if ollama_models %}
+                            {% for model in ollama_models %}
+                                <option value="{{ model }}">{{ model }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="">No models found</option>
+                        {% endif %}
+                    </select>
+                    <input type="text" id="chatInput" class="form-control" placeholder="Type your message...">
+                    <button class="btn btn-primary" id="sendMessageButton">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                    <button class="btn btn-secondary" id="clearChatButton">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                </div>
             </div>
-             <p class="text-muted small mt-2">Note: Chat has limited memory (last {{ config.MAX_CHAT_HISTORY_LENGTH if config else 'N/A' }} messages). Choose an Ollama model from the dropdown. Only models available via `ollama run <model>` on the host will appear.</p>
+            <div class="help-text" style="margin-top: 0.5rem;">
+                Chat has limited memory (last {{ config.MAX_CHAT_HISTORY_LENGTH if config else 'N/A' }} messages). Choose an Ollama model from the dropdown.
+            </div>
         </div>
     </div>
-
 </div>
-
-{% endblock %} {# This closes the 'content' block. #}
+{% endblock %}
 
 {% block scripts %}
-{{ super() }} {# If you have scripts in base.html you want to include #}
-{# Include Bootstrap's JS for Collapse feature. It's usually good to bundle or use a CDN #}
+{{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script src="{{ url_for('static', filename='js/llm_ui.js') }}"></script>
 
-{% endblock %} {# This closes the 'scripts' block. #}
+{% endblock %}

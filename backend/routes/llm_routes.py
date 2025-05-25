@@ -1,16 +1,19 @@
 # backend/routes/llm_routes.py
-from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
-from flask_login import login_required, current_user
-from sqlalchemy.orm import joinedload
+
 import json
 import tiktoken
 import traceback
 
+from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from sqlalchemy import select # Added for potential subquery for use cases
+
 from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User
+from ..models import ProcessStep, Area, User, UseCase # Import UseCase model
 
-# Helper function to count tokens
+# Helper function to count tokens (existing, no change needed)
 def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
     """
     Counts tokens in a given text using tiktoken.
@@ -25,12 +28,12 @@ def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
     return len(encoding.encode(text))
 
 
-# Define the blueprint
+# Define the blueprint (existing)
 llm_routes = Blueprint('llm', __name__,
                        template_folder='../templates',
                        url_prefix='/llm')
 
-# Define which ProcessStep fields are selectable by the user
+# Define which ProcessStep fields are selectable by the user (existing)
 SELECTABLE_STEP_FIELDS = {
     'name': "Name",
     'bi_id': "Business ID (BI_ID)",
@@ -45,7 +48,41 @@ SELECTABLE_STEP_FIELDS = {
     'pain_points': "Pain Points",
     'targets_text': "Targets",
     # Add more fields from ProcessStep model as needed
-    # 'llm_comment_1': "LLM Comment 1", # Example if you want to include these
+}
+
+# NEW: Define which UseCase fields are selectable by the user
+SELECTABLE_USECASE_FIELDS = {
+    'name': "Name",
+    'bi_id': "Business ID (BI_ID)",
+    'priority': "Priority",
+    'summary': "Summary",
+    'inspiration': "Inspiration",
+    'raw_content': "Raw Content",
+    'wave': "Wave",
+    'effort_level': "Effort Level",
+    'status': "Status",
+    'business_problem_solved': "Business Problem Solved",
+    'target_solution_description': "Target / Solution Description",
+    'technologies_text': "Technologies",
+    'requirements': "Requirements",
+    'relevants_text': "Relevants (Tags)",
+    'reduction_time_transfer': "Time Reduction (Transfer)",
+    'reduction_time_launches': "Time Reduction (Launches)",
+    'reduction_costs_supply': "Cost Reduction (Supply)",
+    'quality_improvement_quant': "Quality Improvement",
+    'ideation_notes': "Ideation Notes",
+    'further_ideas': "Further Ideas",
+    'effort_quantification': "Effort Quantification",
+    'potential_quantification': "Potential Quantification",
+    'dependencies_text': "Dependencies",
+    'contact_persons_text': "Contact Persons",
+    'related_projects_text': "Related Projects",
+    # LLM comments, if desired for export (optional to add to form)
+    # 'llm_comment_1': "LLM Comment 1",
+    # 'llm_comment_2': "LLM Comment 2",
+    # 'llm_comment_3': "LLM Comment 3",
+    # 'llm_comment_4': "LLM Comment 4",
+    # 'llm_comment_5': "LLM Comment 5",
 }
 
 
@@ -57,86 +94,117 @@ def llm_data_prep_page():
         areas = session.query(Area).order_by(Area.name).all()
         # Fetch steps with their area for potential filtering display
         all_steps = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        # NEW: Fetch use cases with their process step and area for filtering display
+        all_usecases = session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        ).order_by(UseCase.name).all()
 
-        prepared_data = None # Initialize as None, will be list only if data is found
+        # NEW: prepared_data is now a dictionary containing lists for different entity types
+        prepared_data = {"process_steps": [], "use_cases": []} 
+        
         selected_area_ids_int = []
         selected_step_ids_int = []
-        selected_fields_form = []
-        total_tokens = 0 # Initialize token count
+        selected_usecase_ids_int = [] # NEW
+        selected_step_fields_form = [] # RENAMED 'selected_fields_form' for clarity
+        selected_usecase_fields_form = [] # NEW
 
-        print("--- LLM Data Prep Page Access ---") # General access log
+        total_tokens = 0
+
+        print("--- LLM Data Prep Page Access ---")
         print(f"Request Method: {request.method}")
 
         if request.method == 'POST':
-            print("--- Processing POST request for LLM data prep ---") # POST specific log
-            print(f"Full form data: {request.form}") # Log all form data
+            print("--- Processing POST request for LLM data prep ---")
+            print(f"Full form data: {request.form}")
 
             selected_area_ids_str = request.form.getlist('area_ids')
             selected_step_ids_str = request.form.getlist('step_ids')
-            selected_fields_form = request.form.getlist('fields')
-
-            print(f"area_ids from form: {selected_area_ids_str}")
-            print(f"step_ids from form: {selected_step_ids_str}")
-            print(f"fields from form: {selected_fields_form}")
+            selected_usecase_ids_str = request.form.getlist('usecase_ids') # NEW
+            selected_step_fields_form = request.form.getlist('step_fields') # RENAMED
+            selected_usecase_fields_form = request.form.getlist('usecase_fields') # NEW
 
             selected_area_ids_int = [int(id_str) for id_str in selected_area_ids_str if id_str.isdigit()]
             selected_step_ids_int = [int(id_str) for id_str in selected_step_ids_str if id_str.isdigit()]
+            selected_usecase_ids_int = [int(id_str) for id_str in selected_usecase_ids_str if id_str.isdigit()] # NEW
 
             print(f"Parsed area_ids (int): {selected_area_ids_int}")
             print(f"Parsed step_ids (int): {selected_step_ids_int}")
+            print(f"Parsed usecase_ids (int): {selected_usecase_ids_int}") # NEW
 
-            if not selected_fields_form:
-                flash("Please select at least one field to preview.", "warning")
-                print("Warning: No fields selected in form.") # Specific warning log
-                # Ensure prepared_data remains None if no fields are selected
+            # --- Prepare Process Step Data ---
+            if not selected_step_fields_form:
+                flash("Please select at least one field for Process Steps.", "warning")
             else:
-                query = session.query(ProcessStep)
-                if selected_step_ids_int:
-                    query = query.filter(ProcessStep.id.in_(selected_step_ids_int))
-                    print(f"Querying for specific steps: {selected_step_ids_int}")
-                elif selected_area_ids_int: # If no specific steps, but areas are selected
-                    query = query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
-                    print(f"Querying for steps in areas: {selected_area_ids_int}")
-                else:
-                    print("No specific steps or areas selected, querying all steps.")
-                # If neither steps nor areas selected, query will fetch all steps.
+                step_query = session.query(ProcessStep)
+                if selected_step_ids_int: # If specific steps are selected, use them
+                    step_query = step_query.filter(ProcessStep.id.in_(selected_step_ids_int))
+                elif selected_area_ids_int: # Else, if areas are selected, get steps from those areas
+                    step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
+                # If neither are selected, get all steps.
 
-                steps_for_preview = query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
+                steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
+                
+                for step in steps_for_preview:
+                    step_data = {
+                        'id': step.id,
+                        'area_id': step.area_id,
+                        'area_name': step.area.name if step.area else 'N/A'
+                    }
+                    for field_key in selected_step_fields_form:
+                        if hasattr(step, field_key):
+                            step_data[field_key] = getattr(step, field_key)
+                        else:
+                            step_data[field_key] = "N/A" # or None, depending on desired output
+                    prepared_data["process_steps"].append(step_data)
 
-                print(f"Found {len(steps_for_preview)} steps for preview.")
+            # NEW: --- Prepare Use Case Data ---
+            if not selected_usecase_fields_form:
+                flash("Please select at least one field for Use Cases.", "warning")
+            else:
+                usecase_query = session.query(UseCase)
+                if selected_usecase_ids_int: # If specific UCs are selected, use them
+                    usecase_query = usecase_query.filter(UseCase.id.in_(selected_usecase_ids_int))
+                elif selected_step_ids_int: # Else if steps are selected, get UCs from those steps
+                    usecase_query = usecase_query.filter(UseCase.process_step_id.in_(selected_step_ids_int))
+                elif selected_area_ids_int: # Else if areas are selected, get UCs from steps in those areas
+                    # Subquery to get step IDs in selected areas
+                    subquery_step_ids = select(ProcessStep.id).where(ProcessStep.area_id.in_(selected_area_ids_int)).scalar_subquery()
+                    usecase_query = usecase_query.filter(UseCase.process_step_id.in_(subquery_step_ids))
+                # If none are selected, get all use cases (no filter applied by default).
 
-                if not steps_for_preview:
-                    flash("No process steps found matching your criteria.", "info")
-                    prepared_data = [] # Explicitly set to empty list to differentiate from None
-                    print("Info: No steps found matching criteria.")
-                else:
-                    prepared_data = []
-                    for step in steps_for_preview:
-                        step_data = {'id': step.id} # Always include ID for reference
-                        for field_key in selected_fields_form:
-                            if hasattr(step, field_key):
-                                step_data[field_key] = getattr(step, field_key)
-                            else:
-                                step_data[field_key] = "N/A (invalid field or not loaded)"
-                                print(f"Warning: Step {step.id} missing attribute {field_key}.") # Log if field not found on model
-                        prepared_data.append(step_data)
-                    
-                    if not prepared_data: # Should not happen if steps_for_preview was not empty, but safety check
-                         flash("No data to preview after filtering fields.", "info")
-                         print("Info: No data to preview after filtering fields.")
-                    else:
-                        # Convert the prepared data to a JSON string and count tokens
-                        # Only convert to JSON string if prepared_data is not empty
-                        json_string_for_tokens = json.dumps(prepared_data, indent=2)
-                        total_tokens = count_tokens(json_string_for_tokens)
-                        print(f"Prepared data for {len(prepared_data)} steps. Total tokens: {total_tokens}")
+                usecases_for_preview = usecase_query.options(
+                    joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+                ).order_by(UseCase.process_step_id, UseCase.name).all()
+                
+                for uc in usecases_for_preview:
+                    uc_data = {
+                        'id': uc.id,
+                        'process_step_id': uc.process_step_id,
+                        'process_step_name': uc.process_step.name if uc.process_step else 'N/A',
+                        'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else 'N/A',
+                        'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A'
+                    }
+                    for field_key in selected_usecase_fields_form:
+                        if hasattr(uc, field_key):
+                            uc_data[field_key] = getattr(uc, field_key)
+                        else:
+                            uc_data[field_key] = "N/A"
+                    prepared_data["use_cases"].append(uc_data)
 
-        # NEW: Get the current user's system prompt for the template
+
+            # Final check and token count
+            if not prepared_data["process_steps"] and not prepared_data["use_cases"]:
+                flash("No data found matching your criteria for either Process Steps or Use Cases.", "info")
+            else:
+                json_string_for_tokens = json.dumps(prepared_data, indent=2)
+                total_tokens = count_tokens(json_string_for_tokens)
+
+        # Get the current user's system prompt for the template (existing)
         user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
 
-        # NEW: Get available Ollama models
+        # Get available Ollama models (existing)
         ollama_models = get_available_ollama_models()
-        # NEW: Get current chat history for initial render
+        # Get current chat history for initial render (existing)
         chat_history = list(get_chat_history())
 
         return render_template(
@@ -144,44 +212,50 @@ def llm_data_prep_page():
             title="LLM Data Preparation",
             areas=areas,
             all_steps=all_steps,
-            selectable_fields=SELECTABLE_STEP_FIELDS,
-            prepared_data=prepared_data, # This will be None, [], or a list of dicts
-            total_tokens=total_tokens, # Pass token count to template
+            all_usecases=all_usecases, # NEW: Pass all use cases to the template
+            selectable_fields_steps=SELECTABLE_STEP_FIELDS, # RENAMED
+            selectable_fields_usecases=SELECTABLE_USECASE_FIELDS, # NEW: Pass use case fields
+            prepared_data=prepared_data,
+            total_tokens=total_tokens,
             selected_area_ids=selected_area_ids_int,
             selected_step_ids=selected_step_ids_int,
-            selected_fields_form=selected_fields_form,
-            ollama_models=ollama_models, # NEW: Pass models to template
-            chat_history=chat_history, # NEW: Pass chat history to template
-            config=current_app.config, # NEW: Pass the Flask application config
-            user_system_prompt=user_system_prompt # PASS TO TEMPLATE
+            selected_usecase_ids=selected_usecase_ids_int, # NEW
+            selected_step_fields_form=selected_step_fields_form, # RENAMED
+            selected_usecase_fields_form=selected_usecase_fields_form, # NEW
+            ollama_models=ollama_models,
+            chat_history=chat_history,
+            config=current_app.config,
+            user_system_prompt=user_system_prompt
         )
 
     except Exception as e:
-        # VERY IMPORTANT: Print the full traceback to Docker logs
         print("\n--- CRITICAL ERROR IN LLM DATA PREP PAGE ---")
         print(f"Exception Type: {type(e).__name__}")
         print(f"Exception Message: {e}")
-        traceback.print_exc() # This will print the detailed stack trace
+        traceback.print_exc()
         print("-------------------------------------------\n")
 
         flash("An error occurred while preparing data. Please try again.", "danger")
-        # Ensure user_system_prompt is passed even on error
         user_system_prompt_on_error = current_user.system_prompt if current_user.is_authenticated else ""
         return render_template(
             'llm_data_prep.html',
             title="LLM Data Preparation",
             areas=[],
             all_steps=[],
-            selectable_fields=SELECTABLE_STEP_FIELDS,
-            prepared_data=None, # Default to None on error
+            all_usecases=[], # NEW: Empty list on error
+            selectable_fields_steps=SELECTABLE_STEP_FIELDS, # RENAMED
+            selectable_fields_usecases=SELECTABLE_USECASE_FIELDS, # NEW: Empty dict on error
+            prepared_data={"process_steps": [], "use_cases": []}, # Default to empty dict on error
             total_tokens=0,
             selected_area_ids=[],
             selected_step_ids=[],
-            selected_fields_form=[],
-            ollama_models=[], # NEW: Empty list on error
-            chat_history=[], # NEW: Empty list on error
-            config=current_app.config, # NEW: Pass the Flask application config on error
-            user_system_prompt=user_system_prompt_on_error # PASS TO TEMPLATE
+            selected_usecase_ids=[], # NEW
+            selected_step_fields_form=[], # RENAMED
+            selected_usecase_fields_form=[], # NEW
+            ollama_models=[],
+            chat_history=[],
+            config=current_app.config,
+            user_system_prompt=user_system_prompt_on_error
         )
     finally:
         SessionLocal.remove()

@@ -1,4 +1,4 @@
-# backend/routes/injection_routes.py
+# UsecaseExplorer/backend/routes/injection_routes.py
 import os
 import traceback
 from flask import Blueprint, render_template, request, flash, redirect, url_for
@@ -12,7 +12,10 @@ from ..injection_service import (
     process_area_file,
     process_step_file,
     process_usecase_file,
-    process_ps_ps_relevance_file, # NEW import
+    process_ps_ps_relevance_file,
+    process_usecase_area_relevance_file, # NEW import
+    process_usecase_step_relevance_file, # NEW import
+    process_usecase_usecase_relevance_file, # NEW import
     import_database_from_json
 )
 
@@ -31,7 +34,10 @@ def handle_injection():
             if 'area_file' not in request.files and \
                'step_file' not in request.files and \
                'usecase_file' not in request.files and \
-               'ps_ps_relevance_file' not in request.files: # NEW check
+               'ps_ps_relevance_file' not in request.files and \
+               'usecase_area_relevance_file' not in request.files and \
+               'usecase_step_relevance_file' not in request.files and \
+               'usecase_usecase_relevance_file' not in request.files:
                 flash('No file part in the request.', 'danger')
                 print("No file part in the request") # Debug log
                 return redirect(request.url)
@@ -117,7 +123,7 @@ def handle_injection():
             # --- END Use Case File Processing ---
 
             # NEW: Process Step-to-Step Relevance File Processing
-            elif 'ps_ps_relevance_file' in request.files: # NEW condition
+            elif 'ps_ps_relevance_file' in request.files:
                 print("Process Step Relevance file detected") # Debug log
                 file = request.files['ps_ps_relevance_file']
                 if file.filename == '' or not file:
@@ -127,7 +133,7 @@ def handle_injection():
 
                 if file and '.' in file.filename and \
                    file.filename.rsplit('.', 1)[1].lower() == 'json':
-                    result = process_ps_ps_relevance_file(file.stream) # NEW function call
+                    result = process_ps_ps_relevance_file(file.stream)
 
                     flash_category = 'danger' # Default to danger
                     if result['success'] and result['added_count'] > 0:
@@ -148,6 +154,66 @@ def handle_injection():
                      flash('Invalid file type or name for Process Step Relevance. Please upload a .json file.', 'danger')
                      return redirect(request.url)
             # END NEW Process Step-to-Step Relevance File Processing
+
+            # NEW: Process Use Case-Area Relevance File Processing
+            elif 'usecase_area_relevance_file' in request.files:
+                print("Use Case-Area Relevance file detected")
+                file = request.files['usecase_area_relevance_file']
+                if file.filename == '' or not file:
+                    flash('No selected file for Use Case-Area Relevance.', 'warning')
+                    return redirect(request.url)
+
+                if file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() == 'json':
+                    result = process_usecase_area_relevance_file(file.stream)
+                    flash_category = 'success' if result['success'] and result['added_count'] > 0 else 'danger'
+                    if result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                        flash_category = 'warning'
+                    flash(result['message'], flash_category)
+                    print(f"Use Case-Area Relevance injection result: {result}")
+                    return redirect(url_for('injection.handle_injection'))
+                else:
+                    flash('Invalid file type or name for Use Case-Area Relevance. Please upload a .json file.', 'danger')
+                    return redirect(request.url)
+
+            # NEW: Process Use Case-Step Relevance File Processing
+            elif 'usecase_step_relevance_file' in request.files:
+                print("Use Case-Step Relevance file detected")
+                file = request.files['usecase_step_relevance_file']
+                if file.filename == '' or not file:
+                    flash('No selected file for Use Case-Step Relevance.', 'warning')
+                    return redirect(request.url)
+
+                if file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() == 'json':
+                    result = process_usecase_step_relevance_file(file.stream)
+                    flash_category = 'success' if result['success'] and result['added_count'] > 0 else 'danger'
+                    if result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                        flash_category = 'warning'
+                    flash(result['message'], flash_category)
+                    print(f"Use Case-Step Relevance injection result: {result}")
+                    return redirect(url_for('injection.handle_injection'))
+                else:
+                    flash('Invalid file type or name for Use Case-Step Relevance. Please upload a .json file.', 'danger')
+                    return redirect(request.url)
+
+            # NEW: Process Use Case-Use Case Relevance File Processing
+            elif 'usecase_usecase_relevance_file' in request.files:
+                print("Use Case-Use Case Relevance file detected")
+                file = request.files['usecase_usecase_relevance_file']
+                if file.filename == '' or not file:
+                    flash('No selected file for Use Case-Use Case Relevance.', 'warning')
+                    return redirect(request.url)
+
+                if file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() == 'json':
+                    result = process_usecase_usecase_relevance_file(file.stream)
+                    flash_category = 'success' if result['success'] and result['added_count'] > 0 else 'danger'
+                    if result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
+                        flash_category = 'warning'
+                    flash(result['message'], flash_category)
+                    print(f"Use Case-Use Case Relevance injection result: {result}")
+                    return redirect(url_for('injection.handle_injection'))
+                else:
+                    flash('Invalid file type or name for Use Case-Use Case Relevance. Please upload a .json file.', 'danger')
+                    return redirect(request.url)
 
             else:
                 print("No known file input found") # Debug log

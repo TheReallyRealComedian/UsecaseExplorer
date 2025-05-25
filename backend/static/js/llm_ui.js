@@ -1,10 +1,11 @@
+// backend/static/js/llm_ui.js
 document.addEventListener('DOMContentLoaded', function () {
-    const areaSelect = document.getElementById('area_ids');
-    const stepSelect = document.getElementById('step_ids');
-    const fieldCheckboxes = document.querySelectorAll('input[name="fields"]');
-
-    const areaSearchInput = document.getElementById('area_search');
-    const stepSearchInput = document.getElementById('step_search');
+    // Custom Selects Initialization
+    initializeCustomSelects();
+    // Search Functionality Initialization
+    initializeSearch();
+    // Update counts for custom selects on page load
+    updateAllCounts();
 
     // Chat elements
     const chatDisplay = document.getElementById('chatDisplay');
@@ -18,125 +19,242 @@ document.addEventListener('DOMContentLoaded', function () {
     const saveSystemPromptButton = document.getElementById('saveSystemPromptButton');
     const saveSystemPromptMessage = document.getElementById('saveSystemPromptMessage');
 
-    // Store original options for filtering
-    let originalAreaOptions = [];
-    if (areaSelect) {
-        originalAreaOptions = Array.from(areaSelect.options).map(opt => ({
-            value: opt.value,
-            text: opt.text,
-            element: opt.cloneNode(true) // Keep a clone of the original option element
-        }));
+    // --- Custom Select Implementation ---
+    function initializeCustomSelects() {
+        document.querySelectorAll('.select-option').forEach(option => {
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+                updateHiddenInputs(this.dataset.name);
+                updateCount(this.dataset.name);
+            });
+        });
     }
 
-    let originalStepOptions = [];
-    if (stepSelect) {
-        originalStepOptions = Array.from(stepSelect.options).map(opt => ({
-            value: opt.value,
-            text: opt.text,
-            areaId: opt.dataset.areaId || '',
-            element: opt.cloneNode(true)
-        }));
+    // Update hidden inputs for form submission
+    function updateHiddenInputs(inputName) {
+        const container = document.getElementById(inputName.replace('_ids', '') + '_hidden_inputs');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        const selectedOptions = document.querySelectorAll(`.select-option[data-name="${inputName}"].selected`);
+        selectedOptions.forEach(option => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = inputName;
+            input.value = option.dataset.value;
+            container.appendChild(input);
+        });
     }
 
-    // --- Helper: Update selected counts ---
-    function updateSelectedCount(selectElement) {
-        if (!selectElement) return;
-        const displayElementId = selectElement.id + '_selected_count';
-        const displayElement = document.getElementById(displayElementId);
+    // Update selection counts
+    function updateCount(inputName) {
+        const countElement = document.getElementById(inputName + '_selected_count');
+        if (!countElement) return;
+        
+        const selectedCount = document.querySelectorAll(`.select-option[data-name="${inputName}"].selected`).length;
+        countElement.textContent = `${selectedCount} selected`;
+    }
 
-        if (displayElement) {
-            const count = selectElement.selectedOptions.length;
-            displayElement.textContent = count > 0 ? ` (${count} selected)` : '';
+    function updateAllCounts() {
+        updateCount('area_ids');
+        updateCount('step_ids');
+        updateCount('usecase_ids');
+    }
+
+    // --- Search functionality ---
+    function initializeSearch() {
+        // Area search
+        document.getElementById('area_search')?.addEventListener('input', function() {
+            filterOptions(this.value, 'area-select-container');
+            // Trigger filtering for steps and use cases if their options depend on selected areas
+            filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        });
+        
+        // Step search
+        document.getElementById('step_search')?.addEventListener('input', function() {
+            filterOptions(this.value, 'step-select-container');
+            // Trigger filtering for use cases
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        });
+        
+        // Use case search
+        document.getElementById('usecase_search')?.addEventListener('input', function() {
+            filterOptions(this.value, 'usecase-select-container');
+        });
+    }
+
+    function filterOptions(searchTerm, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const options = container.querySelectorAll('.select-option');
+        const term = searchTerm.toLowerCase();
+        
+        // Get currently selected Area and Step IDs for dependency filtering
+        const selectedAreaIds = Array.from(document.querySelectorAll('.select-option[data-name="area_ids"].selected'))
+                                .map(opt => opt.dataset.value);
+        const selectedStepIds = Array.from(document.querySelectorAll('.select-option[data-name="step_ids"].selected'))
+                               .map(opt => opt.dataset.value);
+
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            const optionAreaId = option.dataset.areaId;
+            const optionStepId = option.dataset.stepId;
+
+            let matchesSearch = text.includes(term);
+            let matchesAreaFilter = true;
+            let matchesStepFilter = true;
+
+            // Apply Area filter for Steps and Use Cases
+            if (selectedAreaIds.length > 0) {
+                if (optionAreaId) {
+                    matchesAreaFilter = selectedAreaIds.includes(optionAreaId);
+                } else if (containerId === 'step-select-container' || containerId === 'usecase-select-container') {
+                    // If an area is selected, but this step/use case has no areaId, it won't match
+                    matchesAreaFilter = false;
+                }
+            }
+
+            // Apply Step filter for Use Cases
+            if (containerId === 'usecase-select-container' && selectedStepIds.length > 0) {
+                if (optionStepId) {
+                    matchesStepFilter = selectedStepIds.includes(optionStepId);
+                } else {
+                    // If a step is selected, but this use case has no stepId, it won't match
+                    matchesStepFilter = false;
+                }
+            }
+
+            if (matchesSearch && matchesAreaFilter && matchesStepFilter) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+
+    // --- Select All / Clear All functions for custom selects ---
+    function selectAll(type) {
+        const containerMap = {
+            'areas': 'area-select-container',
+            'steps': 'step-select-container', 
+            'usecases': 'usecase-select-container'
+        };
+        
+        const inputNameMap = {
+            'areas': 'area_ids',
+            'steps': 'step_ids',
+            'usecases': 'usecase_ids'
+        };
+        
+        const container = document.getElementById(containerMap[type]);
+        if (!container) return;
+        
+        const options = container.querySelectorAll('.select-option');
+        options.forEach(option => {
+            if (option.style.display !== 'none') { // Only select visible options
+                option.classList.add('selected');
+            }
+        });
+        
+        const inputName = inputNameMap[type];
+        updateHiddenInputs(inputName);
+        updateCount(inputName);
+        
+        // After selecting all, re-apply dependent filters
+        if (type === 'areas') {
+            filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        } else if (type === 'steps') {
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         }
     }
 
-    // --- Filtering and Select/Clear All Logic ---
-    function filterAndRebuildSelect(selectElement, originalOptions, searchTerm, areaFilterIds = null) {
-        if (!selectElement) return;
-        const selectedValues = Array.from(selectElement.selectedOptions).map(opt => opt.value);
-        selectElement.innerHTML = ''; // Clear current options
+    function clearAll(type) {
+        const containerMap = {
+            'areas': 'area-select-container',
+            'steps': 'step-select-container',
+            'usecases': 'usecase-select-container'
+        };
+        
+        const inputNameMap = {
+            'areas': 'area_ids',
+            'steps': 'step_ids', 
+            'usecases': 'usecase_ids'
+        };
+        
+        const container = document.getElementById(containerMap[type]);
+        if (!container) return;
+        
+        const options = container.querySelectorAll('.select-option');
+        options.forEach(option => option.classList.remove('selected'));
+        
+        const inputName = inputNameMap[type];
+        updateHiddenInputs(inputName);
+        updateCount(inputName);
 
-        originalOptions.forEach(optData => {
-            const matchesSearch = !searchTerm || optData.text.toLowerCase().includes(searchTerm.toLowerCase());
-            let matchesArea = true;
-            if (areaFilterIds && areaFilterIds.length > 0 && optData.areaId) {
-                matchesArea = areaFilterIds.includes(optData.areaId);
-            } else if (areaFilterIds && areaFilterIds.length > 0 && !optData.areaId && selectElement.id === 'step_ids') {
-                matchesArea = false;
-            }
-
-            if (matchesSearch && matchesArea) {
-                const newOption = optData.element.cloneNode(true);
-                if (selectedValues.includes(newOption.value)) {
-                    newOption.selected = true;
-                }
-                selectElement.add(newOption);
-            }
-        });
-        updateSelectedCount(selectElement); // Update count after rebuilding
+        // After clearing all, re-apply dependent filters
+        if (type === 'areas') {
+            filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        } else if (type === 'steps') {
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        }
     }
 
-    if (areaSearchInput && areaSelect) {
-        areaSearchInput.addEventListener('input', () => {
-            filterAndRebuildSelect(areaSelect, originalAreaOptions, areaSearchInput.value);
-        });
+    // --- Field Checkboxes Select All / Clear All ---
+    const stepFieldCheckboxes = document.querySelectorAll('input[name="step_fields"]');
+    const usecaseFieldCheckboxes = document.querySelectorAll('input[name="usecase_fields"]');
+
+    const selectAllStepFieldsBtn = document.getElementById('selectAllStepFields');
+    const clearAllStepFieldsBtn = document.getElementById('clearAllStepFields');
+    const selectAllUsecaseFieldsBtn = document.getElementById('selectAllUsecaseFields');
+    const clearAllUsecaseFieldsBtn = document.getElementById('clearAllUsecaseFields');
+
+    if (selectAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
+        selectAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = true));
+    }
+    if (clearAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
+        clearAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = false));
     }
 
-    if (stepSearchInput && stepSelect) {
-        stepSearchInput.addEventListener('input', () => {
-            const selectedAreaIds = areaSelect ? Array.from(areaSelect.selectedOptions).map(opt => opt.value) : [];
-            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
-        });
+    if (selectAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) {
+        selectAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = true));
+    }
+    if (clearAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) {
+        clearAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = false));
     }
 
-    if (areaSelect) {
-        areaSelect.addEventListener('change', () => {
-            const selectedAreaIds = Array.from(areaSelect.selectedOptions).map(opt => opt.value);
-            filterAndRebuildSelect(stepSelect, originalStepOptions, stepSearchInput ? stepSearchInput.value : '', selectedAreaIds);
-            updateSelectedCount(areaSelect);
-        });
-    }
+    // --- Event Listeners for Custom Select All/Clear All Buttons ---
+    document.getElementById('selectAllAreas')?.addEventListener('click', () => selectAll('areas'));
+    document.getElementById('clearAllAreas')?.addEventListener('click', () => clearAll('areas'));
     
-    if (stepSelect) {
-        stepSelect.addEventListener('change', () => {
-             updateSelectedCount(stepSelect);
+    document.getElementById('selectAllSteps')?.addEventListener('click', () => selectAll('steps'));
+    document.getElementById('clearAllSteps')?.addEventListener('click', () => clearAll('steps'));
+    
+    document.getElementById('selectAllUsecases')?.addEventListener('click', () => selectAll('usecases'));
+    document.getElementById('clearAllUsecases')?.addEventListener('click', () => clearAll('usecases'));
+
+    // --- Logic for dependent filtering of custom selects when options are clicked ---
+    // This ensures that when a selection changes, the dependent lists are re-filtered visually.
+    document.querySelectorAll('.select-option[data-name="area_ids"]').forEach(option => {
+        option.addEventListener('click', () => {
+            // Re-apply filters for steps and usecases based on current selections and search terms
+            filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         });
-    }
+    });
 
-    function setupSelectControls(selectElement, selectAllButtonId, clearAllButtonId) {
-        const selectAllButton = document.getElementById(selectAllButtonId);
-        const clearAllButton = document.getElementById(clearAllButtonId);
-
-        if (!selectElement || !selectAllButton || !clearAllButton) return;
-
-        selectAllButton.addEventListener('click', () => {
-            Array.from(selectElement.options).forEach(opt => {
-                opt.selected = true;
-            });
-            selectElement.dispatchEvent(new Event('change'));
+    document.querySelectorAll('.select-option[data-name="step_ids"]').forEach(option => {
+        option.addEventListener('click', () => {
+            // Re-apply filters for usecases based on current selections and search terms
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         });
+    });
 
-        clearAllButton.addEventListener('click', () => {
-            Array.from(selectElement.options).forEach(opt => opt.selected = false);
-            selectElement.dispatchEvent(new Event('change'));
-        });
-    }
-
-    setupSelectControls(areaSelect, 'selectAllAreas', 'clearAllAreas');
-    setupSelectControls(stepSelect, 'selectAllSteps', 'clearAllSteps');
-
-    // Select All / Clear All for Field Checkboxes
-    const selectAllFieldsBtn = document.getElementById('selectAllFields');
-    const clearAllFieldsBtn = document.getElementById('clearAllFields');
-
-    if (selectAllFieldsBtn && fieldCheckboxes.length > 0) {
-        selectAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = true));
-    }
-    if (clearAllFieldsBtn && fieldCheckboxes.length > 0) {
-        clearAllFieldsBtn.addEventListener('click', () => fieldCheckboxes.forEach(cb => cb.checked = false));
-    }
-
-    // JSON Preview Control
+    // --- JSON Preview Control ---
     const copyJsonButton = document.getElementById('copyJsonButton');
     const jsonDataPreview = document.getElementById('jsonDataPreview'); // The <pre> tag
     const jsonPreviewContainer = document.getElementById('jsonPreviewContainer'); // The wrapping div
@@ -144,21 +262,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const tokenCountDisplay = document.getElementById('tokenCountDisplay'); // The token count paragraph
 
     // Determine if there is actual data to display/copy
-    // The `prepared_data` variable is passed from Flask. If it's [], it means no data.
-    // If it's None, it means the form hasn't been submitted yet.
-    // So, `prepared_data.length > 0` (via template rendering to `tojson`) is the most reliable check.
-    const hasData = jsonDataPreview && jsonDataPreview.textContent.trim() !== '[]' && jsonDataPreview.textContent.trim() !== 'null' && jsonDataPreview.textContent.trim() !== '';
+    const hasData = jsonDataPreview && 
+                    jsonDataPreview.textContent.trim() !== '{"process_steps": [], "use_cases": []}' &&
+                    jsonDataPreview.textContent.trim() !== 'null' && 
+                    jsonDataPreview.textContent.trim() !== '';
 
     // Conditionally show/hide buttons and token count based on whether data exists
-    // These buttons are now in the card-header, so they are always visible if data exists
-    // and we only hide them if hasData is false.
     if (copyJsonButton) copyJsonButton.style.display = hasData ? 'inline-block' : 'none';
     if (toggleJsonPreviewButton) toggleJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none';
     if (tokenCountDisplay) tokenCountDisplay.style.display = hasData ? 'block' : 'none';
 
-
     // Toggle JSON Preview visibility
-    if (toggleJsonPreviewButton && jsonPreviewContainer) { // No need to check hasData here, display handled by previous block
+    if (toggleJsonPreviewButton && jsonPreviewContainer) {
         toggleJsonPreviewButton.addEventListener('click', () => {
             const isHidden = jsonPreviewContainer.style.display === 'none';
             if (isHidden) {
@@ -172,9 +287,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Copy JSON to Clipboard
-    if (copyJsonButton && jsonDataPreview) { // No need to check hasData here, display handled by previous block
+    if (copyJsonButton && jsonDataPreview) {
         copyJsonButton.addEventListener('click', () => {
-            if (!hasData) { // Double check if data actually exists before trying to copy
+            if (!hasData) {
                 alert('No data to copy.');
                 return;
             }
@@ -205,55 +320,40 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Initial setup calls for selected counts after DOM is ready
-    if (areaSelect) {
-        filterAndRebuildSelect(areaSelect, originalAreaOptions, areaSearchInput ? areaSearchInput.value : '');
-        areaSelect.dispatchEvent(new Event('change')); 
-    }
-    if (stepSelect) { 
-        updateSelectedCount(stepSelect);
-    }
-
 
     // --- LLM Chat Window Logic ---
-
     // Function to convert markdown to HTML
     function markdownToHtml(markdownText) {
-        // Check if 'marked' exists and if 'marked.parse' is a function
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
             return marked.parse(markdownText);
         }
         console.warn("Marked.js not loaded or 'marked.parse' function not found. Markdown will not be rendered.");
-        return markdownText; // Return original text if converter not available
+        return markdownText;
     }
 
     // Function to add a message to the chat display
     function addMessageToChat(role, content) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('chat-bubble', `chat-bubble-${role}`);
-        messageElement.innerHTML = markdownToHtml(content); // Render markdown
+        messageElement.innerHTML = markdownToHtml(content);
         chatDisplay.appendChild(messageElement);
-        chatDisplay.scrollTop = chatDisplay.scrollHeight; // Scroll to bottom
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
 
     // Populate chat history on load (from Flask template)
     if (chatDisplay) {
-        // Clear initial "Start a conversation" message if history exists
         if (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('text-muted')) {
             chatDisplay.innerHTML = '';
         }
-        // Flask renders initial chat history directly into the HTML, so we don't need to re-add here
-        // We just need to scroll to bottom if there's history
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
-
 
     // Handle sending message
     if (sendMessageButton && chatInput && llmModelSelect) {
         sendMessageButton.addEventListener('click', async () => {
             const message = chatInput.value.trim();
             const selectedModel = llmModelSelect.value;
-            const systemPrompt = systemPromptInput ? systemPromptInput.value.trim() : ''; // Get system prompt
+            const systemPrompt = systemPromptInput ? systemPromptInput.value.trim() : '';
 
             if (!message || !selectedModel) {
                 alert('Please enter a message and select a model.');
@@ -261,13 +361,13 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             addMessageToChat('user', message);
-            chatInput.value = ''; // Clear input
+            chatInput.value = '';
 
-            sendMessageButton.disabled = true; // Disable button while loading
-            chatInput.disabled = true; // Disable input
-            llmModelSelect.disabled = true; // Disable model select
-            if (systemPromptInput) systemPromptInput.disabled = true; // Disable system prompt input too
-            if (saveSystemPromptButton) saveSystemPromptButton.disabled = true; // Disable save button
+            sendMessageButton.disabled = true;
+            chatInput.disabled = true;
+            llmModelSelect.disabled = true;
+            if (systemPromptInput) systemPromptInput.disabled = true;
+            if (saveSystemPromptButton) saveSystemPromptButton.disabled = true;
 
             const loadingBubble = document.createElement('div');
             loadingBubble.classList.add('chat-bubble', 'chat-bubble-assistant');
@@ -284,15 +384,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({
                         message: message,
                         model: selectedModel,
-                        // No need to explicitly send system_prompt here, it's fetched on backend from current_user
-                        // system_prompt: systemPrompt // This was my initial thought but the backend already fetches it
                     }),
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    loadingBubble.remove(); // Remove loading bubble
+                    loadingBubble.remove();
                     addMessageToChat('assistant', data.message);
                 } else {
                     loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.message}`;
@@ -306,18 +404,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
                 loadingBubble.style.color = 'var(--raw-alert-danger-text)';
             } finally {
-                sendMessageButton.disabled = false; // Re-enable button
-                chatInput.disabled = false; // Re-enable input
-                llmModelSelect.disabled = false; // Re-enable model select
-                if (systemPromptInput) systemPromptInput.disabled = false; // Re-enable
-                if (saveSystemPromptButton) saveSystemPromptButton.disabled = false; // Re-enable
-                chatInput.focus(); // Focus input for next message
+                sendMessageButton.disabled = false;
+                chatInput.disabled = false;
+                llmModelSelect.disabled = false;
+                if (systemPromptInput) systemPromptInput.disabled = false;
+                if (saveSystemPromptButton) saveSystemPromptButton.disabled = false;
+                chatInput.focus();
             }
         });
 
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                sendMessageButton.click(); // Trigger send on Enter
+                sendMessageButton.click();
             }
         });
     }
@@ -343,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Handle saving system prompt
+    // --- Handle saving system prompt ---
     if (saveSystemPromptButton && systemPromptInput && saveSystemPromptMessage) {
         saveSystemPromptButton.addEventListener('click', async () => {
             const prompt = systemPromptInput.value.trim();
@@ -379,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 saveSystemPromptButton.disabled = false;
                 systemPromptInput.disabled = false;
                 setTimeout(() => {
-                    saveSystemPromptMessage.textContent = ''; // Clear message after a few seconds
+                    saveSystemPromptMessage.textContent = '';
                 }, 3000);
             }
         });
@@ -389,14 +487,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectionCriteriaHeader = document.getElementById('selectionCriteriaHeader');
     const preparedDataHeader = document.getElementById('preparedDataHeader');
     const llmChatHeader = document.getElementById('llmChatHeader');
-    const systemPromptHeader = document.getElementById('systemPromptHeader'); // NEW
+    const systemPromptHeader = document.getElementById('systemPromptHeader');
 
     // Function to update icon based on collapse state
     function updateCollapseIcon(headerElement, targetId) {
         const collapseElement = document.getElementById(targetId);
         const iconElement = headerElement.querySelector('i');
         
-        // This class is added by Bootstrap when the element is actually collapsing/expanding
         collapseElement.addEventListener('shown.bs.collapse', () => {
             iconElement.classList.remove('fa-chevron-down');
             iconElement.classList.add('fa-chevron-up');
@@ -419,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (selectionCriteriaHeader) updateCollapseIcon(selectionCriteriaHeader, 'selectionCriteriaBody');
     if (preparedDataHeader) updateCollapseIcon(preparedDataHeader, 'preparedDataBody');
     if (llmChatHeader) updateCollapseIcon(llmChatHeader, 'llmChatBody');
-    if (systemPromptHeader) updateCollapseIcon(systemPromptHeader, 'systemPromptBody'); // NEW
+    if (systemPromptHeader) updateCollapseIcon(systemPromptHeader, 'systemPromptBody');
 
     // --- Explicitly initialize Bootstrap Collapses (as a fallback/diagnostic) ---
     // This finds all elements with data-bs-toggle="collapse"
@@ -429,18 +526,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const collapseElement = document.querySelector(targetId);
 
         if (collapseElement) {
-            // Bootstrap's JS will attach its own listeners to these toggles automatically.
-            // This explicit initialization is mostly for components that don't auto-init,
-            // or if the DOM is modified *after* Bootstrap's initial scan.
-            // For collapse, the data attributes usually suffice, but this ensures they're "seen".
-            // No direct 'new bootstrap.Collapse(element)' is usually needed for data-attributes.
-            // However, ensuring the elements are ready for Bootstrap's auto-scan can be key.
-            
-            // The issue is likely *not* that the component isn't being explicitly instantiated,
-            // but rather that Bootstrap's core event listeners aren't firing on the toggle.
-            // This often points to a JS error or bad cached script.
-
-            // Let's add a console log to confirm these toggles are found.
             console.log("Found collapse toggle:", toggle, "for target:", collapseElement);
         }
     });
