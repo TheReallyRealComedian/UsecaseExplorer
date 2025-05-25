@@ -1,0 +1,30 @@
+[
+  {
+    "bi_id": "BEX01",
+    "name": "Lead to Prospect",
+    "step_description": "The lead-to-prospect process is driven by Marketing and describes the identification of potential new contract manufacturing leads. It includes qualification of leads based on BioX strategy and corresponding acquisition focus, before assignment to respective BD&KAMs. This process translates BioX strategy and target portfolio into product/project acquisition.",
+    "summary": null,
+    "area_name": "Bio Excellence"
+  },
+  {
+    "bi_id": "BEX02",
+    "name": "Prospect to Contract",
+    "step_description": "The Prospect-to-Contract process outlines the steps to take a new business prospect to a signed contract with the client.The process evaluates and assesses the prospect from a business, from a capacity and from a technical standpoint. Once fully assessed, the client is involved via proposal and contract negotiations. During this process, the scope of the project’s work, including timeline, deliverables, and pricing are defined.",
+    "summary": null,
+    "area_name": "Bio Excellence"
+  },
+  {
+    "bi_id": "BEX03",
+    "name": "Contract to Cash - Project Phase",
+    "step_description": "The Contract-to-Cash process covers the project phase and the commercial phase of a new customer product that is to be implemented at BI by BioX. The project Phase starts with a signed contract that includes the project plan (tech-transfer) and usually ends with submission/approval. PPM is the central hub for all project related topics and leads the cross functional project team to drive progress, to meet milestones, performs cost controlling, and to fulfil deliverables.",
+    "summary": null,
+    "area_name": "Bio Excellence"
+  },
+  {
+    "bi_id": "BEX04",
+    "name": "Account Management",
+    "step_description": "Account Management is responsible for steering all aspects of an account and the related project and product portfolio along an established account strategy and the associated business & action plan. Once a new contract is signed, the account undergoes an initial evaluation and ASC endorsement. Existing accounts will undergo an annual strategy review cycle. Accounts are managed by ABTs, which are led by BD&KAM, and they represent a small-sized, cross-functional & empowered team of functional leaders.",
+    "summary": null,
+    "area_name": "Bio Excellence"
+  }
+]
