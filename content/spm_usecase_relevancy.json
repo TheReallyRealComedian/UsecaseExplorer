@@ -1,0 +1,170 @@
+[
+  {
+    "source_usecase_bi_id": "SCM05",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 100,
+    "relevance_content": "Directly supports strategic make-vs-buy decisions and network optimization for outsourced products by enabling transparency, scenario planning, and simulation across the product lifecycle, explicitly mentioning 'internal and external parameters'."
+  },
+  {
+    "source_usecase_bi_id": "SCM08",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "Provides an 'AI driven digital Supply Chain Twin' for strategic decision-making, including 'supply chain design options', 'capacity simulation', and 'invest decisions', which are fundamental to defining and optimizing an outsourcing portfolio."
+  },
+  {
+    "source_usecase_bi_id": "SCM11",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "Enables 'global capacity and allocation planning to internal and external network,' which is critical for strategic resource allocation and determining outsourcing needs."
+  },
+  {
+    "source_usecase_bi_id": "SCM35",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "A foundational enabler for strategic decisions, establishing a 'single source of truth' and clarifying 'data ownership responsibilities' for all SC data. High-quality master data is essential for reliable outsourcing strategies."
+  },
+  {
+    "source_usecase_bi_id": "M23",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 95,
+    "relevance_content": "Establishes 'One global database for reliable identification of Supplier-Qualification-Data,' directly supporting the due diligence and qualification phase of potential strategic partners and their material suppliers."
+  },
+  {
+    "source_usecase_bi_id": "QC26",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 90,
+    "relevance_content": "Uses AI to 'automatical assess Products (SCRA), Suppliers (Purchasing Assessments, Supplier Assessment, RQA),' providing data-driven insights for evaluating and selecting partners."
+  },
+  {
+    "source_usecase_bi_id": "QC27",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 85,
+    "relevance_content": "Provides a 'One global database for manufacturing and analytical equipment' including 'Transferability of equipment life cycle documents,' which is crucial for assessing potential partners' existing equipment and capabilities."
+  },
+  {
+    "source_usecase_bi_id": "QA03",
+    "target_process_step_bi_id": "SPM03",
+    "relevance_score": 100,
+    "relevance_content": "Explicitly aims to establish 'seamless and secure data transfer... with external partners (CMOs/sponsors)' for 'production data, analytical results, discrepancies, changes, CAPAs.' The technical terms of this data exchange are a key component of contracts."
+  },
+  {
+    "source_usecase_bi_id": "M22",
+    "target_process_step_bi_id": "SPM03",
+    "relevance_score": 90,
+    "relevance_content": "Provides 'real-time, overarching translation for all manufacturing information,' including 'GMP relevant translation,' essential for accurate communication and negotiation of complex technical and legal terms in international contracts."
+  },
+  {
+    "source_usecase_bi_id": "SCM30",
+    "target_process_step_bi_id": "SPM03",
+    "relevance_score": 90,
+    "relevance_content": "Focuses on 'Establishing an EDI link with supplier' and 'shared database instead of paper or mail' for 'CMO, 3PL customers,' defining the digital infrastructure for data exchange detailed in contracts."
+  },
+  {
+    "source_usecase_bi_id": "M04",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 95,
+    "relevance_content": "Explicitly states 'Transfers and Launches supported by Libary and AI generated MBRs,' which are central to transferring manufacturing processes and ensuring new product implementation at partner sites."
+  },
+  {
+    "source_usecase_bi_id": "M05",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 95,
+    "relevance_content": "Aims to 'reduce manual effort in launches and transfers' and 'improve robustness of new products and transfers' by providing a 'one data source used by IU Dev and Operations' for product knowledge, which is crucial for successful tech transfer to partners."
+  },
+  {
+    "source_usecase_bi_id": "QC19",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 95,
+    "relevance_content": "Focuses on 'seamless, vertical E2E integration of all layers (ERP/LIMS/AMET/VSIMS/Software/Equipment),' which is a key enabler for integrating systems between original sites and partner sites during tech transfer."
+  },
+  {
+    "source_usecase_bi_id": "QA01",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 90,
+    "relevance_content": "Automates SOP creation, adherence to good writing practices, and 'Embedded translation feature,' ensuring that procedures for partners are consistently created, easily understood, and compliant during tech transfer."
+  },
+  {
+    "source_usecase_bi_id": "QA03",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 100,
+    "relevance_content": "Critical for daily 'real-time information' exchange (production data, analytical results, discrepancies, CAPAs) to enable effective oversight and coordination of partner operations."
+  },
+  {
+    "source_usecase_bi_id": "SCM06",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 100,
+    "relevance_content": "Explicitly aims to 'Establish process and system to exchange data (Q,Manuf, SCM, Finance) with external partners (CMO, 3PL, Excipient-, Material Suppliers),' directly enabling effective operational oversight and coordination."
+  },
+  {
+    "source_usecase_bi_id": "SCM19",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 100,
+    "relevance_content": "Aims for 'E2E Supply Chain Orchestration' with 'Integrated systems to coordinate activities across the entire supply chain,' which is critical for seamlessly managing deviations and exceptions across internal and partner operations."
+  },
+  {
+    "source_usecase_bi_id": "M03",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 95,
+    "relevance_content": "Enables 'early reaction and correction possible in case of negative trends' and 'avoid deviations,' which is vital for real-time oversight and managing the performance of production processes at partner sites."
+  },
+  {
+    "source_usecase_bi_id": "QA17",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 100,
+    "relevance_content": "Explicitly designed to be 'fit for purpose GOTrack for CMO Managment (mandatory fields / process steps etc),' directly addressing pain points in managing non-conformances and events from contract manufacturing organizations."
+  },
+  {
+    "source_usecase_bi_id": "QA22",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 100,
+    "relevance_content": "Aims to digitize the 'life cycle management of CSS and CCS' with 'integration of the CMO related CSS-part,' directly supporting quality oversight of partner facilities and processes regarding contamination control."
+  },
+  {
+    "source_usecase_bi_id": "SCM25",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 100,
+    "relevance_content": "Focuses on detecting, assessing, and implementing 'upcoming regulations (EHS, S&A, resilience, sustainability, GxP),' which directly impacts compliance and quality requirements for partners."
+  },
+  {
+    "source_usecase_bi_id": "M16",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 95,
+    "relevance_content": "Aims to 'speed up deviation and CAPA management by real-time available data pool' and 'seamless traceability of the products,' directly enhancing quality management and performance monitoring for deviations originating from partners."
+  },
+  {
+    "source_usecase_bi_id": "QA11",
+    "target_process_step_bi_id": "SPM07",
+    "relevance_score": 95,
+    "relevance_content": "Aims to 'Extend use of Quality Risk Management to make information accessible' and provide 'AI supported Risk Communication out of various source systems,' which is directly applicable to identifying and mitigating risks associated with strategic partners."
+  },
+  {
+    "source_usecase_bi_id": "SCM08",
+    "target_process_step_bi_id": "SPM07",
+    "relevance_score": 95,
+    "relevance_content": "Includes 'Risk Mitigation: Development of contingency plans for potential suppy disruptions by simulating different risk scenarios,' crucial for assessing and managing supply chain risks involving partners."
+  },
+  {
+    "source_usecase_bi_id": "QA30",
+    "target_process_step_bi_id": "SPM07",
+    "relevance_score": 90,
+    "relevance_content": "Focuses on 'AI for on/off-line CF detection, Intelligence and Case Management,' which directly manages anti-counterfeiting risks throughout the supply chain, including products sourced from partners."
+  },
+  {
+    "source_usecase_bi_id": "QC01",
+    "target_process_step_bi_id": "SPM08",
+    "relevance_score": 95,
+    "relevance_content": "Explicitly addresses 'online QC planning + scheduling' and resource management for labs, directly relevant for coordinating and managing the activities of contract labs."
+  },
+  {
+    "source_usecase_bi_id": "QC12",
+    "target_process_step_bi_id": "SPM08",
+    "relevance_score": 95,
+    "relevance_content": "Aims for a 'seamless interface between production and Lab software' and 'Real-time data synchronization,' which is critical for efficient data exchange and oversight between manufacturing partners and contract labs."
+  },
+  {
+    "source_usecase_bi_id": "QC14",
+    "target_process_step_bi_id": "SPM08",
+    "relevance_score": 90,
+    "relevance_content": "Aims to 'Automate sample preparation and testing execution using robotics,' which can be a target for increasing efficiency and quality in contract labs' operations."
+  }
+]
