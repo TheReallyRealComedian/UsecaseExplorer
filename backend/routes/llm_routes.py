@@ -7,11 +7,11 @@ import traceback
 from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-from sqlalchemy import select # Added for potential subquery for use cases
+from sqlalchemy import select
 
 from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User, UseCase # Import UseCase model
+from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance # Import UsecaseStepRelevance model
 
 # Helper function to count tokens (existing, no change needed)
 def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
@@ -108,6 +108,9 @@ def llm_data_prep_page():
         selected_step_fields_form = [] # RENAMED 'selected_fields_form' for clarity
         selected_usecase_fields_form = [] # NEW
 
+        # NEW: Initialize export_uc_step_relevance for GET request
+        export_uc_step_relevance = False # Default to unchecked
+
         total_tokens = 0
 
         print("--- LLM Data Prep Page Access ---")
@@ -123,6 +126,9 @@ def llm_data_prep_page():
             selected_step_fields_form = request.form.getlist('step_fields') # RENAMED
             selected_usecase_fields_form = request.form.getlist('usecase_fields') # NEW
 
+            # NEW: Parse relevance link export option
+            export_uc_step_relevance = request.form.get('export_uc_step_relevance') == 'on'
+
             selected_area_ids_int = [int(id_str) for id_str in selected_area_ids_str if id_str.isdigit()]
             selected_step_ids_int = [int(id_str) for id_str in selected_step_ids_str if id_str.isdigit()]
             selected_usecase_ids_int = [int(id_str) for id_str in selected_usecase_ids_str if id_str.isdigit()] # NEW
@@ -130,6 +136,8 @@ def llm_data_prep_page():
             print(f"Parsed area_ids (int): {selected_area_ids_int}")
             print(f"Parsed step_ids (int): {selected_step_ids_int}")
             print(f"Parsed usecase_ids (int): {selected_usecase_ids_int}") # NEW
+            print(f"Export UC-Step Relevance: {export_uc_step_relevance}") # NEW debug
+
 
             # --- Prepare Process Step Data ---
             if not selected_step_fields_form:
@@ -191,13 +199,57 @@ def llm_data_prep_page():
                             uc_data[field_key] = "N/A"
                     prepared_data["use_cases"].append(uc_data)
 
+            # NEW: --- Prepare Use Case to Step Relevance Data ---
+            prepared_data["usecase_step_relevance"] = [] # Initialize the list
 
-            # Final check and token count
-            if not prepared_data["process_steps"] and not prepared_data["use_cases"]:
-                flash("No data found matching your criteria for either Process Steps or Use Cases.", "info")
-            else:
-                json_string_for_tokens = json.dumps(prepared_data, indent=2)
-                total_tokens = count_tokens(json_string_for_tokens)
+            if export_uc_step_relevance:
+                print("Exporting Use Case to Step Relevance links...")
+                relevance_query = session.query(UsecaseStepRelevance).options(
+                    joinedload(UsecaseStepRelevance.source_usecase),
+                    joinedload(UsecaseStepRelevance.target_process_step)
+                )
+
+                # Get the actual IDs of use cases and steps that ended up in `prepared_data`
+                # These sets will be used to ensure only relevance links between exported entities are included.
+                actual_exported_uc_ids = {uc['id'] for uc in prepared_data["use_cases"]}
+                actual_exported_step_ids = {ps['id'] for ps in prepared_data["process_steps"]}
+
+                # Apply basic filters based on UI selections
+                if selected_usecase_ids_int:
+                    relevance_query = relevance_query.filter(
+                        UsecaseStepRelevance.source_usecase_id.in_(selected_usecase_ids_int)
+                    )
+                if selected_step_ids_int:
+                    relevance_query = relevance_query.filter(
+                        UsecaseStepRelevance.target_process_step_id.in_(selected_step_ids_int)
+                    )
+
+                uc_step_relevances = relevance_query.all()
+                
+                for rel in uc_step_relevances:
+                    # Final check: Ensure both the source Use Case and target Process Step
+                    # are actually present in the primary exported data (process_steps/use_cases lists).
+                    if rel.source_usecase_id in actual_exported_uc_ids and \
+                       rel.target_process_step_id in actual_exported_step_ids:
+                        rel_data = {
+                            "id": rel.id,
+                            "source_usecase_id": rel.source_usecase_id,
+                            "source_usecase_bi_id": rel.source_usecase.bi_id if rel.source_usecase else "N/A",
+                            "source_usecase_name": rel.source_usecase.name if rel.source_usecase else "N/A",
+                            "target_process_step_id": rel.target_process_step_id,
+                            "target_process_step_bi_id": rel.target_process_step.bi_id if rel.target_process_step else "N/A",
+                            "target_process_step_name": rel.target_process_step.name if rel.target_process_step else "N/A",
+                            "relevance_score": rel.relevance_score,
+                            "relevance_content": rel.relevance_content,
+                            "created_at": rel.created_at.isoformat() if rel.created_at else None,
+                            "updated_at": rel.updated_at.isoformat() if rel.updated_at else None,
+                        }
+                        prepared_data["usecase_step_relevance"].append(rel_data)
+                print(f"Exported {len(prepared_data['usecase_step_relevance'])} UC-Step Relevance links.")
+
+            # Recalculate total tokens with the new relevance data
+            json_string_for_tokens = json.dumps(prepared_data, indent=2)
+            total_tokens = count_tokens(json_string_for_tokens)
 
         # Get the current user's system prompt for the template (existing)
         user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
@@ -222,6 +274,7 @@ def llm_data_prep_page():
             selected_usecase_ids=selected_usecase_ids_int, # NEW
             selected_step_fields_form=selected_step_fields_form, # RENAMED
             selected_usecase_fields_form=selected_usecase_fields_form, # NEW
+            export_uc_step_relevance=export_uc_step_relevance, # NEW: Pass this to template
             ollama_models=ollama_models,
             chat_history=chat_history,
             config=current_app.config,
@@ -252,6 +305,7 @@ def llm_data_prep_page():
             selected_usecase_ids=[], # NEW
             selected_step_fields_form=[], # RENAMED
             selected_usecase_fields_form=[], # NEW
+            export_uc_step_relevance=False, # On error, ensure it's false
             ollama_models=[],
             chat_history=[],
             config=current_app.config,

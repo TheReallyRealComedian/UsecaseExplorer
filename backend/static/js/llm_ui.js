@@ -204,6 +204,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // --- Field Checkboxes Select All / Clear All Helper Functions ---
+    function selectAllStepFields() {
+        const checkboxes = document.querySelectorAll('input[name="step_fields"]');
+        console.log('Found step checkboxes:', checkboxes.length); // Debug
+        checkboxes.forEach(cb => cb.checked = true);
+    }
+
+    function clearAllStepFields() {
+        const checkboxes = document.querySelectorAll('input[name="step_fields"]');
+        checkboxes.forEach(cb => cb.checked = false);
+    }
+
+    function selectAllUsecaseFields() {
+        const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
+        console.log('Found usecase checkboxes:', checkboxes.length); // Debug
+        checkboxes.forEach(cb => cb.checked = true);
+    }
+
+    function clearAllUsecaseFields() {
+        const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
+        checkboxes.forEach(cb => cb.checked = false);
+    }
+
     // --- Field Checkboxes Select All / Clear All ---
     const stepFieldCheckboxes = document.querySelectorAll('input[name="step_fields"]');
     const usecaseFieldCheckboxes = document.querySelectorAll('input[name="usecase_fields"]');

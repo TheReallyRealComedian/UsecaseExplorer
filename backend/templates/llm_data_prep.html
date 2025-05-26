@@ -112,8 +112,8 @@
                         <div class="field-group-header">
                             <span class="field-group-title">Process Step Fields</span>
                             <div class="field-group-controls">
-                                <button type="button" class="btn btn-sm" onclick="selectAllFields('step-fields-content')">All</button>
-                                <button type="button" class="btn btn-sm" onclick="clearAllFields('step-fields-content')">None</button>
+                                <button type="button" class="btn btn-sm" onclick="selectAllStepFields()">All</button>
+                                <button type="button" class="btn btn-sm" onclick="clearAllStepFields()">None</button>
                                 <!-- Use Bootstrap collapse button -->
                                 <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#step-fields-content" aria-expanded="true" aria-controls="step-fields-content">
                                     <i class="fas fa-chevron-up"></i>
@@ -155,6 +155,36 @@
                             </div>
                             {% endfor %}
                         </div>
+                    </div>
+                </div> <!-- End of field-groups -->
+
+                {# NEW SECTION: Relevance Links Export Option #}
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">Relevance Link Export Options</h2>
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#relevanceLinkBody" aria-expanded="true" aria-controls="relevanceLinkBody">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="relevanceLinkBody" class="card-body collapse show">
+                        <div class="fieldset-dashed-border">
+                            <legend class="fieldset-legend">Use Case to Process Step Links</legend>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="export_uc_step_relevance" id="export_uc_step_relevance"
+                                               {% if export_uc_step_relevance %}checked{% endif %}>
+                                        <label class="form-check-label" for="export_uc_step_relevance">
+                                            Export relevancy links from selected Use Cases to selected Process Steps
+                                        </label>
+                                    </div>
+                                    <div class="help-text mt-2">
+                                        If checked, links will only be exported if both the source Use Case and target Process Step are part of your selections above.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {# Add more relevance link types here in the future (e.g., UC-Area, UC-UC, PS-PS) #}
                     </div>
                 </div>
 
