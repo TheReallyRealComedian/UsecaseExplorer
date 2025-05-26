@@ -39,10 +39,17 @@
                     </a>
                 </li>
                 {# NEW ITEM FOR RELEVANCE VISUALIZATION #}
-                <li class="{{ 'active' if request.endpoint == 'relevance.visualize' else '' }}">
+                <li class="{{ 'active' if request.endpoint == 'relevance.visualize_relevance' else '' }}">
                     <a href="{{ url_for('relevance.visualize_relevance') }}">
                         <i class="fas fa-network-wired"></i> {# A suitable icon #}
                         <span>Relevance Map</span>
+                    </a>
+                </li>
+                {# NEW ITEM FOR DATA ALIGNMENT #}
+                <li class="{{ 'active' if request.endpoint == 'data_alignment.data_alignment_page' else '' }}">
+                    <a href="{{ url_for('data_alignment.data_alignment_page') }}">
+                        <i class="fas fa-arrows-alt-h"></i> {# Icon for alignment/linking #}
+                        <span>Data Alignment</span>
                     </a>
                 </li>
                   <li>
@@ -91,7 +98,7 @@
                            class="breadcrumb-item {% if request.endpoint == 'steps.view_step' %}active{% endif %}">
                             {{ nav_step.name }}
                         </a>
-                    {% elif nav_area or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register') %}
+                    {% elif nav_area or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register' and request.endpoint != 'data_alignment.data_alignment_page') %}
                         <span class="breadcrumb-item disabled">Process Step</span>
                     {% endif %}
 
@@ -101,7 +108,7 @@
                            class="breadcrumb-item {% if request.endpoint == 'usecases.view_usecase' %}active{% endif %}">
                             {{ nav_usecase.name }}
                         </a>
-                    {% elif nav_step or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register') %}
+                    {% elif nav_step or (request.endpoint == 'index' and request.endpoint != 'auth.login' and request.endpoint != 'auth.register' and request.endpoint != 'data_alignment.data_alignment_page') %}
                         <span class="breadcrumb-item disabled">Use Case</span>
                     {% endif %}
                 </div>

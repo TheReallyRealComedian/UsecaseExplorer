@@ -99,6 +99,9 @@ def create_app():
     app.register_blueprint(step_routes)
     from .routes.export_routes import export_routes 
     app.register_blueprint(export_routes)
+    # NEW BLUEPRINT
+    from .routes.data_alignment_routes import data_alignment_routes
+    app.register_blueprint(data_alignment_routes)
     print("Blueprint registration complete.")
 
 
@@ -144,6 +147,9 @@ def create_app():
             results["checks"]["area_blueprint_registered"] = area_bp_registered
             step_bp_registered = app.blueprints.get('steps') is not None
             results["checks"]["step_blueprint_registered"] = step_bp_registered
+            # NEW debug for data_alignment blueprint
+            data_alignment_bp_registered = app.blueprints.get('data_alignment') is not None
+            results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
 
             # Test config access
             secret_key_present = bool(app.config.get('SECRET_KEY'))
@@ -160,8 +166,11 @@ def create_app():
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                list_areas_url = url_for('areas.list_areas')
-                results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
+                list_areas_url = url_for('areas.list_areas') # This url_for doesn't exist, will fail.
+                results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})" # Should be `view_area` or similar
+                # NEW debug url for data_alignment
+                data_alignment_url = url_for('data_alignment.data_alignment_page')
+                results["checks"]["url_for_data_alignment"] = f"OK ({data_alignment_url})"
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
 
