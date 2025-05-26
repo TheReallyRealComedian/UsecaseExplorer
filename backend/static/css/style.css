@@ -1677,3 +1677,39 @@ form button[type="submit"]:hover,
     cursor: pointer !important;
     padding-left: 0 !important; /* Remove any default Bootstrap padding */
 }
+
+/* style.css */
+
+/* ... (existing CSS) ... */
+
+/* Data Alignment Page Specific Styles */
+.data-alignment-page .table td {
+    vertical-align: middle; /* Align content in cells vertically */
+}
+
+/* For unsaved changes */
+.unsaved-change {
+    background-color: var(--raw-alert-warning-bg) !important; /* Light warning background */
+    border-color: var(--raw-alert-warning-border) !important;
+    transition: background-color 0.3s ease;
+}
+
+.unsaved-change select {
+    border-color: var(--raw-alert-warning-text) !important; /* Emphasize border of changed select */
+}
+
+/* For buttons */
+.data-alignment-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.data-alignment-actions .btn {
+    min-width: 120px; /* Give buttons a consistent size */
+}
+.pending-changes-info {
+    font-size: 0.95rem;
+    color: var(--text-color-medium);
+    font-weight: 500;
+}

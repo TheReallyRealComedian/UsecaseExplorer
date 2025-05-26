@@ -8,8 +8,18 @@
     <h1>{{ title }}</h1>
     <p class="text-color-light mb-4">
         Quickly re-align Process Steps to Areas and Use Cases to Process Steps.
-        Changes are applied immediately and will be visible on the next page load.
+        Changes are applied only after you click "Save All Changes".
     </p>
+
+    <div class="data-alignment-actions">
+        <button id="saveAllChangesBtn" class="btn btn-primary" disabled>
+            <i class="fas fa-save me-1"></i> Save All Changes (<span id="pendingChangesCount">0</span>)
+        </button>
+        <button id="cancelAllChangesBtn" class="btn btn-secondary" disabled>
+            <i class="fas fa-times-circle me-1"></i> Cancel All Changes
+        </button>
+        <span class="pending-changes-info ms-auto" id="alignmentStatus">No pending changes.</span>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -30,7 +40,7 @@
                             {% for area in areas_with_steps %}
                                 {% if area.process_steps %}
                                     {% for step in area.process_steps | sort(attribute='name') %}
-                                    <tr data-step-id="{{ step.id }}">
+                                    <tr data-step-id="{{ step.id }}" data-original-area-id="{{ step.area_id }}">
                                         <td>
                                             <a href="{{ url_for('areas.view_area', area_id=area.id) }}">
                                                 {{ area.name }}
@@ -103,7 +113,7 @@
                                                     </thead>
                                                     <tbody>
                                                         {% for uc in step.use_cases | sort(attribute='name') %}
-                                                            <tr data-usecase-id="{{ uc.id }}">
+                                                            <tr data-usecase-id="{{ uc.id }}" data-original-step-id="{{ uc.process_step_id }}">
                                                                 <td>
                                                                     <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">
                                                                         {{ uc.name }}
