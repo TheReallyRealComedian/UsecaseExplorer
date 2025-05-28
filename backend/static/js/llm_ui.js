@@ -204,52 +204,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- Field Checkboxes Select All / Clear All Helper Functions ---
-    function selectAllStepFields() {
-        const checkboxes = document.querySelectorAll('input[name="step_fields"]');
-        console.log('Found step checkboxes:', checkboxes.length); // Debug
-        checkboxes.forEach(cb => cb.checked = true);
-    }
-
-    function clearAllStepFields() {
-        const checkboxes = document.querySelectorAll('input[name="step_fields"]');
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-
-    function selectAllUsecaseFields() {
-        const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
-        console.log('Found usecase checkboxes:', checkboxes.length); // Debug
-        checkboxes.forEach(cb => cb.checked = true);
-    }
-
-    function clearAllUsecaseFields() {
-        const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
-        checkboxes.forEach(cb => cb.checked = false);
-    }
-
-    // --- Field Checkboxes Select All / Clear All ---
-    const stepFieldCheckboxes = document.querySelectorAll('input[name="step_fields"]');
-    const usecaseFieldCheckboxes = document.querySelectorAll('input[name="usecase_fields"]');
-
-    const selectAllStepFieldsBtn = document.getElementById('selectAllStepFields');
-    const clearAllStepFieldsBtn = document.getElementById('clearAllStepFields');
-    const selectAllUsecaseFieldsBtn = document.getElementById('selectAllUsecaseFields');
-    const clearAllUsecaseFieldsBtn = document.getElementById('clearAllUsecaseFields');
-
-    if (selectAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
-        selectAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = true));
-    }
-    if (clearAllStepFieldsBtn && stepFieldCheckboxes.length > 0) {
-        clearAllStepFieldsBtn.addEventListener('click', () => stepFieldCheckboxes.forEach(cb => cb.checked = false));
-    }
-
-    if (selectAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) {
-        selectAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = true));
-    }
-    if (clearAllUsecaseFieldsBtn && usecaseFieldCheckboxes.length > 0) {
-        clearAllUsecaseFieldsBtn.addEventListener('click', () => usecaseFieldCheckboxes.forEach(cb => cb.checked = false));
-    }
-
     // --- Event Listeners for Custom Select All/Clear All Buttons ---
     document.getElementById('selectAllAreas')?.addEventListener('click', () => selectAll('areas'));
     document.getElementById('clearAllAreas')?.addEventListener('click', () => clearAll('areas'));
@@ -292,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Conditionally show/hide buttons and token count based on whether data exists
     if (copyJsonButton) copyJsonButton.style.display = hasData ? 'inline-block' : 'none';
-    if (toggleJsonPreviewButton) toggleJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none';
+    if (toggleJsonPreviewButton) toggleJsonJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none';
     if (tokenCountDisplay) tokenCountDisplay.style.display = hasData ? 'block' : 'none';
 
     // Toggle JSON Preview visibility
@@ -554,3 +508,26 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 }); // End of DOMContentLoaded
+
+// --- GLOBAL FUNCTIONS FOR FIELD CHECKBOXES (MOVED OUTSIDE DOMContentLoaded) ---
+function selectAllStepFields() {
+    const checkboxes = document.querySelectorAll('input[name="step_fields"]');
+    console.log('Found step checkboxes:', checkboxes.length); // Debug
+    checkboxes.forEach(cb => cb.checked = true);
+}
+
+function clearAllStepFields() {
+    const checkboxes = document.querySelectorAll('input[name="step_fields"]');
+    checkboxes.forEach(cb => cb.checked = false);
+}
+
+function selectAllUsecaseFields() {
+    const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
+    console.log('Found usecase checkboxes:', checkboxes.length); // Debug
+    checkboxes.forEach(cb => cb.checked = true);
+}
+
+function clearAllUsecaseFields() {
+    const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
+    checkboxes.forEach(cb => cb.checked = false);
+}
