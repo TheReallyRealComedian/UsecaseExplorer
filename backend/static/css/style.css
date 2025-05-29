@@ -1620,17 +1620,22 @@ form button[type="submit"]:hover,
 .me-1 { margin-right: 0.25rem !important; }
 .me-2 { margin-right: 0.5rem !important; }
 
-/* Added for Relevance Map page */
+/* Relevance Map Page Specific Styles */
 .relevance-visualize-page .card-body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 600px;
-    overflow-x: auto;
+    overflow: hidden; /* Hide anything that might overflow its bounds */
+    padding: 30px; /* Add padding around the chart within the card */
 }
 
 #relevanceChart {
-    min-width: 600px;
+    /* Height is set by JS, ensure no conflicting CSS height or aspect-ratio */
+    /* min-width might still be useful for very small screens, but the JS handles overall square */
+    min-width: 300px; /* Example: minimum width for chart content */
+    /*max-width: 800px; */
+    margin: 0 auto; /* Center the chart horizontally */
 }
 
 /* Enhance System Prompt Textarea on LLM Data Prep page to fix rendering issues */

@@ -17,9 +17,10 @@
             <h2 class="card-title">Relevance Map</h2>
         </div>
         <div class="card-body">
+            {# Chart container. Its height will be set by JavaScript to match its width. #}
             {# Conditional rendering: show chart container only if data exists #}
             {% if echarts_data.nodes %}
-                <div id="relevanceChart" style="width: 100%; height: 600px;"></div>
+                <div id="relevanceChart" style="width: 100%;"></div>
             {% else %}
                 <p class="text-muted text-center"><em>No process steps or relevance data available for visualization. Please ensure you have areas, steps, and step-to-step relevance links in the database.</em></p>
             {% endif %}
@@ -41,14 +42,22 @@
             return; // Exit if no chart container (e.g., no data rendered)
         }
 
-        var myChart = echarts.init(chartDom);
-        // prettier-ignore
-        // @ts-ignore
-        var echartsData = {{ echarts_data | tojson }}; // Data passed from Flask
+        function setChartDimensions() {
+            var width = chartDom.offsetWidth;
+            var height = width; // Maintain 1:1 aspect ratio
+            chartDom.style.height = height + 'px';
+            myChart.resize(); // Inform ECharts about the new size
+        }
 
-        // Defensive check: only proceed if echartsData contains valid nodes
+        var myChart = echarts.init(chartDom);
+        
+        var echartsData = {{ echarts_data | tojson }};
+
         if (!echartsData || !echartsData.nodes || echartsData.nodes.length === 0) {
             console.warn("No valid data provided for ECharts. Skipping chart rendering.");
+            if (chartDom.parentElement) {
+                 chartDom.style.display = 'none';
+            }
             return;
         }
 
@@ -73,11 +82,13 @@
                 }
             },
             legend: {
+                // MODIFIED: Legend position and orientation
                 data: echartsData.categories.map(c => c.name),
-                bottom: 0,
-                orient: 'horizontal',
-                type: 'scroll', // Enable scrolling for many categories
-                itemGap: 10, // Spacing between legend items
+                left: '5%',       // Position legend to the right, with 5% margin
+                top: 'top',     // Center legend vertically
+                orient: 'vertical', // Vertical alignment
+                type: 'scroll',    // Enable scrolling for many categories
+                itemGap: 10,       // Increase spacing for vertical readability
                 itemWidth: 15,
                 itemHeight: 15,
                 textStyle: {
@@ -128,7 +139,6 @@
                              fontWeight: 'bold'
                         }
                     },
-                    // Animation settings for smoother transitions on data update (not used in this static view, but good practice)
                     animationDurationUpdate: 750, 
                     animationEasingUpdate: 'quinticInOut'
                 }
@@ -137,15 +147,14 @@
 
         myChart.setOption(option);
 
-        // Optional: Resize chart with window
+        setChartDimensions(); 
         window.addEventListener('resize', function() {
+            setChartDimensions();
             myChart.resize();
         });
 
-        // Add click event listener to chart nodes for navigation
         myChart.on('click', function (params) {
             if (params.dataType === 'node') {
-                // Redirect to the step detail page using the node's ID
                 var stepId = params.data.id; 
                 if (stepId) {
                     window.location.href = `/steps/${stepId}`;

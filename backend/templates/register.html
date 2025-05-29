@@ -1,29 +1,44 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{{ title }} - Usecase Explorer</title>
+    <!-- FontAwesome for icons (if used on register page) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujm/6s+Ndz8zJg4fQnK/b5xI7i7a9/c5k/n4r1j5G4/Bw/B7jP5g4k7Z/m4b9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <h1>{{ title }}</h1>
 
-{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
-{% block content %}
-<div class="auth-container">
-    <h1>{{ title }}</h1>
+        <!-- Registration Form -->
+        <form action="" method="post" novalidate>
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div>
+                <button type="submit">Register</button>
+            </div>
+        </form>
 
-    {# Flash messages are now in base.html #}
-
-    <!-- Registration Form -->
-    <form action="" method="post" novalidate>
-        {# CSRF token #}
-        <div>
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-        </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div>
-            <button type="submit">Register</button>
-        </div>
-    </form>
-
-    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Click to Login!</a></p>
-</div>
-{% endblock %}
+        <p>Already have an account? <a href="{{ url_for('auth.login') }}">Click to Login!</a></p>
+    </div>
+</body>
+</html>
