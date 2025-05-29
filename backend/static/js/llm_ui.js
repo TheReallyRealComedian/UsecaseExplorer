@@ -246,7 +246,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Conditionally show/hide buttons and token count based on whether data exists
     if (copyJsonButton) copyJsonButton.style.display = hasData ? 'inline-block' : 'none';
-    if (toggleJsonPreviewButton) toggleJsonJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none';
+    // FIX: Corrected typo here from toggleJsonJsonPreviewButton to toggleJsonPreviewButton
+    if (toggleJsonPreviewButton) toggleJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none'; 
     if (tokenCountDisplay) tokenCountDisplay.style.display = hasData ? 'block' : 'none';
 
     // Toggle JSON Preview visibility
@@ -301,6 +302,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- LLM Chat Window Logic ---
     // Function to convert markdown to HTML
     function markdownToHtml(markdownText) {
+        // Check if marked library is available (it's loaded via CDN in the template)
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
             return marked.parse(markdownText);
         }
@@ -319,10 +321,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Populate chat history on load (from Flask template)
     if (chatDisplay) {
-        if (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('text-muted')) {
+        // Remove the placeholder message if there's actual chat history
+        if (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('chat-placeholder')) {
             chatDisplay.innerHTML = '';
         }
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        chatDisplay.scrollTop = chatDisplay.scrollHeight; // Scroll to bottom on load
     }
 
     // Handle sending message
@@ -330,7 +333,8 @@ document.addEventListener('DOMContentLoaded', function () {
         sendMessageButton.addEventListener('click', async () => {
             const message = chatInput.value.trim();
             const selectedModel = llmModelSelect.value;
-            const systemPrompt = systemPromptInput ? systemPromptInput.value.trim() : '';
+            // The system prompt is retrieved on the server, not directly sent from here
+            // const systemPrompt = systemPromptInput ? systemPromptInput.value.trim() : '';
 
             if (!message || !selectedModel) {
                 alert('Please enter a message and select a model.');
@@ -370,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     loadingBubble.remove();
                     addMessageToChat('assistant', data.message);
                 } else {
+                    // Update loading bubble with error message
                     loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.message}`;
                     loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
                     loadingBubble.style.color = 'var(--raw-alert-danger-text)';
@@ -377,19 +382,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (error) {
                 console.error('Network or server error:', error);
+                // Update loading bubble with network error
                 loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Network Error: Could not reach LLM service.`;
                 loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
                 loadingBubble.style.color = 'var(--raw-alert-danger-text)';
             } finally {
+                // Re-enable input fields and buttons
                 sendMessageButton.disabled = false;
                 chatInput.disabled = false;
                 llmModelSelect.disabled = false;
                 if (systemPromptInput) systemPromptInput.disabled = false;
                 if (saveSystemPromptButton) saveSystemPromptButton.disabled = false;
-                chatInput.focus();
+                chatInput.focus(); // Focus on input for next message
             }
         });
 
+        // Send message on Enter key press in chat input
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessageButton.click();
@@ -405,7 +413,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     const response = await fetch('/llm/chat/clear', { method: 'POST' });
                     const data = await response.json();
                     if (data.success) {
-                        chatDisplay.innerHTML = '<p class="text-muted text-center mt-3">Start a conversation with the LLM.</p>';
+                        // Replace content with original placeholder
+                        chatDisplay.innerHTML = '<div class="chat-placeholder"><i class="fas fa-comments"></i><p>Start a conversation with the LLM about your prepared data</p></div>';
                         alert('Chat history cleared!');
                     } else {
                         alert(`Failed to clear chat history: ${data.message}`);
@@ -453,6 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } finally {
                 saveSystemPromptButton.disabled = false;
                 systemPromptInput.disabled = false;
+                // Clear message after a short delay
                 setTimeout(() => {
                     saveSystemPromptMessage.textContent = '';
                 }, 3000);
@@ -460,56 +470,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Bootstrap Collapse Icon Toggle ---
-    const selectionCriteriaHeader = document.getElementById('selectionCriteriaHeader');
-    const preparedDataHeader = document.getElementById('preparedDataHeader');
-    const llmChatHeader = document.getElementById('llmChatHeader');
-    const systemPromptHeader = document.getElementById('systemPromptHeader');
+    // --- Bootstrap Collapse Icon Toggle Logic ---
+    // Select all collapse headers that should have dynamic icons
+    const collapseHeaders = [
+        document.getElementById('selectionCriteriaHeader'),
+        document.getElementById('preparedDataHeader'),
+        document.getElementById('llmChatHeader'),
+        document.getElementById('systemPromptHeader')
+    ];
 
-    // Function to update icon based on collapse state
-    function updateCollapseIcon(headerElement, targetId) {
-        const collapseElement = document.getElementById(targetId);
-        const iconElement = headerElement.querySelector('i');
-        
-        collapseElement.addEventListener('shown.bs.collapse', () => {
-            iconElement.classList.remove('fa-chevron-down');
-            iconElement.classList.add('fa-chevron-up');
-        });
-        collapseElement.addEventListener('hidden.bs.collapse', () => {
-            iconElement.classList.remove('fa-chevron-up');
-            iconElement.classList.add('fa-chevron-down');
-        });
+    collapseHeaders.forEach(header => {
+        if (header) {
+            const targetId = header.getAttribute('data-bs-target');
+            const collapseElement = document.getElementById(targetId.substring(1)); // Remove '#'
+            const iconElement = header.querySelector('i');
 
-        // Set initial icon state based on 'show' class
-        if (collapseElement.classList.contains('show')) {
-            iconElement.classList.remove('fa-chevron-down');
-            iconElement.classList.add('fa-chevron-up');
-        } else {
-            iconElement.classList.remove('fa-chevron-up');
-            iconElement.classList.add('fa-chevron-down');
-        }
-    }
+            if (collapseElement && iconElement) {
+                // Set initial icon state based on 'show' class
+                if (collapseElement.classList.contains('show')) {
+                    iconElement.classList.remove('fa-chevron-down');
+                    iconElement.classList.add('fa-chevron-up');
+                } else {
+                    iconElement.classList.remove('fa-chevron-up');
+                    iconElement.classList.add('fa-chevron-down');
+                }
 
-    if (selectionCriteriaHeader) updateCollapseIcon(selectionCriteriaHeader, 'selectionCriteriaBody');
-    if (preparedDataHeader) updateCollapseIcon(preparedDataHeader, 'preparedDataBody');
-    if (llmChatHeader) updateCollapseIcon(llmChatHeader, 'llmChatBody');
-    if (systemPromptHeader) updateCollapseIcon(systemPromptHeader, 'systemPromptBody');
-
-    // --- Explicitly initialize Bootstrap Collapses (as a fallback/diagnostic) ---
-    // This finds all elements with data-bs-toggle="collapse"
-    const collapseToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
-    collapseToggles.forEach(toggle => {
-        const targetId = toggle.getAttribute('data-bs-target');
-        const collapseElement = document.querySelector(targetId);
-
-        if (collapseElement) {
-            console.log("Found collapse toggle:", toggle, "for target:", collapseElement);
+                // Add event listeners for Bootstrap collapse events
+                collapseElement.addEventListener('shown.bs.collapse', () => {
+                    iconElement.classList.remove('fa-chevron-down');
+                    iconElement.classList.add('fa-chevron-up');
+                });
+                collapseElement.addEventListener('hidden.bs.collapse', () => {
+                    iconElement.classList.remove('fa-chevron-up');
+                    iconElement.classList.add('fa-chevron-down');
+                });
+            }
         }
     });
 
 }); // End of DOMContentLoaded
 
 // --- GLOBAL FUNCTIONS FOR FIELD CHECKBOXES (MOVED OUTSIDE DOMContentLoaded) ---
+// These functions are called directly from onclick attributes in the HTML
 function selectAllStepFields() {
     const checkboxes = document.querySelectorAll('input[name="step_fields"]');
     console.log('Found step checkboxes:', checkboxes.length); // Debug

@@ -1,16 +1,18 @@
 # backend/app.py
 import os
 from flask import Flask, render_template, redirect, url_for, flash
-from sqlalchemy.orm import joinedload # Kept for use in index route
+from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
-import markupsafe # For the nl2br filter
+import markupsafe
+
+from flask_session import Session # NEW: Import Session
 
 from .config import get_config
-from .models import Base, User, Area, ProcessStep, UseCase
-from .db import SessionLocal, init_engine as init_db_engine # Updated import
+from .models import Base, User, Area, ProcessStep, UseCase # Base can eventually be removed if all models inherit from db.Model
+from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db # NEW: Import init_app_db and the db object itself
 
 # NEW: Import llm_service to ensure it's loaded and can access Flask's session proxy
-from . import llm_service # This line is important
+from . import llm_service
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -26,7 +28,7 @@ def load_user(user_id):
     except (ValueError, TypeError):
         return None
 
-    session = SessionLocal() # SessionLocal is now imported from .db
+    session = flask_sqlalchemy_db.session # NEW: Use Flask-SQLAlchemy's session for consistency
     try:
         user = session.query(User).get(user_id)
         return user
@@ -34,7 +36,9 @@ def load_user(user_id):
         print(f"Error loading user {user_id}: {e}")
         return None
     finally:
-        SessionLocal.remove() # Ensure session is removed as per CHANGE
+        # Flask-SQLAlchemy manages its own sessions per request.
+        # No explicit session.remove() needed here for db.session.
+        pass # Keep pass if SessionLocal.remove() is managed by @app.teardown_request or not needed
 
 # --- CUSTOM JINJA FILTER ---
 def nl2br(value):
@@ -66,13 +70,44 @@ def create_app():
     app.jinja_env.filters['nl2br'] = nl2br
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
-    # Initialize the engine using the function from db.py
-    # This also configures SessionLocal in db.py
-    current_engine = init_db_engine(db_url)
+    # Initialize Flask-SQLAlchemy db instance here
+    # This init_app_db function configures Flask-SQLAlchemy with the app
+    db_instance = init_app_db(app) # db_instance is the Flask-SQLAlchemy object
+
+    # --- NEW: Flask-Session Configuration ---
+    app.config['SESSION_TYPE'] = 'sqlalchemy'
+    app.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions' # Name of the session table
+    app.config['SESSION_SQLALCHEMY'] = db_instance # NEW: Pass the Flask-SQLAlchemy db object
+    app.config['SESSION_PERMANENT'] = True # Sessions persist across browser restarts (based on cookie lifetime)
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7 # 1 week lifetime (in seconds)
+    app.config['SESSION_USE_SIGNER'] = True # Sign the session cookie for security
+    app.config['SESSION_COOKIE_NAME'] = 'usecase_explorer_session' # Custom cookie name
+    app.config['SESSION_COOKIE_HTTPONLY'] = True # Prevents client-side JS access to the cookie
+    app.config['SESSION_COOKIE_SECURE'] = False # Set to True in production if using HTTPS (recommended)
+    
+    # Initialize Flask-Session AFTER the Flask-SQLAlchemy db instance is ready
+    Session(app) 
+    # Flask-Session will automatically create the 'flask_sessions' table if it doesn't exist.
+    # --- END NEW: Flask-Session Configuration ---
+
+    # --- START OF FIX ---
+    # Create database tables if they don't exist, including the flask_sessions table.
+    # This should be done inside an app_context to make current_app available to Flask-SQLAlchemy.
+    with app.app_context():
+        print("Attempting to create all database tables (if they don't exist)...")
+        try:
+            # db_instance is your Flask-SQLAlchemy db object (aliased as flask_sqlalchemy_db)
+            flask_sqlalchemy_db.create_all()
+            print("Database tables checked/created successfully.")
+        except Exception as e:
+            print(f"Error creating database tables: {e}")
+            # In a production environment, you might raise this error or handle it more gracefully
+            # but for development, logging it is often sufficient.
+    # --- END OF FIX ---
 
     try:
-        # Use the returned engine from init_db_engine
-        with current_engine.connect() as connection:
+        # You can use db_instance.engine for raw connection checks if needed
+        with db_instance.engine.connect() as connection: 
             print("Database connection successful!")
     except Exception as e:
         print(f"Database connection failed: {e}")
@@ -80,7 +115,8 @@ def create_app():
 
     @app.teardown_request
     def remove_session(exception=None):
-        SessionLocal.remove() # SessionLocal is imported from .db
+        # Flask-SQLAlchemy's db.session is automatically managed.
+        SessionLocal.remove() # Keep this if SessionLocal is used directly elsewhere in your code
 
     print("Importing and registering blueprints...")
     from .routes.auth_routes import auth_routes
@@ -108,7 +144,7 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            session = SessionLocal() # SessionLocal from .db
+            session = flask_sqlalchemy_db.session # NEW: Use Flask-SQLAlchemy's session here
             areas = []
             try:
                 areas = session.query(Area).options(
@@ -127,7 +163,7 @@ def create_app():
     def debug_check():
         print("Accessing /debug-check route")
         results = {"status": "success", "checks": {}}
-        session_for_debug = SessionLocal() # SessionLocal from .db, create once for this route
+        session_for_debug = flask_sqlalchemy_db.session # NEW: Use Flask-SQLAlchemy's session for debug
         try:
             from .config import Config # noqa: F401 (unused import)
             results["checks"]["config_import"] = "OK"
@@ -150,6 +186,9 @@ def create_app():
             # NEW debug for data_alignment blueprint
             data_alignment_bp_registered = app.blueprints.get('data_alignment') is not None
             results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
+            # Check if injection blueprint is registered
+            injection_bp_registered = app.blueprints.get('injection') is not None
+            results["checks"]["injection_blueprint_registered"] = injection_bp_registered
 
             # Test config access
             secret_key_present = bool(app.config.get('SECRET_KEY'))
@@ -160,14 +199,25 @@ def create_app():
             results["checks"]["db_url_loaded"] = db_url_present
             results["checks"]["openai_key_loaded"] = openai_key_present
 
+            # NEW: Check session configuration
+            results["checks"]["session_type"] = app.config.get('SESSION_TYPE')
+            results["checks"]["session_sqlalchemy_table"] = app.config.get('SESSION_SQLALCHEMY_TABLE')
+            results["checks"]["session_sqlalchemy_instance_type"] = str(type(app.config.get('SESSION_SQLALCHEMY'))) # Check type
+
 
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                list_areas_url = url_for('areas.list_areas') # This url_for doesn't exist, will fail.
-                results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})" # Should be `view_area` or similar
+                # Using a dummy ID for view_area, as list_areas doesn't exist
+                # This may fail if area_id=1 doesn't exist in your DB.
+                try:
+                    list_areas_url = url_for('areas.view_area', area_id=1) 
+                    results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
+                except Exception as area_url_err:
+                    results["checks"]["url_for_areas_list"] = f"FAILED ({area_url_err})"
+
                 # NEW debug url for data_alignment
                 data_alignment_url = url_for('data_alignment.data_alignment_page')
                 results["checks"]["url_for_data_alignment"] = f"OK ({data_alignment_url})"
@@ -189,11 +239,10 @@ def create_app():
             print(f"Error in /debug-check: {e}")
             return results, 500
         finally:
-            SessionLocal.remove() # Remove the session used for debug_check
+            # Flask-SQLAlchemy's db.session is automatically managed.
+            pass
 
         return results
 
     print("create_app function finished.")
     return app
-
-# Run via WSGI server (Gunicorn)

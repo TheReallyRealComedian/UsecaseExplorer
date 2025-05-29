@@ -37,6 +37,7 @@
         Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
         Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
     </p>
+    {# MODIFIED FORM ACTION TO POINT TO handle_injection, which will then redirect to preview #}
     <form action="{{ url_for('injection.handle_injection') }}" method="post" enctype="multipart/form-data" id="stepForm">
          <div>
              <label for="step_file">Process Step JSON File:</label>
@@ -185,13 +186,15 @@
 </div>
 
 <script>
+// Remove old JS for stepForm submission as it's now handled by backend redirect
+// document.getElementById('stepForm').onsubmit = function() {
+//     console.log('Step form submitted');
+//     return true;
+// };
+
+// Keep other form submission logs
 document.getElementById('areaForm').onsubmit = function() {
     console.log('Area form submitted');
-    return true;
-};
-
-document.getElementById('stepForm').onsubmit = function() {
-    console.log('Step form submitted');
     return true;
 };
 
@@ -205,7 +208,6 @@ document.getElementById('psPsRelevanceForm').onsubmit = function() {
     return true;
 };
 
-// NEW: Add event listeners for new relevance forms
 document.getElementById('usecaseAreaRelevanceForm').onsubmit = function() {
     console.log('Use Case-Area Relevance form submitted');
     return true;

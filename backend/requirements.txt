@@ -1,7 +1,9 @@
 #backend/requirements.txt
 
 Flask==2.3.3 # Or a recent version you prefer/is stable
+Flask-Session==0.6.0
 SQLAlchemy==2.0.25 # Or a recent version
+Flask-SQLAlchemy==3.1.1
 psycopg2-binary==2.9.9 # Or a recent version
 python-dotenv==1.0.0 # For managing local environment variables
 Flask-Login>=0.6.3

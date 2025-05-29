@@ -9,6 +9,10 @@ from .models import (
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
     ProcessStepProcessStepRelevance
 )
+from datetime import datetime
+
+# --- Keep existing functions as they are (datetime_serializer, export_database_to_json_string, export_area_to_markdown, process_area_file) ---
+# ... (contents of process_area_file, etc.) ...
 
 def process_area_file(file_stream):
     session = SessionLocal()
@@ -127,165 +131,303 @@ def process_area_file(file_stream):
     }
 
 
-def process_step_file(file_stream):
+# MODIFIED: process_step_file to correctly handle nested JSON and add more logging
+def process_step_file(file_content_json):
+    """
+    Parses a JSON file of process steps, compares with existing data,
+    and returns a structured preview of changes for user review.
+    Handles JSON where steps are a top-level list OR nested under a 'process_steps' key.
+    Does NOT commit any changes to the database.
+    """
     session = SessionLocal()
-    added_count = 0
-    updated_count = 0
-    skipped_invalid_format = 0
-    skipped_existing_no_update_count = 0 
-    skipped_missing_area = 0
-    bi_ids_existing_no_update = [] 
-    missing_area_names = []
-    message = ""
-    success = False
+    preview_data = [] # This will store the structured preview
+    
+    # Helper to convert an SQLAlchemy model instance to a dict for comparison/JSON
+    def model_to_dict(obj, fields_to_include, session):
+        data = {}
+        for field in fields_to_include:
+            val = getattr(obj, field, None)
+            if isinstance(val, datetime):
+                data[field] = val.isoformat()
+            else:
+                data[field] = val
+        
+        # Include area_name for display convenience in preview
+        if obj.area_id:
+            area = session.query(Area).get(obj.area_id)
+            data['area_name'] = area.name if area else 'Unknown Area'
+        else:
+            data['area_name'] = 'N/A'
+
+        return data
+
+    # Define all fields to be considered for updates/conflicts
+    step_fields = [
+        "name", "step_description", "raw_content", "summary", "vision_statement",
+        "in_scope", "out_of_scope", "interfaces_text", "what_is_actually_done",
+        "pain_points", "targets_text"
+    ]
 
     try:
-        print("Processing step file (with update logic)")
-        area_lookup = {
+        print("Starting process_step_file for preview generation...")
+        area_name_to_id_map = {
             area.name: area.id for area in session.query(Area.name, Area.id).all()
         }
+        area_id_to_name_map = {
+            area.id: area.name for area in session.query(Area.id, Area.name).all()
+        }
+        print(f"Available areas in DB: {list(area_name_to_id_map.keys())}")
 
-        try:
-            data = json.load(file_stream)
-        except UnicodeDecodeError:
-            file_stream.seek(0)
-            data = json.loads(file_stream.read().decode('utf-8'))
 
-        if not isinstance(data, list):
-            raise ValueError("Invalid JSON format: Top level must be a list.")
+        json_data_list = []
+        if isinstance(file_content_json, list):
+            json_data_list = file_content_json
+            print("Detected top-level JSON as a list.")
+        elif isinstance(file_content_json, dict) and "process_steps" in file_content_json and isinstance(file_content_json["process_steps"], list):
+            json_data_list = file_content_json["process_steps"]
+            print("Detected top-level JSON as a dictionary with 'process_steps' key.")
+        else:
+            raise ValueError("Invalid JSON format: Top level must be a list of objects or a dictionary containing a 'process_steps' list.")
+        
+        print(f"Number of items found in JSON for processing: {len(json_data_list)}")
 
-        for item in data:
-            if not (isinstance(item, dict) and
-                    all(k in item for k in ('bi_id', 'name', 'area_name')) and
-                    isinstance(item['bi_id'], str) and item['bi_id'].strip() and
-                    isinstance(item['name'], str) and item['name'].strip() and
-                    isinstance(item['area_name'], str) and item['area_name'].strip()):
-                skipped_invalid_format += 1
-                continue
+        if not json_data_list: # Check if the list is empty after extraction
+            print("json_data_list is empty. Returning success=True with empty preview_data.")
+            return {"success": True, "preview_data": [], "message": "No process steps found in the uploaded file."}
 
-            bi_id = item['bi_id'].strip()
-            name = item['name'].strip()
-            area_name = item['area_name'].strip()
 
-            existing_step = session.query(ProcessStep).filter_by(bi_id=bi_id).first()
-            item_updated = False
-
-            step_fields_from_json = {
-                "name": name, 
-                "step_description": item.get('step_description'),
-                "raw_content": item.get('raw_content'),
-                "summary": item.get('summary'),
-                "vision_statement": item.get('vision_statement'),
-                "in_scope": item.get('in_scope'),
-                "out_of_scope": item.get('out_of_scope'),
-                "interfaces_text": item.get('interfaces_text'),
-                "what_is_actually_done": item.get('what_is_actually_done'),
-                "pain_points": item.get('pain_points'),
-                "targets_text": item.get('targets_text'),
+        for item_from_json in json_data_list:
+            print(f"\nProcessing JSON item: {item_from_json.get('bi_id', 'N/A')} - {item_from_json.get('name', 'N/A')}")
+            entry = {
+                'status': 'skipped', # Default status
+                'bi_id': item_from_json.get('bi_id'),
+                'name': item_from_json.get('name'),
+                'area_name': item_from_json.get('area_name'), # Area name from JSON
+                'json_data': {}, # Raw data from JSON (cleaned)
+                'db_data': {},   # Current data from DB (cleaned)
+                'conflicts': {}, # Fields with differences (old_value, new_value)
+                'new_values': {}, # Proposed values based on conflict resolution logic (initial state)
+                'messages': []   # Messages specific to this item
             }
 
-            for field_name, json_value in step_fields_from_json.items():
-                if json_value is not None:
-                    if not isinstance(json_value, str):
-                        print(f"Warning: Field '{field_name}' for BI_ID '{bi_id}' was not a string, setting to None. Value: {json_value}")
-                        step_fields_from_json[field_name] = None
-                    else:
-                        stripped_value = json_value.strip()
-                        step_fields_from_json[field_name] = stripped_value if stripped_value else None
+            # Basic validation for required fields from JSON
+            if not (isinstance(item_from_json, dict) and
+                    all(k in item_from_json for k in ('bi_id', 'name', 'area_name')) and
+                    isinstance(item_from_json['bi_id'], str) and item_from_json['bi_id'].strip() and
+                    isinstance(item_from_json['name'], str) and item_from_json['name'].strip() and
+                    isinstance(item_from_json['area_name'], str) and item_from_json['area_name'].strip()):
+                entry['messages'].append("Skipped: Invalid JSON format or missing required fields (bi_id, name, area_name).")
+                print(f"  Skipped due to invalid format: {item_from_json.get('bi_id', 'N/A')}")
+                preview_data.append(entry)
+                continue
 
+            bi_id = item_from_json['bi_id'].strip()
+            name = item_from_json['name'].strip()
+            area_name_json = item_from_json['area_name'].strip()
+
+            entry['bi_id'] = bi_id
+            entry['name'] = name
+            entry['area_name'] = area_name_json
+
+            json_values_cleaned = {}
+            for field in step_fields:
+                val = item_from_json.get(field)
+                json_values_cleaned[field] = val.strip() if isinstance(val, str) and val.strip() else None
+            json_values_cleaned['name'] = name
+            json_values_cleaned['bi_id'] = bi_id
+            json_values_cleaned['area_name'] = area_name_json
+            
+            entry['json_data'] = json_values_cleaned
+
+
+            existing_step = session.query(ProcessStep).filter_by(bi_id=bi_id).first()
+            area_id_from_json = area_name_to_id_map.get(area_name_json)
 
             if existing_step:
-                for field_name, json_value in step_fields_from_json.items():
-                    db_value = getattr(existing_step, field_name)
-                    if json_value and (db_value is None or db_value == ''):
-                        setattr(existing_step, field_name, json_value)
-                        item_updated = True
+                print(f"  Existing step found in DB: {existing_step.name} (BI_ID: {existing_step.bi_id})")
+                entry['db_data'] = model_to_dict(existing_step, step_fields + ['bi_id', 'area_id', 'name'], session)
+                entry['new_values'] = dict(entry['db_data'])
                 
-                if area_name in area_lookup and existing_step.area_id != area_lookup[area_name]:
-                    print(f"Step BI_ID {bi_id} has area_name '{area_name}' in JSON, different from current. Area re-association logic not fully implemented here for updates.")
-                    pass 
-
-                if item_updated:
-                    updated_count += 1
+                is_dirty = False
+                
+                # Check for area_id change
+                if area_id_from_json is None:
+                    entry['messages'].append(f"Warning: Area '{area_name_json}' for step BI_ID '{bi_id}' from JSON not found in database. Cannot assign new area.")
+                    print(f"  Warning: Area '{area_name_json}' not found for existing step.")
+                elif existing_step.area_id != area_id_from_json:
+                    entry['conflicts']['area_id'] = {
+                        'old_value': area_id_to_name_map.get(existing_step.area_id, 'N/A (ID: ' + str(existing_step.area_id) + ')'),
+                        'new_value': area_name_json,
+                        'db_id': existing_step.area_id,
+                        'json_id': area_id_from_json
+                    }
+                    entry['new_values']['area_id'] = area_id_from_json
+                    is_dirty = True
+                    print(f"  Conflict detected for area_id: DB '{existing_step.area_id}' vs JSON '{area_id_from_json}'")
                 else:
-                    skipped_existing_no_update_count += 1
-                    if bi_id not in bi_ids_existing_no_update:
-                        bi_ids_existing_no_update.append(bi_id)
+                    entry['messages'].append(f"Area '{area_name_json}' matches existing area.")
+                    entry['new_values']['area_id'] = existing_step.area_id
+
+                # Compare other fields for conflicts
+                for field in step_fields:
+                    db_value = getattr(existing_step, field)
+                    json_value = json_values_cleaned.get(field)
+                    
+                    normalized_db_value = db_value.strip() if isinstance(db_value, str) and db_value.strip() else None
+                    normalized_json_value = json_value.strip() if isinstance(json_value, str) and json_value.strip() else None
+
+                    if normalized_json_value != normalized_db_value:
+                        entry['conflicts'][field] = {
+                            'old_value': normalized_db_value if normalized_db_value is not None else "N/A (Empty)",
+                            'new_value': normalized_json_value if normalized_json_value is not None else "N/A (Empty)"
+                        }
+                        entry['new_values'][field] = normalized_json_value
+                        is_dirty = True
+                        print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON '{normalized_json_value}'")
+                    else:
+                        entry['new_values'][field] = normalized_db_value
+
+                if is_dirty:
+                    entry['status'] = 'update'
+                    entry['messages'].append("Existing step will be updated with new values for conflicting fields.")
+                    print(f"  Status set to 'update' for {bi_id}.")
+                else:
+                    entry['status'] = 'no_change'
+                    entry['messages'].append("Existing step found with no changes detected.")
+                    print(f"  Status set to 'no_change' for {bi_id}.")
             else:
-                if area_name not in area_lookup:
-                    skipped_missing_area += 1
-                    if area_name not in missing_area_names:
-                        missing_area_names.append(area_name)
-                    continue
+                # New step
+                print(f"  No existing step found for BI_ID: {bi_id}")
+                if area_id_from_json is None:
+                    entry['status'] = 'skipped'
+                    entry['messages'].append(f"Skipped: Area '{area_name_json}' not found for new step BI_ID '{bi_id}'.")
+                    print(f"  Skipped new step because Area '{area_name_json}' was not found.")
+                else:
+                    entry['status'] = 'new'
+                    entry['new_values'] = dict(json_values_cleaned)
+                    entry['new_values']['area_id'] = area_id_from_json
+                    entry['messages'].append("New step will be added.")
+                    print(f"  Status set to 'new' for {bi_id}.")
+            
+            preview_data.append(entry)
+        
+        print(f"\nFinished processing file. Total items in preview_data: {len(preview_data)}")
+        return {"success": True, "preview_data": preview_data}
 
-                area_id = area_lookup[area_name]
-                new_step_data = {
-                    "bi_id": bi_id,
-                    "area_id": area_id,
-                }
-                for field_name, json_value in step_fields_from_json.items():
-                    new_step_data[field_name] = json_value 
-
-                new_step = ProcessStep(**new_step_data)
-                session.add(new_step)
-                added_count += 1
-
-        session.commit()
-        success = True
-        parts = []
-        if added_count > 0: parts.append(f"Added: {added_count}")
-        if updated_count > 0: parts.append(f"Updated: {updated_count}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Format): {skipped_invalid_format}")
-        if skipped_existing_no_update_count > 0: parts.append(f"Skipped (Existing, No Update): {skipped_existing_no_update_count}")
-        if skipped_missing_area > 0: parts.append(f"Skipped (Missing Area): {skipped_missing_area}")
-
-        if not parts:
-            message = "Processing complete. No data found or processed in the file."
-        else:
-            message = f"Processing complete. {', '.join(parts)}."
-
-        if bi_ids_existing_no_update:
-            message += f" Existing BI_IDs not updated (no empty fields to fill or data matched): {len(bi_ids_existing_no_update)}."
-        if missing_area_names:
-            message += f" Missing areas for new steps: {', '.join(missing_area_names)}."
-
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_step_file")
-        session.rollback()
-        success = False
-        message = "Invalid JSON format in the uploaded file."
     except ValueError as ve:
-        session.rollback()
-        success = False
-        message = f"Error: {ve}"
+        print(f"Value Error in process_step_file (for preview): {ve}")
+        return {"success": False, "message": f"Data processing error: {ve}", "preview_data": []}
     except Exception as e:
         traceback.print_exc()
-        session.rollback()
-        success = False
-        message = f"An error occurred: {str(e)}"
+        print(f"Unexpected error in process_step_file (for preview): {e}")
+        return {"success": False, "message": f"An unexpected error occurred: {str(e)}", "preview_data": []}
     finally:
-        if not success:
-            added_count = 0
-            updated_count = 0
-            skipped_invalid_format = 0
-            skipped_existing_no_update_count = 0
-            skipped_missing_area = 0
-            bi_ids_existing_no_update = []
-            missing_area_names = []
         SessionLocal.remove()
 
-    return {
-        "success": success,
-        "message": message,
-        "added_count": added_count,
-        "updated_count": updated_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_no_update_count + skipped_missing_area,
-        "skipped_invalid_format": skipped_invalid_format,
-        "skipped_existing_no_update_count": skipped_existing_no_update_count, 
-        "skipped_missing_area": skipped_missing_area,
-        "bi_ids_existing_no_update": bi_ids_existing_no_update, 
-        "missing_area_names": missing_area_names
-    }
+
+# NEW: Function to finalize step import based on user's resolved data
+def finalize_step_import(resolved_steps_data):
+    """
+    Receives resolved step data from the frontend and performs database operations.
+    """
+    session = SessionLocal()
+    add_count = 0
+    update_count = 0
+    fail_count = 0
+    messages = []
+
+    try:
+        for item in resolved_steps_data:
+            bi_id = item['bi_id']
+            action = item['action'] # 'add', 'update', 'skip'
+            final_data = item['final_data'] # The dictionary with resolved values
+
+            if action == 'add':
+                try:
+                    new_step = ProcessStep(
+                        bi_id=bi_id,
+                        name=final_data.get('name'), # Ensure 'name' is in final_data
+                        area_id=final_data.get('area_id'), # Ensure 'area_id' is in final_data
+                        step_description=final_data.get('step_description'),
+                        raw_content=final_data.get('raw_content'),
+                        summary=final_data.get('summary'),
+                        vision_statement=final_data.get('vision_statement'),
+                        in_scope=final_data.get('in_scope'),
+                        out_of_scope=final_data.get('out_of_scope'),
+                        interfaces_text=final_data.get('interfaces_text'),
+                        what_is_actually_done=final_data.get('what_is_actually_done'),
+                        pain_points=final_data.get('pain_points'),
+                        targets_text=final_data.get('targets_text')
+                    )
+                    session.add(new_step)
+                    add_count += 1
+                    messages.append(f"Added new step: {new_step.name} (BI_ID: {new_step.bi_id})")
+                except IntegrityError as ie:
+                    session.rollback()
+                    fail_count += 1
+                    messages.append(f"Failed to add new step {bi_id}: BI_ID already exists or invalid area_id. Error: {ie}")
+                    session = SessionLocal() # Re-create session after rollback
+                except Exception as e:
+                    session.rollback()
+                    fail_count += 1
+                    messages.append(f"Failed to add new step {bi_id}: Unexpected error. Error: {e}")
+                    session = SessionLocal()
+
+            elif action == 'update':
+                existing_step = session.query(ProcessStep).filter_by(bi_id=bi_id).first()
+                if existing_step:
+                    try:
+                        changes = []
+                        for field, value in final_data.items():
+                            # Special handling for area_id to update directly on model
+                            if field == 'area_id':
+                                if existing_step.area_id != value:
+                                    existing_step.area_id = value
+                                    changes.append('area_id')
+                            # Handle other fields
+                            elif field not in ['bi_id'] and getattr(existing_step, field) != value: # 'id' not a field to update
+                                setattr(existing_step, field, value)
+                                changes.append(field)
+                        if changes:
+                            update_count += 1
+                            messages.append(f"Updated step: {existing_step.name} (BI_ID: {bi_id}). Fields changed: {', '.join(changes)}")
+                        else:
+                            messages.append(f"No changes applied to step {bi_id}.")
+                    except Exception as e:
+                        session.rollback()
+                        fail_count += 1
+                        messages.append(f"Failed to update step {bi_id}: Unexpected error. Error: {e}")
+                        session = SessionLocal() # Re-create session after rollback
+                else:
+                    fail_count += 1
+                    messages.append(f"Failed to update step {bi_id}: Original step not found in database.")
+            elif action == 'skip':
+                messages.append(f"Skipped step: {bi_id}")
+            # Add other actions if needed (e.g., 'delete')
+        
+        session.commit()
+        return {
+            "success": True,
+            "added_count": add_count,
+            "updated_count": update_count,
+            "failed_count": fail_count,
+            "messages": messages
+        }
+
+    except Exception as e:
+        session.rollback()
+        messages.append(f"An unexpected error occurred during final import: {str(e)}")
+        traceback.print_exc()
+        return {
+            "success": False,
+            "added_count": 0,
+            "updated_count": 0,
+            "failed_count": len(resolved_steps_data), # All data is considered failed if the global transaction rolls back
+            "messages": messages
+        }
+    finally:
+        SessionLocal.remove()
+
 
 def process_usecase_file(file_stream):
     session = SessionLocal()
@@ -416,6 +558,7 @@ def process_usecase_file(file_stream):
                         missing_step_bi_ids.append(process_step_bi_id_from_json)
                     continue
 
+                area_id = step_lookup[process_step_bi_id_from_json] # This was originally `area_id = area_lookup[area_name]` in process_step_file, should be `process_step_id` here.
                 process_step_id = step_lookup[process_step_bi_id_from_json]
                 new_uc_data = {
                     "bi_id": uc_bi_id,
