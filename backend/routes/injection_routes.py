@@ -1,3 +1,4 @@
+# backend/routes/injection_routes.py
 import os
 import traceback
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
@@ -22,12 +23,13 @@ injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
                              url_prefix='/injection')
 
-# Define fields for ProcessStep for dynamic rendering in preview template
-STEP_PREVIEW_FIELDS = {
-    "name": "Name",
-    "step_description": "Description",
+# Define fields for ProcessStep for dynamic rendering in modal template
+# These are the fields that are NOT the BI_ID, Name, or Area, which are
+# always visible in the main preview table.
+STEP_DETAIL_FIELDS = { # RENAMED from STEP_PREVIEW_FIELDS
+    "step_description": "Short Description",
     "raw_content": "Raw Content",
-    "summary": "Summary",
+    "summary": "Generic Summary",
     "vision_statement": "Vision Statement",
     "in_scope": "In Scope",
     "out_of_scope": "Out of Scope",
@@ -189,7 +191,7 @@ def handle_injection():
                     if result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
                         flash_category = 'warning'
                     flash(result['message'], flash_category)
-                    return redirect(url_for('injection.handle_injection'))
+                    return redirect(request.url)
                 else:
                     flash('Invalid file type or name for Use Case-Step Relevance. Please upload a .json file.', 'danger')
                     return redirect(request.url)
@@ -207,7 +209,7 @@ def handle_injection():
                     if result['success'] and result['added_count'] == 0 and result['skipped_count'] > 0:
                         flash_category = 'warning'
                     flash(result['message'], flash_category)
-                    return redirect(url_for('injection.handle_injection'))
+                    return redirect(request.url)
                 else:
                     flash('Invalid file type or name for Use Case-Use Case Relevance. Please upload a .json file.', 'danger')
                     return redirect(request.url)
@@ -258,22 +260,32 @@ def preview_steps_injection():
         flash("No process step data to preview. Please upload a file first.", "warning")
         return redirect(url_for('injection.handle_injection'))
 
-    # Fetch all areas to populate the dropdown for area conflict resolution
     db_session = SessionLocal()
-    all_areas = []
+    
+    # --- START OF FIX ---
+    # Convert SQLAlchemy Area objects to dictionaries for JSON serialization
+    serializable_areas = []
     try:
-        all_areas = db_session.query(Area).order_by(Area.name).all()
+        areas_from_db = db_session.query(Area).order_by(Area.name).all()
+        for area in areas_from_db:
+            serializable_areas.append({
+                'id': area.id,
+                'name': area.name,
+                'description': area.description # Include other relevant fields if needed in JS
+            })
     except Exception as e:
         flash("Error loading areas for preview. Some area selections might be missing.", "danger")
+        print(f"Error converting areas for JSON serialization: {e}")
     finally:
         SessionLocal.remove() # Ensure session is closed
+    # --- END OF FIX ---
 
     return render_template(
         'step_injection_preview.html',
         title='Process Step Injection Preview',
         preview_data=preview_data,
-        step_fields=STEP_PREVIEW_FIELDS,
-        all_areas=all_areas
+        step_detail_fields=STEP_DETAIL_FIELDS, # RENAMED context variable
+        all_areas=serializable_areas # Pass the serializable list
     )
 
 @injection_routes.route('/steps/finalize', methods=['POST'])
