@@ -9,6 +9,7 @@ from ..models import (
     UseCase, ProcessStep, Area
 )
 from sqlalchemy.exc import IntegrityError
+import markdown # Add this import at the top of the file
 
 relevance_routes = Blueprint('relevance', __name__, url_prefix='/relevance')
 
@@ -820,6 +821,20 @@ def visualize_relevance():
 
             if source_node and target_node:
                 link_width = max(0.5, rel.relevance_score / 25) 
+                
+                # --- START MODIFICATION FOR TOOLTIP CONTENT ---
+                # Process relevance_content to HTML for the tooltip
+                tooltip_content_html = ""
+                if rel.relevance_content:
+                    # Apply markdown processing directly here.
+                    # Wrap the output in a div with a custom class for CSS targeting.
+                    # This ensures the HTML is correctly formatted and provides a hook for CSS.
+                    processed_content = markdown.markdown(rel.relevance_content, extensions=["fenced_code", "tables"])
+                    tooltip_content_html = f'<div class="echarts-tooltip-content">{processed_content}</div>'
+                else:
+                    tooltip_content_html = "N/A"
+                # --- END MODIFICATION FOR TOOLTIP CONTENT ---
+
                 echarts_links.append({
                     'source': str(rel.source_process_step_id),
                     'target': str(rel.target_process_step_id),
@@ -841,7 +856,7 @@ def visualize_relevance():
                     'tooltip': {
                         'formatter': (
                             f'Relevance: <strong>{rel.relevance_score}/100</strong><br>'
-                            f'Content: {rel.relevance_content or "N/A"}'
+                            f'Content: {tooltip_content_html}' # Use the prepared HTML here
                         )
                     }
                 })

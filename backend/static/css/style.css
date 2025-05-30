@@ -1,50 +1,65 @@
-/* style.css */
+/* style.css - Modern Dashboard Design */
 :root {
-    /* --- Raw Color Definitions --- */
+    /* --- Updated Color Palette for Modern Look --- */
     --raw-white: #ffffff;
     --raw-black: #000000;
 
-    /* Greys */
-    --raw-light-grey-100: #F4F6F8; /* Lightest - Body background, main content */
-    --raw-light-grey-200: #E9ECEF; /* UI elements, Search bar bg, Code bg, disabled bg */
-    --raw-light-grey-300: #DEE2E6; /* Borders on light backgrounds */
-    --raw-medium-grey-100: #777777; /* Light text, disabled text */
-    --raw-medium-grey-200: #6c757d; /* Medium text, Breadcrumb default bg */
-    --raw-medium-grey-300: #5a6268; /* Breadcrumb hover bg, secondary button hover */
-    --raw-dark-grey-100: #555555;  /* Darker medium text */
-    --raw-dark-grey-200: #333333;  /* Main text color */
-    --raw-dark-grey-panel: #2C3E50; /* Left panel bg */
-    --raw-panel-text: #BDC3C7;     /* Text on dark panel */
-    --raw-panel-border-subtle: rgba(255, 255, 255, 0.1); /* Subtle border on dark panel */
+    /* Modern Greys */
+    --raw-light-grey-100: #f8fafc; /* Very light background */
+    --raw-light-grey-200: #f1f5f9; /* Card backgrounds, subtle elements */
+    --raw-light-grey-300: #e2e8f0; /* Borders, subtle dividers */
+    --raw-medium-grey-100: #94a3b8; /* Muted text */
+    --raw-medium-grey-200: #64748b; /* Secondary text */
+    --raw-medium-grey-300: #475569; /* Darker secondary */
+    --raw-dark-grey-100: #334155; /* Primary text */
+    --raw-dark-grey-200: #1e293b; /* Headings */
+    --raw-dark-grey-panel: #0f172a; /* Sidebar */
+    --raw-panel-text: #cbd5e1; /* Sidebar text */
+    --raw-panel-border-subtle: rgba(255, 255, 255, 0.1);
 
-    /* Earthish Green Highlight */
-    --raw-green-primary: #5D8C7B;
-    --raw-green-dark: #4A7062;
-    --raw-green-light: #D4E2DE;
+    /* Modern Color Scheme */
+    --raw-primary: #6366f1; /* Modern indigo */
+    --raw-primary-light: #a5b4fc;
+    --raw-primary-dark: #4338ca;
+    --raw-secondary: #f59e0b; /* Modern amber */
+    --raw-secondary-light: #fbbf24;
+    --raw-accent: #10b981; /* Modern emerald */
+    --raw-accent-light: #34d399;
 
-    /* Alert Colors */
-    --raw-alert-success-text: #155724;
-    --raw-alert-success-bg: #d4edda;
-    --raw-alert-success-border: #c3e6cb;
-    --raw-alert-danger-text: #721c24;
-    --raw-alert-danger-bg: #f8d7da;
-    --raw-alert-danger-border: #f5c6cb;
-    --raw-alert-warning-text: #856404;
-    --raw-alert-warning-bg: #fff3cd;
-    --raw-alert-warning-border: #ffeeba;
-    --raw-alert-info-text: #0c5460;
-    --raw-alert-info-bg: #d1ecf1;
-    --raw-alert-info-border: #bee5eb;
+    /* Gradient Definitions */
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --gradient-cool: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
 
-    /* Shadow Color */
-    --raw-shadow-color: rgba(0, 0, 0, 0.07);
+    /* Alert Colors - Modern */
+    --raw-alert-success-text: #059669;
+    --raw-alert-success-bg: #ecfdf5;
+    --raw-alert-success-border: #a7f3d0;
+    --raw-alert-danger-text: #dc2626;
+    --raw-alert-danger-bg: #fef2f2;
+    --raw-alert-danger-border: #fecaca;
+    --raw-alert-warning-text: #d97706;
+    --raw-alert-warning-bg: #fffbeb;
+    --raw-alert-warning-border: #fed7aa;
+    --raw-alert-info-text: #0284c7;
+    --raw-alert-info-bg: #f0f9ff;
+    --raw-alert-info-border: #bae6fd;
 
-    /* --- Variable Names --- */
+    /* Modern Shadow System */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-    /* Theme Colors (Highlight) */
-    --primary-color: var(--raw-green-primary);
-    --primary-color-dark: var(--raw-green-dark);
-    --primary-color-light: var(--raw-green-light);
+    /* --- Variable Assignments --- */
+    --primary-color: var(--raw-primary);
+    --primary-color-dark: var(--raw-primary-dark);
+    --primary-color-light: var(--raw-primary-light);
+    --secondary-color: var(--raw-secondary);
+    --accent-color: var(--raw-accent);
 
     /* Backgrounds */
     --body-bg-color: var(--raw-light-grey-100);
@@ -52,17 +67,16 @@
     --left-panel-bg: var(--raw-dark-grey-panel);
     --card-bg: var(--raw-white);
     --header-bg: var(--raw-white);
-    --element-bg-light: var(--raw-light-grey-200); /* For search bars, code blocks, etc. */
+    --element-bg-light: var(--raw-light-grey-200);
 
-    /* Simplified text colors */
-    --text-primary: var(--raw-dark-grey-200);
-    --text-secondary: var(--raw-medium-grey-200);  
+    /* Text colors */
+    --text-primary: var(--raw-dark-grey-100);
+    --text-secondary: var(--raw-medium-grey-200);
     --text-muted: var(--raw-medium-grey-100);
-    
     --text-color-sidebar: var(--raw-panel-text);
     --text-color-sidebar-active: var(--raw-white);
     --text-color-on-primary: var(--raw-white);
-    --text-color-on-dark: var(--raw-white); /* For text on dark backgrounds like buttons */
+    --text-color-on-dark: var(--raw-white);
 
     /* Borders */
     --border-color: var(--raw-light-grey-300);
@@ -71,11 +85,15 @@
     /* Generic */
     --white: var(--raw-white);
 
-    /* Component Specific */
-    --box-shadow: 0 2px 10px var(--raw-shadow-color);
-    --border-radius: 8px;
-    --border-radius-sm: 4px;
-    --font-family: 'Inter', sans-serif;
+    /* Modern Component Styling */
+    --box-shadow: var(--shadow-sm);
+    --box-shadow-hover: var(--shadow-md);
+    --box-shadow-focus: var(--shadow-lg);
+    --border-radius: 16px; /* Much more rounded */
+    --border-radius-lg: 24px; /* Large radius */
+    --border-radius-sm: 12px; /* Small radius */
+    --border-radius-xs: 8px; /* Extra small radius */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     /* Breadcrumb variables */
     --breadcrumb-arrow-width: 15px;
@@ -116,13 +134,16 @@ body {
     background-color: var(--body-bg-color);
     color: var(--text-primary);
     font-size: 14px;
-    line-height: 1.5;
-    overflow-x: hidden; /* Prevent horizontal scroll on body */
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a {
     text-decoration: none;
     color: var(--primary-color);
+    transition: all 0.2s ease;
 }
 
 a:hover {
@@ -139,171 +160,219 @@ ul {
     min-height: 100vh;
 }
 
-/* Sidebar Styles */
+/* Modern Sidebar Styles */
 .sidebar {
-    width: 250px;
-    background-color: var(--left-panel-bg);
+    width: 280px; /* Slightly wider */
+    background: linear-gradient(180deg, var(--left-panel-bg) 0%, #0f1419 100%);
     color: var(--text-color-sidebar);
     display: flex;
     flex-direction: column;
-    padding: 20px 0; /* Remove horizontal padding here, apply to children */
+    padding: 30px 0;
     flex-shrink: 0;
     height: 100vh;
     position: sticky;
     top: 0;
+    backdrop-filter: blur(10px);
 }
 
 .sidebar-header {
-    padding: 0 25px 20px 25px; /* Horizontal padding for header content */
-    margin-bottom: 20px;
+    padding: 0 30px 30px 30px;
+    margin-bottom: 30px;
     border-bottom: 1px solid var(--sidebar-border-color);
 }
 
 .sidebar-header .logo {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--text-color-sidebar-active); /* Using specific variable for clarity */
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .sidebar-menu {
     flex-grow: 1;
+    padding: 0 15px;
 }
 
 .sidebar-menu li a,
 .sidebar-footer-menu li a {
     display: flex;
     align-items: center;
-    padding: 12px 25px; /* Horizontal padding for menu items */
+    padding: 16px 20px;
     color: var(--text-color-sidebar);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: all 0.3s ease;
     font-size: 0.95rem;
     font-weight: 500;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0; /* Rounded on right */
-    margin-right: 15px; /* Space before sidebar edge for the rounded part */
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-menu li a::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    transition: width 0.3s ease;
+    z-index: 0;
+}
+
+.sidebar-menu li a > * {
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-menu li a i,
 .sidebar-footer-menu li a i {
     margin-right: 15px;
-    font-size: 1.1rem;
-    width: 20px;
+    font-size: 1.2rem;
+    width: 24px;
     text-align: center;
 }
 
+.sidebar-menu li a:hover::before {
+    width: 100%;
+}
+
 .sidebar-menu li a:hover {
-    background-color: var(--primary-color-light);
-    color: var(--primary-color); /* Text color change on hover */
+    color: var(--text-color-on-primary);
+    transform: translateX(4px);
 }
 
 .sidebar-menu li.active a {
-    background-color: var(--primary-color);
-    color: var(--text-color-on-primary); /* Text color for active item */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: var(--text-color-on-primary);
     font-weight: 600;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) inset; /* Subtle inset shadow */
+    box-shadow: var(--shadow-md);
+}
+
+.sidebar-menu li.active a::before {
+    width: 100%;
 }
 
 .sidebar-footer-menu {
-    margin-top: auto; /* Pushes footer to bottom */
-    padding-top: 15px;
+    margin-top: auto;
+    padding: 20px 15px 20px;
     border-top: 1px solid var(--sidebar-border-color);
-    padding-bottom: 15px; /* Space at the very bottom */
 }
 
-/* Main Content Area Styles */
+/* Modern Main Content */
 .main-content {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     background-color: var(--main-content-bg);
-    overflow-x: hidden; /* Prevent main content from causing horizontal scroll */
+    overflow-x: hidden;
 }
 
-/* Header Styles */
+/* Modern Header */
 .main-header {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Distribute space */
-    padding: 15px 30px;
-    background-color: var(--header-bg);
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
-    box-shadow: var(--box-shadow);
+    box-shadow: var(--shadow-sm);
     position: sticky;
     top: 0;
     z-index: 1000;
-    gap: 20px;
-    min-height: 64px; /* Consistent header height */
+    gap: 30px;
+    min-height: 80px;
 }
 
-/* Breadcrumbs Styles */
+/* Modern Breadcrumbs */
 .breadcrumbs {
     display: flex;
     align-items: center;
-    flex-grow: 1; /* Allow breadcrumbs to take available space */
-    overflow: hidden; /* Hide overflow if too many items */
+    flex-grow: 1;
+    overflow: hidden;
     white-space: nowrap;
 }
 
 .breadcrumb-item {
-    background-color: var(--breadcrumb-default-bg);
+    background: linear-gradient(135deg, var(--breadcrumb-default-bg) 0%, #718096 100%);
     color: var(--breadcrumb-text-color);
-    padding: 8px calc(var(--breadcrumb-arrow-width) + 8px) 8px calc(var(--breadcrumb-arrow-width) + 12px); /* Complex padding for shape */
-    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px); /* Negative margin to overlap arrows */
+    padding: 12px calc(var(--breadcrumb-arrow-width) + 12px) 12px calc(var(--breadcrumb-arrow-width) + 16px);
+    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px);
     clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%, var(--breadcrumb-arrow-width) 50%);
     position: relative;
     text-decoration: none;
-    font-size: 0.85rem;
-    line-height: 1.3;
-    height: 34px; /* Fixed height for alignment */
+    font-size: 0.9rem;
+    line-height: 1.4;
+    height: 44px;
     display: flex;
     align-items: center;
-    transition: background-color 0.2s ease;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 .breadcrumb-item:hover {
-    background-color: var(--breadcrumb-hover-bg);
-    z-index: 5; /* Ensure hovered item is on top */
+    background: linear-gradient(135deg, var(--breadcrumb-hover-bg) 0%, #4a5568 100%);
+    transform: translateY(-2px);
+    z-index: 5;
 }
 
 .breadcrumb-item:first-child {
-    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%); /* Different shape for first item */
-    padding-left: 15px;
-    margin-left: 0;
+    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%);
+    padding-left: 20px;
+    border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
 }
 
 .breadcrumb-item.active {
-    background-color: var(--breadcrumb-active-bg);
-    color: var(--breadcrumb-text-color); /* Ensure text remains readable */
-    z-index: 10; /* Active item on top */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: var(--breadcrumb-text-color);
+    z-index: 10;
+    box-shadow: var(--shadow-sm);
 }
 
 .breadcrumb-item.active:hover {
-    background-color: var(--breadcrumb-active-hover-bg);
+    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%);
 }
 
 .breadcrumb-item.disabled {
-    background-color: var(--breadcrumb-disabled-bg);
+    background: linear-gradient(135deg, var(--breadcrumb-disabled-bg) 0%, #d1d5db 100%); /* Add gradient */
     color: var(--breadcrumb-disabled-text-color);
     cursor: default;
-    z-index: 1;
+    /* z-index: 1; Keep as 1 or remove if transform handles layering */
 }
 
 .breadcrumb-item.disabled:hover {
-    background-color: var(--breadcrumb-disabled-bg); /* No hover effect for disabled */
+    background: linear-gradient(135deg, var(--breadcrumb-disabled-bg) 0%, #d1d5db 100%); /* No hover effect for disabled */
+    transform: none; /* Override hover lift */
 }
 
+
+/* Modern Search Bar */
 .search-bar {
     display: flex;
     align-items: center;
     background-color: var(--element-bg-light);
-    padding: 8px 15px;
-    border-radius: var(--border-radius-sm);
-    width: 300px; /* Fixed width for search bar */
-    flex-shrink: 0; /* Prevent shrinking */
+    padding: 12px 20px;
+    border-radius: var(--border-radius-lg);
+    width: 350px;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-xs);
+}
+
+.search-bar:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background-color: var(--white);
 }
 
 .search-bar i {
     color: var(--text-muted);
-    margin-right: 10px;
+    margin-right: 12px;
+    font-size: 1.1rem;
 }
 
 .search-bar input {
@@ -311,8 +380,9 @@ ul {
     outline: none;
     background-color: transparent;
     width: 100%;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--text-primary);
+    font-weight: 500;
 }
 
 .search-bar input::placeholder {
@@ -322,80 +392,97 @@ ul {
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 15px; /* Space between action icons */
+    gap: 20px;
 }
 
 .icon-button {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--text-muted);
-    transition: color 0.2s ease;
+    transition: all 0.3s ease;
+    padding: 12px;
+    border-radius: var(--border-radius-sm);
+    position: relative;
 }
 
 .icon-button:hover {
-    color: var(--text-primary); /* Darken icon on hover */
+    color: var(--primary-color);
+    background-color: var(--element-bg-light);
+    transform: translateY(-2px);
 }
 
-/* Page Content Styles */
+/* Modern Page Content */
 .page-content {
-    padding: 30px 40px; /* More horizontal padding for content */
+    padding: 40px 50px;
     flex-grow: 1;
-    overflow-y: auto; /* Allow vertical scroll for content */
+    overflow-y: auto;
 }
 
-/* Card Styles */
+/* Modern Card Styles */
 .card {
     background-color: var(--card-bg);
-    border: 1px solid var(--raw-light-grey-200); /* Softer border for cards */
+    border: none;
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    margin-bottom: 30px; /* Increased space between cards */
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 40px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem 1.5rem; /* Standardize */
-    margin-bottom: 0; /* Remove bottom margin, border will separate */
-    border-bottom: 1px solid var(--raw-light-grey-300); /* Use lighter border */
-    background-color: var(--raw-light-grey-100); /* Slight background for header */
+    padding: 24px 30px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--raw-light-grey-300);
+    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%);
 }
 
 .card-title {
-    font-size: 1.25rem; /* Larger card titles */
-    font-weight: 600;
-    color: var(--primary-color); /* Use theme color for title */
-    margin-bottom: 0; /* Remove default margin if any */
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0;
 }
 
 .card-body {
-    padding: 1.5rem; /* Standardize */
+    padding: 30px;
 }
 
-.card-link { /* Used for "View All" or similar links in card headers */
-    font-size: 0.85rem;
+.card-link {
+    font-size: 0.9rem;
     color: var(--text-muted);
-    font-weight: 500;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .card-link:hover {
     color: var(--primary-color);
+    transform: translateX(4px);
 }
 
-/* Form Styles */
+/* Modern Form Styles */
 form {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Space between form groups */
+    gap: 24px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-row,
@@ -404,13 +491,14 @@ form {
     display: flex !important;
     flex-direction: row !important;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 form label {
-    margin-bottom: 5px;
-    font-weight: 500;
+    margin-bottom: 8px;
+    font-weight: 600;
     color: var(--text-primary);
+    font-size: 0.95rem;
 }
 
 form input[type="text"],
@@ -420,13 +508,14 @@ form input[type="number"],
 form input[type="file"],
 form select,
 form textarea {
-    padding: 10px;
+    padding: 16px 20px;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm); /* Smaller radius for form elements */
-    font-size: 0.9rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.95rem;
     background-color: var(--white);
     color: var(--text-primary);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 form input[type="text"]:focus,
@@ -436,8 +525,9 @@ form input[type="number"]:focus,
 form select:focus,
 form textarea:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem var(--primary-color-light);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     outline: none;
+    background-color: #fefefe;
 }
 
 form input[type="text"]::placeholder,
@@ -449,241 +539,285 @@ form textarea::placeholder {
 }
 
 form input[type="checkbox"] {
-    margin-right: 8px; /* More space for checkbox */
+    margin-right: 12px;
     align-self: flex-start;
-    width: auto; /* Override potential 100% width */
-    height: auto; /* Override potential 100% height */
+    width: auto;
+    height: auto;
     vertical-align: middle;
 }
 
-.checkbox-group label { /* Specific override for checkbox labels */
+.checkbox-group label {
     margin-bottom: 0;
-    font-weight: normal; /* Normal weight for checkbox labels */
+    font-weight: 500;
 }
 
 form textarea {
-    min-height: 100px; /* Slightly taller default textarea */
+    min-height: 120px;
     resize: vertical;
 }
 
+/* Modern Button Styles */
 form button[type="submit"],
 .btn {
     border-radius: var(--border-radius-sm);
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-weight: 600;
+    transition: all 0.3s ease;
     border: none;
-    padding: 10px 20px;
+    padding: 16px 32px;
     cursor: pointer;
     font-size: 0.95rem;
-    align-self: flex-start; /* Buttons don't stretch full width by default */
+    align-self: flex-start;
     text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
-form button[type="submit"].btn-primary, /* Apply btn-primary to submit buttons */
+form button[type="submit"].btn-primary,
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
     color: var(--white);
+    box-shadow: var(--shadow-sm);
 }
 
 form button[type="submit"]:hover,
 .btn-primary:hover {
-    background-color: var(--primary-color-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-    background-color: var(--text-secondary);
-    border-color: var(--text-secondary);
+    background: linear-gradient(135deg, var(--text-secondary) 0%, var(--raw-medium-grey-300) 100%);
     color: var(--white);
 }
 
 .btn-secondary:hover {
-    background-color: var(--raw-medium-grey-300);
+    background: linear-gradient(135deg, var(--raw-medium-grey-300) 0%, #334155 100%);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: var(--white);
 }
 
 .btn-danger:hover {
-    background-color: #c82333; /* Darker red (original hover, not overridden by !important) */
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(-2px);
 }
 
 .btn-info {
-    background-color: var(--raw-alert-info-text);
+    background: linear-gradient(135deg, var(--raw-alert-info-text) 0%, #0369a1 100%);
     color: var(--white);
 }
+
 .btn-info:hover {
-    background-color: #138496; /* Darker info blue */
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    transform: translateY(-2px);
 }
 
 .btn-sm {
-    padding: 8px 15px;
+    padding: 12px 24px;
     font-size: 0.875rem;
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-xs);
 }
 
-/* Flash Messages */
+/* Modern Flash Messages */
 .flash-messages {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .alert {
-    padding: 15px;
-    margin-bottom: 15px;
-    border: 1px solid transparent;
-    border-radius: var(--border-radius); /* Consistent radius */
-    font-size: 0.9rem;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid;
 }
 
 .alert-success {
     color: var(--alert-success-text);
-    background-color: var(--alert-success-bg);
-    border-color: var(--alert-success-border);
+    background: linear-gradient(135deg, var(--alert-success-bg) 0%, #f0fdf4 100%);
+    border-left-color: var(--alert-success-text);
 }
 
 .alert-danger {
     color: var(--alert-danger-text);
-    background-color: var(--alert-danger-bg);
-    border-color: var(--alert-danger-border);
+    background: linear-gradient(135deg, var(--alert-danger-bg) 0%, #fef7f7 100%);
+    border-left-color: var(--alert-danger-text);
 }
 
 .alert-warning {
     color: var(--alert-warning-text);
-    background-color: var(--alert-warning-bg);
-    border-color: var(--alert-warning-border);
+    background: linear-gradient(135deg, var(--alert-warning-bg) 0%, #fefce8 100%);
+    border-left-color: var(--alert-warning-text);
 }
 
 .alert-info {
     color: var(--alert-info-text);
-    background-color: var(--alert-info-bg);
-    border-color: var(--alert-info-border);
+    background: linear-gradient(135deg, var(--alert-info-bg) 0%, #eff6ff 100%);
+    border-left-color: var(--alert-info-text);
 }
 
 /* Index page specific styles */
 .welcome-message {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
+
 .welcome-message h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 5px;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
+
 .welcome-message p {
     color: var(--text-muted);
+    font-size: 1.1rem;
 }
 
 .data-section {
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
+
 .data-section h2 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 15px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 20px;
     color: var(--primary-color);
 }
 
-.area-card { /* Card specific to index page area display */
-    background-color: var(--card-bg);
+.area-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    margin-bottom: 20px;
-    border-left: 5px solid var(--primary-color); /* Accent border */
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    border-left: 5px solid;
+    border-image: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) 1;
+    padding: 24px;
+    transition: all 0.3s ease;
 }
-.area-card h3 { /* Area name */
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-    font-weight: 600;
+
+.area-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
 }
-.area-card ul { /* List of steps */
-    padding-left: 20px;
+
+.area-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.area-card ul {
+    padding-left: 24px;
     list-style: disc;
 }
-.area-card li { /* Individual step */
-    margin-bottom: 8px;
+
+.area-card li {
+    margin-bottom: 12px;
 }
-.area-card strong { /* Step name */
-    font-weight: 500;
+
+.area-card strong {
+    font-weight: 600;
 }
-.area-card .step-details { /* BI_ID etc. */
+
+.area-card .step-details {
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-left: 5px;
+    margin-left: 8px;
 }
-.area-card .usecase-list { /* Nested list of use cases */
-    padding-left: 25px;
-    margin-top: 5px;
+
+.area-card .usecase-list {
+    padding-left: 30px;
+    margin-top: 8px;
     list-style: circle;
 }
-.area-card .usecase-list li a { /* Use case name */
-    font-weight: 500;
+
+.area-card .usecase-list li a {
+    font-weight: 600;
 }
-.area-card .usecase-list .uc-details { /* Use case BI_ID */
+
+.area-card .usecase-list .uc-details {
     font-size: 0.8rem;
     color: var(--text-muted);
-    margin-left: 5px;
+    margin-left: 8px;
 }
-.area-card p em { /* "No steps/use cases" message */
+
+.area-card p em {
     color: var(--text-muted);
     font-style: italic;
 }
 
 /* Detail Page Enhancements */
-
-/* General Page Title Structure */
-.page-content > .d-flex > h1, /* For titles like "Area: Name" */
-.page-content > h1 { /* For titles like "Data Injection" */
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--primary-color-light);
+.page-content > .d-flex > h1,
+.page-content > h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(135deg, var(--primary-color-light) 0%, var(--accent-color) 100%) 1;
     letter-spacing: -0.5px;
 }
 
-/* Sub-description text below main titles */
-.page-content p.text-muted { /* Assuming text-muted is used for sub-descriptions */
-    color: var(--text-secondary) !important; /* Ensure better contrast */
-    font-size: 0.95rem;
-    margin-top: -15px; /* Pull closer to title */
-    margin-bottom: 25px;
+.page-content p.text-muted {
+    color: var(--text-secondary) !important;
+    font-size: 1.05rem;
+    margin-top: -20px;
+    margin-bottom: 30px;
 }
 
-/* Definition Lists (dl.info-list) for details */
 .card-body dl.info-list {
     display: grid;
-    grid-template-columns: minmax(180px, max-content) auto; /* Increased label column width */
-    gap: 12px 20px; /* Adjusted gap */
+    grid-template-columns: minmax(200px, max-content) auto;
+    gap: 16px 24px;
     margin-bottom: 0;
 }
+
 .card-body dl.info-list dt {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--raw-dark-grey-100);
-    font-size: 0.9rem;
-    padding-top: 3px; /* Align with first line of dd */
+    font-size: 0.95rem;
+    padding-top: 4px;
     text-align: right;
-    padding-right: 15px;
+    padding-right: 20px;
 }
+
 .card-body dl.info-list dd {
     margin-left: 0;
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: var(--text-primary);
     word-break: break-word;
 }
+
 .card-body dl.info-list dd a {
-    font-weight: 500;
+    font-weight: 600;
 }
-.card-body dl.info-list dd pre, /* Preformatted text within dd */
-.relevance-section li.relevance-item pre { /* Also style pre in relevance items */
-    background-color: var(--element-bg-light);
-    padding: 12px 15px;
+
+.card-body dl.info-list dd pre,
+.relevance-section li.relevance-item pre {
+    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
+    padding: 16px 20px;
     border: 1px solid var(--raw-light-grey-200);
     border-radius: var(--border-radius-sm);
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     line-height: 1.6;
-    max-height: 280px;
+    max-height: 300px;
     overflow-y: auto;
     color: var(--text-primary);
-    margin-top: 5px;
-    white-space: pre-wrap; /* Ensure wrapping */
-    word-break: break-word; /* Break long words */
+    margin-top: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* Item Lists (ul.item-list) for lists of steps/use cases */
@@ -707,8 +841,8 @@ form button[type="submit"]:hover,
 .card-body ul.item-list > li:hover a {
     color: var(--primary-color-dark);
 }
-.card-body ul.item-list .item-title a, /* For main link in list item */
-.card-body ul.item-list > li > a { /* If link is direct child */
+.card-body ul.item-list .item-title a,
+.card-body ul.item-list > li > a {
     font-weight: 600;
     color: var(--primary-color);
     font-size: 1.05rem;
@@ -720,7 +854,7 @@ form button[type="submit"]:hover,
     color: var(--primary-color-dark);
     text-decoration: none;
 }
-.card-body ul.item-list .item-meta, /* For BI_ID or other small text */
+.card-body ul.item-list .item-meta,
 .card-body ul.item-list small.text-muted {
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -731,15 +865,15 @@ form button[type="submit"]:hover,
 .card-body ul.item-list ul.usecase-list {
     padding-left: 25px;
     margin-top: 10px;
-    list-style: none; /* Use custom styling or keep as is if `circle` from area-card is intended */
+    list-style: circle; /* Changed from none to circle as per area-card intent */
 }
 .card-body ul.item-list ul.usecase-list li {
     padding: 8px 0;
-    border: none; /* No borders for sub-items */
+    border: none;
     font-size: 0.9rem;
 }
 .card-body ul.item-list ul.usecase-list li:hover {
-    background-color: transparent; /* No hover for sub-items */
+    background-color: transparent;
 }
 .card-body ul.item-list ul.usecase-list li a {
     font-weight: 500;
@@ -747,8 +881,8 @@ form button[type="submit"]:hover,
 }
 
 /* "No items found" messages */
-.card-body p.no-items-message, /* More specific class for these messages */
-.card-body p em { /* Fallback for existing `p em` */
+.card-body p.no-items-message,
+.card-body p em {
     color: var(--text-secondary);
     font-style: italic;
     display: block;
@@ -759,24 +893,23 @@ form button[type="submit"]:hover,
 
 /* Action buttons (Edit/Delete) on detail pages */
 .page-content .d-flex.justify-content-between.align-items-center > div {
-    /* This targets the div holding Edit/Delete buttons next to page titles */
     display: flex;
     gap: 12px;
 }
 
 /* Relevance Section Styling */
-.relevance-section h2 { /* Main "Relevance Links" title */
+.relevance-section h2 {
     font-size: 1.5rem;
     color: var(--primary-color-dark);
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--raw-light-grey-300);
 }
-.relevance-section .card .card-header .card-title { /* "Relevant Areas/Steps/Use Cases" in sub-cards */
+.relevance-section .card .card-header .card-title {
     color: var(--text-primary);
     font-size: 1.1rem;
 }
-.relevance-section ul { /* Ensure this doesn't conflict with .item-list */
+.relevance-section ul {
     list-style: none;
     padding-left: 0;
 }
@@ -784,51 +917,55 @@ form button[type="submit"]:hover,
     background-color: var(--white);
     padding: 20px;
     margin-bottom: 15px;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius); /* Use default border-radius */
     border: 1px solid var(--raw-light-grey-200);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    /* border-left: 4px solid var(--primary-color); /* Optionally keep accent */
+    box-shadow: var(--shadow-sm); /* Use shadow system */
+    transition: all 0.3s ease; /* Add transition for hover */
 }
-.relevance-section li.relevance-item strong { /* "Area:", "Score:", "Content:" */
+.relevance-section li.relevance-item:hover {
+    transform: translateY(-2px); /* Add hover lift */
+    box-shadow: var(--shadow-md); /* Add hover shadow */
+}
+.relevance-section li.relevance-item strong {
     min-width: 90px;
     font-weight: 600;
     color: var(--text-secondary);
-    display: inline-block; /* For alignment if needed */
+    display: inline-block;
     margin-bottom: 6px;
     font-size: 0.85rem;
 }
-.relevance-section li.relevance-item .badge { /* Score badge */
+.relevance-section li.relevance-item .badge {
     font-size: 0.9rem;
     padding: 5px 10px;
     font-weight: 600;
 }
-.relevance-section li.relevance-item > .mt-2, /* Actions div (Edit/Delete link) */
-.relevance-section li.relevance-item > div:last-child:not(:first-child) { /* More robust selector for action div */
+.relevance-section li.relevance-item > .mt-2,
+.relevance-section li.relevance-item > div:last-child:not(:first-child) {
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px dashed var(--raw-light-grey-200);
 }
 
 /* Forms for Adding Relevance */
-.add-relevance-forms h3 { /* Title for the "Add New Relevance Link" section */
+.add-relevance-forms h3 {
     font-size: 1.5rem;
     color: var(--primary-color-dark);
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--raw-light-grey-300);
 }
-.add-relevance-form { /* Individual form for Area/Step/UseCase linking */
+.add-relevance-form {
     background-color: var(--raw-light-grey-100);
     padding: 25px;
     border: 1px solid var(--raw-light-grey-300);
-    border-radius: var(--border-radius-sm); /* Consistent radius */
+    border-radius: var(--border-radius-sm);
     box-shadow: none;
-    margin-bottom: 20px; /* Space between these forms */
+    margin-bottom: 20px;
 }
-.add-relevance-form h4 { /* "Link to Area", "Link to Step" */
+.add-relevance-form h4 {
     color: var(--primary-color);
     font-size: 1.1rem;
-    margin-bottom: 15px; /* Space below sub-form title */
+    margin-bottom: 15px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--raw-light-grey-200);
 }
@@ -849,11 +986,11 @@ form button[type="submit"]:hover,
     color: var(--primary-color);
 }
 .auth-container form button[type="submit"] {
-    width: 100%; /* Full width button */
+    width: 100%;
     padding: 12px;
     margin-top: 10px;
 }
-.auth-container p { /* "New User? Click to Register!" */
+.auth-container p {
     text-align: center;
     margin-top: 20px;
     font-size: 0.9rem;
@@ -870,25 +1007,26 @@ form button[type="submit"]:hover,
     margin-bottom: 25px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
+    padding: 10px;
 }
 .injection-form-section h2 {
-    font-size: 1.3rem; /* Slightly larger */
+    font-size: 1.3rem;
     margin-bottom: 10px;
     color: var(--primary-color);
 }
 .injection-form-section p {
     font-size: 0.9rem;
-    color: var(--text-secondary); /* Slightly darker for better readability */
+    color: var(--text-secondary);
     margin-bottom: 15px;
     line-height: 1.6;
 }
 .injection-form-section code {
     background-color: var(--element-bg-light);
-    padding: 3px 6px; /* Slightly more padding */
+    padding: 3px 6px;
     border-radius: var(--border-radius-sm);
     font-size: 0.85rem;
     color: var(--text-primary);
-    border: 1px solid var(--raw-light-grey-300); /* Subtle border for code */
+    border: 1px solid var(--raw-light-grey-300);
 }
 .export-section ul {
     list-style: none;
@@ -910,9 +1048,8 @@ form button[type="submit"]:hover,
 
 /* Markdown Specific Styles */
 .markdown-content p:last-child {
-    margin-bottom: 0; /* Remove extra margin from last paragraph in markdown block */
+    margin-bottom: 0;
 }
-/* Ensure lists generated by markdown are also styled nicely */
 .markdown-content ul,
 .markdown-content ol {
     margin-left: 20px;
@@ -921,7 +1058,6 @@ form button[type="submit"]:hover,
 .markdown-content li {
     margin-bottom: 0.5em;
 }
-/* General styling for tables generated by markdown */
 .markdown-content table {
     width: 100%;
     border-collapse: collapse;
@@ -945,7 +1081,6 @@ form button[type="submit"]:hover,
     margin: 0 auto;
 }
 
-/* Page header improvements that don't conflict */
 .llm-data-prep-page .page-header {
     margin-bottom: 2rem;
 }
@@ -953,12 +1088,12 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .page-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary); /* Changed to var */
     margin-bottom: 0.5rem;
 }
 
 .llm-data-prep-page .page-subtitle {
-    color: #64748b;
+    color: var(--text-secondary); /* Changed to var */
     font-size: 1.1rem;
 }
 
@@ -983,23 +1118,32 @@ form button[type="submit"]:hover,
 
 /* Better card styling */
 .llm-data-prep-page .card {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: none; /* Changed from 1px solid */
+    border-radius: var(--border-radius); /* Changed from 12px */
+    box-shadow: var(--shadow-sm); /* Changed from 0 2px 8px rgba(0, 0, 0, 0.06) */
     margin-bottom: 2rem;
     overflow: hidden;
+    transition: all 0.3s ease; /* Added transition for hover */
+}
+
+.llm-data-prep-page .card:hover {
+    box-shadow: var(--shadow-md); /* Added hover shadow */
+    transform: translateY(-2px); /* Added hover lift */
 }
 
 .llm-data-prep-page .card-header {
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%); /* Changed to gradient */
+    border-bottom: 1px solid var(--raw-light-grey-300); /* Changed to var */
     padding: 1.5rem 2rem;
 }
 
 .llm-data-prep-page .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Changed to gradient text */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 0;
 }
 
@@ -1021,15 +1165,15 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .selection-item {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    background: var(--raw-light-grey-100); /* Changed to var */
+    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 8px */
     padding: 1.5rem;
 }
 
 .llm-data-prep-page .selection-label {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary); /* Changed to var */
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -1056,15 +1200,15 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .search-input {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid var(--border-color); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .search-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(93, 140, 123, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Updated shadow */
 }
 
 .llm-data-prep-page .button-group {
@@ -1080,24 +1224,24 @@ form button[type="submit"]:hover,
 
 /* Custom select styling */
 .llm-data-prep-page .custom-select {
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid var(--border-color); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
     min-height: 120px;
     max-height: 200px;
     overflow-y: auto;
-    background: white;
+    background: var(--white); /* Changed to var */
 }
 
 .llm-data-prep-page .select-option {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--raw-light-grey-200); /* Changed to var */
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .select-option:hover {
-    background: #f8fafc;
+    background: var(--raw-light-grey-100); /* Changed to var */
 }
 
 .llm-data-prep-page .select-option:last-child {
@@ -1105,14 +1249,14 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .select-option.selected {
-    background: #eff6ff;
+    background: var(--raw-alert-info-bg); /* Changed to var */
     border-left: 3px solid var(--primary-color);
     font-weight: 500;
 }
 
 .llm-data-prep-page .help-text {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--text-secondary); /* Changed to var */
     margin-top: 0.5rem;
     line-height: 1.4;
 }
@@ -1130,31 +1274,31 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .field-group {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    background: var(--raw-light-grey-100); /* Changed to var */
+    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
+    border-radius: var(--border-radius); /* Changed from 8px to default card radius */
     overflow: hidden;
 }
 
 /* Fix field group header to work with Bootstrap */
 .llm-data-prep-page .field-group-header {
-    background: #e2e8f0;
+    background: var(--raw-light-grey-300); /* Changed to var */
     padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
     transition: background 0.2s;
-    border: none; /* Remove any borders that might interfere */
+    border: none;
 }
 
 .llm-data-prep-page .field-group-header:hover {
-    background: #d1d5db;
+    background: var(--raw-medium-grey-100); /* Changed to var */
 }
 
 .llm-data-prep-page .field-group-title {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary); /* Changed to var */
     margin: 0;
 }
 
@@ -1181,7 +1325,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .checkbox-item:hover {
-    background: white;
+    background: var(--white); /* Changed to var */
 }
 
 .llm-data-prep-page .checkbox-item input[type="checkbox"] {
@@ -1203,8 +1347,8 @@ form button[type="submit"]:hover,
     width: 100%;
     min-height: 120px;
     padding: 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid var(--border-color); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
@@ -1213,35 +1357,35 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .system-prompt textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(93, 140, 123, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Updated shadow */
 }
 
 /* Preview section improvements */
 .llm-data-prep-page .preview-empty {
     text-align: center;
     padding: 3rem 2rem;
-    color: #6b7280;
+    color: var(--text-secondary); /* Changed to var */
 }
 
 .llm-data-prep-page .preview-empty i {
     font-size: 3rem;
     margin-bottom: 1rem;
-    color: #d1d5db;
+    color: var(--border-color); /* Changed to var */
 }
 
 .llm-data-prep-page .preview-empty h3 {
     margin-bottom: 0.5rem;
-    color: #374151;
+    color: var(--text-primary); /* Changed to var */
 }
 
 /* Chat improvements */
 .llm-data-prep-page .chat-container {
-    background: #f8fafc;
-    border-radius: 8px;
+    background: var(--raw-light-grey-100); /* Changed to var */
+    border-radius: var(--border-radius); /* Changed from 8px */
     min-height: 300px;
     display: flex;
     flex-direction: column;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
 }
 
 .llm-data-prep-page .chat-display {
@@ -1253,63 +1397,63 @@ form button[type="submit"]:hover,
 
 .llm-data-prep-page .chat-placeholder {
     text-align: center;
-    color: #6b7280;
+    color: var(--text-secondary); /* Changed to var */
     padding: 2rem;
 }
 
 .llm-data-prep-page .chat-placeholder i {
     font-size: 2rem;
     margin-bottom: 1rem;
-    color: #d1d5db;
+    color: var(--border-color); /* Changed to var */
 }
 
 .llm-data-prep-page .chat-input-area {
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--raw-light-grey-300); /* Changed to var */
     padding: 1rem 1.5rem;
     display: flex;
     gap: 1rem;
     align-items: center;
-    background: white;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
+    background: var(--white); /* Changed to var */
+    border-bottom-left-radius: var(--border-radius); /* Changed from 8px */
+    border-bottom-right-radius: var(--border-radius); /* Changed from 8px */
 }
 
 .llm-data-prep-page .chat-input-area select {
     min-width: 150px;
     padding: 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid var(--border-color); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
 }
 
 .llm-data-prep-page .chat-input-area input {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid var(--border-color); /* Changed to var */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
 }
 
-/* Better buttons */
+/* Better buttons for LLM page */
 .llm-data-prep-page .btn-primary {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    color: white;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-    border-radius: 6px;
-    transition: all 0.2s;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Added gradient */
+    border: none; /* Changed from border-color */
+    color: var(--white);
+    font-weight: 600; /* Changed from 500 */
+    padding: 16px 32px; /* Changed from 0.625rem 1.25rem */
+    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    transition: all 0.3s ease; /* Ensure consistency with other buttons */
+    box-shadow: var(--shadow-sm); /* Added shadow */
 }
 
 .llm-data-prep-page .btn-primary:hover {
-    background: var(--primary-color-dark);
-    border-color: var(--primary-color-dark);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%); /* Added gradient for hover */
+    transform: translateY(-2px); /* Changed from -1px */
+    box-shadow: var(--shadow-md); /* Added hover shadow */
 }
 
 .llm-data-prep-page .btn-primary i {
     margin-right: 0.5rem;
 }
 
-/* Removed Bootstrap fighting for btn-link on LLM page */
 .llm-data-prep-page .btn-link {
     color: var(--text-secondary);
     text-decoration: none;
@@ -1347,11 +1491,11 @@ form button[type="submit"]:hover,
 }
 
 .card-header button.btn-link[aria-expanded="true"] i {
-    transform: rotate(0deg); /* Up arrow when expanded */
+    transform: rotate(0deg);
 }
 
 .card-header button.btn-link[aria-expanded="false"] i {
-    transform: rotate(180deg); /* Down arrow when collapsed */
+    transform: rotate(180deg);
 }
 
 .llm-data-prep-page .form-check {
@@ -1392,11 +1536,10 @@ form button[type="submit"]:hover,
     border-bottom: none;
 }
 
-/* Remove default Bootstrap margin-right and margin-bottom from form-check-inline for better grid integration */
 .llm-data-prep-page .form-check-inline {
     margin-right: 0;
     margin-bottom: 0;
-    padding: 0; /* Bootstrap's p-0 m-0 utility classes are often good, but explicit CSS ensures */
+    padding: 0;
 }
 
 .llm-data-prep-page label .selected-count-display {
@@ -1415,7 +1558,7 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 900px; /* Adjust as needed for column content */
+    min-width: 900px;
 }
 
 .llm-data-prep-page .table th,
@@ -1434,7 +1577,6 @@ form button[type="submit"]:hover,
     text-align: left;
 }
 
-/* Column minimum widths */
 .llm-data-prep-page .table .col-fixed-short {
     width: 60px;
     min-width: 60px;
@@ -1449,26 +1591,24 @@ form button[type="submit"]:hover,
     min-width: 200px;
 }
 
-/* Styles for the new content wrapper divs INSIDE <td> */
 .llm-data-prep-page .table .scrollable-cell-content,
 .llm-data-prep-page .table .cell-display-content {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    padding-right: 5px; /* Add some padding to avoid scrollbar overlapping text */
+    padding-right: 5px;
 }
 
 .llm-data-prep-page .table .scrollable-cell-content {
-    max-height: 100px; /* Max height for content before scrolling */
-    overflow-y: auto;  /* Enable vertical scrollbar */
+    max-height: 100px;
+    overflow-y: auto;
 }
 
 .llm-data-prep-page .table .cell-display-content {
-    max-height: 100px; /* Match scrollable height for row consistency, but content will just hide if overflows */
-    overflow-y: hidden; /* Hide overflow without scrollbar */
+    max-height: 100px;
+    overflow-y: hidden;
 }
 
-/* Preformatted text within table cells */
 .llm-data-prep-page .table td pre {
     font-size: 0.85rem;
     margin: 0;
@@ -1486,7 +1626,7 @@ form button[type="submit"]:hover,
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     margin-top: 1rem;
-    background-color: var(--element-bg-light);
+    background-color: var(--raw-light-grey-200); /* Changed to specific grey */
 }
 
 #jsonDataPreview {
@@ -1512,75 +1652,93 @@ form button[type="submit"]:hover,
     background-color: var(--raw-light-grey-200);
     color: var(--text-primary);
 }
+
+/* Ensure all buttons respect the new gradient and shadow system */
 .btn.btn-success {
-    background-color: var(--raw-alert-success-text) !important;
-    border-color: var(--raw-alert-success-border) !important;
+    background: linear-gradient(135deg, var(--raw-alert-success-text) 0%, #047857 100%) !important;
+    border: none !important;
     color: var(--white) !important;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
 }
+.btn.btn-success:hover {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
 .btn.btn-danger {
-    background-color: var(--raw-alert-danger-text) !important;
-    border-color: var(--raw-alert-danger-border) !important;
+    background: linear-gradient(135deg, var(--raw-alert-danger-text) 0%, #be123c 100%) !important;
+    border: none !important;
     color: var(--white) !important;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+.btn.btn-danger:hover {
+    background: linear-gradient(135deg, #be123c 0%, #9f1239 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 /* LLM Chat Window Styles */
 .chat-container {
     display: flex;
     flex-direction: column;
-    min-height: 400px; /* Minimum height for the chat area */
+    min-height: 400px;
 }
 
 .chat-display {
-    flex-grow: 1; /* Takes available space */
+    flex-grow: 1;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius); /* Changed from sm radius */
     padding: 15px;
-    overflow-y: auto; /* Scroll for chat history */
+    overflow-y: auto;
     background-color: var(--raw-light-grey-100);
-    max-height: 500px; /* Cap overall chat display height */
+    max-height: 500px;
     margin-bottom: 15px;
 }
 
 .chat-bubble {
-    padding: 10px 15px;
-    border-radius: 15px; /* Rounded corners for chat bubbles */
-    margin-bottom: 10px;
-    max-width: 85%; /* Don't take full width */
+    padding: 12px 18px; /* Slightly increased padding */
+    border-radius: 16px; /* Default radius */
+    margin-bottom: 12px; /* Slightly increased margin */
+    max-width: 85%;
     line-height: 1.6;
-    word-wrap: break-word; /* Ensure long words break */
-    white-space: pre-wrap; /* Preserve line breaks and wrap content */
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    box-shadow: var(--shadow-xs); /* Subtle shadow for bubbles */
 }
 
 .chat-bubble-user {
-    background-color: var(--primary-color-light); /* Light green for user messages */
-    color: var(--primary-color-dark);
-    margin-left: auto; /* Align to right */
-    border-bottom-right-radius: 2px; /* Slightly square off one corner */
+    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%); /* Gradient for user messages */
+    color: var(--text-color-on-primary);
+    margin-left: auto;
+    border-bottom-right-radius: 4px; /* Square off one corner */
 }
 
 .chat-bubble-assistant {
-    background-color: var(--card-bg); /* White for assistant messages */
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--raw-light-grey-100) 100%); /* Gradient for assistant messages */
     color: var(--text-primary);
-    margin-right: auto; /* Align to left */
+    margin-right: auto;
     border: 1px solid var(--border-color);
-    border-bottom-left-radius: 2px; /* Slightly square off one corner */
+    border-bottom-left-radius: 4px; /* Square off one corner */
 }
 
 /* Markdown formatting within chat bubbles */
 .chat-bubble pre {
-    background-color: var(--element-bg-light);
-    border: 1px solid var(--raw-light-grey-300);
+    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%); /* Gradient for code blocks */
+    border: 1px solid var(--raw-light-grey-200); /* Changed to raw-light-grey-200 */
     border-radius: var(--border-radius-sm);
     padding: 10px;
     margin-top: 10px;
     white-space: pre-wrap;
-    word-break: break-all; /* More aggressive for code blocks */
+    word-break: break-all;
     font-size: 0.8em;
-    overflow-x: auto; /* Horizontal scroll for wide code blocks */
+    overflow-x: auto;
 }
 .chat-bubble code {
     background-color: var(--element-bg-light);
-    border-radius: var(--border-radius-sm);
+    border-radius: var(--border-radius-xs); /* Changed to xs radius */
     padding: 2px 5px;
     font-family: monospace;
     font-size: 0.9em;
@@ -1592,22 +1750,22 @@ form button[type="submit"]:hover,
     font-style: italic;
 }
 .chat-bubble p:last-child {
-    margin-bottom: 0; /* Remove extra margin from last paragraph in bubble */
+    margin-bottom: 0;
 }
 
 .chat-input-area {
     display: flex;
     gap: 10px;
-    width: 100%; /* Take full width of parent */
+    width: 100%;
 }
 .chat-input-area .form-control {
-    flex-grow: 1; /* Input field takes most space */
+    flex-grow: 1;
 }
 .chat-input-area .btn {
-    flex-shrink: 0; /* Buttons don't shrink */
+    flex-shrink: 0;
 }
 .chat-input-area .form-select {
-    flex-shrink: 0; /* Select doesn't shrink */
+    flex-shrink: 0;
 }
 
 /* Utility Classes */
@@ -1622,32 +1780,70 @@ form button[type="submit"]:hover,
 .me-1 { margin-right: 0.25rem !important; }
 .me-2 { margin-right: 0.5rem !important; }
 
+/* Add some modern utility classes */
+.gradient-bg-primary {
+    background: var(--gradient-primary);
+}
+
+.gradient-bg-secondary {
+    background: var(--gradient-secondary);
+}
+
+.gradient-bg-accent {
+    background: var(--gradient-accent);
+}
+
+.gradient-text-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius); /* Added radius */
+}
+
+.modern-shadow {
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+}
+
+
 /* Relevance Map Page Specific Styles */
 .relevance-visualize-page .card-body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 600px;
-    overflow: hidden; /* Hide anything that might overflow its bounds */
-    padding: 30px; /* Add padding around the chart within the card */
+    overflow: hidden;
+    padding: 30px;
 }
 
 #relevanceChart {
-    /* Height is set by JS, ensure no conflicting CSS height or aspect-ratio */
-    /* min-width might still be useful for very small screens, but the JS handles overall square */
-    min-width: 300px; /* Example: minimum width for chart content */
-    /*max-width: 800px; */
-    margin: 0 auto; /* Center the chart horizontally */
+    min-width: 300px;
+    margin: 0 auto;
 }
 
 /* Enhance System Prompt Textarea on LLM Data Prep page to fix rendering issues */
 .llm-data-prep-page #systemPromptInput {
-    display: block; /* Ensure it behaves as a block element */
-    width: 100%; /* Ensure it takes the full width of its container */
-    white-space: pre-wrap; /* Forces text to wrap within the element */
-    word-break: break-word; /* Breaks long words to prevent horizontal overflow */
-    overflow: auto; /* Shows scrollbars if content exceeds dimensions */
-    box-sizing: border-box; /* Ensures padding and border are included in the width */
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: auto;
+    box-sizing: border-box;
 }
 
 /* Adjustments for checkbox columns in fieldsets - FIXED COMPLETELY */
@@ -1657,8 +1853,8 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .fieldset-dashed-border .col {
-    display: block !important; /* Reset to block for column behavior */
-    flex-direction: unset !important; /* Remove any inherited flex-direction */
+    display: block !important;
+    flex-direction: unset !important;
 }
 
 .llm-data-prep-page .form-check .form-check-input {
@@ -1666,7 +1862,7 @@ form button[type="submit"]:hover,
     margin-right: 0.5rem !important;
     margin-bottom: 0 !important;
     flex-shrink: 0 !important;
-    position: static !important; /* Override Bootstrap positioning */
+    position: static !important;
 }
 
 .llm-data-prep-page .form-check .form-check-label {
@@ -1674,23 +1870,23 @@ form button[type="submit"]:hover,
     word-break: break-word !important;
     line-height: 1.4 !important;
     cursor: pointer !important;
-    padding-left: 0 !important; /* Remove any default Bootstrap padding */
+    padding-left: 0 !important;
 }
 
 /* Data Alignment Page Specific Styles */
 .data-alignment-page .table td {
-    vertical-align: middle; /* Align content in cells vertically */
+    vertical-align: middle;
 }
 
 /* For unsaved changes */
 .unsaved-change {
-    background-color: var(--raw-alert-warning-bg) !important; /* Light warning background */
+    background-color: var(--raw-alert-warning-bg) !important;
     border-color: var(--raw-alert-warning-border) !important;
     transition: background-color 0.3s ease;
 }
 
 .unsaved-change select {
-    border-color: var(--raw-alert-warning-text) !important; /* Emphasize border of changed select */
+    border-color: var(--raw-alert-warning-text) !important;
 }
 
 /* For buttons */
@@ -1701,7 +1897,7 @@ form button[type="submit"]:hover,
     margin-bottom: 20px;
 }
 .data-alignment-actions .btn {
-    min-width: 120px; /* Give buttons a consistent size */
+    min-width: 120px;
 }
 .pending-changes-info {
     font-size: 0.95rem;
@@ -1710,23 +1906,63 @@ form button[type="submit"]:hover,
 }
 
 /* Consolidated Responsive Rules */
-@media (max-width: 767px) {
-    .sidebar { 
-        width: 100%; 
-        height: auto; 
-        position: relative; 
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 250px;
     }
-    .main-header { 
-        padding: 10px 20px; 
+
+    .main-header {
+        padding: 15px 30px;
     }
-    .search-bar { 
-        width: 100%; 
-        margin-top: 10px; 
+
+    .page-content {
+        padding: 30px 35px;
     }
-    .breadcrumb-item { 
-        font-size: 0.8rem; 
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
     }
-    
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-header {
+        padding: 15px 25px;
+        flex-direction: column;
+        gap: 15px;
+        min-height: auto;
+    }
+
+    .search-bar {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .breadcrumb-item {
+        font-size: 0.8rem;
+        padding: 10px calc(var(--breadcrumb-arrow-width) + 8px) 10px calc(var(--breadcrumb-arrow-width) + 12px);
+        height: 40px;
+    }
+
+    .page-content {
+        padding: 25px;
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .card-header {
+        padding: 20px;
+    }
+
     /* LLM specific mobile rules */
     .llm-data-prep-page .selection-grid,
     .llm-data-prep-page .field-groups {
@@ -1750,4 +1986,27 @@ form button[type="submit"]:hover,
     .llm-data-prep-page .chat-input-area input {
         width: 100%;
     }
+}
+
+/* ECharts Tooltip Styling for text wrapping */
+
+.echarts-tooltip-container {
+    max-width: 400px !important;
+    box-sizing: border-box !important;
+}
+
+.echarts-tooltip-content {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.echarts-tooltip-content pre,
+.echarts-tooltip-content code {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-x: auto;
+    font-size: 0.9em;
 }
