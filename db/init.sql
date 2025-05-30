@@ -1,6 +1,5 @@
--- init.sql
-
--- Drop tables in reverse order of dependency if they exist
+-- db/init.sql
+-- Drop tables in reverse dependency order (ensure this order for clean slate)
 DROP TABLE IF EXISTS process_step_process_step_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_usecase_relevance CASCADE;
 DROP TABLE IF EXISTS usecase_step_relevance CASCADE;
@@ -8,25 +7,27 @@ DROP TABLE IF EXISTS usecase_area_relevance CASCADE;
 DROP TABLE IF EXISTS use_cases CASCADE;
 DROP TABLE IF EXISTS process_steps CASCADE;
 DROP TABLE IF EXISTS areas CASCADE;
+DROP TABLE IF EXISTS llm_settings CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS flask_sessions CASCADE;
 
--- Create the 'users' table for authentication
+-- Create tables
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(80) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- Store hashed passwords!
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    password VARCHAR(255) NOT NULL,
+    system_prompt TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create the 'areas' table
 CREATE TABLE areas (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create the 'process_steps' table
 CREATE TABLE process_steps (
     id SERIAL PRIMARY KEY,
     bi_id VARCHAR(255) UNIQUE NOT NULL,
@@ -42,27 +43,24 @@ CREATE TABLE process_steps (
     what_is_actually_done TEXT,
     pain_points TEXT,
     targets_text TEXT,
-    -- Add the missing LLM comment columns here
     llm_comment_1 TEXT,
     llm_comment_2 TEXT,
     llm_comment_3 TEXT,
     llm_comment_4 TEXT,
     llm_comment_5 TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTamptz DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create the 'use_cases' table
 CREATE TABLE use_cases (
     id SERIAL PRIMARY KEY,
-    bi_id VARCHAR(255) UNIQUE NOT NULL, -- Business Identifier
+    bi_id VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     process_step_id INTEGER NOT NULL REFERENCES process_steps(id) ON DELETE CASCADE,
     priority INTEGER,
     raw_content TEXT,
     summary TEXT,
     inspiration TEXT,
-    -- New Fields Based on Documentation Structure
     wave VARCHAR(255),
     effort_level VARCHAR(255),
     status VARCHAR(255),
@@ -82,69 +80,87 @@ CREATE TABLE use_cases (
     dependencies_text TEXT,
     contact_persons_text TEXT,
     related_projects_text TEXT,
-    -- End New Fields
-    llm_comment_1 TEXT, -- These were already here in use_cases, which is fine
+    llm_comment_1 TEXT,
     llm_comment_2 TEXT,
     llm_comment_3 TEXT,
     llm_comment_4 TEXT,
     llm_comment_5 TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT priority_range_check CHECK (priority IS NULL OR (priority >= 1 AND priority <= 4))
 );
 
--- Create the 'usecase_area_relevance' table
 CREATE TABLE usecase_area_relevance (
     id SERIAL PRIMARY KEY,
     source_usecase_id INTEGER NOT NULL REFERENCES use_cases(id) ON DELETE CASCADE,
     target_area_id INTEGER NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (source_usecase_id, target_area_id)
 );
 
--- Create the 'usecase_step_relevance' table
 CREATE TABLE usecase_step_relevance (
     id SERIAL PRIMARY KEY,
     source_usecase_id INTEGER NOT NULL REFERENCES use_cases(id) ON DELETE CASCADE,
     target_process_step_id INTEGER NOT NULL REFERENCES process_steps(id) ON DELETE CASCADE,
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (source_usecase_id, target_process_step_id)
 );
 
--- Create the 'usecase_usecase_relevance' table
 CREATE TABLE usecase_usecase_relevance (
     id SERIAL PRIMARY KEY,
     source_usecase_id INTEGER NOT NULL REFERENCES use_cases(id) ON DELETE CASCADE,
     target_usecase_id INTEGER NOT NULL REFERENCES use_cases(id) ON DELETE CASCADE,
     relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CHECK (source_usecase_id != target_usecase_id),
     UNIQUE (source_usecase_id, target_usecase_id)
 );
 
--- NEW: Table for ProcessStep to ProcessStep Relevance
-CREATE TABLE IF NOT EXISTS process_step_process_step_relevance (
+CREATE TABLE process_step_process_step_relevance (
     id SERIAL PRIMARY KEY,
-    source_process_step_id INTEGER NOT NULL,
-    target_process_step_id INTEGER NOT NULL,
-    relevance_score INTEGER NOT NULL,
+    source_process_step_id INTEGER NOT NULL REFERENCES process_steps(id) ON DELETE CASCADE,
+    target_process_step_id INTEGER NOT NULL REFERENCES process_steps(id) ON DELETE CASCADE,
+    relevance_score INTEGER NOT NULL CHECK (relevance_score >= 0 AND relevance_score <= 100),
     relevance_content TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (source_process_step_id) REFERENCES process_steps(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_process_step_id) REFERENCES process_steps(id) ON DELETE CASCADE,
-    CONSTRAINT relevance_ps_ps_score_check CHECK (relevance_score >= 0 AND relevance_score <= 100),
-    CONSTRAINT no_self_step_relevance CHECK (source_process_step_id != target_process_step_id),
-    CONSTRAINT unique_process_step_process_step_relevance UNIQUE (source_process_step_id, target_process_step_id)
+    CHECK (source_process_step_id != target_process_step_id),
+    UNIQUE (source_process_step_id, target_process_step_id)
 );
+
+CREATE TABLE llm_settings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    openai_api_key VARCHAR(255),
+    anthropic_api_key VARCHAR(255),
+    google_api_key VARCHAR(255),
+    ollama_base_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE flask_sessions (
+    id SERIAL NOT NULL,
+    session_id VARCHAR(255) UNIQUE,
+    data BYTEA,
+    expiry TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY (id)
+);
+
+-- Add initial user if not exists (for development)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin') THEN
+        INSERT INTO users (username, password) VALUES ('admin', '$pbkdf2-sha256$29000$8a927a445ee1023d8c11e03a95d43a6d2f342f0a8274618e7e1451f2249c118b$c97ee2e7428f57277862086e330554289895318d18d4512e2c2f70624a080826'); -- password is 'admin'
+    END IF;
+END $$;
 
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
@@ -159,9 +175,9 @@ CREATE INDEX IF NOT EXISTS idx_uc_step_rev_source_uc_id ON usecase_step_relevanc
 CREATE INDEX IF NOT EXISTS idx_uc_step_rev_target_step_id ON usecase_step_relevance (target_process_step_id);
 CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_source_uc_id ON usecase_usecase_relevance (source_usecase_id);
 CREATE INDEX IF NOT EXISTS idx_uc_uc_rev_target_uc_id ON usecase_usecase_relevance (target_usecase_id);
--- Add indexes for the new process_step_process_step_relevance table
 CREATE INDEX IF NOT EXISTS idx_ps_ps_rev_source_ps_id ON process_step_process_step_relevance (source_process_step_id);
 CREATE INDEX IF NOT EXISTS idx_ps_ps_rev_target_ps_id ON process_step_process_step_relevance (target_process_step_id);
+CREATE INDEX IF NOT EXISTS idx_llm_settings_user_id ON llm_settings (user_id);
 
 /*
 -- Optional: Trigger for automatically updating updated_at on row modification
@@ -180,12 +196,3 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 -- Similar triggers can be created for other tables if desired.
 */
-
--- ALTER TABLE to add system_prompt to users table if it doesn't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'system_prompt') THEN
-        ALTER TABLE users ADD COLUMN system_prompt TEXT;
-    END IF;
-END
-$$;

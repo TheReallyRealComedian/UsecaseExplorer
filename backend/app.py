@@ -4,12 +4,12 @@ from flask import Flask, render_template, redirect, url_for, flash
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
 import markupsafe
-import markdown # Import the markdown library
+import markdown
 
 from flask_session import Session
 
 from .config import get_config
-from .models import Base, User, Area, ProcessStep, UseCase
+from .models import Base, User, Area, ProcessStep, UseCase, LLMSettings
 from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db
 
 from . import llm_service
@@ -74,6 +74,7 @@ def create_app():
     app.jinja_env.filters['markdown'] = markdown_to_html_filter # Register the new markdown filter
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
+    print(f"DEBUG: Initializing database with URL: {db_url}") # New print
     db_instance = init_app_db(app)
 
     app.config['SESSION_TYPE'] = 'sqlalchemy'
@@ -85,49 +86,68 @@ def create_app():
     app.config['SESSION_COOKIE_NAME'] = 'usecase_explorer_session'
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_SQLALCHEMY_CREATE_TABLE'] = False
     
+    print("DEBUG: Initializing Flask-Session...") # New print
     Session(app) 
+    print("DEBUG: Flask-Session initialized.") # New print
     
     with app.app_context():
-        print("Attempting to create all database tables (if they don't exist)...")
-        try:
-            flask_sqlalchemy_db.create_all()
-            print("Database tables checked/created successfully.")
-        except Exception as e:
-            print(f"Error creating database tables: {e}")
+        # The create_all() block was removed as part of previous fixes.
+        # Ensure it's not present or is correctly commented out.
+        # print("Attempting to create all database tables (if they don't exist)...")
+        # print(f"Models known to SQLAlchemy Base.metadata: {list(Base.metadata.tables.keys())}")
+        # try:
+        #     # flask_sqlalchemy_db.create_all() 
+        #     print("Database tables checked/created successfully (if init.sql ran or already exist).")
+        # except Exception as e:
+        #     print(f"Error creating database tables (possibly already exist or conflict): {e}")
 
-        # Move this block inside the app.app_context()
         try:
             with db_instance.engine.connect() as connection: 
                 print("Database connection successful!")
         except Exception as e:
             print(f"Database connection failed: {e}")
+        print("DEBUG: Database connection check passed within app_context.") # New print
 
     @app.teardown_request
     def remove_session(exception=None):
         SessionLocal.remove()
 
-    print("Importing and registering blueprints...")
+    print("DEBUG: About to import and register blueprints.") # New print
+    # Blueprint imports and registrations (add print for each blueprint registration)
     from .routes.auth_routes import auth_routes
+    print("DEBUG: Registering auth_routes.") # New print
     app.register_blueprint(auth_routes)
     from .routes.injection_routes import injection_routes
+    print("DEBUG: Registering injection_routes.") # New print
     app.register_blueprint(injection_routes)
     from .routes.usecase_routes import usecase_routes
+    print("DEBUG: Registering usecase_routes.") # New print
     app.register_blueprint(usecase_routes)
     from .routes.relevance_routes import relevance_routes
+    print("DEBUG: Registering relevance_routes.") # New print
     app.register_blueprint(relevance_routes)
     from .routes.llm_routes import llm_routes
+    print("DEBUG: Registering llm_routes.") # New print
     app.register_blueprint(llm_routes)
     from .routes.area_routes import area_routes
+    print("DEBUG: Registering area_routes.") # New print
     app.register_blueprint(area_routes)
     from .routes.step_routes import step_routes
+    print("DEBUG: Registering step_routes.") # New print
     app.register_blueprint(step_routes)
     from .routes.export_routes import export_routes 
+    print("DEBUG: Registering export_routes.") # New print
     app.register_blueprint(export_routes)
     from .routes.data_alignment_routes import data_alignment_routes
+    print("DEBUG: Registering data_alignment_routes.") # New print
     app.register_blueprint(data_alignment_routes)
+    # NEW: Register settings blueprint
+    from .routes.settings_routes import settings_routes
+    print("DEBUG: Registering settings_routes.") # New print
+    app.register_blueprint(settings_routes)
     print("Blueprint registration complete.")
-
 
     @app.route('/')
     def index():
@@ -154,7 +174,7 @@ def create_app():
         try:
             from .config import Config
             results["checks"]["config_import"] = "OK"
-            from .models import User as DebugUser
+            from .models import User as DebugUser, LLMSettings as DebugLLMSettings
             results["checks"]["models_import"] = "OK"
 
             auth_bp_registered = app.blueprints.get('auth') is not None
@@ -173,6 +193,9 @@ def create_app():
             results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
             injection_bp_registered = app.blueprints.get('injection') is not None
             results["checks"]["injection_blueprint_registered"] = injection_bp_registered
+            settings_bp_registered = app.blueprints.get('settings') is not None
+            results["checks"]["settings_blueprint_registered"] = settings_bp_registered
+
 
             secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
@@ -200,6 +223,9 @@ def create_app():
 
                 data_alignment_url = url_for('data_alignment.data_alignment_page')
                 results["checks"]["url_for_data_alignment"] = f"OK ({data_alignment_url})"
+                settings_url = url_for('settings.manage_settings')
+                results["checks"]["url_for_settings"] = f"OK ({settings_url})"
+
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"
 
@@ -219,7 +245,5 @@ def create_app():
         finally:
             pass
 
-        return results
-
-    print("create_app function finished.")
+    print("DEBUG: create_app function about to return app object.") # New print
     return app

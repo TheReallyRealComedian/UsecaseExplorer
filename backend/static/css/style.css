@@ -547,8 +547,8 @@ form textarea::placeholder {
 form input[type="checkbox"] {
     margin-right: 12px;
     align-self: flex-start;
-    width: auto;
-    height: auto;
+    /* REMOVED: width: auto; */
+    /* REMOVED: height: auto; */
     vertical-align: middle;
 }
 
@@ -1864,7 +1864,7 @@ form button[type="submit"]:hover,
     margin-right: 0.5rem !important;
     margin-bottom: 0 !important;
     flex-shrink: 0 !important;
-    position: static !important;
+    /* REMOVED: position: static !important; */
 }
 
 .llm-data-prep-page .form-check .form-check-label {

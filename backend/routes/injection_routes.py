@@ -15,7 +15,7 @@ from ..injection_service import (
     process_usecase_area_relevance_file,
     process_usecase_step_relevance_file,
     process_usecase_usecase_relevance_file,
-    import_database_from_json,
+    import_database_from_json, # This function will now accept a string
     finalize_step_import
 )
 from ..db import SessionLocal
@@ -255,6 +255,7 @@ def data_update_page():
                     flash('Invalid file type or name for Use Case-Use Case Relevance. Please upload a .json file.', 'danger')
                     return redirect(request.url)
 
+            # This is the /database/json route, but now handled directly by this function for simpler POST
             elif 'database_file' in request.files:
                 file = request.files['database_file']
                 if file.filename == '':
@@ -263,15 +264,37 @@ def data_update_page():
                 if file and '.' in file.filename and \
                    file.filename.rsplit('.', 1)[1].lower() == 'json':
                     clear_data = request.form.get('clear_existing_data') == 'on'
+
+                    # START OF ADDITION FOR DEBUGGING DATABASE IMPORT
+                    print("DEBUG: database_file upload detected in data_update_page POST.")
+                    print(f"DEBUG: Clear existing data: {clear_data}")
+
                     try:
-                        result = import_database_from_json(file.stream, clear_existing_data=clear_data)
+                        # Read the entire file content into memory first
+                        # This can be memory intensive for very large files, but is more robust
+                        # against issues with `file.stream` directly with json.load/loads.
+                        file_content = file.read().decode('utf-8')
+                        print(f"DEBUG: File content for database import read. Length: {len(file_content)} characters.")
+
+                        # Pass the string content to the service function
+                        result = import_database_from_json(file_content, clear_existing_data=clear_data)
                         flash_category = 'success' if result['success'] else 'danger'
                         flash(result['message'], flash_category)
+                        print(f"DEBUG: Database import result: {result['message']}")
+                    except UnicodeDecodeError:
+                        flash("Error: Could not decode database file content. Ensure it's UTF-8.", 'danger')
+                        print("ERROR: UnicodeDecodeError during database file read.")
+                    except json.JSONDecodeError as e:
+                        flash(f"Invalid JSON format in the uploaded database file: {e}", 'danger')
+                        print(f"ERROR: JSONDecodeError during database file import: {e}")
                     except Exception as e:
                         traceback.print_exc()
-                        flash(f"An error occurred during database import: {str(e)}", 'danger')
+                        flash(f"An unexpected error occurred during database import: {str(e)}", 'danger')
+                        print(f"ERROR: Unexpected exception during database import: {e}")
+                    # END OF ADDITION FOR DEBUGGING DATABASE IMPORT
                 else:
                     flash('Invalid file type for database import. Please upload a .json file.', 'danger')
+                    print("DEBUG: Invalid file type for database import.")
                 return redirect(request.url)
 
             else:
@@ -676,32 +699,3 @@ def finalize_steps_injection():
     else:
         flash(f"Process Step import failed: {result['messages'][-1] if result['messages'] else 'Unknown error'}", "danger")
         return jsonify(result), 500
-
-@injection_routes.route('/database/json', methods=['POST'])
-@login_required
-def import_db_json_route():
-    if 'database_file' not in request.files:
-        flash('No database file part in the request.', 'danger')
-        return redirect(request.referrer or url_for('injection.data_update_page'))
-
-    file = request.files['database_file']
-    if file.filename == '':
-        flash('No selected database file.', 'warning')
-        return redirect(request.referrer or url_for('injection.data_update_page'))
-
-    if file and '.' in file.filename and \
-       file.filename.rsplit('.', 1)[1].lower() == 'json':
-
-        clear_data = request.form.get('clear_existing_data') == 'on'
-
-        try:
-            result = import_database_from_json(file.stream, clear_existing_data=clear_data)
-            flash_category = 'success' if result['success'] else 'danger'
-            flash(result['message'], flash_category)
-        except Exception as e:
-            traceback.print_exc()
-            flash(f"An error occurred during database import: {str(e)}", 'danger')
-    else:
-        flash('Invalid file type for database import. Please upload a .json file.', 'danger')
-
-    return redirect(request.referrer or url_for('injection.data_update_page'))

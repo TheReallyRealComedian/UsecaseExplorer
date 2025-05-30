@@ -1,0 +1,63 @@
+<!-- backend/templates/settings.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        Manage your LLM API keys and service configurations. These settings override environment variables for your user account.
+    </p>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title">LLM API Keys & Settings</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {# OpenAI API Key #}
+                <div class="mb-3">
+                    <label for="openai_api_key" class="form-label">OpenAI API Key:</label>
+                    <input type="password" class="form-control" id="openai_api_key" name="openai_api_key"
+                           value="{{ settings.openai_api_key if settings else '' }}"
+                           placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <div class="form-text text-muted">Your secret key for OpenAI API access. Leave empty to use environment variable.</div>
+                </div>
+
+                {# Anthropic API Key #}
+                <div class="mb-3">
+                    <label for="anthropic_api_key" class="form-label">Anthropic API Key:</label>
+                    <input type="password" class="form-control" id="anthropic_api_key" name="anthropic_api_key"
+                           value="{{ settings.anthropic_api_key if settings else '' }}"
+                           placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <div class="form-text text-muted">Your secret key for Anthropic API access. Leave empty to use environment variable.</div>
+                </div>
+
+                {# Google API Key #}
+                <div class="mb-3">
+                    <label for="google_api_key" class="form-label">Google API Key:</label>
+                    <input type="password" class="form-control" id="google_api_key" name="google_api_key"
+                           value="{{ settings.google_api_key if settings else '' }}"
+                           placeholder="AIzaSyAxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <div class="form-text text-muted">Your secret key for Google Gemini API access. Leave empty to use environment variable.</div>
+                </div>
+
+                <hr class="my-4">
+
+                {# Ollama Base URL #}
+                <div class="mb-3">
+                    <label for="ollama_base_url" class="form-label">Ollama Base URL:</label>
+                    <input type="text" class="form-control" id="ollama_base_url" name="ollama_base_url"
+                           value="{{ settings.ollama_base_url if settings else 'http://localhost:11434' }}"
+                           placeholder="http://localhost:11434">
+                    <div class="form-text text-muted">The URL where your Ollama instance is running. Include port. Default is `http://localhost:11434`.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">Save Settings</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -25,8 +25,7 @@
                     Upload a previously exported database JSON file.
                     <strong>Warning:</strong> This can overwrite existing data if "Clear existing data" is checked.
                 </p>
-                <form action="{{ url_for('injection.import_db_json_route') }}" method="post" enctype="multipart/form-data">
-                    <div class="mb-3">
+                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data">                    <div class="mb-3">
                         <label for="database_file" class="form-label">Database JSON File:</label>
                         <input type="file" id="database_file" name="database_file" accept=".json" required class="form-control">
                     </div>

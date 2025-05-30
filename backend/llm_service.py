@@ -6,15 +6,36 @@ import os
 from flask import session as flask_session, current_app
 from collections import deque
 import logging 
+from flask_login import current_user # Import current_user
+from .db import SessionLocal # Corrected import for SessionLocal
+from .models import User, LLMSettings # Corrected import for User and LLMSettings
 
 # Configure basic logging for debugging (if not already done globally)
-# This might override existing Flask logging config, but is good for quick debug.
-# Ensure this is set to DEBUG for development. In production, change to INFO or WARNING.
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_ollama_base_url():
-    """Retrieves Ollama base URL from environment variable."""
-    return os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
+    """
+    Retrieves Ollama base URL, prioritizing user-specific settings from the database,
+    then falling back to environment variables.
+    """
+    # Check current_user for settings if authenticated
+    if current_user.is_authenticated:
+        session = SessionLocal()
+        try:
+            # Eager load llm_settings for the current user
+            user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
+            if user and user.llm_settings and user.llm_settings.ollama_base_url:
+                logging.info(f"Using user-specific Ollama Base URL.")
+                return user.llm_settings.ollama_base_url
+        except Exception as e:
+            logging.error(f"Error fetching user Ollama URL from DB: {e}")
+        finally:
+            session.remove() # Ensure session is closed
+
+    # Fallback to environment variable if no user setting or error
+    env_url = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
+    logging.info(f"Using environment variable Ollama Base URL: {env_url} (or default if not set).")
+    return env_url
 
 def get_available_ollama_models():
     """Fetches available models from the Ollama API."""
@@ -36,6 +57,73 @@ def get_available_ollama_models():
     except Exception as e:
         logging.error(f"Ollama: Failed to parse models: {e}")
         return ["Error: Failed to parse models"]
+
+# Helper function to get OpenAI API key
+def get_openai_api_key():
+    """
+    Retrieves OpenAI API key, prioritizing user-specific settings from the database,
+    then falling back to environment variables.
+    """
+    if current_user.is_authenticated:
+        session = SessionLocal()
+        try:
+            user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
+            if user and user.llm_settings and user.llm_settings.openai_api_key:
+                logging.info(f"Using user-specific OpenAI API Key.")
+                return user.llm_settings.openai_api_key
+        except Exception as e:
+            logging.error(f"Error fetching user OpenAI API Key from DB: {e}")
+        finally:
+            session.remove()
+    
+    env_key = os.environ.get('OPENAI_API_KEY')
+    logging.info(f"Using environment variable OpenAI API Key.")
+    return env_key
+
+# Helper function to get Anthropic API key
+def get_anthropic_api_key():
+    """
+    Retrieves Anthropic API key, prioritizing user-specific settings from the database,
+    then falling back to environment variables.
+    """
+    if current_user.is_authenticated:
+        session = SessionLocal()
+        try:
+            user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
+            if user and user.llm_settings and user.llm_settings.anthropic_api_key:
+                logging.info(f"Using user-specific Anthropic API Key.")
+                return user.llm_settings.anthropic_api_key
+        except Exception as e:
+            logging.error(f"Error fetching user Anthropic API Key from DB: {e}")
+        finally:
+            session.remove()
+    
+    env_key = os.environ.get('ANTHROPIC_API_KEY')
+    logging.info(f"Using environment variable Anthropic API Key.")
+    return env_key
+
+# Helper function to get Google API key
+def get_google_api_key():
+    """
+    Retrieves Google API key, prioritizing user-specific settings from the database,
+    then falling back to environment variables.
+    """
+    if current_user.is_authenticated:
+        session = SessionLocal()
+        try:
+            user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
+            if user and user.llm_settings and user.llm_settings.google_api_key:
+                logging.info(f"Using user-specific Google API Key.")
+                return user.llm_settings.google_api_key
+        except Exception as e:
+            logging.error(f"Error fetching user Google API Key from DB: {e}")
+        finally:
+            session.remove()
+    
+    env_key = os.environ.get('GOOGLE_API_KEY')
+    logging.info(f"Using environment variable Google API Key.")
+    return env_key
+
 
 def _get_history_deque():
     """
@@ -78,7 +166,7 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
     Sends a chat message to Ollama and returns the assistant's response.
     Includes memory from the session. Supports image input for multimodal models.
     """
-    ollama_url = get_ollama_base_url()
+    ollama_url = get_ollama_base_url() # This now uses the modified function
     
     # Construct messages list for Ollama API payload.
     messages_for_api = []
@@ -90,7 +178,6 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
     for msg in _get_history_deque():
         messages_for_api.append({'role': msg['role'], 'content': msg['content']})
 
-    # --- START OF MODIFICATION FOR CURRENT USER MESSAGE ---
     current_user_message_content = user_message # Default to plain text
     
     if image_base64:
@@ -118,7 +205,6 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
             current_user_message_content_list.insert(0, {'type': 'text', 'text': 'Analyze this image.'})
 
         current_user_message_content = current_user_message_content_list
-    # --- END OF MODIFICATION FOR CURRENT USER MESSAGE ---
 
     # Check if the overall content is empty after potential processing
     if (isinstance(current_user_message_content, str) and not current_user_message_content.strip()) and \
