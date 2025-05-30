@@ -231,6 +231,8 @@ def edit_usecase(usecase_id):
 def delete_usecase(usecase_id):
     session = SessionLocal()
     usecase = session.query(UseCase).options(joinedload(UseCase.process_step)).get(usecase_id)
+    # Check if the deletion request came from a step detail page and store the step ID for redirect
+    step_id_for_redirect = request.form.get('process_step_id_for_redirect', type=int)
     redirect_url = url_for('index')
 
     if usecase is None:
@@ -242,13 +244,14 @@ def delete_usecase(usecase_id):
             session.delete(usecase)
             session.commit()
             flash(f"Use Case '{uc_name}' deleted successfully.", "success")
-            if step_id_for_redirect:
+            if step_id_for_redirect is not None: # Prioritize redirecting back to the step page
                 redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
         except Exception as e:
             session.rollback()
             flash(f"Error deleting use case: {e}", "danger")
             print(f"Error deleting use case {usecase_id}: {e}")
-            if usecase.process_step_id:
+            # If deletion failed, try to redirect back to where we came from, if possible
+            if step_id_for_redirect is not None:
                  redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
 
     SessionLocal.remove()

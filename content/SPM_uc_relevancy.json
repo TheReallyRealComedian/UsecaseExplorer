@@ -1,0 +1,206 @@
+[
+  {
+    "source_usecase_bi_id": "SCM01",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Strategic Guidance & Lifecycle Management, Data Exchange & Information Provision\n**Description:** The decision to outsource specific products (SKUs) is central to SPM01. Efficient SKU creation and management, including robust master data and lifecycle handling, is essential for SPM to strategically define and manage the product portfolio for external manufacturing."
+  },
+  {
+    "source_usecase_bi_id": "SCM02",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** System/Platform Integration, Data Exchange & Information Provision\n**Description:** A harmonized SKU data model provides the foundational framework for classifying and tracking products, enabling SPM01 to make informed decisions about which products are suitable for outsourcing and how they fit into the overall external manufacturing strategy."
+  },
+  {
+    "source_usecase_bi_id": "SCM11",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Planning & Resource Coordination, Data Exchange & Information Provision\n**Description:** SPM01 relies on a comprehensive understanding of global internal and external (CMO) capacities to make strategic make-vs-buy decisions and to optimize the entire external manufacturing network. This data model is critical for long-term strategic planning."
+  },
+  {
+    "source_usecase_bi_id": "SCM05",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Strategic Guidance & Lifecycle Management, Planning & Resource Coordination\n**Description:** This use case enables scenario planning and simulation across the entire product lifecycle. SPM01 needs these capabilities to evaluate the impact of outsourcing decisions on product profitability, market entry, and resource allocation at a strategic level."
+  },
+  {
+    "source_usecase_bi_id": "SCM25",
+    "target_process_step_bi_id": "SPM01",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Strategic Guidance & Lifecycle Management, Data Exchange & Information Provision\n**Description:** SPM01 must continuously assess external factors, including new regulations, to inform its outsourcing strategy. This use case provides the intelligence needed to proactively adapt the external network to ensure compliance and avoid disruptions."
+  },
+  {
+    "source_usecase_bi_id": "M23",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Strategic Guidance & Lifecycle Management\n**Description:** SPM02 initiates the formal qualification of potential CMOs. This use case ensures that a standardized process and data are in place for assessing and overseeing whether new partners meet global qualification standards, a mandatory prerequisite for contracting."
+  },
+  {
+    "source_usecase_bi_id": "SCM35",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 100,
+    "relevance_content": "**Type:** System/Platform Integration, Data Exchange & Information Provision\n**Description:** Accurate and high-quality master data (especially for suppliers/CMOs) is fundamental for SPM02. It ensures that all contractual details and partner information are consistently and reliably managed from the very beginning of the relationship."
+  },
+  {
+    "source_usecase_bi_id": "QA03",
+    "target_process_step_bi_id": "SPM02",
+    "relevance_score": 100,
+    "relevance_content": "**Type:** External Partnership Management, System/Platform Integration\n**Description:** As SPM02 establishes new partner relationships, the ability to set up seamless and secure data interfaces for ongoing collaboration (e.g., sharing due diligence documents, initial quality data) is critical for efficient contracting."
+  },
+  {
+    "source_usecase_bi_id": "QC04",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Data Exchange & Information Provision\n**Description:** The transfer of analytical methods and product specifications to a CMO is a core task of SPM04. A centralized system ensures that CMOs receive the correct, harmonized, and up-to-date specifications, critical for compliant manufacturing and testing."
+  },
+  {
+    "source_usecase_bi_id": "M05",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Sequential Process Dependency, Data Exchange & Information Provision\n**Description:** SPM04 is responsible for transferring comprehensive product and process knowledge to CMOs. This use case ensures that this knowledge is readily available in a unified format, accelerating the transfer process and enabling \"right first time\" production at the partner site."
+  },
+  {
+    "source_usecase_bi_id": "M04",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Sequential Process Dependency, Competency & Operational Support Provision\n**Description:** Effective technology transfer to CMOs (managed by SPM04) necessitates the provision of clear, standardized, and digitally supported Master Batch Records and recipes, enabling the CMO to implement manufacturing processes correctly."
+  },
+  {
+    "source_usecase_bi_id": "M12",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 80,
+    "relevance_content": "**Type:** Sequential Process Dependency, System/Platform Integration\n**Description:** When a CMO receives a transferred manufacturing process, the ability to automatically load recipes and equipment settings based on the transferred technology reduces manual errors and accelerates implementation, directly supporting SPM04."
+  },
+  {
+    "source_usecase_bi_id": "QA22",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Data Exchange & Information Provision\n**Description:** During technology transfer (SPM04), the Contamination Control Strategy (CCS) and Control Strategy (CSS) for the product and process must be clearly communicated and implemented at the CMO. A digital tool streamlines this critical quality transfer."
+  },
+  {
+    "source_usecase_bi_id": "QA24",
+    "target_process_step_bi_id": "SPM04",
+    "relevance_score": 85,
+    "relevance_content": "**Type:** Competency & Operational Support Provision, Compliance & Quality Oversight\n**Description:** SPM04 manages the validation and qualification activities at CMOs post-transfer. Automated generation of related documentation (e.g., validation protocols, reports) significantly streamlines this process, ensuring compliance and efficiency."
+  },
+  {
+    "source_usecase_bi_id": "M03",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, Feedback Loop for Improvement & Adaption\n**Description:** SPM05 requires real-time insight into CMO manufacturing processes to proactively identify and respond to quality deviations or performance issues, ensuring continuous compliance."
+  },
+  {
+    "source_usecase_bi_id": "M07",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 92,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, Compliance & Quality Oversight\n**Description:** SPM05 is responsible for the quality release of batches manufactured by CMOs. Real-time batch data and efficient review mechanisms enable quicker and more compliant release decisions for outsourced products."
+  },
+  {
+    "source_usecase_bi_id": "M06",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 88,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, System/Platform Integration\n**Description:** To effectively oversee quality at CMOs, SPM05 needs assurance that production and in-process control data are accurately and reliably collected and transferred from CMO equipment, ideally in real-time for compliance monitoring."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-17_A",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 85,
+    "relevance_content": "**Type:** Feedback Loop for Improvement & Adaption, Data Exchange & Information Provision\n**Description:** SPM05 manages deviations and CAPAs originating from CMOs. This use case is critical for evaluating the long-term effectiveness of these corrective actions, ensuring sustained quality improvement at partner sites."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-24",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** System/Platform Integration, Data Exchange & Information Provision\n**Description:** Advanced AI capabilities, enabled by this interface, can support SPM05 in predictive quality monitoring (e.g., identifying potential quality excursions at CMOs based on trending data) and more efficient root cause analysis of quality issues."
+  },
+  {
+    "source_usecase_bi_id": "QA11",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Feedback Loop for Improvement & Adaption\n**Description:** SPM05 actively manages quality risks associated with external partners. A proactive risk management tool allows for early identification and mitigation of potential quality issues at CMOs, enhancing overall product safety and compliance."
+  },
+  {
+    "source_usecase_bi_id": "QA16",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 85,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, Compliance & Quality Oversight\n**Description:** SPM05 is heavily involved in documenting quality events (deviations, complaints, CAPAs) from CMO operations. This use case streamlines the creation of these records in the eQMS, improving efficiency and data quality for partner-related quality incidents."
+  },
+  {
+    "source_usecase_bi_id": "QA19",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** System/Platform Integration, Compliance & Quality Oversight\n**Description:** SPM05 oversees quality-related actions such as batch blocking/unblocking for CMO-produced goods. Full integration between ERP and eQMS is critical for automated and compliant execution of these actions, providing SPM05 with real-time control over outsourced products."
+  },
+  {
+    "source_usecase_bi_id": "QA28",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Sequential Process Dependency, Compliance & Quality Oversight\n**Description:** SPM05 provides the final quality approval for batches manufactured by CMOs. A digital batch release hub consolidates all necessary documentation and data, enabling SPM05 to make efficient and compliant release decisions for outsourced products."
+  },
+  {
+    "source_usecase_bi_id": "QC20",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Data Exchange & Information Provision\n**Description:** SPM05 monitors the QC processes and results from CMOs. Implementing \"review by exception\" for QC data from external partners allows SPM05 to focus its oversight on critical deviations, streamlining the quality control process for outsourced products."
+  },
+  {
+    "source_usecase_bi_id": "QC21",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 92,
+    "relevance_content": "**Type:** Compliance & Quality Oversight, Sequential Process Dependency\n**Description:** SPM05 relies on accurate and timely QC release data from CMOs. Automated QC release processes (including automated CoA generation) at CMOs provide SPM05 with rapid verification of product quality for batch disposition."
+  },
+  {
+    "source_usecase_bi_id": "QC25",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, Feedback Loop for Improvement & Adaption\n**Description:** SPM05 benefits from predictive analytics for quality trending of CMO data. This allows for proactive identification of potential quality issues with external partners before they escalate, enhancing preventive quality oversight."
+  },
+  {
+    "source_usecase_bi_id": "SCM23",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 95,
+    "relevance_content": "**Type:** Event-Driven Trigger / Anomaly Response, Data Exchange & Information Provision\n**Description:** SPM05 manages quality incidents (e.g., deviations, complaints) with external partners. An integrated incident management system provides comprehensive visibility and streamlined resolution of quality-related issues involving CMOs."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-01",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 80,
+    "relevance_content": "**Type:** Strategic Guidance & Lifecycle Management, Planning & Resource Coordination\n**Description:** SPM06 manages the day-to-day performance of CMOs. A holistic performance management approach ensures that CMO performance is measured, reviewed, and improved in alignment with the broader company's performance goals and KPIs."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-13",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 85,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, Feedback Loop for Improvement & Adaption\n**Description:** SPM06 conducts performance reviews with CMOs. A KPI \"What-Now-Analyzer\" provides actionable insights from CMO performance data, enabling faster and more effective decision-making during routine performance dialogues."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-14",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Data Exchange & Information Provision, System/Platform Integration\n**Description:** SPM06 requires detailed performance data from CMOs for routine monitoring and deep-dive analysis. A KPI-Lake provides centralized access to raw data, enabling comprehensive assessment of partner performance."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-20",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 100,
+    "relevance_content": "**Type:** System/Platform Integration, Data Exchange & Information Provision\n**Description:** This foundational use case ensures that all data relevant for SPM06's routine performance management (e.g., delivery, cost, production data from CMOs) is accurate and consistent, enabling reliable performance evaluation."
+  },
+  {
+    "source_usecase_bi_id": "PM-UC-26",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 80,
+    "relevance_content": "**Type:** Competency & Operational Support Provision, Strategic Guidance & Lifecycle Management\n**Description:** A data-driven mindset and strong data governance ensure that performance data from CMOs is consistently reliable and valued, which is crucial for SPM06 to effectively monitor and manage partner performance."
+  },
+  {
+    "source_usecase_bi_id": "SCM18",
+    "target_process_step_bi_id": "SPM06",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** Planning & Resource Coordination, Event-Driven Trigger / Anomaly Response\n**Description:** SPM06 needs to respond to operational deviations and exceptions that occur with CMOs within the broader supply chain. E2E orchestration provides the necessary visibility and coordination mechanisms."
+  },
+  {
+    "source_usecase_bi_id": "QC18",
+    "target_process_step_bi_id": "SPM08",
+    "relevance_score": 90,
+    "relevance_content": "**Type:** External Partnership Management, Data Exchange & Information Provision\n**Description:** SPM08 coordinates with Contract Laboratory Organizations (CLOs). Automated integration of data, such as Certificates of Analysis (CoAs) from CLOs, is critical for efficient oversight of testing services and compliance."
+  }
+]

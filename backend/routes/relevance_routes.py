@@ -275,7 +275,7 @@ def delete_area_relevance(relevance_id):
     try:
         link = session.query(UsecaseAreaRelevance).get(relevance_id)
         if link:
-            if not source_usecase_id and hasattr(link, 'source_usecase_id') and link.source_usecase_id:
+            if source_usecase_id is None and hasattr(link, 'source_usecase_id') and link.source_usecase_id:
                 source_usecase_id = link.source_usecase_id
 
             session.delete(link)
@@ -298,12 +298,16 @@ def delete_area_relevance(relevance_id):
 @relevance_routes.route('/delete/step/<int:relevance_id>', methods=['POST'])
 @login_required
 def delete_step_relevance(relevance_id):
+    # Get the source use case ID from the form, if present. This is the page we came from.
     source_usecase_id = request.form.get('source_usecase_id', type=int)
+    # NEW: Get the step ID from the form, if present. This is the page we came from.
+    referrer_step_id = request.form.get('referrer_step_id', type=int)
     session = SessionLocal()
     try:
         link = session.query(UsecaseStepRelevance).get(relevance_id)
         if link:
-            if not source_usecase_id and hasattr(link, 'source_usecase_id') and link.source_usecase_id:
+            # If source_usecase_id wasn't passed in the form, try to get it from the link object itself
+            if source_usecase_id is None and hasattr(link, 'source_usecase_id') and link.source_usecase_id:
                 source_usecase_id = link.source_usecase_id
 
             session.delete(link)
@@ -318,7 +322,10 @@ def delete_step_relevance(relevance_id):
     finally:
         SessionLocal.remove()
 
-    if source_usecase_id:
+    # Determine redirect URL based on what's available
+    if referrer_step_id: # Prioritize redirecting back to the step page if it was the referrer
+        return redirect(url_for('steps.view_step', step_id=referrer_step_id))
+    elif source_usecase_id: # Fallback to usecase page
         return redirect(url_for('usecases.view_usecase', usecase_id=source_usecase_id))
     return redirect(url_for('index'))
 
@@ -397,44 +404,80 @@ def edit_area_relevance(relevance_id):
         SessionLocal.remove()
         return redirect(url_for('index'))
 
+    # Fetch all UCs and Areas for the dropdowns
+    all_usecases = session.query(UseCase).order_by(UseCase.name).all()
+    all_areas = session.query(Area).order_by(Area.name).all()
+
     if request.method == 'POST':
+        new_source_usecase_id = request.form.get('source_id', type=int)
+        new_target_area_id = request.form.get('target_id', type=int)
         score_str = request.form.get('relevance_score')
         content = request.form.get('relevance_content', '').strip()
-        source_usecase_id_form = request.form.get('source_usecase_id', type=int)
 
+        # Validate score
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
-                flash("Score must be between 0 and 100.", "danger")
-                return render_template('edit_relevance.html',
-                                       relevance_link=link,
-                                       link_type='area')
+                flash("Relevance score must be between 0 and 100.", "danger")
+                SessionLocal.remove() # Close session before re-rendering template
+                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
         except (ValueError, TypeError):
-            flash("Invalid score format. Score must be a number.", "danger")
-            return render_template('edit_relevance.html',
-                                   relevance_link=link,
-                                   link_type='area')
+            flash("Invalid score format. Relevance score must be a number.", "danger")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
 
+        # Check if source or target has actually changed
+        if (link.source_usecase_id != new_source_usecase_id or
+            link.target_area_id != new_target_area_id):
+
+            # Check for duplicate link if source/target changed
+            existing_duplicate_link = session.query(UsecaseAreaRelevance).filter(
+                UsecaseAreaRelevance.source_usecase_id == new_source_usecase_id,
+                UsecaseAreaRelevance.target_area_id == new_target_area_id,
+                UsecaseAreaRelevance.id != relevance_id # Exclude current link being edited
+            ).first()
+
+            if existing_duplicate_link:
+                flash("A relevance link between the selected Use Case and Area already exists.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
+            
+            # Update source and target IDs
+            link.source_usecase_id = new_source_usecase_id
+            link.target_area_id = new_target_area_id
+            
+            # Update the relationship objects if they were loaded to reflect the change for re-render
+            # This is important if an error occurs and the template re-renders with the link object
+            link.source_usecase = session.query(UseCase).get(new_source_usecase_id)
+            link.target_area = session.query(Area).get(new_target_area_id)
+            
         link.relevance_score = score
         link.relevance_content = content if content else None
+
         try:
             session.commit()
             flash("Area relevance link updated successfully!", "success")
+        except IntegrityError as e: # Catch potential remaining integrity errors (e.g., if IDs somehow invalid)
+            session.rollback()
+            flash(f"Database error: Could not update link. Check IDs and try again. Error: {e}", "danger")
+            print(f"IntegrityError updating area relevance {relevance_id}: {e}")
         except Exception as e:
             session.rollback()
-            flash(f"Error updating link: {e}", "danger")
+            flash(f"An unexpected error occurred: {e}", "danger")
             print(f"Error updating area relevance {relevance_id}: {e}")
         finally:
             SessionLocal.remove()
 
-        redirect_id = source_usecase_id_form or link.source_usecase_id
-        return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
+        # Redirect back to the new source use case page
+        return redirect(url_for('usecases.view_usecase', usecase_id=new_source_usecase_id))
 
     # GET request:
-    SessionLocal.remove() # remove session explicitly for GET if not using teardown_request strictly
+    SessionLocal.remove()
     return render_template('edit_relevance.html',
                            relevance_link=link,
-                           link_type='area')
+                           link_type='area',
+                           all_usecases=all_usecases,
+                           all_areas=all_areas)
 
 
 @relevance_routes.route('/edit/step/<int:relevance_id>', methods=['GET', 'POST'])
@@ -451,44 +494,72 @@ def edit_step_relevance(relevance_id):
         SessionLocal.remove()
         return redirect(url_for('index'))
 
+    # Fetch all UCs and Steps for the dropdowns
+    all_usecases = session.query(UseCase).order_by(UseCase.name).all()
+    all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+
     if request.method == 'POST':
+        new_source_usecase_id = request.form.get('source_id', type=int)
+        new_target_process_step_id = request.form.get('target_id', type=int)
         score_str = request.form.get('relevance_score')
         content = request.form.get('relevance_content', '').strip()
-        source_usecase_id_form = request.form.get('source_usecase_id', type=int)
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
-                flash("Score must be between 0 and 100.", "danger")
-                return render_template('edit_relevance.html',
-                                       relevance_link=link,
-                                       link_type='step')
+                flash("Relevance score must be between 0 and 100.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
         except (ValueError, TypeError):
-            flash("Invalid score format. Score must be a number.", "danger")
-            return render_template('edit_relevance.html',
-                                   relevance_link=link,
-                                   link_type='step')
+            flash("Invalid score format. Relevance score must be a number.", "danger")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
+
+        if (link.source_usecase_id != new_source_usecase_id or
+            link.target_process_step_id != new_target_process_step_id):
+
+            existing_duplicate_link = session.query(UsecaseStepRelevance).filter(
+                UsecaseStepRelevance.source_usecase_id == new_source_usecase_id,
+                UsecaseStepRelevance.target_process_step_id == new_target_process_step_id,
+                UsecaseStepRelevance.id != relevance_id
+            ).first()
+
+            if existing_duplicate_link:
+                flash("A relevance link between the selected Use Case and Process Step already exists.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
+            
+            link.source_usecase_id = new_source_usecase_id
+            link.target_process_step_id = new_target_process_step_id
+
+            link.source_usecase = session.query(UseCase).get(new_source_usecase_id)
+            link.target_process_step = session.query(ProcessStep).get(new_target_process_step_id)
 
         link.relevance_score = score
         link.relevance_content = content if content else None
         try:
             session.commit()
             flash("Step relevance link updated successfully!", "success")
+        except IntegrityError as e:
+            session.rollback()
+            flash(f"Database error: Could not update link. Check IDs and try again. Error: {e}", "danger")
+            print(f"IntegrityError updating step relevance {relevance_id}: {e}")
         except Exception as e:
             session.rollback()
-            flash(f"Error updating link: {e}", "danger")
+            flash(f"An unexpected error occurred: {e}", "danger")
             print(f"Error updating step relevance {relevance_id}: {e}")
         finally:
             SessionLocal.remove()
 
-        redirect_id = source_usecase_id_form or link.source_usecase_id
-        return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
+        return redirect(url_for('usecases.view_usecase', usecase_id=new_source_usecase_id))
 
     # GET request:
-    SessionLocal.remove() # remove session explicitly for GET
+    SessionLocal.remove()
     return render_template('edit_relevance.html',
                            relevance_link=link,
-                           link_type='step')
+                           link_type='step',
+                           all_usecases=all_usecases,
+                           all_steps=all_steps)
 
 
 @relevance_routes.route('/edit/usecase/<int:relevance_id>', methods=['GET', 'POST'])
@@ -505,44 +576,78 @@ def edit_usecase_relevance(relevance_id):
         SessionLocal.remove()
         return redirect(url_for('index'))
 
+    # Fetch all UCs for the dropdowns
+    all_usecases = session.query(UseCase).order_by(UseCase.name).all()
+
     if request.method == 'POST':
+        new_source_usecase_id = request.form.get('source_id', type=int)
+        new_target_usecase_id = request.form.get('target_id', type=int)
         score_str = request.form.get('relevance_score')
         content = request.form.get('relevance_content', '').strip()
-        source_usecase_id_form = request.form.get('source_usecase_id', type=int)
+
+        if new_source_usecase_id == new_target_usecase_id:
+            flash("Cannot link a Use Case to itself.", "warning")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
-                flash("Score must be between 0 and 100.", "danger")
-                return render_template('edit_relevance.html',
-                                       relevance_link=link,
-                                       link_type='usecase')
+                flash("Relevance score must be between 0 and 100.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
         except (ValueError, TypeError):
-            flash("Invalid score format. Score must be a number.", "danger")
-            return render_template('edit_relevance.html',
-                                   relevance_link=link,
-                                   link_type='usecase')
+            flash("Invalid score format. Relevance score must be a number.", "danger")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+
+        if (link.source_usecase_id != new_source_usecase_id or
+            link.target_usecase_id != new_target_usecase_id):
+
+            existing_duplicate_link = session.query(UsecaseUsecaseRelevance).filter(
+                UsecaseUsecaseRelevance.source_usecase_id == new_source_usecase_id,
+                UsecaseUsecaseRelevance.target_usecase_id == new_target_usecase_id,
+                UsecaseUsecaseRelevance.id != relevance_id
+            ).first()
+
+            if existing_duplicate_link:
+                flash("A relevance link between the selected Use Cases already exists.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+            
+            link.source_usecase_id = new_source_usecase_id
+            link.target_usecase_id = new_target_usecase_id
+
+            link.source_usecase = session.query(UseCase).get(new_source_usecase_id)
+            link.target_usecase = session.query(UseCase).get(new_target_usecase_id)
 
         link.relevance_score = score
         link.relevance_content = content if content else None
         try:
             session.commit()
             flash("Use Case relevance link updated successfully!", "success")
+        except IntegrityError as ie:
+            session.rollback()
+            if 'no_self_relevance' in str(ie).lower():
+                flash("Database error: Cannot link a Use Case to itself.", "danger")
+            else:
+                flash("Database error: Could not update link. It might already exist or violate constraints.", "danger")
+                print(f"IntegrityError updating usecase-usecase relevance {relevance_id}: {ie}")
         except Exception as e:
             session.rollback()
-            flash(f"Error updating link: {e}", "danger")
+            flash(f"An unexpected error occurred: {e}", "danger")
             print(f"Error updating usecase-usecase relevance {relevance_id}: {e}")
         finally:
             SessionLocal.remove()
 
-        redirect_id = source_usecase_id_form or link.source_usecase_id
-        return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id))
+        return redirect(url_for('usecases.view_usecase', usecase_id=new_source_usecase_id))
 
     # GET request:
-    SessionLocal.remove() # remove session explicitly for GET
+    SessionLocal.remove()
     return render_template('edit_relevance.html',
                            relevance_link=link,
-                           link_type='usecase')
+                           link_type='usecase',
+                           all_usecases=all_usecases)
 
 @relevance_routes.route('/edit/step_to_step/<int:relevance_id>', methods=['GET', 'POST'])
 @login_required
@@ -558,44 +663,78 @@ def edit_step_to_step_relevance(relevance_id):
         SessionLocal.remove()
         return redirect(url_for('index'))
 
+    # Fetch all Steps for the dropdowns
+    all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+
     if request.method == 'POST':
+        new_source_process_step_id = request.form.get('source_id', type=int)
+        new_target_process_step_id = request.form.get('target_id', type=int)
         score_str = request.form.get('relevance_score')
         content = request.form.get('relevance_content', '').strip()
-        source_process_step_id_form = request.form.get('source_process_step_id', type=int)
+
+        if new_source_process_step_id == new_target_process_step_id:
+            flash("Cannot link a Process Step to itself.", "warning")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
-                flash("Score must be between 0 and 100.", "danger")
-                return render_template('edit_relevance.html',
-                                       relevance_link=link,
-                                       link_type='step_to_step') # Indicate link type
+                flash("Relevance score must be between 0 and 100.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
         except (ValueError, TypeError):
-            flash("Invalid score format. Score must be a number.", "danger")
-            return render_template('edit_relevance.html',
-                                   relevance_link=link,
-                                   link_type='step_to_step') # Indicate link type
+            flash("Invalid score format. Relevance score must be a number.", "danger")
+            SessionLocal.remove()
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
 
+        if (link.source_process_step_id != new_source_process_step_id or
+            link.target_process_step_id != new_target_process_step_id):
+
+            existing_duplicate_link = session.query(ProcessStepProcessStepRelevance).filter(
+                ProcessStepProcessStepRelevance.source_process_step_id == new_source_process_step_id,
+                ProcessStepProcessStepRelevance.target_process_step_id == new_target_process_step_id,
+                ProcessStepProcessStepRelevance.id != relevance_id
+            ).first()
+
+            if existing_duplicate_link:
+                flash("A relevance link between the selected Process Steps already exists.", "danger")
+                SessionLocal.remove()
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
+            
+            link.source_process_step_id = new_source_process_step_id
+            link.target_process_step_id = new_target_process_step_id
+
+            link.source_process_step = session.query(ProcessStep).get(new_source_process_step_id)
+            link.target_process_step = session.query(ProcessStep).get(new_target_process_step_id)
+            
         link.relevance_score = score
         link.relevance_content = content if content else None
         try:
             session.commit()
             flash("Process Step relevance link updated successfully!", "success")
+        except IntegrityError as ie:
+            session.rollback()
+            if 'no_self_step_relevance' in str(ie).lower():
+                flash("Database error: Cannot link a Process Step to itself.", "danger")
+            else:
+                flash("Database error: Could not update link. It might already exist or violate constraints.", "danger")
+                print(f"IntegrityError updating step-to-step relevance {relevance_id}: {ie}")
         except Exception as e:
             session.rollback()
-            flash(f"Error updating link: {e}", "danger")
+            flash(f"An unexpected error occurred: {e}", "danger")
             print(f"Error updating step-to-step relevance {relevance_id}: {e}")
         finally:
             SessionLocal.remove()
 
-        redirect_id = source_process_step_id_form or link.source_process_step_id
-        return redirect(url_for('steps.view_step', step_id=redirect_id))
+        return redirect(url_for('steps.view_step', step_id=new_source_process_step_id))
 
     # GET request:
     SessionLocal.remove()
     return render_template('edit_relevance.html',
                            relevance_link=link,
-                           link_type='step_to_step') # Indicate link type
+                           link_type='step_to_step',
+                           all_steps=all_steps)
 
 
 @relevance_routes.route('/visualize')
@@ -604,78 +743,63 @@ def visualize_relevance():
     session = SessionLocal()
     try:
         areas = session.query(Area).order_by(Area.name).all()
-        # Fetch steps and eager load their associated area and use cases.
-        # Order by area_id and then step name to group steps from the same area together.
         steps = session.query(ProcessStep).options(
             joinedload(ProcessStep.area),
-            joinedload(ProcessStep.use_cases) # Load use cases to count them for node size
+            joinedload(ProcessStep.use_cases)
         ).order_by(ProcessStep.area_id, ProcessStep.name).all()
         
         relevances = session.query(ProcessStepProcessStepRelevance).all()
 
         echarts_categories = []
         area_id_to_category_index = {}
-        # Define a consistent set of colors for areas.
-        # These colors are chosen to complement your existing style.css and provide
-        # enough distinct values for a reasonable number of areas.
         area_colors = [
-            '#5D8C7B',  # Primary Green
-            '#4A7062',  # Dark Green
-            '#6c757d',  # Medium Grey (breadcrumb default)
-            '#78909C',  # Blue-grey
-            '#A0A0A0',  # Another grey tone
-            '#B5C4B1',  # Light green-grey
-            '#8C9A8C',  # Darker green-grey
-            '#455A64',  # Dark blue-grey
-            '#CFD8DC',  # Very light grey
-            '#FFB6C1',  # Pink
-            '#FFD700',  # Gold
-            '#FFA07A',  # Light Salmon
-            '#87CEEB',  # Sky Blue
-            '#DA70D6',  # Orchid
-            '#CD5C5C',  # Indian Red
-            '#4682B4'   # Steel Blue
+            '#5D8C7B',
+            '#4A7062',
+            '#6c757d',
+            '#78909C',
+            '#A0A0A0',
+            '#B5C4B1',
+            '#8C9A8C',
+            '#455A64',
+            '#CFD8DC',
+            '#FFB6C1',
+            '#FFD700',
+            '#FFA07A',
+            '#87CEEB',
+            '#DA70D6',
+            '#CD5C5C',
+            '#4682B4'
         ]
 
-        # 1. Prepare Categories (Areas) for ECharts legend and node coloring
         for i, area in enumerate(areas):
             echarts_categories.append({
                 'name': area.name,
-                'itemStyle': {'color': area_colors[i % len(area_colors)]} # Cycle through defined colors
+                'itemStyle': {'color': area_colors[i % len(area_colors)]}
             })
             area_id_to_category_index[area.id] = i
 
         echarts_nodes = []
-        # 2. Prepare Nodes (Process Steps)
         for step in steps:
-            # Ensure the area exists and has a mapped category index
             category_index = area_id_to_category_index.get(step.area_id)
             if category_index is None:
-                # Handle steps without a valid area gracefully, or skip them
                 print(f"Warning: Process step {step.name} (ID: {step.id}) has no valid area or area not found. Skipping node.")
                 continue
 
-            # Calculate symbol size based on number of associated use cases
-            # Base size of 15, plus 1.5px per use case. Adjust as needed.
             num_use_cases = len(step.use_cases) if step.use_cases else 0
             symbol_size = 15 + (num_use_cases * 1.5) 
 
-            # For the node label, use only the step name to keep it concise.
-            # The full name and BI_ID are moved to the tooltip for detailed info on hover.
             node_display_name = step.name
-            # Optional: Truncate very long names for display on the node label
-            # This helps prevent labels from overlapping too much, especially in circular layouts.
-            if len(node_display_name) > 25: # Adjust threshold as needed
+            if len(node_display_name) > 25:
                 node_display_name = node_display_name[:22] + '...'
 
 
             echarts_nodes.append({
-                'id': str(step.id), # ECharts graph often works best with string IDs
-                'name': node_display_name, # Display only the name, potentially truncated
-                'value': num_use_cases, # Can be used for sorting, layout, or other visual encoding
-                'category': category_index, # Link node to its area category
-                'symbolSize': symbol_size, # Vary node size based on use case count
-                'tooltip': { # Custom tooltip for node, including BI_ID and other details
+                'id': str(step.id),
+                'name': node_display_name,
+                'value': num_use_cases,
+                'category': category_index,
+                'symbolSize': symbol_size,
+                'tooltip': {
                     'formatter': (
                         f'<strong>{step.name}</strong><br>'
                         f'BI_ID: {step.bi_id}<br>'
@@ -685,40 +809,36 @@ def visualize_relevance():
                     )
                 },
                 'itemStyle': {
-                    'color': echarts_categories[category_index]['itemStyle']['color'] # Assign node color based on its category's color
+                    'color': echarts_categories[category_index]['itemStyle']['color']
                 }
             })
 
         echarts_links = []
-        # 3. Prepare Links (Process Step Relevance)
         for rel in relevances:
-            # Ensure both source and target nodes exist in our prepared list
             source_node = next((node for node in echarts_nodes if node['id'] == str(rel.source_process_step_id)), None)
             target_node = next((node for node in echarts_nodes if node['id'] == str(rel.target_process_step_id)), None)
 
-            if source_node and target_node: # Only add links if both ends are valid nodes
-                # Scale relevance score (0-100) to link width (e.g., 0.5 to 4).
-                # Minimum width 0.5 for visibility.
+            if source_node and target_node:
                 link_width = max(0.5, rel.relevance_score / 25) 
                 echarts_links.append({
                     'source': str(rel.source_process_step_id),
                     'target': str(rel.target_process_step_id),
-                    'value': rel.relevance_score, # Used by link label formatter and width
+                    'value': rel.relevance_score,
                     'label': {
                         'show': True,
-                        'formatter': '{c}', # Display relevance score on the link
+                        'formatter': '{c}',
                         'fontSize': 10,
                         'color': '#333',
-                        'backgroundColor': 'rgba(255, 255, 255, 0.7)', # Semi-transparent background for label
+                        'backgroundColor': 'rgba(255, 255, 255, 0.7)',
                         'padding': [2, 4],
                         'borderRadius': 2
                     },
                     'lineStyle': {
                         'width': link_width,
                         'opacity': 0.8,
-                        'curveness': 0.3 # Make links curved
+                        'curveness': 0.3
                     },
-                    'tooltip': { # Custom tooltip for link
+                    'tooltip': {
                         'formatter': (
                             f'Relevance: <strong>{rel.relevance_score}/100</strong><br>'
                             f'Content: {rel.relevance_content or "N/A"}'
@@ -739,7 +859,6 @@ def visualize_relevance():
     except Exception as e:
         print(f"Error fetching data for ECharts visualization: {e}")
         flash("An error occurred while preparing data for the relevance map.", "danger")
-        # Return an empty data structure to prevent chart rendering errors
         return render_template(
             'relevance_visualize.html',
             title='Process Relevance Map',

@@ -10,41 +10,56 @@
         <div class="card mb-3">
             <div class="card-header">
                 <h2 class="card-title">
-                    Editing Link from
-                    {% if link_type == 'area' or link_type == 'step' or link_type == 'usecase' %}
-                        Use Case:
-                        <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.source_usecase.id) }}">
-                            {{ relevance_link.source_usecase.name }}
-                        </a>
-                    {% elif link_type == 'step_to_step' %} {# NEW condition #}
-                        Process Step:
-                        <a href="{{ url_for('steps.view_step', step_id=relevance_link.source_process_step.id) }}">
-                            {{ relevance_link.source_process_step.name }}
-                        </a>
-                    {% endif %}
+                    Editing Link (ID: {{ relevance_link.id }})
                 </h2>
             </div>
             <div class="card-body">
-                <p>
-                    <strong>To:</strong>
-                    {% if link_type == 'area' %}
-                        Area: <a href="{{ url_for('areas.view_area', area_id=relevance_link.target_area.id) }}">{{ relevance_link.target_area.name }}</a>
-                    {% elif link_type == 'step' %}
-                        Process Step: <a href="{{ url_for('steps.view_step', step_id=relevance_link.target_process_step.id) }}">{{ relevance_link.target_process_step.name }}</a> ({{ relevance_link.target_process_step.bi_id }})
-                    {% elif link_type == 'usecase' %}
-                        Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=relevance_link.target_usecase.id) }}">{{ relevance_link.target_usecase.name }}</a> ({{ relevance_link.target_usecase.bi_id }})
-                    {% elif link_type == 'step_to_step' %} {# NEW condition #}
-                        Process Step: <a href="{{ url_for('steps.view_step', step_id=relevance_link.target_process_step.id) }}">{{ relevance_link.target_process_step.name }}</a> ({{ relevance_link.target_process_step.bi_id }})
-                    {% endif %}
-                </p>
-
                 <form method="POST">
-                    {# Pass the correct source ID based on link type #}
-                    {% if link_type == 'step_to_step' %}
-                        <input type="hidden" name="source_process_step_id" value="{{ relevance_link.source_process_step_id }}">
-                    {% else %}
-                        <input type="hidden" name="source_usecase_id" value="{{ relevance_link.source_usecase_id }}">
-                    {% endif %}
+                    {# Source Selection #}
+                    <div class="mb-3">
+                        <label for="source_id" class="form-label">Link From:</label>
+                        <select class="form-select" id="source_id" name="source_id" required>
+                            {% if link_type == 'step_to_step' %}
+                                {% for ps in all_steps %}
+                                    <option value="{{ ps.id }}" {% if relevance_link.source_process_step_id == ps.id %}selected{% endif %}>
+                                        Process Step: {{ ps.name }} (BI_ID: {{ ps.bi_id }})
+                                    </option>
+                                {% endfor %}
+                            {% else %} {# link_type == 'area', 'step', or 'usecase' #}
+                                {% for uc in all_usecases %}
+                                    <option value="{{ uc.id }}" {% if relevance_link.source_usecase_id == uc.id %}selected{% endif %}>
+                                        Use Case: {{ uc.name }} (BI_ID: {{ uc.bi_id }})
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    {# Target Selection #}
+                    <div class="mb-3">
+                        <label for="target_id" class="form-label">Link To:</label>
+                        <select class="form-select" id="target_id" name="target_id" required>
+                            {% if link_type == 'area' %}
+                                {% for area in all_areas %}
+                                    <option value="{{ area.id }}" {% if relevance_link.target_area_id == area.id %}selected{% endif %}>
+                                        Area: {{ area.name }}
+                                    </option>
+                                {% endfor %}
+                            {% elif link_type == 'step' or link_type == 'step_to_step' %}
+                                {% for ps in all_steps %}
+                                    <option value="{{ ps.id }}" {% if relevance_link.target_process_step_id == ps.id %}selected{% endif %}>
+                                        Process Step: {{ ps.name }} (BI_ID: {{ ps.bi_id }})
+                                    </option>
+                                {% endfor %}
+                            {% elif link_type == 'usecase' %}
+                                {% for uc in all_usecases %}
+                                    <option value="{{ uc.id }}" {% if relevance_link.target_usecase_id == uc.id %}selected{% endif %}>
+                                        Use Case: {{ uc.name }} (BI_ID: {{ uc.bi_id }})
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
 
                     <div class="mb-3">
                         <label for="relevance_score" class="form-label">Relevance Score (0-100):</label>
@@ -58,7 +73,7 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary">Save Changes</button>
-                    {# Adjust the cancel button URL based on link type #}
+                    {# Adjust the cancel button URL based on link type and original source for correct redirection #}
                     {% if link_type == 'step_to_step' %}
                         <a href="{{ url_for('steps.view_step', step_id=relevance_link.source_process_step_id) }}" class="btn btn-secondary">Cancel</a>
                     {% else %}

@@ -26,7 +26,7 @@
                 <dd class="col-sm-9">{{ area.name }}</dd>
 
                 <dt class="col-sm-3">Description:</dt>
-                <dd class="col-sm-9">{{ area.description | nl2br | default('N/A', true) }}</dd>
+                <dd class="col-sm-9">{{ area.description | markdown | default('N/A', true) }}</dd>
                 
                 <dt class="col-sm-3">Created At:</dt>
                 <dd class="col-sm-9">{{ area.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if area.created_at else 'N/A' }}</dd>
@@ -89,7 +89,7 @@
                             <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
                             {% if rel.relevance_content %}
                                 <strong class="d-block mt-1">Relevance Content:</strong>
-                                <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div>
                             {% endif %}
                         </li>
                         {% endif %}

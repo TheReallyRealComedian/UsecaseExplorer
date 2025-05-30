@@ -38,54 +38,54 @@
 
                 {% if step.step_description %}
                 <dt>Short Description:</dt>
-                <dd><pre>{{ step.step_description }}</pre></dd>
+                <dd class="markdown-content">{{ step.step_description | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {# START ADDITION: Displaying more ProcessStep fields #}
 
                 {% if step.vision_statement %}
                 <dt>Vision Statement:</dt>
-                <dd><pre>{{ step.vision_statement }}</pre></dd>
+                <dd class="markdown-content">{{ step.vision_statement | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.what_is_actually_done %}
                 <dt>What is Actually Done:</dt>
-                <dd><pre>{{ step.what_is_actually_done }}</pre></dd>
+                <dd class="markdown-content">{{ step.what_is_actually_done | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.in_scope %}
                 <dt>In Scope:</dt>
-                <dd><pre>{{ step.in_scope }}</pre></dd>
+                <dd class="markdown-content">{{ step.in_scope | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.out_of_scope %}
                 <dt>Out of Scope:</dt>
-                <dd><pre>{{ step.out_of_scope }}</pre></dd>
+                <dd class="markdown-content">{{ step.out_of_scope | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.interfaces_text %}
                 <dt>Interfaces:</dt>
-                <dd><pre>{{ step.interfaces_text }}</pre></dd>
+                <dd class="markdown-content">{{ step.interfaces_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.pain_points %}
                 <dt>Pain Points:</dt>
-                <dd><pre>{{ step.pain_points }}</pre></dd>
+                <dd class="markdown-content">{{ step.pain_points | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if step.targets_text %}
                 <dt>Targets:</dt>
-                <dd><pre>{{ step.targets_text }}</pre></dd>
+                <dd class="markdown-content">{{ step.targets_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
                 
                 {% if step.summary %}
                 <dt>Generic Summary:</dt>
-                <dd><pre>{{ step.summary }}</pre></dd>
+                <dd class="markdown-content">{{ step.summary | markdown | default('N/A', true) }}</dd>
                 {% endif %}
                 
                 {% if step.raw_content %}
                 <dt>Raw Content:</dt>
-                <dd><pre>{{ step.raw_content }}</pre></dd>
+                <dd class="markdown-content">{{ step.raw_content | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 <dt>LLM Comment 1:</dt> <dd>{{ step.llm_comment_1 | default('N/A', true) }}</dd>
@@ -114,11 +114,19 @@
                 <ul class="list-unstyled item-list">
                     {% for uc in step.use_cases | sort(attribute='name') %}
                         <li>
-                            <div class="item-title">
-                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
-                            </div>
-                            <div class="item-meta">
-                                <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                            <div class="d-flex justify-content-between align-items-center"> {# Add flexbox for alignment #}
+                                <div>
+                                    <div class="item-title">
+                                        <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                    </div>
+                                    <div class="item-meta">
+                                        <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                                    </div>
+                                </div>
+                                <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this use case? This action cannot be undone.');">
+                                    <input type="hidden" name="process_step_id_for_redirect" value="{{ step.id }}"> {# Pass current step ID for redirection #}
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
                             </div>
                         </li>
                     {% endfor %}
@@ -138,22 +146,33 @@
                 <ul class="list-unstyled">
                     {% for rel in step.usecase_relevance | sort(attribute='relevance_score', reverse=True) %}
                         {% if rel.source_usecase %}
-                        <li class="relevance-item">
-                            <div class="item-title">
-                                <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
-                                    {{ rel.source_usecase.name }}
-                                </a>
-                            </div>
-                            <div class="item-meta">
-                                <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
-                            </div>
-                            
-                            <div>
-                                <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
-                                {% if rel.relevance_content %}
-                                    <strong class="d-block mt-1">Relevance Content:</strong>
-                                    <pre>{{ rel.relevance_content }}</pre>
-                                {% endif %}
+                        <li class="relevance-item border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-start"> {# Use align-items-start for multiline content #}
+                                <div class="flex-grow-1 me-3"> {# Allow content to grow #}
+                                    <div class="item-title">
+                                        <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
+                                            {{ rel.source_usecase.name }}
+                                        </a>
+                                    </div>
+                                    <div class="item-meta">
+                                        <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
+                                    </div>
+                                    <div>
+                                        <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
+                                        {% if rel.relevance_content %}
+                                            <strong class="d-block mt-1">Relevance Content:</strong>
+                                            <div class="markdown-content">{{ rel.relevance_content | markdown }}</div> {# Use a div for markdown output #}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div> {# Container for buttons #}
+                                    <form action="{{ url_for('relevance.delete_step_relevance', relevance_id=rel.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this relevance link?');">
+                                        <input type="hidden" name="referrer_step_id" value="{{ step.id }}"> {# Pass current step ID for redirection #}
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                    {# Edit button already exists for this section, ensure it's styled correctly #}
+                                    <a href="{{ url_for('relevance.edit_step_relevance', relevance_id=rel.id) }}" class="btn btn-secondary btn-sm mt-1">Edit</a>
+                                </div>
                             </div>
                         </li>
                         {% endif %}
@@ -196,7 +215,7 @@
                             {% if rel.relevance_content %}
                                 <div>
                                     <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                    <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div> {# Apply markdown filter #}
                                 </div>
                             {% endif %}
                             <div class="mt-2">
@@ -246,7 +265,7 @@
                             {% if rel.relevance_content %}
                                 <div>
                                     <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                    <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div> {# Apply markdown filter #}
                                 </div>
                             {% endif %}
                         </li>

@@ -59,22 +59,22 @@
                 <dt>Process Step Description:</dt>
                 <dd>
                     {% if usecase.process_step and usecase.process_step.step_description %}
-                        <pre>{{ usecase.process_step.step_description }}</pre>
+                        {{ usecase.process_step.step_description | markdown | default('N/A', true) }}
                     {% else %}
                         N/A
                     {% endif %}
                 </dd>
 
                 <dt>Summary:</dt>
-                <dd>{{ usecase.summary | default('N/A', true) }}</dd>
+                <dd>{{ usecase.summary | markdown | default('N/A', true) }}</dd>
 
                 <dt>Inspiration:</dt>
-                <dd>{{ usecase.inspiration | default('N/A', true) }}</dd>
+                <dd>{{ usecase.inspiration | markdown | default('N/A', true) }}</dd>
 
                 <dt>Raw Content:</dt>
                 <dd>
                     {% if usecase.raw_content %}
-                        <pre>{{ usecase.raw_content }}</pre>
+                        {{ usecase.raw_content | markdown | default('N/A', true) }}
                     {% else %}
                         N/A
                     {% endif %}
@@ -98,7 +98,7 @@
 
                 {% if usecase.relevants_text %}
                 <dt>Relevants (Tags):</dt>
-                <dd>{{ usecase.relevants_text }}</dd>
+                <dd>{{ usecase.relevants_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.reduction_time_transfer %}
@@ -124,57 +124,57 @@
                 {# Text/Preformatted Fields #}
                 {% if usecase.business_problem_solved %}
                 <dt>Business Problem Solved:</dt>
-                <dd><pre>{{ usecase.business_problem_solved | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.business_problem_solved | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                  {% if usecase.target_solution_description %}
                 <dt>Target / Solution:</dt>
-                <dd><pre>{{ usecase.target_solution_description | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.target_solution_description | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.technologies_text %}
                 <dt>Technologies:</dt>
-                <dd><pre>{{ usecase.technologies_text | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.technologies_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.requirements %}
                 <dt>Requirements:</dt>
-                <dd><pre>{{ usecase.requirements | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.requirements | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.ideation_notes %}
                 <dt>Ideation Notes:</dt>
-                <dd><pre>{{ usecase.ideation_notes | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.ideation_notes | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.further_ideas %}
                 <dt>Further Ideas:</dt>
-                <dd><pre>{{ usecase.further_ideas | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.further_ideas | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.effort_quantification %}
                 <dt>Effort Quantification:</dt>
-                <dd><pre>{{ usecase.effort_quantification | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.effort_quantification | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.potential_quantification %}
                 <dt>Potential Quantification:</dt>
-                <dd><pre>{{ usecase.potential_quantification | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.potential_quantification | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.dependencies_text %}
                 <dt>Dependencies:</dt>
-                <dd><pre>{{ usecase.dependencies_text | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.dependencies_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.contact_persons_text %}
                 <dt>Contacts:</dt>
-                <dd><pre>{{ usecase.contact_persons_text | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.contact_persons_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
 
                 {% if usecase.related_projects_text %}
                 <dt>Related Projects:</dt>
-                <dd><pre>{{ usecase.related_projects_text | default('N/A', true) }}</pre></dd>
+                <dd>{{ usecase.related_projects_text | markdown | default('N/A', true) }}</dd>
                 {% endif %}
                 {# End of New Fields #}
 
@@ -205,31 +205,35 @@
                 <ul class="list-unstyled p-3 item-list">
                     {% for rel in usecase.relevant_to_areas | sort(attribute='relevance_score', reverse=True) %}
                         <li class="relevance-item border-bottom pb-2 mb-2">
-                            <div>
-                                <strong>Area:</strong>
-                                <div class="item-title">
-                                    {% if rel.target_area %}
-                                        <a href="{{ url_for('areas.view_area', area_id=rel.target_area.id) }}">{{ rel.target_area.name }}</a>
-                                    {% else %}
-                                        N/A
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 me-3">
+                                    <div>
+                                        <strong>Area:</strong>
+                                        <div class="item-title">
+                                            {% if rel.target_area %}
+                                                <a href="{{ url_for('areas.view_area', area_id=rel.target_area.id) }}">{{ rel.target_area.name }}</a>
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span>
+                                    </div>
+                                    {% if rel.relevance_content %}
+                                        <div>
+                                            <strong class="d-block mt-1">Content:</strong>
+                                            <div class="markdown-content">{{ rel.relevance_content | markdown }}</div>
+                                        </div>
                                     {% endif %}
                                 </div>
-                            </div>
-                            <div>
-                                <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span>
-                            </div>
-                            {% if rel.relevance_content %}
-                                <div>
-                                    <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                <div class="btn-group-vertical">
+                                    <form action="{{ url_for('relevance.delete_area_relevance', relevance_id=rel.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this area relevance link?');">
+                                        <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                    <a href="{{ url_for('relevance.edit_area_relevance', relevance_id=rel.id) }}" class="btn btn-secondary btn-sm mt-1">Edit</a>
                                 </div>
-                            {% endif %}
-                            <div class="mt-2">
-                                <form action="{{ url_for('relevance.delete_area_relevance', relevance_id=rel.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this area relevance link?');">
-                                    <input type="hidden" name="source_usecase_id" value="{{ usecase.id }}">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                </form>
-                                <a href="{{ url_for('relevance.edit_area_relevance', relevance_id=rel.id) }}" class="btn btn-secondary btn-sm">Edit</a>
                             </div>
                         </li>
                     {% endfor %}
@@ -268,7 +272,7 @@
                             {% if rel.relevance_content %}
                                 <div>
                                     <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                    <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div>
                                 </div>
                             {% endif %}
                             <div class="mt-2">
@@ -315,7 +319,7 @@
                             {% if rel.relevance_content %}
                                 <div>
                                     <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                    <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div>
                                 </div>
                             {% endif %}
                             <div class="mt-2">
@@ -362,7 +366,7 @@
                             {% if rel.relevance_content %}
                                 <div>
                                     <strong class="d-block mt-1">Content:</strong>
-                                    <pre class="bg-light p-2 rounded small">{{ rel.relevance_content }}</pre>
+                                    <div class="markdown-content bg-light p-2 rounded small">{{ rel.relevance_content | markdown }}</div>
                                 </div>
                             {% endif %}
                         </li>

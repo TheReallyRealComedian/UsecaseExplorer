@@ -1,0 +1,116 @@
+[
+  {
+    "source_process_step_bi_id": "SPM01",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 90,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: SPM01 performs strategic make-vs-buy analyses and develops the overall CMO (Contract Manufacturing Organization) strategy. These high-level decisions directly determine whether specific products or processes are manufactured internally or externally, thereby setting the fundamental scope and operational context for the Manufacturing area regarding these outsourced activities."
+  },
+  {
+    "source_process_step_bi_id": "SPM01",
+    "target_process_step_bi_id": "SCM-01",
+    "relevance_score": 95,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: SPM01 defines the overarching strategy for the external manufacturing network and the classification of CMOs. This strategic direction is a crucial input for SCM's long-term network design and strategic planning, ensuring supply chain capabilities are aligned with outsourcing objectives."
+  },
+  {
+    "source_process_step_bi_id": "SPM01",
+    "target_process_step_bi_id": "PS-QA-001",
+    "relevance_score": 85,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: The strategic decision to outsource products or processes, made by SPM01, directly creates the imperative for Quality Assurance to establish, adapt, and manage its foundational processes (e.g., external partner integration, documentation, quality systems) to ensure compliance and quality oversight for these new external manufacturing relationships."
+  },
+  {
+    "source_process_step_bi_id": "SPM02",
+    "target_process_step_bi_id": "PS-QA-003",
+    "relevance_score": 98,
+    "relevance_content": "Type: Compliance & Quality Oversight. Description: SPM02's activities, such as initial CMO qualification, due diligence assessments covering GxP standards, and the establishment of Quality Agreements, are mandatory prerequisites that require direct input, execution, and approval from Quality Assurance. QA ensures that new partners meet all necessary regulatory and internal quality standards before contracting."
+  },
+  {
+    "source_process_step_bi_id": "SPM02",
+    "target_process_step_bi_id": "SCM-03",
+    "relevance_score": 90,
+    "relevance_content": "Type: Planning & Resource Coordination. Description: SPM02 negotiates and finalizes essential contractual terms with new CMOs, including supply commitments and performance metrics. These agreed-upon parameters are critical inputs for SCM's tactical and operational planning, enabling them to integrate the CMO's capabilities into the overall supply network and ensure product availability."
+  },
+  {
+    "source_process_step_bi_id": "SPM02",
+    "target_process_step_bi_id": "BEX02",
+    "relevance_score": 85,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: SPM02 functions as the specialized application of the broader \"Prospect to Contract\" process (defined within Bio Excellence) for external manufacturing partners. It involves the detailed assessment, negotiation, and contract execution steps that convert a potential partner into a contractual relationship, adhering to the overall strategic principles of Bio Excellence."
+  },
+  {
+    "source_process_step_bi_id": "SPM04",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_score": 98,
+    "relevance_content": "Type: Sequential Process Dependency. Description: SPM04 is responsible for the systematic coordination and execution of technology transfer, encompassing manufacturing processes, analytical methods, and critical product knowledge, to qualified CMOs. This successful transfer is a direct and indispensable prerequisite for the external partner to initiate and effectively execute manufacturing operations."
+  },
+  {
+    "source_process_step_bi_id": "SPM04",
+    "target_process_step_bi_id": "PS-QC-002",
+    "relevance_score": 90,
+    "relevance_content": "Type: Sequential Process Dependency. Description: SPM04's transfer of analytical methods is a direct input for Quality Control. QC relies on these transferred methods to establish and update product specifications, ensuring that the necessary analytical procedures are in place for testing products from CMOs."
+  },
+  {
+    "source_process_step_bi_id": "SPM04",
+    "target_process_step_bi_id": "PS-QA-006",
+    "relevance_score": 95,
+    "relevance_content": "Type: Compliance & Quality Oversight. Description: SPM04 executes technology transfer activities that are subject to rigorous validation and qualification requirements. Quality Assurance defines these requirements and provides oversight, ensuring that the transfer and subsequent implementation of processes at CMOs are compliant with GxP and internal standards."
+  },
+  {
+    "source_process_step_bi_id": "SPM04",
+    "target_process_step_bi_id": "BEX03",
+    "relevance_score": 90,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: The \"Technology Transfer & Implementation\" (SPM04) is a core component of the \"Contract to Cash - Project Phase\" as defined in Bio Excellence. SPM04 directly contributes to the project's milestones, ensuring the successful transition of a product from development to commercial manufacturing at an external partner, aligning with overall project management objectives."
+  },
+  {
+    "source_process_step_bi_id": "SPM05",
+    "target_process_step_bi_id": "PS-QA-003",
+    "relevance_score": 100,
+    "relevance_content": "Type: Compliance & Quality Oversight. Description: SPM05 continuously monitors the manufacturing quality of external partners, managing deviations, coordinating CAPA processes, and overseeing quality agreements. These activities are integral to Quality Assurance's ongoing audit and intelligence functions, providing critical data for compliance assessments and continuous improvement."
+  },
+  {
+    "source_process_step_bi_id": "SPM05",
+    "target_process_step_bi_id": "PS-QC-005",
+    "relevance_score": 85,
+    "relevance_content": "Type: Planning & Resource Coordination. Description: As part of its holistic quality oversight for external partners, SPM05 actively coordinates with internal or contract laboratories (e.g., via SPM08) to ensure that product testing is performed, and results are generated, evaluated, and released accurately and in a timely manner. This coordination is crucial for the efficient flow of quality data."
+  },
+  {
+    "source_process_step_bi_id": "SPM05",
+    "target_process_step_bi_id": "SPM08",
+    "relevance_score": 90,
+    "relevance_content": "Type: Planning & Resource Coordination. Description: SPM05 holds the overarching responsibility for quality oversight of all external partners, including the testing conducted by contract laboratories. This general mandate is specifically executed and detailed by SPM08, which manages the direct coordination and performance of these contract labs, demonstrating a clear internal delegation of function within SPM."
+  },
+  {
+    "source_process_step_bi_id": "SPM06",
+    "target_process_step_bi_id": "SCM-03",
+    "relevance_score": 95,
+    "relevance_content": "Type: Feedback Loop for Improvement & Adaption. Description: SPM06 regularly conducts performance reviews and assesses supply chain vulnerabilities for strategic CMOs. The insights and data generated from these activities serve as vital feedback for SCM, enabling them to refine tactical supply plans, proactively address risks, and adapt the supply network for improved resilience and efficiency."
+  },
+  {
+    "source_process_step_bi_id": "SPM06",
+    "target_process_step_bi_id": "PM-02",
+    "relevance_score": 85,
+    "relevance_content": "Type: Data Exchange & Information Provision. Description: SPM06 is actively involved in tracking Key Performance Indicators (KPIs) and conducting performance review meetings for CMOs. The data and performance insights gathered directly contribute to and align with the organization's broader Performance Management framework, influencing KPI definitions and informing structured performance dialogues across the company."
+  },
+  {
+    "source_process_step_bi_id": "SPM06",
+    "target_process_step_bi_id": "PS-QA-003",
+    "relevance_score": 80,
+    "relevance_content": "Type: Compliance & Quality Oversight. Description: SPM06 is responsible for the ongoing maintenance of CMO qualifications and supplier development programs. These continuous activities are subject to regular audits and surveillance by Quality Assurance, ensuring sustained compliance with GxP and established quality standards throughout the partner relationship."
+  },
+  {
+    "source_process_step_bi_id": "SPM08",
+    "target_process_step_bi_id": "PS-QC-004",
+    "relevance_score": 100,
+    "relevance_content": "Type: External Partnership Management. Description: SPM08 directly manages the relationship and operational coordination with Contract Laboratory Organizations (CLOs). This involves overseeing the execution of testing services and ensuring their alignment with internal Quality Control standards for test preparation, execution, and data integrity."
+  },
+  {
+    "source_process_step_bi_id": "SPM08",
+    "target_process_step_bi_id": "PS-QA-003",
+    "relevance_score": 95,
+    "relevance_content": "Type: Compliance & Quality Oversight. Description: SPM08 provides dedicated quality oversight and ensures compliance for Contract Laboratory Organizations. This directly links to Quality Assurance's responsibilities for auditing, managing quality agreements, and handling any non-conformances arising from external lab activities, ensuring adherence to GxP standards."
+  },
+  {
+    "source_process_step_bi_id": "SPM08",
+    "target_process_step_bi_id": "SPM05",
+    "relevance_score": 80,
+    "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: SPM08 operates as a specialized and integral part of SPM05's broader mandate for holistic quality oversight of external partners. While SPM05 defines the overall quality strategy for CMOs, SPM08 focuses specifically on the unique requirements and coordination of contract laboratory services within that framework."
+  }
+]
