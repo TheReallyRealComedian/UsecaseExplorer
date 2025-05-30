@@ -42,7 +42,7 @@
                         <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> LLM Data Prep</a>
                     </li>
                     <li class="{% if request.blueprint == 'injection' %}active{% endif %}">
-                        <a href="{{ url_for('injection.handle_injection') }}"><i class="fas fa-upload"></i> Data Injection</a>
+                        <a href="{{ url_for('injection.data_update_page') }}"><i class="fas fa-upload"></i> Data Update</a>
                     </li>
                      <li class="{% if request.blueprint == 'data_alignment' %}active{% endif %}">
                         <a href="{{ url_for('data_alignment.data_alignment_page') }}"><i class="fas fa-link"></i> Data Alignment</a>

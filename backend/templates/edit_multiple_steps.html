@@ -1,0 +1,404 @@
+{# UsecaseExplorer/backend/templates/edit_multiple_steps.html #}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Specific styles for this page */
+    .edit-step-card .card-body {
+        padding: 1.5rem;
+    }
+    .edit-step-card .info-list dt {
+        text-align: left; /* Override default right-align for 3-column view */
+        padding-right: 0;
+        font-size: 0.95rem;
+    }
+    .edit-step-card .field-row { /* Modified for consistent height and alignment */
+        display: grid;
+        grid-template-columns: 200px 1fr 1.5fr; /* Field Name | Current Value | New Value */
+        gap: 15px;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+        border-bottom: 1px dashed var(--border-color);
+        align-items: top; /* Align content to the top of the row */
+    }
+    .edit-step-card .field-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .edit-step-card .field-row h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+    .edit-step-card .field-row .current-value-display {
+        min-height: 80px; /* Consistent min-height for display and input */
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        white-space: pre-wrap; /* Preserve line breaks */
+        word-break: break-word; /* Break long words */
+        padding: 8px; /* Add padding to prevent text from touching scrollbar */
+        border: 1px solid var(--raw-light-grey-200);
+        background-color: var(--element-bg-light);
+        border-radius: var(--border-radius-sm);
+    }
+    .edit-step-card .field-row .new-value-input,
+    .edit-step-card .field-row .new-value-select { /* Modified for consistent height */
+        font-size: 0.9rem;
+        padding: 8px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        width: 100%;
+        min-height: 80px; /* Consistent min-height for display and input */
+        resize: vertical;
+    }
+    .edit-step-card .field-row.area-field .new-value-select {
+        min-height: unset; /* Override textarea's min-height */
+        height: auto;
+    }
+    .unsaved-field-change {
+        background-color: var(--raw-alert-warning-bg);
+        border-color: var(--raw-alert-warning-border) !important;
+    }
+    .unsaved-field-change .new-value-input,
+    .unsaved-field-change .new-value-select {
+         border-color: var(--raw-alert-warning-text) !important;
+    }
+    .action-buttons-group {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end; /* Align buttons to the right */
+        padding-top: 15px;
+        border-top: 1px dashed var(--border-color);
+    }
+    .save-all-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .save-all-controls .btn {
+        min-width: 150px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bulk-edit-steps-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        Edit the fields of your selected Process Steps. Changes are saved individually or in bulk.
+    </p>
+
+    {% if steps_data %}
+        <div class="save-all-controls">
+            <span id="pendingChangesCount" class="text-muted">0 pending changes</span>
+            <button type="button" class="btn btn-primary" id="saveAllChangesBtn" disabled>
+                <i class="fas fa-save me-1"></i> Save All Changes
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelAllChangesBtn" disabled>
+                <i class="fas fa-times-circle me-1"></i> Discard All
+            </button>
+        </div>
+
+        {% for step_item in steps_data %}
+        <div class="card mb-4 edit-step-card" data-step-id="{{ step_item.id }}">
+            <div class="card-header">
+                <h2 class="card-title">
+                    Step: <a href="{{ url_for('steps.view_step', step_id=step_item.id) }}">{{ step_item.name }}</a>
+                    <small class="text-muted">(BI_ID: {{ step_item.bi_id }})</small>
+                </h2>
+            </div>
+            <div class="card-body">
+                {% for field_key, field_name in editable_fields.items() %}
+                <div class="field-row" data-field-key="{{ field_key }}">
+                    <h5>{{ field_name }}:</h5>
+                    <div class="current-value-display">
+                        {% if field_key == 'area_id' %}
+                            {{ step_item.current_area_name | default('N/A') }} (ID: {{ step_item.current_area_id | default('N/A') }})
+                        {% else %}
+                            {{ step_item['current_' + field_key] | default('N/A') }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if field_key == 'area_id' %}
+                            <select class="form-select new-value-select" data-field="{{ field_key }}" data-step-id="{{ step_item.id }}">
+                                {% for area_opt in all_areas %}
+                                    <option value="{{ area_opt.id }}" {% if step_item.new_values.area_id == area_opt.id %}selected{% endif %}>
+                                        {{ area_opt.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <textarea class="form-control new-value-input" 
+                                      data-field="{{ field_key }}" 
+                                      data-step-id="{{ step_item.id }}" 
+                                      rows="3" 
+                                      placeholder="New value for {{ field_name }}">{% if step_item.new_values[field_key] is not none %}{{ step_item.new_values[field_key] }}{% endif %}</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="save-all-controls">
+            <span id="pendingChangesCountBottom" class="text-muted">0 pending changes</span>
+            <button type="button" class="btn btn-primary" id="saveAllChangesBtnBottom" disabled>
+                <i class="fas fa-save me-1"></i> Save All Changes
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelAllChangesBtnBottom" disabled>
+                <i class="fas fa-times-circle me-1"></i> Discard All
+            </button>
+        </div>
+
+    {% else %}
+        <div class="alert alert-warning text-center">
+            No process steps loaded for editing. Please select some from the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('injection.data_update_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Update</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Pass initial data to JavaScript for client-side processing
+    const INITIAL_STEPS_DATA = {{ steps_data | tojson | safe }};
+    const ALL_AREAS_DATA_FOR_DROPDOWN = {{ all_areas | tojson | safe }};
+    const EDITABLE_FIELDS_CONFIG = {{ editable_fields | tojson | safe }};
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const stepsData = INITIAL_STEPS_DATA; // This will hold the current state including user edits
+        const pendingChanges = {}; // Maps stepId to a dict of {fieldName: newValue}
+
+        // --- UI Elements ---
+        const saveAllChangesBtnTop = document.getElementById('saveAllChangesBtn');
+        const cancelAllChangesBtnTop = document.getElementById('cancelAllChangesBtn');
+        const pendingChangesCountTop = document.getElementById('pendingChangesCount');
+        const saveAllChangesBtnBottom = document.getElementById('saveAllChangesBtnBottom');
+        const cancelAllChangesBtnBottom = document.getElementById('cancelAllChangesBtnBottom');
+        const pendingChangesCountBottom = document.getElementById('pendingChangesCountBottom');
+
+
+        // --- Helper Functions ---
+        function updatePendingChangesCount() {
+            let count = Object.keys(pendingChanges).length;
+            pendingChangesCountTop.textContent = `${count} pending change${count === 1 ? '' : 's'}`;
+            pendingChangesCountBottom.textContent = `${count} pending change${count === 1 ? '' : 's'}`;
+            saveAllChangesBtnTop.disabled = (count === 0);
+            cancelAllChangesBtnTop.disabled = (count === 0);
+            saveAllChangesBtnBottom.disabled = (count === 0);
+            cancelAllChangesBtnBottom.disabled = (count === 0);
+        }
+
+        function toggleFieldHighlight(stepId, fieldKey, isChanged) {
+            const cardElement = document.querySelector(`.edit-step-card[data-step-id="${stepId}"]`);
+            if (!cardElement) return;
+            const fieldRow = cardElement.querySelector(`.field-row[data-field-key="${fieldKey}"]`);
+            if (fieldRow) {
+                if (isChanged) {
+                    fieldRow.classList.add('unsaved-field-change');
+                } else {
+                    fieldRow.classList.remove('unsaved-field-change');
+                }
+            }
+        }
+        
+        function showFlashMessage(message, category) {
+            let flashContainer = document.querySelector('.flash-messages');
+            if (!flashContainer) {
+                flashContainer = document.createElement('div');
+                flashContainer.classList.add('flash-messages');
+                document.querySelector('.page-content').prepend(flashContainer);
+            }
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.classList.add('alert', `alert-${category}`);
+            alertDiv.textContent = message;
+            flashContainer.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+
+        // --- Event Handlers for Individual Inputs ---
+        document.querySelectorAll('.new-value-input, .new-value-select').forEach(input => {
+            input.addEventListener('input', function() {
+                const stepId = parseInt(this.dataset.stepId);
+                const fieldKey = this.dataset.field;
+                let newValue = this.value;
+
+                // For select elements, ensure numeric ID is stored
+                if (this.tagName === 'SELECT') {
+                    newValue = parseInt(newValue);
+                } else {
+                    newValue = newValue.trim() === '' ? null : newValue.trim(); // Treat empty string as null
+                }
+
+                // Find the original value for comparison
+                const stepItem = stepsData.find(s => s.id === stepId);
+                let originalValue;
+                if (fieldKey === 'area_id') {
+                    originalValue = stepItem.current_area_id; // For area_id, compare the ID
+                } else {
+                    originalValue = stepItem['current_' + fieldKey];
+                }
+
+                // Update stepsData's new_values
+                stepItem.new_values[fieldKey] = newValue;
+
+                if (newValue !== originalValue) {
+                    if (!pendingChanges[stepId]) {
+                        pendingChanges[stepId] = { id: stepId, updated_fields: {} };
+                    }
+                    pendingChanges[stepId].updated_fields[fieldKey] = newValue;
+                    toggleFieldHighlight(stepId, fieldKey, true);
+                } else {
+                    // Value reverted to original, remove from pending changes
+                    if (pendingChanges[stepId]) {
+                        delete pendingChanges[stepId].updated_fields[fieldKey];
+                        if (Object.keys(pendingChanges[stepId].updated_fields).length === 0) {
+                            delete pendingChanges[stepId];
+                        }
+                    }
+                    toggleFieldHighlight(stepId, fieldKey, false);
+                }
+                updatePendingChangesCount();
+            });
+        });
+
+        // --- Save All Changes Functionality ---
+        async function saveAllChanges() {
+            if (Object.keys(pendingChanges).length === 0) {
+                showFlashMessage('No changes to save.', 'info');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to save all pending changes?')) {
+                return;
+            }
+
+            // Disable buttons
+            saveAllChangesBtnTop.disabled = true;
+            cancelAllChangesBtnTop.disabled = true;
+            saveAllChangesBtnBottom.disabled = true;
+            cancelAllChangesBtnBottom.disabled = true;
+            pendingChangesCountTop.textContent = 'Saving...';
+            pendingChangesCountBottom.textContent = 'Saving...';
+
+            // Prepare data for API call
+            const changesPayload = Object.values(pendingChanges);
+
+            try {
+                const response = await fetch('/data-update/steps/save-all-changes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(changesPayload),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showFlashMessage(result.message, 'success');
+                    // Update original values in stepsData and clear pendingChanges
+                    stepsData.forEach(stepItem => {
+                        if (pendingChanges[stepItem.id]) {
+                            for (const fieldKey in pendingChanges[stepItem.id].updated_fields) {
+                                // Update the 'current' value to the new saved value
+                                if (fieldKey === 'area_id') {
+                                     stepItem.current_area_id = stepItem.new_values.area_id;
+                                     // Also update the displayed area name for consistency
+                                     const selectedArea = ALL_AREAS_DATA_FOR_DROPDOWN.find(area => area.id === stepItem.new_values.area_id);
+                                     stepItem.current_area_name = selectedArea ? selectedArea.name : 'N/A';
+                                } else {
+                                    stepItem['current_' + fieldKey] = stepItem.new_values[fieldKey];
+                                }
+                                toggleFieldHighlight(stepItem.id, fieldKey, false);
+                            }
+                        }
+                    });
+                    // Clear pending changes completely
+                    Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
+                    updatePendingChangesCount();
+                    // Optionally, reload the page or redirect to data_update_page after a delay
+                    setTimeout(() => { window.location.href = '/data-update'; }, 1500);
+
+                } else {
+                    showFlashMessage(result.message, 'danger');
+                    // Keep pending changes, re-enable buttons
+                    saveAllChangesBtnTop.disabled = false;
+                    cancelAllChangesBtnTop.disabled = false;
+                    saveAllChangesBtnBottom.disabled = false;
+                    cancelAllChangesBtnBottom.disabled = false;
+                    updatePendingChangesCount(); // Re-evaluate status message
+                }
+            } catch (error) {
+                console.error('Fetch error during bulk save:', error);
+                showFlashMessage('Network error during save. Please check your connection.', 'danger');
+                // Re-enable buttons
+                saveAllChangesBtnTop.disabled = false;
+                cancelAllChangesBtnTop.disabled = false;
+                saveAllChangesBtnBottom.disabled = false;
+                cancelAllChangesBtnBottom.disabled = false;
+                updatePendingChangesCount(); // Re-evaluate status message
+            }
+        }
+
+        // --- Discard All Changes Functionality ---
+        function discardAllChanges() {
+            if (Object.keys(pendingChanges).length === 0) {
+                showFlashMessage('No changes to discard.', 'info');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to discard all pending changes?')) {
+                return;
+            }
+
+            stepsData.forEach(stepItem => {
+                for (const fieldKey in EDITABLE_FIELDS_CONFIG) {
+                    const inputElement = document.querySelector(`.edit-step-card[data-step-id="${stepItem.id}"] .new-value-${fieldKey === 'area_id' ? 'select' : 'input'}[data-field="${fieldKey}"]`);
+                    if (inputElement) {
+                        let originalValue;
+                        if (fieldKey === 'area_id') {
+                            originalValue = stepItem.current_area_id;
+                        } else {
+                            originalValue = stepItem['current_' + fieldKey];
+                        }
+                        // Set input value back to original
+                        inputElement.value = originalValue === null ? '' : originalValue;
+                        // Update stepsData's new_values to reflect discard
+                        stepItem.new_values[fieldKey] = originalValue;
+                        toggleFieldHighlight(stepItem.id, fieldKey, false);
+                    }
+                }
+            });
+            // Clear pending changes completely
+            Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
+            updatePendingChangesCount();
+            showFlashMessage('All pending changes have been discarded.', 'info');
+        }
+
+        // Attach global buttons
+        saveAllChangesBtnTop.addEventListener('click', saveAllChanges);
+        saveAllChangesBtnBottom.addEventListener('click', saveAllChanges);
+        cancelAllChangesBtnTop.addEventListener('click', discardAllChanges);
+        cancelAllChangesBtnBottom.addEventListener('click', discardAllChanges);
+
+        // Initial update of count and button states
+        updatePendingChangesCount();
+    });
+</script>
+{% endblock %}

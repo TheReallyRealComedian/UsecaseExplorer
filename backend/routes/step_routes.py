@@ -94,7 +94,6 @@ def edit_step(step_id):
                 ).first()
                 if existing_step:
                     flash(f"Another process step with BI_ID '{step.bi_id}' already exists.", "danger")
-                    SessionLocal.remove()
                     return render_template(
                         'edit_step.html',
                         title=f"Edit Step: {step.name}",
@@ -107,7 +106,6 @@ def edit_step(step_id):
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
-                # SessionLocal.remove() # REMOVED THIS LINE
                 return redirect(url_for('steps.view_step', step_id=step.id))
             except IntegrityError:
                 session.rollback()

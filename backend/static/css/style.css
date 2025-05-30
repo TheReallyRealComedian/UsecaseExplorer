@@ -33,6 +33,9 @@
     --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     --gradient-cool: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
 
+    /* Darker gradients for sidebar hover/active to ensure white text visibility */
+    --gradient-sidebar-dark: linear-gradient(135deg, #4338ca 0%, #065f46 100%); /* primary-dark to a darker emerald */
+
     /* Alert Colors - Modern */
     --raw-alert-success-text: #059669;
     --raw-alert-success-bg: #ecfdf5;
@@ -205,26 +208,31 @@ ul {
     font-size: 0.95rem;
     font-weight: 500;
     border-radius: var(--border-radius-sm);
-    margin-bottom: 8px;
+    margin-bottom: 8px; /* Standard spacing */
     position: relative;
     overflow: hidden;
+    background-color: transparent; /* Ensure link's own background is transparent */
 }
 
 .sidebar-menu li a::before {
-    content: '';
+    content: ''; /* This creates the gradient box */
     position: absolute;
     top: 0;
     left: 0;
-    width: 0;
     height: 100%;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: var(--gradient-sidebar-dark); /* Use the new darker gradient */
     transition: width 0.3s ease;
-    z-index: 0;
+    z-index: -1; /* IMPORTANT: Ensure it's behind the content (text, icon) */
+    width: 0; /* Initially hidden */
 }
 
 .sidebar-menu li a > * {
     position: relative;
     z-index: 1;
+}
+/* Hover effect for the gradient box */
+.sidebar-menu li a:hover::before {
+    width: 100%; /* Expands the gradient box */
 }
 
 .sidebar-menu li a i,
@@ -235,17 +243,14 @@ ul {
     text-align: center;
 }
 
-.sidebar-menu li a:hover::before {
-    width: 100%;
-}
-
 .sidebar-menu li a:hover {
     color: var(--text-color-on-primary);
     transform: translateX(4px);
 }
 
 .sidebar-menu li.active a {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    /* Active state: remove direct background, let ::before handle it */
+    background: transparent; /* Ensure no conflicting background on the <a> tag itself */
     color: var(--text-color-on-primary);
     font-weight: 600;
     box-shadow: var(--shadow-md);

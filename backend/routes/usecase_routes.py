@@ -179,7 +179,6 @@ def edit_usecase(usecase_id):
         try:
             session.commit()
             flash("Use Case updated successfully!", "success")
-            # SessionLocal.remove() # REMOVED AS PER INSTRUCTION
             return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
         except IntegrityError as e:
             session.rollback()
@@ -188,7 +187,6 @@ def edit_usecase(usecase_id):
             else:
                 flash("Database error: Could not update use case. BI_ID might already exist or step is invalid.", "danger")
                 print(f"Integrity Error updating use case {usecase_id}: {e}")
-            SessionLocal.remove()
             return render_template(
                 'edit_usecase.html',
                 title=f"Edit Use Case: {usecase.name}",
