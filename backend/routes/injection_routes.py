@@ -87,6 +87,14 @@ DEFAULT_SELECT_SIZE = 15
 @injection_routes.route('/', methods=['GET', 'POST'])
 @login_required
 def data_update_page():
+    # --- ADD THESE LINES HERE ---
+    print("---------- DEBUG: Data Update Page Route Entered ----------")
+    print(f"Request Method: {request.method}")
+    print(f"Request Form Keys: {request.form.keys()}")
+    print(f"Request Files Keys: {request.files.keys()}")
+    print("---------------------------------------------------------")
+    # --- END ADDITION ---
+
     session_db = SessionLocal()
     all_areas = []
     all_steps = []
@@ -258,6 +266,7 @@ def data_update_page():
             # This is the /database/json route, but now handled directly by this function for simpler POST
             elif 'database_file' in request.files:
                 file = request.files['database_file']
+                print(f"DEBUG: database_file detected. Filename: {file.filename}") # ADDED PRINT STATEMENT
                 if file.filename == '':
                     flash('No selected database file.', 'warning')
                     return redirect(request.url)
@@ -303,7 +312,7 @@ def data_update_page():
 
         except Exception as e:
             traceback.print_exc()
-            flash(f"An unexpected error occurred: {str(e)}", 'danger')
+            flash(f"An unexpected error occurred: {str(e)}", "danger")
             return redirect(request.url)
 
     return render_template(

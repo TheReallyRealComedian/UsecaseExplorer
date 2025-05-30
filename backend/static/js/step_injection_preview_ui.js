@@ -346,7 +346,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Global Action Buttons (Confirm/Cancel Import) ---
 
-    confirmImportBtn.addEventListener('click', async function() {
+    confirmImportBtn.addEventListener('click', async function(event) {
+        event.preventDefault(); // <--- ADDED THIS LINE
+        
         if (!confirm('Are you sure you want to finalize the import with the displayed changes?')) {
             return;
         }

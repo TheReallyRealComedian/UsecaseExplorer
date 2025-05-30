@@ -9,6 +9,7 @@ import logging
 from flask_login import current_user # Import current_user
 from .db import SessionLocal # Corrected import for SessionLocal
 from .models import User, LLMSettings # Corrected import for User and LLMSettings
+from sqlalchemy.orm import joinedload # Import joinedload for eager loading
 
 # Configure basic logging for debugging (if not already done globally)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,7 +31,8 @@ def get_ollama_base_url():
         except Exception as e:
             logging.error(f"Error fetching user Ollama URL from DB: {e}")
         finally:
-            session.remove() # Ensure session is closed
+            # session.remove() # Ensure session is closed
+            pass
 
     # Fallback to environment variable if no user setting or error
     env_url = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
@@ -74,7 +76,8 @@ def get_openai_api_key():
         except Exception as e:
             logging.error(f"Error fetching user OpenAI API Key from DB: {e}")
         finally:
-            session.remove()
+            # session.remove()
+            pass
     
     env_key = os.environ.get('OPENAI_API_KEY')
     logging.info(f"Using environment variable OpenAI API Key.")
@@ -96,7 +99,8 @@ def get_anthropic_api_key():
         except Exception as e:
             logging.error(f"Error fetching user Anthropic API Key from DB: {e}")
         finally:
-            session.remove()
+            # session.remove()
+            pass
     
     env_key = os.environ.get('ANTHROPIC_API_KEY')
     logging.info(f"Using environment variable Anthropic API Key.")
@@ -118,7 +122,8 @@ def get_google_api_key():
         except Exception as e:
             logging.error(f"Error fetching user Google API Key from DB: {e}")
         finally:
-            session.remove()
+            # session.remove()
+            pass
     
     env_key = os.environ.get('GOOGLE_API_KEY')
     logging.info(f"Using environment variable Google API Key.")

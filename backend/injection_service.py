@@ -1,11 +1,10 @@
-# UsecaseExplorer/backend/injection_service.py
 import json
 import traceback
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
-from .db import SessionLocal
+from sqlalchemy.exc import IntegrityError, OperationalError
+from .db import SessionLocal, db as flask_sqlalchemy_db
 from .models import (
-    Base, User, Area, ProcessStep, UseCase, LLMSettings, # Added LLMSettings
+    Base, User, Area, ProcessStep, UseCase, LLMSettings,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
     ProcessStepProcessStepRelevance
 )
@@ -1199,17 +1198,19 @@ def process_usecase_usecase_relevance_file(file_stream):
 
 # MODIFIED: import_database_from_json to accept a string instead of a file stream
 def import_database_from_json(json_string, clear_existing_data=False):
-    session = SessionLocal()
+    # Get a fresh session for the import process
+    session_local = SessionLocal() 
+
     try:
-        print("DEBUG: import_database_from_json service function called.") # Add debug print
+        print("import_database_from_json service function called.")
         # Now use json.loads directly on the string content
         data_to_import = json.loads(json_string)
-        print(f"DEBUG: JSON content loaded. Found {len(data_to_import.get('data', {}).keys())} top-level data keys.") # Add debug print
+        print(f"JSON content loaded. Found {len(data_to_import.get('data', {}).keys())} top-level data keys.")
 
         imported_data = data_to_import.get("data", {})
 
         if not imported_data:
-            print("DEBUG: No 'data' key found or data is empty in JSON.") # Add debug print
+            print("No 'data' key found or data is empty in JSON.")
             return {
                 "success": False,
                 "message": "No 'data' key found in JSON file or data is empty."
@@ -1217,256 +1218,356 @@ def import_database_from_json(json_string, clear_existing_data=False):
 
         if clear_existing_data:
             print("Clearing existing data...")
-            # TRUNCATE tables with RESTART IDENTITY to reset primary keys
-            # Order matters for CASCADE: parents before children
-            session.execute(text("TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE usecase_usecase_relevance RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE usecase_step_relevance RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE usecase_area_relevance RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE use_cases RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE process_steps RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE areas RESTART IDENTITY CASCADE;"))
-            session.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;"))
-            session.commit() # Commit truncate to ensure it's done before inserts
-            print("Data cleared.")
+            
+            # Test DB query (already exists)
+            test_result = session_local.execute(text("SELECT 1")).scalar()
+            print(f"Test DB query successful: {test_result}")
 
-        # --- ID Mapping Dictionaries ---
-        user_id_map = {}        # old_id -> new_id
-        area_id_map = {}        # old_id -> new_id
-        process_step_id_map = {} # old_id -> new_id
-        usecase_id_map = {}     # old_id -> new_id
-
-        # Use a single transaction for all inserts for performance and atomicity
-        # This transaction starts implicitly when you first interact with `session`
-        # and ends with `session.commit()` or `session.rollback()`.
-
-        print("Importing Users...")
-        if "users" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['users'])} users to import.") # Add debug print
-            for u_data in imported_data["users"]:
-                user = User(username=u_data["username"])
-                if 'password' in u_data and u_data['password'] :
-                    user.password = u_data['password'] # Directly assign the HASHED password
-                else:
-                    user.set_password("imported_default_password") # Fallback to a default if dump lacks password
+            # --- CRITICAL CHANGE: Force closure of all other connections if possible ---
+            # This is a drastic measure but might be needed to clear lingering locks.
+            # Only do this if you are absolutely sure no other parts of your app
+            # are currently in critical operations.
+            # This is targeting other active connections that might prevent TRUNCATE.
+            # try:
+            #     # Disconnect all other clients from the database *for this user*
+            #     # You might need to adjust the database name and user.
+            #     # This needs superuser privileges usually, or specific user's own connections.
+            #     # For `user:password@db:5432/usecase_explorer_db`, you can try:
+            #     db_name = flask_sqlalchemy_db.engine.url.database
+            #     db_user = flask_sqlalchemy_db.engine.url.username
                 
-                session.add(user)
-                session.flush() # Flush to get the new ID assigned by the DB
-                user_id_map[u_data["id"]] = user.id # Store mapping old_id -> new_id
-        print("Users import complete.") # Add debug print
+            #     # Check if current connection is active, if not, create one to run this query
+            #     # Use a separate connection to avoid issues with the current transaction
+            #     with flask_sqlalchemy_db.engine.connect() as admin_conn:
+            #         admin_conn.execute(text(f"""
+            #             SELECT pg_terminate_backend(pg_stat_activity.pid)
+            #             FROM pg_stat_activity
+            #             WHERE pg_stat_activity.datname = '{db_name}'
+            #             AND pid <> pg_backend_pid();
+            #         """))
+            #         admin_conn.commit() # Commit the termination commands
+            #     print("DEBUG: Attempted to terminate other database connections.")
+            # except Exception as e:
+            #     print(f"WARNING: Could not terminate other database connections (might lack privileges or none exist): {e}")
+            #     # Don't fail the import for this, just log the warning
+            # --- END CRITICAL CHANGE ---
 
+            # TRUNCATE statements - add specific prints and try flushing
+            try:
+                # Add a smaller timeout to each TRUNCATE if it gets stuck
+                print("Executing TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;")
+                session_local.execute(text("TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;").execution_options(timeout=30)) # Add timeout
+                print("Truncated llm_settings.")
+                session_local.commit() # Commit each truncate
+                print("Committed llm_settings truncate.")
 
-        print("Importing Areas...")
-        if "areas" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['areas'])} areas to import.") # Add debug print
-            for a_data in imported_data["areas"]:
-                area = Area(
-                    name=a_data["name"],
-                    description=a_data.get("description")
-                )
-                session.add(area)
-                session.flush() # Flush to get the new ID assigned by the DB
-                area_id_map[a_data["id"]] = area.id # Store mapping old_id -> new_id
-        print("Areas import complete.") # Add debug print
+                session_local.execute(text("TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated process_step_process_step_relevance.")
+                session_local.commit()
+                print("Committed process_step_process_step_relevance truncate.")
 
-        print("Importing Process Steps...")
-        if "process_steps" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['process_steps'])} process steps to import.") # Add debug print
-            for ps_data in imported_data["process_steps"]:
-                old_area_id = ps_data["area_id"]
-                new_area_id = area_id_map.get(old_area_id) # Look up new Area ID
+                session_local.execute(text("TRUNCATE TABLE usecase_usecase_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated usecase_usecase_relevance.")
+                session_local.commit()
+                print("Committed usecase_usecase_relevance truncate.")
 
-                if new_area_id is None:
-                    print(f"Warning: Original Area ID {old_area_id} for step '{ps_data['name']}' not found in new mapping. Skipping step.")
-                    continue # Skip this ProcessStep if its Area wasn't imported/found
+                session_local.execute(text("TRUNCATE TABLE usecase_step_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated usecase_step_relevance.")
+                session_local.commit()
+                print("Committed usecase_step_relevance truncate.")
 
-                step = ProcessStep(
-                    bi_id=ps_data["bi_id"],
-                    name=ps_data["name"],
-                    area_id=new_area_id, # Use the new, mapped Area ID
-                    step_description=ps_data.get("step_description"),
-                    raw_content=ps_data.get("raw_content"),
-                    summary=ps_data.get("summary"),
-                    vision_statement=ps_data.get("vision_statement"),
-                    in_scope=ps_data.get("in_scope"),
-                    out_of_scope=ps_data.get("out_of_scope"),
-                    interfaces_text=ps_data.get("interfaces_text"),
-                    what_is_actually_done=ps_data.get("what_is_actually_done"),
-                    pain_points=ps_data.get("pain_points"),
-                    targets_text=ps_data.get("targets_text")
-                )
-                session.add(step)
-                session.flush() # Flush to get the new ID assigned by the DB
-                process_step_id_map[ps_data["id"]] = step.id # Store mapping old_id -> new_id
-        print("Process Steps import complete.") # Add debug print
+                session_local.execute(text("TRUNCATE TABLE usecase_area_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated usecase_area_relevance.")
+                session_local.commit()
+                print("Committed usecase_area_relevance truncate.")
 
-        print("Importing Use Cases...")
-        if "use_cases" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['use_cases'])} use cases to import.") # Add debug print
-            for uc_data in imported_data["use_cases"]:
-                old_process_step_id = uc_data["process_step_id"]
-                new_process_step_id = process_step_id_map.get(old_process_step_id) # Look up new Process Step ID
+                session_local.execute(text("TRUNCATE TABLE use_cases RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated use_cases.")
+                session_local.commit()
+                print("Committed use_cases truncate.")
 
-                if new_process_step_id is None:
-                    print(f"Warning: Process Step ID {old_process_step_id} for use case '{uc_data['name']}' not found in new mapping. Skipping UC.")
-                    continue # Skip this UseCase if its ProcessStep wasn't imported/found
+                session_local.execute(text("TRUNCATE TABLE process_steps RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated process_steps.")
+                session_local.commit()
+                print("Committed process_steps truncate.")
 
-                use_case = UseCase(
-                    bi_id=uc_data["bi_id"],
-                    name=uc_data["name"],
-                    process_step_id=new_process_step_id, # Use the new, mapped Process Step ID
-                    priority=uc_data.get("priority"),
-                    raw_content=uc_data.get("raw_content"),
-                    summary=uc_data.get("summary"),
-                    inspiration=uc_data.get("inspiration"),
-                    wave=uc_data.get("wave"),
-                    effort_level=uc_data.get("effort_level"),
-                    status=uc_data.get("status"),
-                    business_problem_solved=uc_data.get("business_problem_solved"),
-                    target_solution_description=uc_data.get("target_solution_description"),
-                    technologies_text=uc_data.get("technologies_text"),
-                    requirements=uc_data.get("requirements"),
-                    relevants_text=uc_data.get("relevants_text"),
-                    reduction_time_transfer=uc_data.get("reduction_time_transfer"),
-                    reduction_time_launches=uc_data.get("reduction_time_launches"),
-                    reduction_costs_supply=uc_data.get("reduction_costs_supply"),
-                    quality_improvement_quant=uc_data.get("quality_improvement_quant"),
-                    ideation_notes=uc_data.get("ideation_notes"),
-                    further_ideas=uc_data.get("further_ideas"),
-                    effort_quantification=uc_data.get("effort_quantification"),
-                    potential_quantification=uc_data.get("potential_quantification"),
-                    dependencies_text=uc_data.get("dependencies_text"),
-                    contact_persons_text=uc_data.get("contact_persons_text"),
-                    related_projects_text=uc_data.get("related_projects_text")
-                )
-                session.add(use_case)
-                session.flush() # Flush to get the new ID assigned by the DB
-                usecase_id_map[uc_data["id"]] = use_case.id # Store mapping old_id -> new_id
-        print("Use Cases import complete.") # Add debug print
-        
-        # NEW: Import LLMSettings (should be before relevances if any relevance links reference users)
-        # Assuming LLMSettings would likely be tied to users, so import after users.
-        # It's unique per user_id, so check if user exists.
-        if "llm_settings" in imported_data:
-            print("Importing LLM Settings...")
-            print(f"DEBUG: Found {len(imported_data['llm_settings'])} LLM settings entries to import.") # Add debug print
-            for ls_data in imported_data["llm_settings"]:
-                old_user_id = ls_data["user_id"]
-                new_user_id = user_id_map.get(old_user_id)
+                session_local.execute(text("TRUNCATE TABLE areas RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated areas.")
+                session_local.commit()
+                print("Committed areas truncate.")
+
+                # --- NEW DEBUGGING BLOCK FOR FLASK_SESSIONS ---
+                try:
+                    print("Attempting to clear flask_sessions.")
+                    # Change TRUNCATE to DELETE for flask_sessions, as it's safer for active tables
+                    # DELETE also respects any potential locks better than TRUNCATE in some edge cases.
+                    session_local.execute(text("DELETE FROM flask_sessions;").execution_options(timeout=30)) 
+                    print("Deleted all records from flask_sessions successfully.")
+                    session_local.commit()
+                    print("Committed flask_sessions delete.")
+                except Exception as e:
+                    session_local.rollback() # Rollback changes to the session_local session
+                    print(f"CRITICAL ERROR: Failed to clear flask_sessions table during import: {e}")
+                    # traceback import is already at top of injection_service.py
+                    traceback.print_exc() # Print full traceback
+                    return {"success": False, "message": f"Critical error during session table clear: {e}. Import rolled back."}
+                # --- END NEW DEBUGGING BLOCK ---
+
+                # Moved 'users' truncate after the new 'flask_sessions' block
+                session_local.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                print("Truncated users.")
+                session_local.commit()
+                print("Committed users truncate.")
                 
-                if new_user_id is None:
-                    print(f"Warning: Original User ID {old_user_id} for LLM settings not found in new mapping. Skipping LLM settings.")
-                    continue
-                
-                # Check if settings for this user already exist (unlikely after truncate but good practice)
-                existing_ls = session.query(LLMSettings).filter_by(user_id=new_user_id).first()
-                if existing_ls:
-                    print(f"Warning: LLM settings for user {new_user_id} already exist. Skipping duplicate.")
-                    continue
+                print("Data cleared.")
 
-                ls = LLMSettings(
-                    user_id=new_user_id,
-                    openai_api_key=ls_data.get("openai_api_key"),
-                    anthropic_api_key=ls_data.get("anthropic_api_key"),
-                    google_api_key=ls_data.get("google_api_key"),
-                    ollama_base_url=ls_data.get("ollama_base_url")
-                )
-                session.add(ls)
-        print("LLM Settings import complete.") # Add debug print
+            except OperationalError as oe: # Specifically catch database operational errors (like timeout)
+                session_local.rollback()
+                print(f"ERROR: TRUNCATE operation timed out or failed with operational error: {oe}")
+                # You might want to use a Flask flash message here, but the function returns dict
+                return {"success": False, "message": f"Clearing data failed: {oe}. Import rolled back."}
+            except Exception as e:
+                session_local.rollback()
+                print(f"ERROR: TRUNCATE operations failed unexpectedly: {e}")
+                raise # Re-raise to be caught by outer block
+            
+            # --- START OF ORIGINAL IMPORT LOGIC (after truncates) ---
+            # ... (your original import logic for users, areas, steps, etc. goes here)
+            # This part will continue to use `session_local` implicitly via add/flush
 
-        print("Importing Relevance Links...")
-        # Add debug prints for each relevance type
-        if "usecase_area_relevance" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['usecase_area_relevance'])} usecase_area_relevance entries to import.")
-            for r_data in imported_data["usecase_area_relevance"]:
-                new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
-                new_target_area_id = area_id_map.get(r_data["target_area_id"])
+            # Example for users (the rest will be similar)
+            user_id_map = {}        # old_id -> new_id
+            area_id_map = {}        # old_id -> new_id
+            process_step_id_map = {} # old_id -> new_id
+            usecase_id_map = {}     # old_id -> new_id
 
-                if new_source_usecase_id is None or new_target_area_id is None:
-                    print(f"Warning: Skipping UsecaseAreaRelevance link for old UC ID {r_data['source_usecase_id']} to old Area ID {r_data['target_area_id']} due to missing mapped entity.")
-                    continue
+            print("Importing Users...")
+            if "users" in imported_data:
+                print(f"Found {len(imported_data['users'])} users to import.")
+                for u_data in imported_data["users"]:
+                    user = User(username=u_data["username"])
+                    if 'password' in u_data and u_data['password'] :
+                        user.password = u_data['password'] # Directly assign the HASHED password
+                    else:
+                        user.set_password("imported_default_password") # Fallback to a default if dump lacks password
+                    
+                    session_local.add(user)
+                    session_local.flush() # Flush to get the new ID assigned by the DB
+                    user_id_map[u_data["id"]] = user.id # Store mapping old_id -> new_id
+            print("Users import complete.")
+            
+            # Example: Areas
+            print("Importing Areas...")
+            if "areas" in imported_data:
+                print(f"Found {len(imported_data['areas'])} areas to import.")
+                for a_data in imported_data["areas"]:
+                    area = Area(
+                        name=a_data["name"],
+                        description=a_data.get("description")
+                    )
+                    session_local.add(area)
+                    session_local.flush()
+                    area_id_map[a_data["id"]] = area.id
+            print("Areas import complete.")
 
-                rel = UsecaseAreaRelevance(
-                    source_usecase_id=new_source_usecase_id,
-                    target_area_id=new_target_area_id,
-                    relevance_score=r_data["relevance_score"],
-                    relevance_content=r_data.get("relevance_content")
-                )
-                session.add(rel)
-        
-        if "usecase_step_relevance" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['usecase_step_relevance'])} usecase_step_relevance entries to import.")
-            for r_data in imported_data["usecase_step_relevance"]:
-                new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
-                new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
+            # Example: Process Steps
+            print("Importing Process Steps...")
+            if "process_steps" in imported_data:
+                print(f"Found {len(imported_data['process_steps'])} process steps to import.")
+                for ps_data in imported_data["process_steps"]:
+                    old_area_id = ps_data["area_id"]
+                    new_area_id = area_id_map.get(old_area_id)
 
-                if new_source_usecase_id is None or new_target_process_step_id is None:
-                    print(f"Warning: Skipping UsecaseStepRelevance link for old UC ID {r_data['source_usecase_id']} to old PS ID {r_data['target_process_step_id']} due to missing mapped entity.")
-                    continue
+                    if new_area_id is None:
+                        print(f"Warning: Original Area ID {old_area_id} for step '{ps_data['name']}' not found in new mapping. Skipping step.")
+                        continue
 
-                rel = UsecaseStepRelevance(
-                    source_usecase_id=new_source_usecase_id,
-                    target_process_step_id=new_target_process_step_id,
-                    relevance_score=r_data["relevance_score"],
-                    relevance_content=r_data.get("relevance_content")
-                )
-                session.add(rel)
+                    step = ProcessStep(
+                        bi_id=ps_data["bi_id"],
+                        name=ps_data["name"],
+                        area_id=new_area_id,
+                        step_description=ps_data.get("step_description"),
+                        raw_content=ps_data.get("raw_content"),
+                        summary=ps_data.get("summary"),
+                        vision_statement=ps_data.get("vision_statement"),
+                        in_scope=ps_data.get("in_scope"),
+                        out_of_scope=ps_data.get("out_of_scope"),
+                        interfaces_text=ps_data.get("interfaces_text"),
+                        what_is_actually_done=ps_data.get("what_is_actually_done"),
+                        pain_points=ps_data.get("pain_points"),
+                        targets_text=ps_data.get("targets_text")
+                    )
+                    session_local.add(step)
+                    session_local.flush()
+                    process_step_id_map[ps_data["id"]] = step.id
+            print("Process Steps import complete.")
 
-        if "usecase_usecase_relevance" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['usecase_usecase_relevance'])} usecase_usecase_relevance entries to import.")
-            for r_data in imported_data["usecase_usecase_relevance"]:
-                new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
-                new_target_usecase_id = usecase_id_map.get(r_data["target_usecase_id"])
+            # Example: Use Cases
+            print("Importing Use Cases...")
+            if "use_cases" in imported_data:
+                print(f"Found {len(imported_data['use_cases'])} use cases to import.")
+                for uc_data in imported_data["use_cases"]:
+                    old_process_step_id = uc_data["process_step_id"]
+                    new_process_step_id = process_step_id_map.get(old_process_step_id)
 
-                if new_source_usecase_id is None or new_target_usecase_id is None:
-                    print(f"Warning: Skipping UsecaseUsecaseRelevance link for old UC ID {r_data['source_usecase_id']} to old UC ID {r_data['target_usecase_id']} due to missing mapped entity.")
-                    continue
-                # Also handle self-relevance check here in case the source and target map to the same new ID
-                if new_source_usecase_id == new_target_usecase_id:
-                    print(f"Warning: Skipping UsecaseUsecaseRelevance self-link for new UC ID {new_source_usecase_id} (original {r_data['source_usecase_id']}).")
-                    continue
+                    if new_process_step_id is None:
+                        print(f"Warning: Process Step ID {old_process_step_id} for use case '{uc_data['name']}' not found in new mapping. Skipping UC.")
+                        continue
+
+                    use_case = UseCase(
+                        bi_id=uc_data["bi_id"],
+                        name=uc_data["name"],
+                        process_step_id=new_process_step_id,
+                        priority=uc_data.get("priority"),
+                        raw_content=uc_data.get("raw_content"),
+                        summary=uc_data.get("summary"),
+                        inspiration=uc_data.get("inspiration"),
+                        wave=uc_data.get("wave"),
+                        effort_level=uc_data.get("effort_level"),
+                        status=uc_data.get("status"),
+                        business_problem_solved=uc_data.get("business_problem_solved"),
+                        target_solution_description=uc_data.get("target_solution_description"),
+                        technologies_text=uc_data.get("technologies_text"),
+                        requirements=uc_data.get("requirements"),
+                        relevants_text=uc_data.get("relevants_text"),
+                        reduction_time_transfer=uc_data.get("reduction_time_transfer"),
+                        reduction_time_launches=uc_data.get("reduction_time_launches"),
+                        reduction_costs_supply=uc_data.get("reduction_costs_supply"),
+                        quality_improvement_quant=uc_data.get("quality_improvement_quant"),
+                        ideation_notes=uc_data.get("ideation_notes"),
+                        further_ideas=uc_data.get("further_ideas"),
+                        effort_quantification=uc_data.get("effort_quantification"),
+                        potential_quantification=uc_data.get("potential_quantification"),
+                        dependencies_text=uc_data.get("dependencies_text"),
+                        contact_persons_text=uc_data.get("contact_persons_text"),
+                        related_projects_text=uc_data.get("related_projects_text")
+                    )
+                    session_local.add(use_case)
+                    session_local.flush()
+                    usecase_id_map[uc_data["id"]] = use_case.id
+            print("Use Cases import complete.")
+            
+            # LLMSettings (already added to your code)
+            if "llm_settings" in imported_data:
+                print("Importing LLM Settings...")
+                print(f"Found {len(imported_data['llm_settings'])} LLM settings entries to import.")
+                for ls_data in imported_data["llm_settings"]:
+                    old_user_id = ls_data["user_id"]
+                    new_user_id = user_id_map.get(old_user_id)
+                    
+                    if new_user_id is None:
+                        print(f"Warning: Original User ID {old_user_id} for LLM settings not found in new mapping. Skipping LLM settings.")
+                        continue
+                    
+                    existing_ls = session_local.query(LLMSettings).filter_by(user_id=new_user_id).first()
+                    if existing_ls:
+                        print(f"Warning: LLM settings for user {new_user_id} already exist. Skipping duplicate.")
+                        continue
+
+                    ls = LLMSettings(
+                        user_id=new_user_id,
+                        openai_api_key=ls_data.get("openai_api_key"),
+                        anthropic_api_key=ls_data.get("anthropic_api_key"),
+                        google_api_key=ls_data.get("google_api_key"),
+                        ollama_base_url=ls_data.get("ollama_base_url")
+                    )
+                    session_local.add(ls)
+            print("LLM Settings import complete.")
 
 
-                rel = UsecaseUsecaseRelevance(
-                    source_usecase_id=new_source_usecase_id,
-                    target_usecase_id=new_target_usecase_id,
-                    relevance_score=r_data["relevance_score"],
-                    relevance_content=r_data.get("relevance_content")
-                )
-                session.add(rel)
+            # Relevance Links (already added to your code)
+            print("Importing Relevance Links...")
+            # Add debug prints for each relevance type
+            if "usecase_area_relevance" in imported_data:
+                print(f"Found {len(imported_data['usecase_area_relevance'])} usecase_area_relevance entries to import.")
+                for r_data in imported_data["usecase_area_relevance"]:
+                    new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
+                    new_target_area_id = area_id_map.get(r_data["target_area_id"])
 
-        # NEW: Import ProcessStepProcessStepRelevance
-        if "process_step_process_step_relevance" in imported_data:
-            print(f"DEBUG: Found {len(imported_data['process_step_process_step_relevance'])} process_step_process_step_relevance entries to import.")
-            for r_data in imported_data["process_step_process_step_relevance"]:
-                new_source_process_step_id = process_step_id_map.get(r_data["source_process_step_id"])
-                new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
+                    if new_source_usecase_id is None or new_target_area_id is None:
+                        print(f"Warning: Skipping UsecaseAreaRelevance link for old UC ID {r_data['source_usecase_id']} to old Area ID {r_data['target_area_id']} due to missing mapped entity.")
+                        continue
 
-                if new_source_process_step_id is None or new_target_process_step_id is None:
-                    print(f"Warning: Skipping ProcessStepProcessStepRelevance link for old PS ID {r_data['source_process_step_id']} to old PS ID {r_data['target_process_step_id']} due to missing mapped entity.")
-                    continue
-                # Handle self-relevance check
-                if new_source_process_step_id == new_target_process_step_id:
-                    print(f"Warning: Skipping ProcessStepProcessStepRelevance self-link for new PS ID {new_source_process_step_id} (original {r_data['source_process_step_id']}).")
-                    continue
+                    rel = UsecaseAreaRelevance(
+                        source_usecase_id=new_source_usecase_id,
+                        target_area_id=new_target_area_id,
+                        relevance_score=r_data["relevance_score"],
+                        relevance_content=r_data.get("relevance_content")
+                    )
+                    session_local.add(rel)
+            
+            if "usecase_step_relevance" in imported_data:
+                print(f"Found {len(imported_data['usecase_step_relevance'])} usecase_step_relevance entries to import.")
+                for r_data in imported_data["usecase_step_relevance"]:
+                    new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
+                    new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
 
-                rel = ProcessStepProcessStepRelevance(
-                    source_process_step_id=new_source_process_step_id,
-                    target_process_step_id=new_target_process_step_id,
-                    relevance_score=r_data["relevance_score"],
-                    relevance_content=r_data.get("relevance_content")
-                )
-                session.add(rel)
-        print("Relevance Links import complete.") # Add debug print
+                    if new_source_usecase_id is None or new_target_process_step_id is None:
+                        print(f"Warning: Skipping UsecaseStepRelevance link for old UC ID {r_data['source_usecase_id']} to old PS ID {r_data['target_process_step_id']} due to missing mapped entity.")
+                        continue
 
-        print("DEBUG: Attempting final session.commit() for database import.") # Add debug print
-        session.commit()
-        print("DEBUG: session.commit() successful.") # Add debug print
-        return {"success": True, "message": "Database import successful."}
+                    rel = UsecaseStepRelevance(
+                        source_usecase_id=new_source_usecase_id,
+                        target_process_step_id=new_target_process_step_id,
+                        relevance_score=r_data["relevance_score"],
+                        relevance_content=r_data.get("relevance_content")
+                    )
+                    session_local.add(rel)
+
+            if "usecase_usecase_relevance" in imported_data:
+                print(f"Found {len(imported_data['usecase_usecase_relevance'])} usecase_usecase_relevance entries to import.")
+                for r_data in imported_data["usecase_usecase_relevance"]:
+                    new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
+                    new_target_usecase_id = usecase_id_map.get(r_data["target_usecase_id"])
+
+                    if new_source_usecase_id is None or new_target_usecase_id is None:
+                        print(f"Warning: Skipping UsecaseUsecaseRelevance link for old UC ID {r_data['source_usecase_id']} to old UC ID {r_data['target_usecase_id']} due to missing mapped entity.")
+                        continue
+                    # Also handle self-relevance check here in case the source and target map to the same new ID
+                    if new_source_usecase_id == new_target_usecase_id:
+                        print(f"Warning: Skipping UsecaseUsecaseRelevance self-link for new UC ID {new_source_usecase_id} (original {r_data['source_usecase_id']}).")
+                        continue
+
+
+                    rel = UsecaseUsecaseRelevance(
+                        source_usecase_id=new_source_usecase_id,
+                        target_usecase_id=new_target_usecase_id,
+                        relevance_score=r_data["relevance_score"],
+                        relevance_content=r_data.get("relevance_content")
+                    )
+                    session_local.add(rel)
+
+            # NEW: Import ProcessStepProcessStepRelevance
+            if "process_step_process_step_relevance" in imported_data:
+                print(f"Found {len(imported_data['process_step_process_step_relevance'])} process_step_process_step_relevance entries to import.")
+                for r_data in imported_data["process_step_process_step_relevance"]:
+                    new_source_process_step_id = process_step_id_map.get(r_data["source_process_step_id"])
+                    new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
+
+                    if new_source_process_step_id is None or new_target_process_step_id is None:
+                        print(f"Warning: Skipping ProcessStepProcessStepRelevance link for old PS ID {r_data['source_process_step_id']} to old PS ID {r_data['target_process_step_id']} due to missing mapped entity.")
+                        continue
+                    # Handle self-relevance check
+                    if new_source_process_step_id == new_target_process_step_id:
+                        print(f"Warning: Skipping ProcessStepProcessStepRelevance self-link for new PS ID {new_source_process_step_id} (original {r_data['source_process_step_id']}).")
+                        continue
+
+                    rel = ProcessStepProcessStepRelevance(
+                        source_process_step_id=new_source_process_step_id,
+                        target_process_step_id=new_target_process_step_id,
+                        relevance_score=r_data["relevance_score"],
+                        relevance_content=r_data.get("relevance_content")
+                    )
+                    session_local.add(rel)
+            print("Relevance Links import complete.")
+
+            print("Attempting final session.commit() for database import.")
+            session_local.commit()
+            print("session_local.commit() successful.")
+            return {"success": True, "message": "Database import successful."}
 
     except IntegrityError as ie:
-        session.rollback()
+        session_local.rollback()
         print(f"Database integrity error during import: {ie}")
         traceback.print_exc()
         return {
@@ -1474,7 +1575,7 @@ def import_database_from_json(json_string, clear_existing_data=False):
             "message": f"Database integrity error: {ie}. Import rolled back."
         }
     except Exception as e:
-        session.rollback()
+        session_local.rollback()
         print(f"Error during database import: {e}")
         traceback.print_exc()
         return {

@@ -13,6 +13,11 @@ class Config:
     # In a real production environment, you should NEVER use a hardcoded fallback.
     # Ensure SECRET_KEY is set via environment variables or a secure config system.
 
+    # Set maximum content length for requests (e.g., file uploads) to 16MB
+    # Your 1MB file is fine, but this prevents larger files from causing issues.
+    # Adjust this value as needed based on your expected maximum upload size.
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 Megabytes
+
     # Database settings
     # This URL format is for connecting *from within the backend container* to the *db service*
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://user:password@db:5432/usecase_explorer_db'

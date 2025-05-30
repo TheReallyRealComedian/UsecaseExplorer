@@ -1,0 +1,62 @@
+[
+  {
+    "bi_id": "BEX01",
+    "name": "01 | Lead to Prospect",
+    "area_name": "Bio Excellence",
+    "step_description": "The lead-to-prospect process is driven by Marketing and describes the identification of potential new contract manufacturing leads. It includes qualification of leads based on BioX strategy and corresponding acquisition focus, before assignment to respective BD&KAMs. This process translates BioX strategy and target portfolio into product/project acquisition.",
+    "raw_content": null,
+    "summary": null,
+    "vision_statement": null,
+    "in_scope": null,
+    "out_of_scope": null,
+    "interfaces_text": null,
+    "what_is_actually_done": null,
+    "pain_points": null,
+    "targets_text": null
+  },
+  {
+    "bi_id": "BEX02",
+    "name": "02 | Prospect to Contract",
+    "area_name": "Bio Excellence",
+    "step_description": "The Prospect-to-Contract process outlines the steps to take a new business prospect to a signed contract with the client.The process evaluates and assesses the prospect from a business, from a capacity and from a technical standpoint. Once fully assessed, the client is involved via proposal and contract negotiations. During this process, the scope of the project\u2019s work, including timeline, deliverables, and pricing are defined.",
+    "raw_content": null,
+    "summary": null,
+    "vision_statement": null,
+    "in_scope": null,
+    "out_of_scope": null,
+    "interfaces_text": null,
+    "what_is_actually_done": null,
+    "pain_points": null,
+    "targets_text": null
+  },
+  {
+    "bi_id": "BEX03",
+    "name": "03 | Contract to Cash - Project Phase",
+    "area_name": "Bio Excellence",
+    "step_description": "The Contract-to-Cash process covers the project phase and the commercial phase of a new customer product that is to be implemented at BI by BioX. The project Phase starts with a signed contract that includes the project plan (tech-transfer) and usually ends with submission/approval. PPM is the central hub for all project related topics and leads the cross functional project team to drive progress, to meet milestones, performs cost controlling, and to fulfil deliverables.",
+    "raw_content": null,
+    "summary": null,
+    "vision_statement": null,
+    "in_scope": null,
+    "out_of_scope": null,
+    "interfaces_text": null,
+    "what_is_actually_done": null,
+    "pain_points": null,
+    "targets_text": null
+  },
+  {
+    "bi_id": "BEX04",
+    "name": "04 | Account Management",
+    "area_name": "Bio Excellence",
+    "step_description": "Account Management is responsible for steering all aspects of an account and the related project and product portfolio along an established account strategy and the associated business & action plan. Once a new contract is signed, the account undergoes an initial evaluation and ASC endorsement. Existing accounts will undergo an annual strategy review cycle. Accounts are managed by ABTs, which are led by BD&KAM, and they represent a small-sized, cross-functional & empowered team of functional leaders.",
+    "raw_content": null,
+    "summary": null,
+    "vision_statement": null,
+    "in_scope": null,
+    "out_of_scope": null,
+    "interfaces_text": null,
+    "what_is_actually_done": null,
+    "pain_points": null,
+    "targets_text": null
+  }
+]
