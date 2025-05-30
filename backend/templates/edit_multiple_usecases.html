@@ -1,0 +1,346 @@
+{# UsecaseExplorer/backend/templates/edit_multiple_usecases.html #}
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Reuse styles from edit_multiple_steps.html or define specific ones if needed */
+    .edit-usecase-card .card-body {
+        padding: 1.5rem;
+    }
+    .edit-usecase-card .info-list dt {
+        text-align: left;
+        padding-right: 0;
+        font-size: 0.95rem;
+    }
+    .edit-usecase-card .field-row {
+        display: grid;
+        grid-template-columns: 200px 1fr 1.5fr; /* Field Name | Current Value | New Value */
+        gap: 15px;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+        border-bottom: 1px dashed var(--border-color);
+        align-items: top;
+    }
+    .edit-usecase-card .field-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    .edit-usecase-card .field-row h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+    .edit-usecase-card .field-row .current-value-display {
+        min-height: 80px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+        word-break: break-word;
+        padding: 8px;
+        border: 1px solid var(--raw-light-grey-200);
+        background-color: var(--element-bg-light);
+        border-radius: var(--border-radius-sm);
+    }
+    .edit-usecase-card .field-row .new-value-input,
+    .edit-usecase-card .field-row .new-value-select {
+        font-size: 0.9rem;
+        padding: 8px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        width: 100%;
+        min-height: 80px;
+        resize: vertical;
+    }
+    .edit-usecase-card .field-row.process_step-field .new-value-select,
+    .edit-usecase-card .field-row.priority-field .new-value-input { /* Specific styles for select/number inputs */
+        min-height: unset; /* Override textarea's min-height */
+        height: auto;
+    }
+    .unsaved-field-change {
+        background-color: var(--raw-alert-warning-bg);
+        border-color: var(--raw-alert-warning-border) !important;
+    }
+    .unsaved-field-change .new-value-input,
+    .unsaved-field-change .new-value-select {
+         border-color: var(--raw-alert-warning-text) !important;
+    }
+    .action-buttons-group {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding-top: 15px;
+        border-top: 1px dashed var(--border-color);
+    }
+    .save-all-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .save-all-controls .btn {
+        min-width: 150px;
+    }
+
+    /* LLM Helper Specific Styles for this page */
+    .llm-helper-section .chat-container {
+        min-height: 350px;
+        height: auto; /* Allow height to adjust */
+        display: flex; /* Ensure flex for chat elements */
+        flex-direction: column;
+    }
+    .llm-helper-section .chat-display {
+        flex-grow: 1; /* Allow display to grow */
+        max-height: 300px; /* Adjust max height for chat history */
+        overflow-y: auto; /* Enable scrolling */
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        background-color: var(--raw-light-grey-100);
+        margin-bottom: 15px;
+    }
+    .llm-helper-section .image-paste-area {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: 15px;
+        text-align: center;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+        position: relative;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9em;
+        background-color: var(--raw-light-grey-100);
+    }
+    .llm-helper-section .image-paste-area:hover,
+    .llm-helper-section .image-paste-area.drag-over {
+        border-color: var(--primary-color);
+        background-color: var(--raw-light-grey-200);
+    }
+    .llm-helper-section .image-paste-area.has-image {
+        border-color: var(--primary-color-light);
+        background-color: var(--raw-alert-info-bg);
+        color: var(--text-primary);
+        font-weight: 500;
+        cursor: default; /* Change cursor when an image is loaded */
+    }
+    .llm-helper-section #llmHelperImagePreview {
+        max-width: 100%;
+        max-height: 200px;
+        display: none; /* Hidden by default */
+        margin-top: 10px;
+        border-radius: var(--border-radius-xs);
+        border: 1px solid var(--border-color);
+        object-fit: contain; /* Ensure image fits within bounds without cropping */
+    }
+    .llm-helper-section .image-controls {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+    }
+    .llm-helper-section .chat-input-area {
+        display: flex;
+        gap: 10px;
+        width: 100%;
+        align-items: center;
+    }
+    .llm-helper-section .chat-input-area textarea {
+        flex-grow: 1;
+        resize: vertical;
+        min-height: 40px; /* Minimum height for single line */
+        max-height: 120px; /* Maximum height to prevent too much growth */
+        padding: 8px 12px;
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-color);
+        font-size: 0.95rem;
+    }
+    .llm-helper-section .chat-input-area select,
+    .llm-helper-section .chat-input-area button {
+        flex-shrink: 0;
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+    .llm-helper-section .chat-bubble img { /* Styles for images in chat bubbles */
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bulk-edit-usecases-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        Edit the fields of your selected Use Cases. Changes are saved in bulk.
+    </p>
+
+    {# LLM Helper Section #}
+    <div class="card mb-4 llm-helper-section">
+        <div class="card-header d-flex justify-content-between align-items-center" id="llmHelperHeader">
+            <h2 class="card-title mb-0">LLM Helper (Llama 3.1-Vision)</h2>
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#llmHelperBody" aria-expanded="true" aria-controls="llmHelperBody">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        </div>
+        <div id="llmHelperBody" class="card-body collapse show">
+            <p class="text-muted">Ask Llama 3.1-Vision about your Use Cases, or paste a screenshot for analysis.</p>
+
+            <div class="mb-3">
+                <label for="llmHelperModelSelect" class="form-label">Select LLM:</label>
+                <select id="llmHelperModelSelect" class="form-select">
+                    <option value="">Loading models...</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="llmHelperSystemPromptInput" class="form-label">System Prompt (Global for your user):</label>
+                <textarea class="form-control" id="llmHelperSystemPromptInput" rows="3" placeholder="e.g., 'You are a helpful assistant. Provide concise answers.'">{{ current_user.system_prompt | default('', true) }}</textarea>
+                <div class="d-flex justify-content-end mt-2">
+                    <button type="button" class="btn btn-sm btn-primary" id="llmHelperSaveSystemPromptButton">
+                        <i class="fas fa-save"></i> Save Global System Prompt
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Paste or Drop Image:</label>
+                <div class="image-paste-area" id="llmHelperImagePasteArea">
+                    Paste (Ctrl+V) or drag & drop a screenshot here.
+                </div>
+                <img id="llmHelperImagePreview" src="" alt="Pasted Image Preview">
+                <div class="image-controls">
+                    <button type="button" class="btn btn-sm btn-secondary" id="llmHelperClearImageButton" style="display:none;">
+                        <i class="fas fa-times-circle"></i> Clear Image
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-display" id="llmHelperChatDisplay">
+                    {# Chat history for this helper will be loaded/managed by JS #}
+                    <div class="chat-placeholder">
+                        <i class="fas fa-comments"></i>
+                        <p>Ask Llama 3.1-Vision anything!</p>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="llmHelperChatInput" class="form-control" placeholder="Type your message... (Shift+Enter for new line)" rows="1"></textarea>
+                    <button class="btn btn-primary" id="llmHelperSendMessageButton">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                    <button class="btn btn-secondary" id="llmHelperClearChatButton">
+                        <i class="fas fa-eraser"></i> Clear Chat
+                    </button>
+                </div>
+            </div>
+            <div class="help-text" style="margin-top: 0.5rem;">
+                This chat uses a limited history. Your global system prompt is used.
+            </div>
+        </div>
+    </div>
+
+
+    {% if usecases_data %}
+        <div class="save-all-controls">
+            <span id="pendingChangesCount" class="text-muted">0 pending changes</span>
+            <button type="button" class="btn btn-primary" id="saveAllChangesBtn" disabled>
+                <i class="fas fa-save me-1"></i> Save All Changes
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelAllChangesBtn" disabled>
+                <i class="fas fa-times-circle me-1"></i> Discard All
+            </button>
+        </div>
+
+        {% for uc_item in usecases_data %}
+        <div class="card mb-4 edit-usecase-card" data-uc-id="{{ uc_item.id }}">
+            <div class="card-header">
+                <h2 class="card-title">
+                    Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=uc_item.id) }}">{{ uc_item.name }}</a>
+                    <small class="text-muted">(BI_ID: {{ uc_item.bi_id }})</small>
+                </h2>
+                <small class="text-muted">Current Step: {{ uc_item.process_step_name }} (Area: {{ uc_item.area_name }})</small>
+            </div>
+            <div class="card-body">
+                {% for field_key, field_name in editable_fields.items() %}
+                <div class="field-row" data-field-key="{{ field_key }}">
+                    <h5>{{ field_name }}:</h5>
+                    <div class="current-value-display">
+                        {% if field_key == 'process_step_id' %}
+                            {{ uc_item.current_process_step_name | default('N/A') }} (ID: {{ uc_item.current_process_step_id | default('N/A') }})
+                        {% else %}
+                            {{ uc_item['current_' + field_key] | default('N/A') }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if field_key == 'process_step_id' %}
+                            <select class="form-select new-value-select" data-field="{{ field_key }}" data-uc-id="{{ uc_item.id }}">
+                                {% for step_opt in all_steps %}
+                                    <option value="{{ step_opt.id }}" {% if uc_item.new_values.process_step_id == step_opt.id %}selected{% endif %}>
+                                        {{ step_opt.name }} (BI_ID: {{ step_opt.bi_id }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% elif field_key == 'priority' %}
+                            <input type="number" 
+                                   class="form-control new-value-input" 
+                                   data-field="{{ field_key }}" 
+                                   data-uc-id="{{ uc_item.id }}" 
+                                   min="1" max="4" 
+                                   value="{{ uc_item.new_values[field_key] | default('', true) }}" 
+                                   placeholder="New priority (1-4)">
+                        {% else %}
+                            <textarea class="form-control new-value-input" 
+                                      data-field="{{ field_key }}" 
+                                      data-uc-id="{{ uc_item.id }}" 
+                                      rows="3" 
+                                      placeholder="New value for {{ field_name }}">{% if uc_item.new_values[field_key] is not none %}{{ uc_item.new_values[field_key] }}{% endif %}</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="save-all-controls">
+            <span id="pendingChangesCountBottom" class="text-muted">0 pending changes</span>
+            <button type="button" class="btn btn-primary" id="saveAllChangesBtnBottom" disabled>
+                <i class="fas fa-save me-1"></i> Save All Changes
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelAllChangesBtnBottom" disabled>
+                <i class="fas fa-times-circle me-1"></i> Discard All
+            </button>
+        </div>
+
+    {% else %}
+        <div class="alert alert-warning text-center">
+            No use cases loaded for editing. Please select some from the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('injection.data_update_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Update</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script type="text/javascript">
+    // Pass initial data to JavaScript for client-side processing
+    const INITIAL_USETYPE_DATA = {{ usecases_data | tojson | safe }};
+    const ALL_STEPS_DATA_FOR_DROPDOWN = {{ all_steps | tojson | safe }};
+    const EDITABLE_FIELDS_CONFIG = {{ editable_fields | tojson | safe }};
+</script>
+{# New JavaScript file for bulk edit UI and LLM helper. It imports common_llm_chat.js #}
+<script type="module" src="{{ url_for('static', filename='js/edit_multiple_usecases_ui.js') }}"></script>
+{% endblock %}

@@ -95,7 +95,7 @@
     --border-radius: 16px; /* Much more rounded */
     --border-radius-lg: 24px; /* Large radius */
     --border-radius-sm: 12px; /* Small radius */
-    --border-radius-xs: 8px; /* Extra small radius */
+    --border-radius-xs: 8px; /* Extra small style.css - Modern Dashboard Design */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     /* Breadcrumb variables */
@@ -118,7 +118,7 @@
     --alert-warning-text: var(--raw-alert-warning-text);
     --alert-warning-bg: var(--raw-alert-warning-bg);
     --alert-warning-border: var(--raw-alert-warning-border);
-    --alert-info-text: var(--raw-alert-info-text);
+    --alert-info-text: var(--raw-alert-info-text); /* Used the variable for consistency */
     --alert-info-bg: var(--raw-alert-info-bg);
     --alert-info-border: var(--raw-alert-info-border);
 }
@@ -449,6 +449,7 @@ ul {
     margin-bottom: 0;
     border-bottom: 1px solid var(--raw-light-grey-300);
     background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%);
+    position: relative;
 }
 
 .card-title {
@@ -567,14 +568,13 @@ form button[type="submit"],
     border-radius: var(--border-radius-sm);
     font-weight: 600;
     transition: all 0.3s ease;
-    border: none;
+    border: none; /* Keep as none, specific btn classes add border */
     padding: 16px 32px;
     cursor: pointer;
     font-size: 0.95rem;
     align-self: flex-start;
     text-align: center;
     position: relative;
-    overflow: hidden;
 }
 
 form button[type="submit"].btn-primary,
@@ -582,6 +582,7 @@ form button[type="submit"].btn-primary,
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
     color: var(--white);
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--primary-color); /* Explicit border */
 }
 
 form button[type="submit"]:hover,
@@ -593,6 +594,7 @@ form button[type="submit"]:hover,
 .btn-secondary {
     background: linear-gradient(135deg, var(--text-secondary) 0%, var(--raw-medium-grey-300) 100%);
     color: var(--white);
+    border: 1px solid var(--text-secondary); /* Explicit border */
 }
 
 .btn-secondary:hover {
@@ -603,6 +605,7 @@ form button[type="submit"]:hover,
 .btn-danger {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     color: var(--white);
+    border: 1px solid #dc2626; /* Explicit border */
 }
 
 .btn-danger:hover {
@@ -613,6 +616,7 @@ form button[type="submit"]:hover,
 .btn-info {
     background: linear-gradient(135deg, var(--raw-alert-info-text) 0%, #0369a1 100%);
     color: var(--white);
+    border: 1px solid var(--raw-alert-info-text); /* Explicit border */
 }
 
 .btn-info:hover {
@@ -778,7 +782,7 @@ form button[type="submit"]:hover,
 .page-content p.text-muted {
     color: var(--text-secondary) !important;
     font-size: 1.05rem;
-    margin-top: -20px;
+    margin-top: 2px;
     margin-bottom: 30px;
 }
 
@@ -864,6 +868,7 @@ form button[type="submit"]:hover,
     font-size: 0.8rem;
     color: var(--text-secondary);
     display: block;
+
 }
 
 /* Nested Use Case Lists (e.g., on Area Detail or Index) */
@@ -1093,59 +1098,44 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .page-title {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary); /* Changed to var */
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .llm-data-prep-page .page-subtitle {
-    color: var(--text-secondary); /* Changed to var */
+    color: var(--text-secondary);
     font-size: 1.1rem;
 }
 
-/* Ensure proper Bootstrap collapse behavior */
-.llm-data-prep-page .collapse {
-    transition: height 0.35s ease;
-}
+/* --- REMOVED custom collapse CSS for llm-data-prep-page --- */
+/* Let Bootstrap handle all collapse states. */
 
-.llm-data-prep-page .collapse:not(.show) {
-    display: none;
-}
-
-.llm-data-prep-page .collapse.show {
-    display: block;
-}
-
-.llm-data-prep-page .collapsing {
-    height: 0;
-    overflow: hidden;
-    transition: height 0.35s ease;
-}
 
 /* Better card styling */
 .llm-data-prep-page .card {
-    border: none; /* Changed from 1px solid */
-    border-radius: var(--border-radius); /* Changed from 12px */
-    box-shadow: var(--shadow-sm); /* Changed from 0 2px 8px rgba(0, 0, 0, 0.06) */
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
     margin-bottom: 2rem;
     overflow: hidden;
-    transition: all 0.3s ease; /* Added transition for hover */
+    transition: all 0.3s ease;
 }
 
 .llm-data-prep-page .card:hover {
-    box-shadow: var(--shadow-md); /* Added hover shadow */
-    transform: translateY(-2px); /* Added hover lift */
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
 .llm-data-prep-page .card-header {
-    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%); /* Changed to gradient */
-    border-bottom: 1px solid var(--raw-light-grey-300); /* Changed to var */
+    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%);
+    border-bottom: 1px solid var(--raw-light-grey-300);
     padding: 1.5rem 2rem;
 }
 
 .llm-data-prep-page .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Changed to gradient text */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1170,15 +1160,15 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .selection-item {
-    background: var(--raw-light-grey-100); /* Changed to var */
-    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 8px */
+    background: var(--raw-light-grey-100);
+    border: 1px solid var(--raw-light-grey-300);
+    border-radius: var(--border-radius-sm);
     padding: 1.5rem;
 }
 
 .llm-data-prep-page .selection-label {
     font-weight: 600;
-    color: var(--text-primary); /* Changed to var */
+    color: var(--text-primary);
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -1205,15 +1195,15 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .search-input {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .search-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Updated shadow */
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .llm-data-prep-page .button-group {
@@ -1229,24 +1219,24 @@ form button[type="submit"]:hover,
 
 /* Custom select styling */
 .llm-data-prep-page .custom-select {
-    border: 1px solid var(--border-color); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
     min-height: 120px;
     max-height: 200px;
     overflow-y: auto;
-    background: var(--white); /* Changed to var */
+    background: var(--white);
 }
 
 .llm-data-prep-page .select-option {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--raw-light-grey-200); /* Changed to var */
+    border-bottom: 1px solid var(--raw-light-grey-200);
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .select-option:hover {
-    background: var(--raw-light-grey-100); /* Changed to var */
+    background: var(--raw-light-grey-100);
 }
 
 .llm-data-prep-page .select-option:last-child {
@@ -1254,14 +1244,14 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .select-option.selected {
-    background: var(--raw-alert-info-bg); /* Changed to var */
+    background: var(--raw-alert-info-bg);
     border-left: 3px solid var(--primary-color);
     font-weight: 500;
 }
 
 .llm-data-prep-page .help-text {
     font-size: 0.875rem;
-    color: var(--text-secondary); /* Changed to var */
+    color: var(--text-secondary);
     margin-top: 0.5rem;
     line-height: 1.4;
 }
@@ -1279,15 +1269,15 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .field-group {
-    background: var(--raw-light-grey-100); /* Changed to var */
-    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
-    border-radius: var(--border-radius); /* Changed from 8px to default card radius */
+    background: var(--raw-light-grey-100);
+    border: 1px solid var(--raw-light-grey-300);
+    border-radius: var(--border-radius);
     overflow: hidden;
 }
 
 /* Fix field group header to work with Bootstrap */
 .llm-data-prep-page .field-group-header {
-    background: var(--raw-light-grey-300); /* Changed to var */
+    background: var(--raw-light-grey-300);
     padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
@@ -1298,12 +1288,12 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .field-group-header:hover {
-    background: var(--raw-medium-grey-100); /* Changed to var */
+    background: var(--raw-medium-grey-100);
 }
 
 .llm-data-prep-page .field-group-title {
     font-weight: 600;
-    color: var(--text-primary); /* Changed to var */
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -1330,7 +1320,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .checkbox-item:hover {
-    background: var(--white); /* Changed to var */
+    background: var(--white);
 }
 
 .llm-data-prep-page .checkbox-item input[type="checkbox"] {
@@ -1352,8 +1342,8 @@ form button[type="submit"]:hover,
     width: 100%;
     min-height: 120px;
     padding: 1rem;
-    border: 1px solid var(--border-color); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
@@ -1362,35 +1352,35 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .system-prompt textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Updated shadow */
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 /* Preview section improvements */
 .llm-data-prep-page .preview-empty {
     text-align: center;
     padding: 3rem 2rem;
-    color: var(--text-secondary); /* Changed to var */
+    color: var(--text-secondary);
 }
 
 .llm-data-prep-page .preview-empty i {
     font-size: 3rem;
     margin-bottom: 1rem;
-    color: var(--border-color); /* Changed to var */
+    color: var(--border-color);
 }
 
 .llm-data-prep-page .preview-empty h3 {
     margin-bottom: 0.5rem;
-    color: var(--text-primary); /* Changed to var */
+    color: var(--text-primary);
 }
 
 /* Chat improvements */
 .llm-data-prep-page .chat-container {
-    background: var(--raw-light-grey-100); /* Changed to var */
-    border-radius: var(--border-radius); /* Changed from 8px */
+    background: var(--raw-light-grey-100);
+    border-radius: var(--border-radius);
     min-height: 300px;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--raw-light-grey-300); /* Changed to var */
+    border: 1px solid var(--raw-light-grey-300);
 }
 
 .llm-data-prep-page .chat-display {
@@ -1402,57 +1392,57 @@ form button[type="submit"]:hover,
 
 .llm-data-prep-page .chat-placeholder {
     text-align: center;
-    color: var(--text-secondary); /* Changed to var */
+    color: var(--text-secondary);
     padding: 2rem;
 }
 
 .llm-data-prep-page .chat-placeholder i {
     font-size: 2rem;
     margin-bottom: 1rem;
-    color: var(--border-color); /* Changed to var */
+    color: var(--border-color);
 }
 
 .llm-data-prep-page .chat-input-area {
-    border-top: 1px solid var(--raw-light-grey-300); /* Changed to var */
+    border-top: 1px solid var(--raw-light-grey-300);
     padding: 1rem 1.5rem;
     display: flex;
     gap: 1rem;
     align-items: center;
-    background: var(--white); /* Changed to var */
-    border-bottom-left-radius: var(--border-radius); /* Changed from 8px */
-    border-bottom-right-radius: var(--border-radius); /* Changed from 8px */
+    background: var(--white);
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
 }
 
 .llm-data-prep-page .chat-input-area select {
     min-width: 150px;
     padding: 0.5rem;
-    border: 1px solid var(--border-color); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
 }
 
 .llm-data-prep-page .chat-input-area input {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color); /* Changed to var */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
 }
 
 /* Better buttons for LLM page */
 .llm-data-prep-page .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%); /* Added gradient */
-    border: none; /* Changed from border-color */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    border: none;
     color: var(--white);
-    font-weight: 600; /* Changed from 500 */
-    padding: 16px 32px; /* Changed from 0.625rem 1.25rem */
-    border-radius: var(--border-radius-sm); /* Changed from 6px */
-    transition: all 0.3s ease; /* Ensure consistency with other buttons */
-    box-shadow: var(--shadow-sm); /* Added shadow */
+    font-weight: 600;
+    padding: 16px 32px;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .llm-data-prep-page .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%); /* Added gradient for hover */
-    transform: translateY(-2px); /* Changed from -1px */
-    box-shadow: var(--shadow-md); /* Added hover shadow */
+    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .llm-data-prep-page .btn-primary i {
@@ -1471,37 +1461,44 @@ form button[type="submit"]:hover,
     color: var(--primary-color);
 }
 
-/* KEEP and improve the existing Bootstrap collapse button styling */
+/* --- Corrected collapse button styling and icon handling --- */
 .card-header button.btn-link {
     padding: 0;
     font-size: 1rem;
     color: var(--text-secondary);
-    background: none;
-    border: none;
+    background: none !important; /* Ensure no background from Bootstrap's button styles */
+    border: none !important; /* Ensure no border from Bootstrap's button styles */
     text-decoration: none;
+    position: relative; /* Ensure z-index works if needed */
+    z-index: 1; /* Ensure it's above other elements in the header if layout overlaps */
+    /* Removed redundant `outline` from here, kept only on `:focus` below */
 }
 
 .card-header button.btn-link:hover {
     color: var(--primary-color);
     text-decoration: none;
+    background: none !important;
 }
 
 .card-header button.btn-link:focus {
     box-shadow: none;
     text-decoration: none;
+    background: none !important;
+    outline: 2px solid var(--primary-color); /* Add visible focus indicator */
+    outline-offset: 2px;
 }
 
+/* Icon rotation for collapse buttons:
+   We are relying on JS to swap fa-chevron-up and fa-chevron-down classes.
+   So, we only need to ensure 'i' is an inline-block for transforms to work.
+   No custom rotate rules are needed here, as the JS already controls the icon glyph.
+*/
 .card-header button.btn-link i {
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease; /* Keep the transition for smooth icon changes */
+    display: inline-block; /* Ensure transform works correctly */
+    /* Specific rotation rules that conflicted with JS class toggling are removed */
 }
 
-.card-header button.btn-link[aria-expanded="true"] i {
-    transform: rotate(0deg);
-}
-
-.card-header button.btn-link[aria-expanded="false"] i {
-    transform: rotate(180deg);
-}
 
 .llm-data-prep-page .form-check {
     display: flex;
@@ -1631,7 +1628,7 @@ form button[type="submit"]:hover,
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     margin-top: 1rem;
-    background-color: var(--raw-light-grey-200); /* Changed to specific grey */
+    background-color: var(--raw-light-grey-200);
 }
 
 #jsonDataPreview {
@@ -1695,7 +1692,7 @@ form button[type="submit"]:hover,
 .chat-display {
     flex-grow: 1;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius); /* Changed from sm radius */
+    border-radius: var(--border-radius);
     padding: 15px;
     overflow-y: auto;
     background-color: var(--raw-light-grey-100);
@@ -1704,35 +1701,35 @@ form button[type="submit"]:hover,
 }
 
 .chat-bubble {
-    padding: 12px 18px; /* Slightly increased padding */
-    border-radius: 16px; /* Default radius */
-    margin-bottom: 12px; /* Slightly increased margin */
+    padding: 12px 18px;
+    border-radius: 16px;
+    margin-bottom: 12px;
     max-width: 85%;
     line-height: 1.6;
     word-wrap: break-word;
     white-space: pre-wrap;
-    box-shadow: var(--shadow-xs); /* Subtle shadow for bubbles */
+    box-shadow: var(--shadow-xs);
 }
 
 .chat-bubble-user {
-    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%); /* Gradient for user messages */
+    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
     color: var(--text-color-on-primary);
     margin-left: auto;
-    border-bottom-right-radius: 4px; /* Square off one corner */
+    border-bottom-right-radius: 4px;
 }
 
 .chat-bubble-assistant {
-    background: linear-gradient(135deg, var(--card-bg) 0%, var(--raw-light-grey-100) 100%); /* Gradient for assistant messages */
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--raw-light-grey-100) 100%);
     color: var(--text-primary);
     margin-right: auto;
     border: 1px solid var(--border-color);
-    border-bottom-left-radius: 4px; /* Square off one corner */
+    border-bottom-left-radius: 4px;
 }
 
 /* Markdown formatting within chat bubbles */
 .chat-bubble pre {
-    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%); /* Gradient for code blocks */
-    border: 1px solid var(--raw-light-grey-200); /* Changed to raw-light-grey-200 */
+    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
+    border: 1px solid var(--raw-light-grey-200);
     border-radius: var(--border-radius-sm);
     padding: 10px;
     margin-top: 10px;
@@ -1743,7 +1740,7 @@ form button[type="submit"]:hover,
 }
 .chat-bubble code {
     background-color: var(--element-bg-light);
-    border-radius: var(--border-radius-xs); /* Changed to xs radius */
+    border-radius: var(--border-radius-xs);
     padding: 2px 5px;
     font-family: monospace;
     font-size: 0.9em;
@@ -2014,4 +2011,112 @@ form button[type="submit"]:hover,
     word-break: break-all !important;
     overflow-x: auto;
     font-size: 0.9em;
+}
+
+/* Fix any potential issues with Bootstrap grid inside collapse */
+.collapse .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.collapse .col {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* LLM Helper Specific Styles for edit_multiple_usecases.html */
+.llm-helper-section .chat-container {
+    min-height: 350px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--raw-light-grey-100);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--raw-light-grey-300);
+}
+.llm-helper-section .chat-display {
+    flex-grow: 1;
+    max-height: 300px;
+    overflow-y: auto;
+    /* Removed redundant border/radius as chat-container already provides it */
+    /* border: 1px solid var(--border-color); */
+    /* border-radius: var(--border-radius); */
+    padding: 15px;
+    background-color: var(--raw-light-grey-100);
+    margin-bottom: 15px;
+}
+.llm-helper-section .image-paste-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+    position: relative;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    background-color: var(--raw-light-grey-100);
+}
+.llm-helper-section .image-paste-area:hover,
+.llm-helper-section .image-paste-area.drag-over {
+    border-color: var(--primary-color);
+    background-color: var(--raw-light-grey-200);
+}
+.llm-helper-section .image-paste-area.has-image {
+    border-color: var(--primary-color-light);
+    background-color: var(--raw-alert-info-bg);
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: default;
+}
+.llm-helper-section #llmHelperImagePreview {
+    max-width: 100%;
+    max-height: 200px;
+    display: none;
+    margin-top: 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    object-fit: contain;
+}
+.llm-helper-section .image-controls {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+.llm-helper-section .chat-input-area {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+    border-top: 1px solid var(--raw-light-grey-300);
+    padding: 1rem 1.5rem;
+    background: var(--white);
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+.llm-helper-section .chat-input-area textarea {
+    flex-grow: 1;
+    resize: vertical;
+    min-height: 40px;
+    max-height: 120px;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
+}
+.llm-helper-section .chat-input-area select,
+.llm-helper-section .chat-input-area button {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+.llm-helper-section .chat-bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }

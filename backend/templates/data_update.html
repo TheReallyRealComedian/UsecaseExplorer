@@ -54,8 +54,7 @@
         <h2 class="card-title">Areas</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4"> {# ADDED: row class for two-column layout #}
-            {# Left Column: Select Areas for Update (Placeholder for future bulk editing) #}
+        <div class="row g-4">
             <div class="col-md-6">
                 <h3>Update Existing Areas</h3>
                 <p class="text-muted">
@@ -64,7 +63,7 @@
                 </p>
                 <div class="mb-3">
                     <label for="selected_update_areas" class="form-label">Select Areas:</label>
-                    <select class="form-select" id="selected_update_areas" name="selected_update_areas" multiple size="5">
+                    <select class="form-select" id="selected_update_areas" name="selected_update_areas" multiple size="{{ default_select_size }}">
                         {% for area in all_areas %}
                             <option value="{{ area.id }}">{{ area.name }}</option>
                         {% endfor %}
@@ -74,7 +73,6 @@
                     <i class="fas fa-edit me-1"></i> Update Selected Areas (Coming Soon)
                 </button>
             </div>
-            {# Right Column: Upload Areas from JSON #}
             <div class="col-md-6">
                 <h3>Upload New / Update Existing Areas via JSON</h3>
                 <p>
@@ -100,19 +98,41 @@
         <h2 class="card-title">Process Steps</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4"> {# ADDED: row class for two-column layout #}
-            {# Left Column: Select Steps for Update #}
+        <div class="row g-4">
             <div class="col-md-6">
                 <h3>Update Existing Process Steps</h3>
                 <p class="text-muted">
                     Select one or more existing process steps to modify their details.
                 </p>
                 <form action="{{ url_for('injection.prepare_steps_for_edit') }}" method="post">
+                    {# NEW: Filter inputs for Process Steps #}
+                    <div class="mb-3">
+                        <label for="stepFilterArea" class="form-label">Filter by Area Name:</label>
+                        <input type="text" id="stepFilterArea" class="form-control form-control-sm mb-2" placeholder="Start typing area name..." list="areaNamesDatalist">
+                        <datalist id="areaNamesDatalist">
+                            {% for name in all_area_names %}
+                                <option value="{{ name }}">
+                            {% endfor %}
+                        </datalist>
+
+                        <label for="stepFilterStep" class="form-label">Filter by Step Name:</label>
+                        <input type="text" id="stepFilterStep" class="form-control form-control-sm" placeholder="Start typing step name..." list="stepNamesDatalist">
+                        <datalist id="stepNamesDatalist">
+                            {% for name in all_step_names %}
+                                <option value="{{ name }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
                     <div class="mb-3">
                         <label for="selected_update_steps" class="form-label">Select Process Steps:</label>
-                        <select class="form-select" id="selected_update_steps" name="selected_update_steps" multiple size="10">
+                        <select class="form-select" id="selected_update_steps" name="selected_update_steps" multiple size="{{ default_select_size }}">
                             {% for step in all_steps %}
-                                <option value="{{ step.id }}">{{ step.name }} ({{ step.area.name if step.area else 'No Area' }} - BI_ID: {{ step.bi_id }})</option>
+                                <option value="{{ step.id }}" 
+                                        data-area-id="{{ step.area.id if step.area else '' }}" 
+                                        data-area-name="{{ step.area.name if step.area else '' }}" 
+                                        data-step-name="{{ step.name }}">
+                                    ({{ step.id }}) {{ step.name }} ({{ step.area.name if step.area else 'No Area' }})
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -121,7 +141,6 @@
                     </button>
                 </form>
             </div>
-            {# Right Column: Upload Steps from JSON #}
             <div class="col-md-6">
                 <h3>Upload New / Update Existing Process Steps via JSON</h3>
                 <p>
@@ -148,27 +167,49 @@
         <h2 class="card-title">Use Cases</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4"> {# ADDED: row class for two-column layout #}
-            {# Left Column: Select Use Cases for Update (Placeholder for future bulk editing) #}
+        <div class="row g-4">
             <div class="col-md-6">
                 <h3>Update Existing Use Cases</h3>
                 <p class="text-muted">
-                    Select one or more existing use cases to modify their details directly.
-                    (Bulk editing functionality for Use Cases is coming soon!)
+                    Select one or more existing use cases to modify their details.
                 </p>
-                <div class="mb-3">
-                    <label for="selected_update_usecases" class="form-label">Select Use Cases:</label>
-                    <select class="form-select" id="selected_update_usecases" name="selected_update_usecases" multiple size="10">
-                        {% for uc in all_usecases %}
-                            <option value="{{ uc.id }}">{{ uc.name }} ({{ uc.process_step.name if uc.process_step else 'No Step' }} - BI_ID: {{ uc.bi_id }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" disabled>
-                    <i class="fas fa-edit me-1"></i> Update Selected Use Cases (Coming Soon)
-                </button>
+                <form action="{{ url_for('injection.prepare_usecases_for_edit') }}" method="post">
+                    {# NEW: Filter inputs for Use Cases #}
+                    <div class="mb-3">
+                        <label for="usecaseFilterArea" class="form-label">Filter by Parent Area Name:</label>
+                        <input type="text" id="usecaseFilterArea" class="form-control form-control-sm mb-2" placeholder="Start typing area name..." list="areaNamesDatalist">
+                        
+                        <label for="usecaseFilterStep" class="form-label">Filter by Parent Step Name:</label>
+                        <input type="text" id="usecaseFilterStep" class="form-control form-control-sm mb-2" placeholder="Start typing step name..." list="stepNamesDatalist">
+
+                        <label for="usecaseFilterUsecase" class="form-label">Filter by Use Case Name:</label>
+                        <input type="text" id="usecaseFilterUsecase" class="form-control form-control-sm" placeholder="Start typing use case name..." list="usecaseNamesDatalist">
+                        <datalist id="usecaseNamesDatalist">
+                            {% for name in all_usecase_names %}
+                                <option value="{{ name }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="mb-3">
+                        <label for="selected_update_usecases" class="form-label">Select Use Cases:</label>
+                        <select class="form-select" id="selected_update_usecases" name="selected_update_usecases" multiple size="{{ default_select_size }}">
+                            {% for uc in all_usecases %}
+                                <option value="{{ uc.id }}"
+                                        data-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}"
+                                        data-area-name="{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else '' }}"
+                                        data-step-id="{{ uc.process_step.id if uc.process_step else '' }}"
+                                        data-step-name="{{ uc.process_step.name if uc.process_step else '' }}"
+                                        data-uc-name="{{ uc.name }}">
+                                    ({{ uc.id }}) {{ uc.name }} ({{ uc.process_step.name if uc.process_step else 'No Step' }} - BI_ID: {{ uc.bi_id }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i> Prepare Use Cases for Update
+                    </button>
+                </form>
             </div>
-            {# Right Column: Upload Use Cases from JSON #}
             <div class="col-md-6">
                 <h3>Upload New / Update Existing Use Cases via JSON</h3>
                 <p>
@@ -179,7 +220,7 @@
                 </p>
                 <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseForm">
                     <div class="mb-3">
-                        <label for="usecase_file" class="form-label">Use Case JSON File:</label>
+                        <label for="usecase_file" class="form-label">JSON File:</label>
                         <input type="file" id="usecase_file" name="usecase_file" accept=".json" required class="form-control">
                     </div>
                     <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Upload Use Cases</button>
@@ -195,8 +236,7 @@
         <h2 class="card-title">Relevance Links</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4"> {# ADDED: row class for two-column layout #}
-            {# Left Column: Select Relevance Links for Update (Placeholder for future bulk editing) #}
+        <div class="row g-4">
             <div class="col-md-6">
                 <h3>Update Existing Relevance Links</h3>
                 <p class="text-muted">
@@ -205,7 +245,7 @@
                 </p>
                 <div class="mb-3">
                     <label for="selected_update_relevance" class="form-label">Select Relevance Links:</label>
-                    <select class="form-select" id="selected_update_relevance" name="selected_update_relevance" multiple size="10">
+                    <select class="form-select" id="selected_update_relevance" name="selected_update_relevance" multiple size="{{ default_select_size }}">
                         {# Populate with existing relevance links (e.g., PS-PS, UC-Area, etc.) #}
                         <option value="1">Example: PS-001 to PS-002 (Score 80)</option>
                         <option value="2">Example: UC-005 to Area A (Score 90)</option>
@@ -217,7 +257,6 @@
                     <i class="fas fa-edit me-1"></i> Update Selected Links (Coming Soon)
                 </button>
             </div>
-            {# Right Column: Upload Relevance Links from JSON (all types) #}
             <div class="col-md-6">
                 <h3>Upload New / Update Existing Relevance Links via JSON</h3>
                 {# Process Step Relevance #}
@@ -288,14 +327,12 @@
     </div>
 </div>
 
-<script>
-// Remove old JS for stepForm submission as it's now handled by backend redirect
-// document.getElementById('stepForm').onsubmit = function() {
-//     console.log('Step form submitted');
-//     return true;
-// };
+{% endblock %}
 
-// Keep other form submission logs
+{% block scripts %}
+{{ super() }}
+<script>
+// Keep existing form submission logs as before
 document.getElementById('areaForm').onsubmit = function() {
     console.log('Area upload form submitted');
     return true;
@@ -326,6 +363,19 @@ document.getElementById('usecaseUsecaseRelevanceForm').onsubmit = function() {
     return true;
 };
 
-</script>
+// NEW: JS log for Step preparation form
+document.querySelector('#selected_update_steps').closest('form').onsubmit = function() {
+    console.log('Prepare Steps for Update form submitted');
+    return true;
+};
 
+// NEW: JS log for Use Case preparation form
+document.querySelector('#selected_update_usecases').closest('form').onsubmit = function() {
+    console.log('Prepare Use Cases for Update form submitted');
+    return true;
+};
+
+</script>
+{# NEW: Include the page-specific UI script #}
+<script src="{{ url_for('static', filename='js/data_update_page_ui.js') }}"></script>
 {% endblock %}

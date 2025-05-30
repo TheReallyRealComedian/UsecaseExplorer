@@ -1,35 +1,40 @@
 # backend/llm_service.py
+
 import requests
 import json
 import os
-from flask import session as flask_session, current_app # Use flask's session to store chat history and current_app for config
-from collections import deque # For a limited-length chat history
-import traceback # Added to provide more context for unexpected errors
+from flask import session as flask_session, current_app
+from collections import deque
+import logging 
 
+# Configure basic logging for debugging (if not already done globally)
+# This might override existing Flask logging config, but is good for quick debug.
+# Ensure this is set to DEBUG for development. In production, change to INFO or WARNING.
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_ollama_base_url():
     """Retrieves Ollama base URL from environment variable."""
-    return os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434') # Default for local Ollama
+    return os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
 
 def get_available_ollama_models():
     """Fetches available models from the Ollama API."""
     ollama_url = get_ollama_base_url()
     try:
         response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-        response.raise_for_status() # Raise an exception for bad status codes
+        response.raise_for_status()
         models_data = response.json()
         return [model['name'] for model in models_data.get('models', [])]
     except requests.exceptions.ConnectionError:
-        print(f"Ollama: Connection error to {ollama_url}. Is Ollama running?")
+        logging.error(f"Ollama: Connection error to {ollama_url}. Is Ollama running?")
         return ["Error: Ollama not reachable"]
     except requests.exceptions.Timeout:
-        print(f"Ollama: Timeout connecting to {ollama_url}.")
+        logging.warning(f"Ollama: Timeout connecting to {ollama_url}.")
         return ["Error: Ollama timeout"]
     except requests.exceptions.RequestException as e:
-        print(f"Ollama: An unexpected error occurred: {e}")
+        logging.error(f"Ollama: An unexpected error occurred: {e}")
         return [f"Error: {e}"]
     except Exception as e:
-        print(f"Ollama: Failed to parse models: {e}")
+        logging.error(f"Ollama: Failed to parse models: {e}")
         return ["Error: Failed to parse models"]
 
 def _get_history_deque():
@@ -39,26 +44,27 @@ def _get_history_deque():
     Always returns a deque.
     """
     max_history_length = current_app.config.get('MAX_CHAT_HISTORY_LENGTH', 10)
-    # Retrieve as a list, default to empty list if not present
     history_as_list = flask_session.get('llm_chat_history', [])
-    # Create a deque from the list, with the specified maxlen
     return deque(history_as_list, maxlen=max_history_length)
 
 def _save_history_deque(history_deque):
     """
     Internal helper to save the deque back to Flask session as a list.
     """
-    flask_session['llm_chat_history'] = list(history_deque) # Convert to list for serialization
+    flask_session['llm_chat_history'] = list(history_deque)
 
 def get_chat_history():
     """
-    Public function to get the current chat history as a list of messages
-    (for API response or template rendering).
+    Public function to get the current chat history as a list of messages.
+    History is stored as text-only strings.
     """
-    return list(_get_history_deque()) # Return a list copy for external use
+    history_deque = _get_history_deque()
+    return list(history_deque)
 
 def add_message_to_history(role, content):
-    """Adds a message to the chat history and updates the Flask session."""
+    """Adds a message to the chat history and updates the Flask session.
+    For simplicity, only text content is stored in history.
+    """
     history_deque = _get_history_deque()
     history_deque.append({'role': role, 'content': content})
     _save_history_deque(history_deque)
@@ -67,64 +73,119 @@ def clear_chat_history():
     """Clears the chat history from the Flask session."""
     flask_session.pop('llm_chat_history', None)
 
-def generate_ollama_chat_response(model_name, user_message, system_prompt=None):
+def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None):
     """
     Sends a chat message to Ollama and returns the assistant's response.
-    Includes memory from the session.
+    Includes memory from the session. Supports image input for multimodal models.
     """
     ollama_url = get_ollama_base_url()
     
-    history_deque = _get_history_deque()
-    
-    # Add the current user message to history. This ensures it's saved in the session
-    # and is included in the history for the LLM API call.
-    history_deque.append({'role': 'user', 'content': user_message})
-    _save_history_deque(history_deque) # Save updated history immediately
-
-    # Construct messages for Ollama, starting with system prompt if provided
-    messages_to_send = []
+    # Construct messages list for Ollama API payload.
+    messages_for_api = []
     if system_prompt:
-        messages_to_send.append({'role': 'system', 'content': system_prompt})
+        messages_for_api.append({'role': 'system', 'content': system_prompt})
 
-    # Add the full chat history (which now includes the latest user message)
-    # The final `messages_to_send` for the API call will be:
-    # [system_prompt (if any), ...old_history..., user_message]
-    messages_to_send.extend(list(history_deque))
+    # Add historical messages from session. These are text-only strings (`msg['content']` is a string).
+    # Ollama API allows `content` to be a string for text-only messages.
+    for msg in _get_history_deque():
+        messages_for_api.append({'role': msg['role'], 'content': msg['content']})
+
+    # --- START OF MODIFICATION FOR CURRENT USER MESSAGE ---
+    current_user_message_content = user_message # Default to plain text
+    
+    if image_base64:
+        # Add a log for the size of the base64 string
+        logging.info(f"Received image_base64 in backend. Length: {len(image_base64)} characters.")
+        
+        # If an image is present, the content must be a list (multimodal)
+        current_user_message_content_list = []
+        if user_message:
+            current_user_message_content_list.append({'type': 'text', 'text': user_message})
+        
+        try:
+            if not image_base64.startswith("data:"):
+                full_image_url = f"data:image/png;base64,{image_base64}"
+            else:
+                full_image_url = image_base64
+            current_user_message_content_list.append({'type': 'image_url', 'image_url': {'url': full_image_url}})
+            logging.info(f"Image Base64 URL added to payload (first 50 chars): {full_image_url[:50]}...")
+        except Exception as e:
+            logging.error(f"Error processing base64 image data: {e}")
+            return {"success": False, "message": "Invalid image data provided."}
+
+        # If message is empty but image is present, add a default text prompt for the current turn
+        if not user_message and image_base64:
+            current_user_message_content_list.insert(0, {'type': 'text', 'text': 'Analyze this image.'})
+
+        current_user_message_content = current_user_message_content_list
+    # --- END OF MODIFICATION FOR CURRENT USER MESSAGE ---
+
+    # Check if the overall content is empty after potential processing
+    if (isinstance(current_user_message_content, str) and not current_user_message_content.strip()) and \
+       (isinstance(current_user_message_content, list) and not current_user_message_content):
+        return {"success": False, "message": "No message or image provided for LLM."}
+
+
+    # Add the current user message (which can be a string or multimodal array)
+    # This must be the *last* message in the `messages` array for the current turn.
+    messages_for_api.append({'role': 'user', 'content': current_user_message_content})
 
     try:
         payload = {
             "model": model_name,
-            "messages": messages_to_send, # Use the combined list
-            "stream": False # We want the full response at once
+            "messages": messages_for_api,
+            "stream": False # Changed from `false` to `False` (Python boolean literal)
         }
         
         headers = {"Content-Type": "application/json"}
         
-        # Changed timeout from 420 to 120 as per instructions
-        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=120)
-        response.raise_for_status()
+        logging.info(f"Sending Ollama API Payload for model '{model_name}'. Message count: {len(messages_for_api)}. "
+                     f"Current user message content: {type(current_user_message_content)}. " # Log type
+                     f"Payload size (approx): {len(json.dumps(payload))} bytes.")
+        logging.debug(f"Full Ollama API PAYLOAD: {json.dumps(payload, indent=2)}") 
+
+        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=300) # Increased timeout for images
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
         
         response_data = response.json()
         assistant_message = response_data['message']['content']
         
-        history_deque.append({'role': 'assistant', 'content': assistant_message})
-        _save_history_deque(history_deque)
+        # Add the user's *text* message and assistant's response to history *only after successful API call*.
+        # The 'user_message' passed here is the original text from the frontend.
+        # If the original user_message was empty but an image was provided, add a placeholder text for history.
+        user_message_for_history = user_message
+        if not user_message_for_history and image_base64:
+            user_message_for_history = "Image provided." # Or "Analyze this image." for clarity in history
+        
+        add_message_to_history('user', user_message_for_history) 
+        add_message_to_history('assistant', assistant_message)
         
         return {"success": True, "message": assistant_message}
 
     except requests.exceptions.ConnectionError:
         error_msg = f"Ollama: Connection error to {ollama_url}. Is Ollama running and accessible from backend container?"
-        print(error_msg)
+        logging.error(error_msg)
         return {"success": False, "message": error_msg}
     except requests.exceptions.Timeout:
-        error_msg = f"Ollama: Request to {ollama_url} timed out. Model might be too large or response too slow."
-        print(error_msg)
+        error_msg = f"Ollama: Request to {ollama_url} timed out (300s). Model might be too large or response too slow."
+        logging.warning(error_msg)
         return {"success": False, "message": error_msg}
     except requests.exceptions.RequestException as e:
-        error_msg = f"Ollama: API request failed: {e}. Response: {e.response.text if e.response else 'N/A'}"
-        print(error_msg)
+        # THIS BLOCK IS CRUCIAL FOR DEBUGGING THE 400 ERROR
+        error_msg = (f"Ollama: API request failed: {e}. Status Code: "
+                     f"{e.response.status_code if e.response else 'N/A'}. "
+                     f"Response: {e.response.text if e.response else 'N/A'}")
+        logging.error(error_msg)
+        if e.response:
+            # Attempt to parse as JSON first (Ollama often returns JSON errors)
+            try:
+                detailed_response_content = e.response.json()
+                logging.error(f"Ollama detailed error JSON response: {json.dumps(detailed_response_content, indent=2)}")
+            except json.JSONDecodeError:
+                # If not JSON, log as raw text
+                logging.error(f"Ollama detailed error raw text response (non-JSON): {e.response.text}") 
         return {"success": False, "message": error_msg}
     except Exception as e:
         error_msg = f"An unexpected error occurred during Ollama chat: {e}"
-        print(f"Error: {e}, Trace: {traceback.format_exc()}")
+        logging.exception(error_msg) # Use exception for full traceback
         return {"success": False, "message": error_msg}
