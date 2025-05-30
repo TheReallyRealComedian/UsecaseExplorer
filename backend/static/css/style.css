@@ -54,10 +54,11 @@
     --header-bg: var(--raw-white);
     --element-bg-light: var(--raw-light-grey-200); /* For search bars, code blocks, etc. */
 
-    /* Text Colors */
-    --text-color: var(--raw-dark-grey-200);
-    --text-color-light: var(--raw-medium-grey-100);
-    --text-color-medium: var(--raw-medium-grey-200);
+    /* Simplified text colors */
+    --text-primary: var(--raw-dark-grey-200);
+    --text-secondary: var(--raw-medium-grey-200);  
+    --text-muted: var(--raw-medium-grey-100);
+    
     --text-color-sidebar: var(--raw-panel-text);
     --text-color-sidebar-active: var(--raw-white);
     --text-color-on-primary: var(--raw-white);
@@ -82,7 +83,7 @@
     --breadcrumb-default-bg: var(--raw-medium-grey-200);
     --breadcrumb-disabled-bg: var(--raw-light-grey-200);
     --breadcrumb-text-color: var(--text-color-on-dark);
-    --breadcrumb-disabled-text-color: var(--text-color-light);
+    --breadcrumb-disabled-text-color: var(--text-muted);
     --breadcrumb-hover-bg: var(--raw-medium-grey-300);
     --breadcrumb-active-hover-bg: var(--primary-color-dark);
 
@@ -113,7 +114,7 @@ body {
     height: 100%;
     font-family: var(--font-family);
     background-color: var(--body-bg-color);
-    color: var(--text-color);
+    color: var(--text-primary);
     font-size: 14px;
     line-height: 1.5;
     overflow-x: hidden; /* Prevent horizontal scroll on body */
@@ -295,13 +296,13 @@ ul {
     align-items: center;
     background-color: var(--element-bg-light);
     padding: 8px 15px;
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius-sm);
     width: 300px; /* Fixed width for search bar */
     flex-shrink: 0; /* Prevent shrinking */
 }
 
 .search-bar i {
-    color: var(--text-color-light);
+    color: var(--text-muted);
     margin-right: 10px;
 }
 
@@ -311,11 +312,11 @@ ul {
     background-color: transparent;
     width: 100%;
     font-size: 0.9rem;
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 .search-bar input::placeholder {
-    color: var(--text-color-light);
+    color: var(--text-muted);
 }
 
 .header-actions {
@@ -329,12 +330,12 @@ ul {
     border: none;
     cursor: pointer;
     font-size: 1.3rem;
-    color: var(--text-color-light);
+    color: var(--text-muted);
     transition: color 0.2s ease;
 }
 
 .icon-button:hover {
-    color: var(--text-color); /* Darken icon on hover */
+    color: var(--text-primary); /* Darken icon on hover */
 }
 
 /* Page Content Styles */
@@ -351,14 +352,13 @@ ul {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     margin-bottom: 30px; /* Increased space between cards */
-    /* padding: 20px; Removed, handled by card-header/card-body */
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 25px; /* Consistent padding */
+    padding: 1.25rem 1.5rem; /* Standardize */
     margin-bottom: 0; /* Remove bottom margin, border will separate */
     border-bottom: 1px solid var(--raw-light-grey-300); /* Use lighter border */
     background-color: var(--raw-light-grey-100); /* Slight background for header */
@@ -372,12 +372,12 @@ ul {
 }
 
 .card-body {
-    padding: 25px; /* More padding inside card body */
+    padding: 1.5rem; /* Standardize */
 }
 
 .card-link { /* Used for "View All" or similar links in card headers */
     font-size: 0.85rem;
-    color: var(--text-color-light);
+    color: var(--text-muted);
     font-weight: 500;
 }
 
@@ -392,25 +392,25 @@ form {
     gap: 15px; /* Space between form groups */
 }
 
-form div { /* General form group styling */
+.form-group {
     display: flex;
     flex-direction: column;
+    margin-bottom: 15px;
 }
 
-/* EXCEPTION: Don't apply column layout to checkbox containers */
-form div.form-check,
-form div.row,
-form div.col,
-form .form-check {
-    display: flex;
-    flex-direction: row; /* Override for checkboxes */
+.form-row,
+.form-check,
+.checkbox-group {
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center;
+    gap: 8px;
 }
 
 form label {
     margin-bottom: 5px;
     font-weight: 500;
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 form input[type="text"],
@@ -425,7 +425,7 @@ form textarea {
     border-radius: var(--border-radius-sm); /* Smaller radius for form elements */
     font-size: 0.9rem;
     background-color: var(--white);
-    color: var(--text-color);
+    color: var(--text-primary);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -445,7 +445,7 @@ form input[type="password"]::placeholder,
 form input[type="email"]::placeholder,
 form input[type="number"]::placeholder,
 form textarea::placeholder {
-    color: var(--text-color-light);
+    color: var(--text-muted);
 }
 
 form input[type="checkbox"] {
@@ -456,11 +456,7 @@ form input[type="checkbox"] {
     vertical-align: middle;
 }
 
-form div.checkbox-group { /* For inline checkbox and label */
-    flex-direction: row;
-    align-items: center;
-}
-form div.checkbox-group label {
+.checkbox-group label { /* Specific override for checkbox labels */
     margin-bottom: 0;
     font-weight: normal; /* Normal weight for checkbox labels */
 }
@@ -472,26 +468,32 @@ form textarea {
 
 form button[type="submit"],
 .btn {
-    background-color: var(--primary-color);
-    color: var(--text-color-on-primary);
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+    transition: all 0.2s ease;
     border: none;
     padding: 10px 20px;
-    border-radius: var(--border-radius-sm); /* Consistent radius */
     cursor: pointer;
     font-size: 0.95rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
     align-self: flex-start; /* Buttons don't stretch full width by default */
     text-align: center;
 }
 
+form button[type="submit"].btn-primary, /* Apply btn-primary to submit buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--white);
+}
+
 form button[type="submit"]:hover,
-.btn:hover {
+.btn-primary:hover {
     background-color: var(--primary-color-dark);
 }
 
 .btn-secondary {
-    background-color: var(--raw-medium-grey-200); /* Using raw color for consistency */
+    background-color: var(--text-secondary);
+    border-color: var(--text-secondary);
     color: var(--white);
 }
 
@@ -526,7 +528,7 @@ form button[type="submit"]:hover,
     padding: 15px;
     margin-bottom: 15px;
     border: 1px solid transparent;
-    border-radius: var(--border-radius-sm); /* Consistent radius */
+    border-radius: var(--border-radius); /* Consistent radius */
     font-size: 0.9rem;
 }
 
@@ -564,7 +566,7 @@ form button[type="submit"]:hover,
     margin-bottom: 5px;
 }
 .welcome-message p {
-    color: var(--text-color-light);
+    color: var(--text-muted);
 }
 
 .data-section {
@@ -581,7 +583,6 @@ form button[type="submit"]:hover,
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    padding: 20px;
     margin-bottom: 20px;
     border-left: 5px solid var(--primary-color); /* Accent border */
 }
@@ -602,7 +603,7 @@ form button[type="submit"]:hover,
 }
 .area-card .step-details { /* BI_ID etc. */
     font-size: 0.85rem;
-    color: var(--text-color-light);
+    color: var(--text-muted);
     margin-left: 5px;
 }
 .area-card .usecase-list { /* Nested list of use cases */
@@ -615,11 +616,11 @@ form button[type="submit"]:hover,
 }
 .area-card .usecase-list .uc-details { /* Use case BI_ID */
     font-size: 0.8rem;
-    color: var(--text-color-light);
+    color: var(--text-muted);
     margin-left: 5px;
 }
 .area-card p em { /* "No steps/use cases" message */
-    color: var(--text-color-light);
+    color: var(--text-muted);
     font-style: italic;
 }
 
@@ -638,9 +639,8 @@ form button[type="submit"]:hover,
 }
 
 /* Sub-description text below main titles */
-.page-content p.text-color-light,
 .page-content p.text-muted { /* Assuming text-muted is used for sub-descriptions */
-    color: var(--text-color-medium) !important; /* Ensure better contrast */
+    color: var(--text-secondary) !important; /* Ensure better contrast */
     font-size: 0.95rem;
     margin-top: -15px; /* Pull closer to title */
     margin-bottom: 25px;
@@ -664,7 +664,7 @@ form button[type="submit"]:hover,
 .card-body dl.info-list dd {
     margin-left: 0;
     font-size: 0.95rem;
-    color: var(--text-color);
+    color: var(--text-primary);
     word-break: break-word;
 }
 .card-body dl.info-list dd a {
@@ -680,7 +680,7 @@ form button[type="submit"]:hover,
     line-height: 1.6;
     max-height: 280px;
     overflow-y: auto;
-    color: var(--text-color);
+    color: var(--text-primary);
     margin-top: 5px;
     white-space: pre-wrap; /* Ensure wrapping */
     word-break: break-word; /* Break long words */
@@ -723,7 +723,7 @@ form button[type="submit"]:hover,
 .card-body ul.item-list .item-meta, /* For BI_ID or other small text */
 .card-body ul.item-list small.text-muted {
     font-size: 0.8rem;
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     display: block;
 }
 
@@ -749,7 +749,7 @@ form button[type="submit"]:hover,
 /* "No items found" messages */
 .card-body p.no-items-message, /* More specific class for these messages */
 .card-body p em { /* Fallback for existing `p em` */
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     font-style: italic;
     display: block;
     padding: 15px 0;
@@ -773,7 +773,7 @@ form button[type="submit"]:hover,
     border-bottom: 1px solid var(--raw-light-grey-300);
 }
 .relevance-section .card .card-header .card-title { /* "Relevant Areas/Steps/Use Cases" in sub-cards */
-    color: var(--text-color);
+    color: var(--text-primary);
     font-size: 1.1rem;
 }
 .relevance-section ul { /* Ensure this doesn't conflict with .item-list */
@@ -792,7 +792,7 @@ form button[type="submit"]:hover,
 .relevance-section li.relevance-item strong { /* "Area:", "Score:", "Content:" */
     min-width: 90px;
     font-weight: 600;
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     display: inline-block; /* For alignment if needed */
     margin-bottom: 6px;
     font-size: 0.85rem;
@@ -857,7 +857,7 @@ form button[type="submit"]:hover,
     text-align: center;
     margin-top: 20px;
     font-size: 0.9rem;
-    color: var(--text-color-light);
+    color: var(--text-muted);
 }
 .auth-container p a {
     color: var(--primary-color);
@@ -867,7 +867,6 @@ form button[type="submit"]:hover,
 /* Injection Page Styles */
 .injection-form-section {
     background-color: var(--card-bg);
-    padding: 25px;
     margin-bottom: 25px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -879,7 +878,7 @@ form button[type="submit"]:hover,
 }
 .injection-form-section p {
     font-size: 0.9rem;
-    color: var(--text-color-medium); /* Slightly darker for better readability */
+    color: var(--text-secondary); /* Slightly darker for better readability */
     margin-bottom: 15px;
     line-height: 1.6;
 }
@@ -888,7 +887,7 @@ form button[type="submit"]:hover,
     padding: 3px 6px; /* Slightly more padding */
     border-radius: var(--border-radius-sm);
     font-size: 0.85rem;
-    color: var(--text-color);
+    color: var(--text-primary);
     border: 1px solid var(--raw-light-grey-300); /* Subtle border for code */
 }
 .export-section ul {
@@ -1122,24 +1121,6 @@ form button[type="submit"]:hover,
     background: #d1d5db;
 }
 
-.llm-data-prep-page .field-group-header button {
-    background: none !important;
-    border: none !important;
-    color: var(--text-color-medium) !important;
-    padding: 0 !important;
-    text-decoration: none !important;
-}
-
-.llm-data-prep-page .field-group-header button:hover {
-    color: var(--primary-color) !important;
-    text-decoration: none !important;
-}
-
-.llm-data-prep-page .field-group-header button:focus {
-    box-shadow: none !important;
-    outline: none !important;
-}
-
 .llm-data-prep-page .field-group-title {
     font-weight: 600;
     color: #1e293b;
@@ -1297,46 +1278,24 @@ form button[type="submit"]:hover,
     margin-right: 0.5rem;
 }
 
-/* Responsive improvements */
-@media (max-width: 767px) {
-    .llm-data-prep-page .selection-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .llm-data-prep-page .field-groups {
-        grid-template-columns: 1fr;
-    }
-
-    .llm-data-prep-page .card-body {
-        padding: 1.5rem;
-    }
-
-    .llm-data-prep-page .search-button-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .llm-data-prep-page .button-group {
-        justify-content: center;
-    }
-
-    .llm-data-prep-page .chat-input-area {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .llm-data-prep-page .chat-input-area select,
-    .llm-data-prep-page .chat-input-area input {
-        width: 100%;
-    }
+/* Removed Bootstrap fighting for btn-link on LLM page */
+.llm-data-prep-page .btn-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
 }
 
+.llm-data-prep-page .btn-link:hover {
+    color: var(--primary-color);
+}
 
 /* KEEP and improve the existing Bootstrap collapse button styling */
 .card-header button.btn-link {
     padding: 0;
     font-size: 1rem;
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     background: none;
     border: none;
     text-decoration: none;
@@ -1364,6 +1323,17 @@ form button[type="submit"]:hover,
     transform: rotate(180deg); /* Down arrow when collapsed */
 }
 
+.llm-data-prep-page .form-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.llm-data-prep-page .fieldset-dashed-border .form-check {
+    padding: 0.25rem 0;
+}
+
 .llm-data-prep-page .form-select[multiple] {
     min-height: 150px;
     max-height: 250px;
@@ -1384,7 +1354,7 @@ form button[type="submit"]:hover,
 .llm-data-prep-page .fieldset-legend {
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     padding: 0 0.5rem;
     width: auto;
     margin-bottom: 0.75rem;
@@ -1401,7 +1371,7 @@ form button[type="submit"]:hover,
 .llm-data-prep-page label .selected-count-display {
     font-weight: normal;
     font-size: 0.8em;
-    color: var(--text-color-light);
+    color: var(--text-muted);
     margin-left: 8px;
 }
 
@@ -1474,7 +1444,7 @@ form button[type="submit"]:hover,
     padding: 0;
     background-color: transparent;
     border: none;
-    color: var(--text-color);
+    color: var(--text-primary);
     line-height: 1.4;
     white-space: pre-wrap;
     word-break: break-word;
@@ -1494,7 +1464,7 @@ form button[type="submit"]:hover,
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.85rem;
     line-height: 1.5;
-    color: var(--text-color);
+    color: var(--text-primary);
     background-color: transparent;
     padding: 1rem;
     border-radius: 0;
@@ -1504,12 +1474,12 @@ form button[type="submit"]:hover,
 #copyJsonButton, #toggleJsonPreview {
     border: 1px solid var(--border-color);
     background-color: var(--white);
-    color: var(--text-color);
+    color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 #copyJsonButton:hover, #toggleJsonPreview:hover {
     background-color: var(--raw-light-grey-200);
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 .btn.btn-success {
     background-color: var(--raw-alert-success-text) !important;
@@ -1559,7 +1529,7 @@ form button[type="submit"]:hover,
 
 .chat-bubble-assistant {
     background-color: var(--card-bg); /* White for assistant messages */
-    color: var(--text-color);
+    color: var(--text-primary);
     margin-right: auto; /* Align to left */
     border: 1px solid var(--border-color);
     border-bottom-left-radius: 2px; /* Slightly square off one corner */
@@ -1611,6 +1581,7 @@ form button[type="submit"]:hover,
 
 /* Utility Classes */
 .text-center { text-align: center !important; }
+.text-secondary { color: var(--text-secondary); }
 .mb-1 { margin-bottom: 0.25rem !important; }
 .mb-2 { margin-bottom: 0.5rem !important; }
 .mb-3 { margin-bottom: 1rem !important; }
@@ -1659,14 +1630,6 @@ form button[type="submit"]:hover,
     flex-direction: unset !important; /* Remove any inherited flex-direction */
 }
 
-.llm-data-prep-page .form-check {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    margin-bottom: 0.5rem !important;
-    padding: 0.25rem 0 !important;
-}
-
 .llm-data-prep-page .form-check .form-check-input {
     margin-top: 0 !important;
     margin-right: 0.5rem !important;
@@ -1682,10 +1645,6 @@ form button[type="submit"]:hover,
     cursor: pointer !important;
     padding-left: 0 !important; /* Remove any default Bootstrap padding */
 }
-
-/* style.css */
-
-/* ... (existing CSS) ... */
 
 /* Data Alignment Page Specific Styles */
 .data-alignment-page .table td {
@@ -1715,6 +1674,49 @@ form button[type="submit"]:hover,
 }
 .pending-changes-info {
     font-size: 0.95rem;
-    color: var(--text-color-medium);
+    color: var(--text-secondary);
     font-weight: 500;
+}
+
+/* Consolidated Responsive Rules */
+@media (max-width: 767px) {
+    .sidebar { 
+        width: 100%; 
+        height: auto; 
+        position: relative; 
+    }
+    .main-header { 
+        padding: 10px 20px; 
+    }
+    .search-bar { 
+        width: 100%; 
+        margin-top: 10px; 
+    }
+    .breadcrumb-item { 
+        font-size: 0.8rem; 
+    }
+    
+    /* LLM specific mobile rules */
+    .llm-data-prep-page .selection-grid,
+    .llm-data-prep-page .field-groups {
+        grid-template-columns: 1fr;
+    }
+    .llm-data-prep-page .card-body {
+        padding: 1.5rem;
+    }
+    .llm-data-prep-page .search-button-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .llm-data-prep-page .button-group {
+        justify-content: center;
+    }
+    .llm-data-prep-page .chat-input-area {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .llm-data-prep-page .chat-input-area select,
+    .llm-data-prep-page .chat-input-area input {
+        width: 100%;
+    }
 }

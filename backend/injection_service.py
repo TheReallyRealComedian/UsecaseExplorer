@@ -246,50 +246,68 @@ def process_step_file(file_content_json):
             if existing_step:
                 print(f"  Existing step found in DB: {existing_step.name} (BI_ID: {existing_step.bi_id})")
                 entry['db_data'] = model_to_dict(existing_step, step_fields + ['bi_id', 'area_id', 'name'], session)
-                entry['new_values'] = dict(entry['db_data'])
+                entry['new_values'] = dict(entry['db_data']) # Initialize new_values with current DB data
                 
                 is_dirty = False
                 
-                # Check for area_id change
+                # Check for area_id change (takes precedence if JSON provides a valid area)
                 if area_id_from_json is None:
-                    entry['messages'].append(f"Warning: Area '{area_name_json}' for step BI_ID '{bi_id}' from JSON not found in database. Cannot assign new area.")
-                    print(f"  Warning: Area '{area_name_json}' not found for existing step.")
+                    # If JSON's area_name doesn't resolve to an ID, keep DB's area_id and warn.
+                    entry['messages'].append(f"Warning: Area '{area_name_json}' for step BI_ID '{bi_id}' from JSON not found in database. Keeping existing area.")
+                    print(f"  Warning: Area '{area_name_json}' not found for existing step. Keeping DB value.")
                 elif existing_step.area_id != area_id_from_json:
+                    # If JSON area_id is different and valid, it's a conflict and JSON's area is the new_value
                     entry['conflicts']['area_id'] = {
                         'old_value': area_id_to_name_map.get(existing_step.area_id, 'N/A (ID: ' + str(existing_step.area_id) + ')'),
                         'new_value': area_name_json,
                         'db_id': existing_step.area_id,
                         'json_id': area_id_from_json
                     }
-                    entry['new_values']['area_id'] = area_id_from_json
+                    entry['new_values']['area_id'] = area_id_from_json # Proposed default: take JSON's new area
                     is_dirty = True
                     print(f"  Conflict detected for area_id: DB '{existing_step.area_id}' vs JSON '{area_id_from_json}'")
                 else:
+                    # Area matches, no change to new_values['area_id'] needed as it was initialized from db_data.
                     entry['messages'].append(f"Area '{area_name_json}' matches existing area.")
-                    entry['new_values']['area_id'] = existing_step.area_id
 
-                # Compare other fields for conflicts
+                # Compare other fields for conflicts and set new_values based on desired "fill-in-empty-only" behavior
                 for field in step_fields:
-                    db_value = getattr(existing_step, field)
-                    json_value = json_values_cleaned.get(field)
+                    # Get DB value, normalized to None for empty strings
+                    db_value_raw = getattr(existing_step, field)
+                    normalized_db_value = db_value_raw.strip() if isinstance(db_value_raw, str) and db_value_raw.strip() else None
                     
-                    normalized_db_value = db_value.strip() if isinstance(db_value, str) and db_value.strip() else None
-                    normalized_json_value = json_value.strip() if isinstance(json_value, str) and json_value.strip() else None
+                    # Get JSON value, already normalized to None for empty strings by json_values_cleaned
+                    normalized_json_value = json_values_cleaned.get(field)
 
-                    if normalized_json_value != normalized_db_value:
+                    # Scenario 1: JSON has a value, and it's different from DB's (or DB is empty)
+                    if normalized_json_value is not None and normalized_json_value != normalized_db_value:
                         entry['conflicts'][field] = {
-                            'old_value': normalized_db_value if normalized_db_value is not None else "N/A (Empty)",
-                            'new_value': normalized_json_value if normalized_json_value is not None else "N/A (Empty)"
+                            'old_value': normalized_db_value if normalized_db_value is not None else "N/A (Empty in DB)",
+                            'new_value': normalized_json_value # JSON has a non-None value, take it
                         }
-                        entry['new_values'][field] = normalized_json_value
+                        entry['new_values'][field] = normalized_json_value # Propose JSON value as default
                         is_dirty = True
-                        print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON '{normalized_json_value}'")
+                        print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON '{normalized_json_value}' (Proposing JSON)")
+                    # Scenario 2: JSON is None (or empty string), but DB has a value
+                    elif normalized_json_value is None and normalized_db_value is not None:
+                        entry['conflicts'][field] = {
+                            'old_value': normalized_db_value,
+                            'new_value': "None (from JSON)" # Indicate JSON provided no value
+                        }
+                        # For this scenario, new_values[field] already contains normalized_db_value
+                        # because it was initialized from entry['db_data']. So, no change needed here.
+                        # This effectively makes the default resolution "keep existing DB value".
+                        is_dirty = True # Still mark as dirty because there's a conflict to review
+                        print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON 'None' (Proposing DB)")
+                    # Scenario 3: No actual difference (both are the same value, or both are None)
                     else:
-                        entry['new_values'][field] = normalized_db_value
+                        # new_values[field] is already correct from initialization based on db_data.
+                        pass 
 
+                # Determine overall status for the item
                 if is_dirty:
                     entry['status'] = 'update'
-                    entry['messages'].append("Existing step will be updated with new values for conflicting fields.")
+                    entry['messages'].append("Existing step has changes or conflicts. Review details to finalize.")
                     print(f"  Status set to 'update' for {bi_id}.")
                 else:
                     entry['status'] = 'no_change'

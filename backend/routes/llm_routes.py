@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance # Import UsecaseStepRelevance model
+from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance 
 
 # Helper function to count tokens (existing, no change needed)
 def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
@@ -138,66 +138,79 @@ def llm_data_prep_page():
             print(f"Parsed usecase_ids (int): {selected_usecase_ids_int}") # NEW
             print(f"Export UC-Step Relevance: {export_uc_step_relevance}") # NEW debug
 
+            # --- MODIFIED LOGIC FOR FIELD SELECTION ---
+            # Define default fields if none are explicitly selected.
+            # This ensures that even if user checks no fields, some basic info is always included.
+            default_step_fields = ['bi_id', 'name', 'step_description'] # Common essential fields for steps
+            default_usecase_fields = ['bi_id', 'name', 'summary'] # Common essential fields for use cases
+
+            # Use selected fields if provided, otherwise fallback to defaults
+            fields_to_export_steps = selected_step_fields_form if selected_step_fields_form else default_step_fields
+            fields_to_export_usecases = selected_usecase_fields_form if selected_usecase_fields_form else default_usecase_fields
+
+            # Flash a warning if no fields were explicitly selected, so user knows defaults were applied.
+            if not selected_step_fields_form and (selected_step_ids_int or selected_area_ids_int):
+                flash("No Process Step fields explicitly selected. Including default fields (BI_ID, Name, Short Description) for selected steps.", "info")
+            if not selected_usecase_fields_form and (selected_usecase_ids_int or selected_step_ids_int or selected_area_ids_int):
+                flash("No Use Case fields explicitly selected. Including default fields (BI_ID, Name, Summary) for selected use cases.", "info")
+            # --- END MODIFIED LOGIC ---
+
 
             # --- Prepare Process Step Data ---
-            if not selected_step_fields_form:
-                flash("Please select at least one field for Process Steps.", "warning")
-            else:
-                step_query = session.query(ProcessStep)
-                if selected_step_ids_int: # If specific steps are selected, use them
-                    step_query = step_query.filter(ProcessStep.id.in_(selected_step_ids_int))
-                elif selected_area_ids_int: # Else, if areas are selected, get steps from those areas
-                    step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
-                # If neither are selected, get all steps.
+            # Removed the 'if not selected_step_fields_form: else:' block that previously wrapped this.
+            step_query = session.query(ProcessStep)
+            if selected_step_ids_int: # If specific steps are selected, use them
+                step_query = step_query.filter(ProcessStep.id.in_(selected_step_ids_int))
+            elif selected_area_ids_int: # Else, if areas are selected, get steps from those areas
+                step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
+            # If neither are selected, the query will return all steps, then filtered by field selection.
 
-                steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
-                
-                for step in steps_for_preview:
-                    step_data = {
-                        'id': step.id,
-                        'area_id': step.area_id,
-                        'area_name': step.area.name if step.area else 'N/A'
-                    }
-                    for field_key in selected_step_fields_form:
-                        if hasattr(step, field_key):
-                            step_data[field_key] = getattr(step, field_key)
-                        else:
-                            step_data[field_key] = "N/A" # or None, depending on desired output
-                    prepared_data["process_steps"].append(step_data)
+            steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
+            
+            for step in steps_for_preview:
+                step_data = {
+                    'id': step.id,
+                    'area_id': step.area_id,
+                    'area_name': step.area.name if step.area else 'N/A'
+                }
+                for field_key in fields_to_export_steps: # Use the resolved fields list
+                    if hasattr(step, field_key):
+                        step_data[field_key] = getattr(step, field_key)
+                    else:
+                        step_data[field_key] = "N/A" # or None, depending on desired output
+                prepared_data["process_steps"].append(step_data)
 
             # NEW: --- Prepare Use Case Data ---
-            if not selected_usecase_fields_form:
-                flash("Please select at least one field for Use Cases.", "warning")
-            else:
-                usecase_query = session.query(UseCase)
-                if selected_usecase_ids_int: # If specific UCs are selected, use them
-                    usecase_query = usecase_query.filter(UseCase.id.in_(selected_usecase_ids_int))
-                elif selected_step_ids_int: # Else if steps are selected, get UCs from those steps
-                    usecase_query = usecase_query.filter(UseCase.process_step_id.in_(selected_step_ids_int))
-                elif selected_area_ids_int: # Else if areas are selected, get UCs from steps in those areas
-                    # Subquery to get step IDs in selected areas
-                    subquery_step_ids = select(ProcessStep.id).where(ProcessStep.area_id.in_(selected_area_ids_int)).scalar_subquery()
-                    usecase_query = usecase_query.filter(UseCase.process_step_id.in_(subquery_step_ids))
-                # If none are selected, get all use cases (no filter applied by default).
+            # Removed the 'if not selected_usecase_fields_form: else:' block that previously wrapped this.
+            usecase_query = session.query(UseCase)
+            if selected_usecase_ids_int: # If specific UCs are selected, use them
+                usecase_query = usecase_query.filter(UseCase.id.in_(selected_usecase_ids_int))
+            elif selected_step_ids_int: # Else if steps are selected, get UCs from those steps
+                usecase_query = usecase_query.filter(UseCase.process_step_id.in_(selected_step_ids_int))
+            elif selected_area_ids_int: # Else if areas are selected, get UCs from steps in those areas
+                # Subquery to get step IDs in selected areas
+                subquery_step_ids = select(ProcessStep.id).where(ProcessStep.area_id.in_(selected_area_ids_int)).scalar_subquery()
+                usecase_query = usecase_query.filter(UseCase.process_step_id.in_(subquery_step_ids))
+            # If none are selected, the query will return all use cases, then filtered by field selection.
 
-                usecases_for_preview = usecase_query.options(
-                    joinedload(UseCase.process_step).joinedload(ProcessStep.area)
-                ).order_by(UseCase.process_step_id, UseCase.name).all()
-                
-                for uc in usecases_for_preview:
-                    uc_data = {
-                        'id': uc.id,
-                        'process_step_id': uc.process_step_id,
-                        'process_step_name': uc.process_step.name if uc.process_step else 'N/A',
-                        'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else 'N/A',
-                        'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A'
-                    }
-                    for field_key in selected_usecase_fields_form:
-                        if hasattr(uc, field_key):
-                            uc_data[field_key] = getattr(uc, field_key)
-                        else:
-                            uc_data[field_key] = "N/A"
-                    prepared_data["use_cases"].append(uc_data)
+            usecases_for_preview = usecase_query.options(
+                joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+            ).order_by(UseCase.process_step_id, UseCase.name).all()
+            
+            for uc in usecases_for_preview:
+                uc_data = {
+                    'id': uc.id,
+                    'process_step_id': uc.process_step_id,
+                    'process_step_name': uc.process_step.name if uc.process_step else 'N/A',
+                    'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else 'N/A',
+                    'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A'
+                }
+                for field_key in fields_to_export_usecases: # Use the resolved fields list
+                    if hasattr(uc, field_key):
+                        uc_data[field_key] = getattr(uc, field_key)
+                    else:
+                        uc_data[field_key] = "N/A"
+                prepared_data["use_cases"].append(uc_data)
 
             # NEW: --- Prepare Use Case to Step Relevance Data ---
             prepared_data["usecase_step_relevance"] = [] # Initialize the list
@@ -297,7 +310,7 @@ def llm_data_prep_page():
             all_steps=[],
             all_usecases=[], # NEW: Empty list on error
             selectable_fields_steps=SELECTABLE_STEP_FIELDS, # RENAMED
-            selectable_fields_usecases=SELECTABLE_USECASE_FIELDS, # NEW: Empty dict on error
+            selectable_fields_usecases=SELECTABLE_USECASE_FIELDS, # NEW: Keep as full dict on error
             prepared_data={"process_steps": [], "use_cases": []}, # Default to empty dict on error
             total_tokens=0,
             selected_area_ids=[],

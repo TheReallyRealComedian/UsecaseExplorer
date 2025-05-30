@@ -38,10 +38,69 @@
 
                 {% if step.step_description %}
                 <dt>Short Description:</dt>
-                <dd><p>{{ step.step_description | nl2br }}</p></dd>
+                <dd><pre>{{ step.step_description }}</pre></dd>
                 {% endif %}
 
-                {# ... (other existing step details like vision_statement, what_is_actually_done, in_scope, out_of_scope, interfaces_text, pain_points, targets_text, summary, raw_content, llm_comments, created_at, updated_at) ... #}
+                {# START ADDITION: Displaying more ProcessStep fields #}
+
+                {% if step.vision_statement %}
+                <dt>Vision Statement:</dt>
+                <dd><pre>{{ step.vision_statement }}</pre></dd>
+                {% endif %}
+
+                {% if step.what_is_actually_done %}
+                <dt>What is Actually Done:</dt>
+                <dd><pre>{{ step.what_is_actually_done }}</pre></dd>
+                {% endif %}
+
+                {% if step.in_scope %}
+                <dt>In Scope:</dt>
+                <dd><pre>{{ step.in_scope }}</pre></dd>
+                {% endif %}
+
+                {% if step.out_of_scope %}
+                <dt>Out of Scope:</dt>
+                <dd><pre>{{ step.out_of_scope }}</pre></dd>
+                {% endif %}
+
+                {% if step.interfaces_text %}
+                <dt>Interfaces:</dt>
+                <dd><pre>{{ step.interfaces_text }}</pre></dd>
+                {% endif %}
+
+                {% if step.pain_points %}
+                <dt>Pain Points:</dt>
+                <dd><pre>{{ step.pain_points }}</pre></dd>
+                {% endif %}
+
+                {% if step.targets_text %}
+                <dt>Targets:</dt>
+                <dd><pre>{{ step.targets_text }}</pre></dd>
+                {% endif %}
+                
+                {% if step.summary %}
+                <dt>Generic Summary:</dt>
+                <dd><pre>{{ step.summary }}</pre></dd>
+                {% endif %}
+                
+                {% if step.raw_content %}
+                <dt>Raw Content:</dt>
+                <dd><pre>{{ step.raw_content }}</pre></dd>
+                {% endif %}
+
+                <dt>LLM Comment 1:</dt> <dd>{{ step.llm_comment_1 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 2:</dt> <dd>{{ step.llm_comment_2 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 3:</dt> <dd>{{ step.llm_comment_3 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 4:</dt> <dd>{{ step.llm_comment_4 | default('N/A', true) }}</dd>
+                <dt>LLM Comment 5:</dt> <dd>{{ step.llm_comment_5 | default('N/A', true) }}</dd>
+
+                <dt>Created At:</dt>
+                <dd>{{ step.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if step.created_at else 'N/A' }}</dd>
+
+                <dt>Updated At:</dt>
+                <dd>{{ step.updated_at.strftime('%Y-%m-%d %H:%M:%S %Z') if step.updated_at else 'N/A' }}</dd>
+
+                {# END ADDITION #}
             </dl>
         </div>
     </div>
