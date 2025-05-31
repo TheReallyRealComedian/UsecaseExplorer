@@ -1,7 +1,7 @@
 #backend/requirements.txt
 
 Flask==2.3.3 # Or a recent version you prefer/is stable
-Flask-Login>
+Flask-Login>=0.6.3
 Flask-Session==0.8.0
 SQLAlchemy==2.0.25 # Or a recent version
 Flask-SQLAlchemy==3.1.1
@@ -9,7 +9,7 @@ psycopg2-binary==2.9.9 # Or a recent version
 python-dotenv==1.0.0 # For managing local environment variables
 Flask-Login>=0.6.3
 requests==2.31.0 # General HTTP client, useful for LLMs not using specific library
-openai==1.10.0 # Official OpenAI library
+openai>=1.10.0,<2.0.0 # Official OpenAI library
 gunicorn==21.2.0 # WSGI server for Docker
 passlib==1.7.4
 tiktoken==0.5.2

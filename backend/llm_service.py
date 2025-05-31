@@ -222,7 +222,13 @@ def generate_openai_chat_response(model_name, user_message, system_prompt=None, 
     if not api_key:
         return {"success": False, "message": "OpenAI API key is not configured."}
 
-    client = openai.OpenAI(api_key=api_key)
+    try:
+        client = openai.OpenAI(api_key=api_key)
+    except TypeError as e:
+        if 'unexpected keyword argument' in str(e):
+            client = openai.OpenAI(api_key=api_key, base_url="https://api.openai.com/v1")
+        else:
+            raise
 
     messages = []
     if system_prompt:
@@ -286,7 +292,13 @@ def generate_anthropic_chat_response(model_name, user_message, system_prompt=Non
     if not api_key:
         return {"success": False, "message": "Anthropic API key is not configured."}
 
-    client = Anthropic(api_key=api_key)
+    try:
+        client = Anthropic(api_key=api_key)
+    except TypeError as e:
+        if 'unexpected keyword argument' in str(e):
+            client = Anthropic(api_key=api_key, base_url="https://api.anthropic.com")
+        else:
+            raise
 
     messages = []
     # Anthropic's API takes system prompt as a separate argument, not in messages list
