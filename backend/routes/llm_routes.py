@@ -9,9 +9,19 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import select
 
-from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
+# Updated imports for llm_service functions
+from ..llm_service import (
+    get_all_available_llm_models, # NEW: Master model list getter
+    generate_ollama_chat_response,
+    generate_openai_chat_response, # NEW
+    generate_anthropic_chat_response, # NEW
+    generate_google_chat_response, # NEW
+    clear_chat_history,
+    get_chat_history,
+    add_message_to_history # NEW: Imported for use in `llm_chat`
+)
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance 
+from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
 # NEW IMPORT FOR BREADCRUMBS DATA
 from ..app import serialize_for_js
 # END NEW IMPORT
@@ -25,7 +35,7 @@ def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
     try:
         encoding = tiktoken.get_encoding(model_name)
     except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base") 
+        encoding = tiktoken.get_encoding("cl100k_base")
     return len(encoding.encode(text))
 
 
@@ -93,8 +103,8 @@ def llm_chat_page():
 
     try:
         # These are fetched by JS now, but kept for consistency in parameters if needed
-        # ollama_models = get_available_ollama_models() 
-        # chat_history = list(get_chat_history()) 
+        # ollama_models = get_available_ollama_models()
+        # chat_history = list(get_chat_history())
 
         # NEW BREADCRUMB DATA FETCHING
         all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
@@ -149,8 +159,8 @@ def llm_data_prep_page():
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
 
-        prepared_data = {"process_steps": [], "use_cases": []} 
-        
+        prepared_data = {"process_steps": [], "use_cases": []}
+
         selected_area_ids_int = []
         selected_step_ids_int = []
         selected_usecase_ids_int = []
@@ -202,7 +212,7 @@ def llm_data_prep_page():
                 step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
 
             steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
-            
+
             for step in steps_for_preview:
                 step_data = {
                     'id': step.id,
@@ -228,7 +238,7 @@ def llm_data_prep_page():
             usecases_for_preview = usecase_query.options(
                 joinedload(UseCase.process_step).joinedload(ProcessStep.area)
             ).order_by(UseCase.process_step_id, UseCase.name).all()
-            
+
             for uc in usecases_for_preview:
                 uc_data = {
                     'id': uc.id,
@@ -266,7 +276,7 @@ def llm_data_prep_page():
                     )
 
                 uc_step_relevances = relevance_query.all()
-                
+
                 for rel in uc_step_relevances:
                     if rel.source_usecase_id in actual_exported_uc_ids and \
                        rel.target_process_step_id in actual_exported_step_ids:
@@ -294,14 +304,14 @@ def llm_data_prep_page():
         # NOTE: ollama_models and chat_history are now fetched via API calls by common_llm_chat.js
         #       These variables in the render_template are no longer strictly needed for the LLM chat window itself
         #       but kept for existing template structure.
-        ollama_models = get_available_ollama_models() 
-        chat_history = list(get_chat_history()) 
+        ollama_models = get_all_available_llm_models() # NEW: Get ALL models
+        chat_history = list(get_chat_history())
 
         # NEW BREADCRUMB DATA FETCHING
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
+        # END NEW BREADCRUMB DATA PASSING
 
         return render_template(
             'llm_data_prep.html',
@@ -386,8 +396,7 @@ def analyze_usecase(usecase_id):
 @llm_routes.route('/chat', methods=['POST'])
 @login_required
 def llm_chat():
-    # Change 'content' to 'message' to match the frontend payload
-    user_message = request.json.get('message') 
+    user_message = request.json.get('message') # Correctly retrieve 'message' from frontend
     model_name = request.json.get('model')
     image_base64 = request.json.get('image_base64')
     image_mime_type = request.json.get('image_mime_type')
@@ -396,16 +405,54 @@ def llm_chat():
     if system_prompt == "":
         system_prompt = None
 
-    # Update validation logic: check if *either* user_message (text) *or* image_base64 (image) is present.
-    # The previous `if not content:` and the extraction logic are no longer needed.
     if not user_message and not image_base64: # If no text and no image
         return jsonify({"success": False, "message": "Message or image is required."}), 400
-    
+
     if not model_name:
         return jsonify({"success": False, "message": "Model is required."}), 400
 
-    # The generate_ollama_chat_response already expects user_message, image_base64, image_mime_type as separate arguments
-    response = generate_ollama_chat_response(model_name, user_message, system_prompt, image_base64, image_mime_type)
+    # Get current chat history for this user
+    chat_history = get_chat_history()
+
+    # Determine provider and model_id from the model_name string (e.g., "openai-gpt-4o")
+    # Split only on the first hyphen in case model names themselves contain hyphens
+    parts = model_name.split('-', 1)
+    provider = parts[0] if len(parts) > 0 else "unknown"
+    model_id = parts[1] if len(parts) > 1 else model_name # Fallback to full name if no hyphen
+
+    response = {"success": False, "message": "Unsupported LLM provider or no response."}
+
+    try:
+        if provider == "ollama":
+            response = generate_ollama_chat_response(model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history)
+        elif provider == "openai":
+            response = generate_openai_chat_response(model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history)
+        elif provider == "anthropic":
+            response = generate_anthropic_chat_response(model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history)
+        elif provider == "google":
+            response = generate_google_chat_response(model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history)
+        else:
+            response = {"success": False, "message": f"Unknown or unsupported LLM provider: {provider}"}
+
+    except Exception as e:
+        response = {"success": False, "message": f"Server error calling LLM: {e}"}
+        traceback.print_exc()
+
+    # Add messages to history only if the API call was successful
+    if response["success"]:
+        # The 'user_message' passed here is the original text from the frontend.
+        # If the original user_message was empty but an image was provided, add a placeholder text for history.
+        user_message_for_history = user_message
+        if not user_message_for_history and image_base64:
+            user_message_for_history = "Image provided."
+        add_message_to_history('user', user_message_for_history)
+        add_message_to_history('assistant', response["message"])
+    else:
+        # If the API call failed, but it wasn't due to missing message/model,
+        # you might want to log the error in the chat display for the user.
+        # For simplicity, we just pass the error message from the response.
+        pass # The frontend `common_llm_chat.js` already handles displaying `data.message` for errors.
+
     return jsonify(response)
 
 @llm_routes.route('/system-prompt', methods=['POST'])
@@ -442,7 +489,7 @@ def llm_chat_clear():
 @llm_routes.route('/get_llm_models', methods=['GET'])
 @login_required
 def get_llm_models_api():
-    models = get_available_ollama_models()
+    models = get_all_available_llm_models() # NEW: Calls the aggregated model list
     return jsonify({"success": True, "models": models})
 
 @llm_routes.route('/get_chat_history', methods=['GET'])

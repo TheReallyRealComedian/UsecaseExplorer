@@ -1,7 +1,8 @@
 #backend/requirements.txt
 
 Flask==2.3.3 # Or a recent version you prefer/is stable
-Flask-Session==0.6.0
+Flask-Login>
+Flask-Session==0.8.0
 SQLAlchemy==2.0.25 # Or a recent version
 Flask-SQLAlchemy==3.1.1
 psycopg2-binary==2.9.9 # Or a recent version
@@ -13,3 +14,7 @@ gunicorn==21.2.0 # WSGI server for Docker
 passlib==1.7.4
 tiktoken==0.5.2
 markdown
+anthropic==0.23.1
+google-generativeai==0.6.0
+Pillow
+httpx

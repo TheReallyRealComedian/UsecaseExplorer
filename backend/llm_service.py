@@ -5,25 +5,31 @@ import json
 import os
 from flask import session as flask_session, current_app
 from collections import deque
-import logging 
+import logging
 from flask_login import current_user
 from .db import SessionLocal
 from .models import User, LLMSettings
 from sqlalchemy.orm import joinedload
 
+# NEW IMPORTS FOR OTHER LLM PROVIDERS
+import openai
+from anthropic import Anthropic
+import base64 # Import base64 for image decoding
+import google.generativeai as genai
+# END NEW IMPORTS
+
 # Configure basic logging for debugging (if not already done globally)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# --- API Key & URL Retrieval Functions (Already present, ensuring they use LLMSettings) ---
 def get_ollama_base_url():
     """
     Retrieves Ollama base URL, prioritizing user-specific settings from the database,
     then falling back to environment variables.
     """
-    # Check current_user for settings if authenticated
     if current_user.is_authenticated:
         session = SessionLocal()
         try:
-            # Eager load llm_settings for the current user
             user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
             if user and user.llm_settings and user.llm_settings.ollama_base_url:
                 logging.info(f"Using user-specific Ollama Base URL.")
@@ -31,36 +37,11 @@ def get_ollama_base_url():
         except Exception as e:
             logging.error(f"Error fetching user Ollama URL from DB: {e}")
         finally:
-            # session.remove() # Ensure session is closed
-            pass
-
-    # Fallback to environment variable if no user setting or error
+            SessionLocal.remove() # Ensure session is closed
     env_url = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
     logging.info(f"Using environment variable Ollama Base URL: {env_url} (or default if not set).")
     return env_url
 
-def get_available_ollama_models():
-    """Fetches available models from the Ollama API."""
-    ollama_url = get_ollama_base_url()
-    try:
-        response = requests.get(f"{ollama_url}/api/tags", timeout=5)
-        response.raise_for_status()
-        models_data = response.json()
-        return [model['name'] for model in models_data.get('models', [])]
-    except requests.exceptions.ConnectionError:
-        logging.error(f"Ollama: Connection error to {ollama_url}. Is Ollama running?")
-        return ["Error: Ollama not reachable"]
-    except requests.exceptions.Timeout:
-        logging.warning(f"Ollama: Timeout connecting to {ollama_url}.")
-        return ["Error: Ollama timeout"]
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Ollama: An unexpected error occurred: {e}")
-        return [f"Error: {e}"]
-    except Exception as e:
-        logging.error(f"Ollama: Failed to parse models: {e}")
-        return ["Error: Failed to parse models"]
-
-# Helper function to get OpenAI API key
 def get_openai_api_key():
     """
     Retrieves OpenAI API key, prioritizing user-specific settings from the database,
@@ -76,14 +57,11 @@ def get_openai_api_key():
         except Exception as e:
             logging.error(f"Error fetching user OpenAI API Key from DB: {e}")
         finally:
-            # session.remove()
-            pass
-    
+            SessionLocal.remove()
     env_key = os.environ.get('OPENAI_API_KEY')
     logging.info(f"Using environment variable OpenAI API Key.")
     return env_key
 
-# Helper function to get Anthropic API key
 def get_anthropic_api_key():
     """
     Retrieves Anthropic API key, prioritizing user-specific settings from the database,
@@ -99,14 +77,11 @@ def get_anthropic_api_key():
         except Exception as e:
             logging.error(f"Error fetching user Anthropic API Key from DB: {e}")
         finally:
-            # session.remove()
-            pass
-    
+            SessionLocal.remove()
     env_key = os.environ.get('ANTHROPIC_API_KEY')
     logging.info(f"Using environment variable Anthropic API Key.")
     return env_key
 
-# Helper function to get Google API key
 def get_google_api_key():
     """
     Retrieves Google API key, prioritizing user-specific settings from the database,
@@ -122,14 +97,13 @@ def get_google_api_key():
         except Exception as e:
             logging.error(f"Error fetching user Google API Key from DB: {e}")
         finally:
-            # session.remove()
-            pass
-    
+            SessionLocal.remove()
     env_key = os.environ.get('GOOGLE_API_KEY')
     logging.info(f"Using environment variable Google API Key.")
     return env_key
 
 
+# --- Chat History Management (No changes needed here) ---
 def _get_history_deque():
     """
     Internal helper to retrieve the chat history from Flask session
@@ -166,54 +140,39 @@ def clear_chat_history():
     """Clears the chat history from the Flask session."""
     flask_session.pop('llm_chat_history', None)
 
-def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None):
+
+# --- Provider-Specific Chat Generation Functions (Modified Ollama, New OpenAI, Anthropic, Google) ---
+
+def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
     """
     Sends a chat message to Ollama and returns the assistant's response.
     Includes memory from the session. Supports image input for multimodal models.
     """
     ollama_url = get_ollama_base_url()
-    
-    # Construct messages list for Ollama API payload.
+
     messages_for_api = []
     if system_prompt:
         messages_for_api.append({'role': 'system', 'content': system_prompt})
 
-    # Add historical messages from session. These are text-only strings (`msg['content']` is a string).
-    # Ollama API allows `content` to be a string for text-only messages.
-    for msg in _get_history_deque():
-        messages_for_api.append({'role': msg['role'], 'content': msg['content']})
+    # Add historical messages (already text-only)
+    if chat_history:
+        messages_for_api.extend(chat_history)
 
-    # Prepare the current user message - Ollama format
-    # In Ollama, content is always a string, images go in separate 'images' field
     current_user_message_content = user_message if user_message else ""
     current_user_message_images = []
-    
-    if image_base64:
-        # Add a log for the size of the base64 string and MIME type
-        logging.info(f"Received image_base64 in backend. Length: {len(image_base64)} characters. MIME Type: {image_mime_type}")
-        
-        try:
-            # For Ollama, we just need the base64 data without the data URL prefix
-            current_user_message_images.append(image_base64)
-            logging.info(f"Image added to Ollama images array. Base64 length: {len(image_base64)}")
-        except Exception as e:
-            logging.error(f"Error processing base64 image data: {e}")
-            return {"success": False, "message": "Invalid image data provided."}
 
-        # If message is empty but image is present, add a default text prompt
+    if image_base64:
+        logging.info(f"Ollama: Received image_base64 for chat. Length: {len(image_base64)} characters. MIME Type: {image_mime_type}")
+        current_user_message_images.append(image_base64)
         if not current_user_message_content:
             current_user_message_content = "Analyze this image."
 
-    # Check if we have any content
     if not current_user_message_content and not current_user_message_images:
         return {"success": False, "message": "No message or image provided for LLM."}
 
-    # Build the current user message using Ollama's format
     current_user_message = {'role': 'user', 'content': current_user_message_content}
     if current_user_message_images:
         current_user_message['images'] = current_user_message_images
-    
-    # Add the current user message to the messages array
     messages_for_api.append(current_user_message)
 
     try:
@@ -222,39 +181,18 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
             "messages": messages_for_api,
             "stream": False
         }
-        
         headers = {"Content-Type": "application/json"}
-        
-        logging.info(f"Sending Ollama API Payload for model '{model_name}'. Message count: {len(payload['messages'])}. "
-                     f"Current user message content type: string. "
-                     f"Has images: {len(current_user_message_images) > 0}. "
-                     f"Payload size (approx): {len(json.dumps(payload))} bytes.")
-        logging.debug(f"Full Ollama API PAYLOAD: {json.dumps(payload, indent=2)}")
+        logging.info(f"Ollama: Sending payload for model '{model_name}'. Message count: {len(payload['messages'])}. Has images: {len(current_user_message_images) > 0}.")
+        logging.debug(f"Ollama: Full API PAYLOAD (truncated for images): {json.dumps(payload, indent=2)[:500]}...")
 
-        # Send the request
+
         response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=300)
+        logging.debug(f"Ollama: raw response status code: {response.status_code}")
+        response.raise_for_status()
 
-        # Log detailed response BEFORE raising for status
-        logging.debug(f"Ollama API raw response status code: {response.status_code}")
-        logging.debug(f"Ollama API raw response headers: {response.headers}")
-        logging.debug(f"Ollama API raw response text (first 500 chars): {response.text[:500]}...")
-
-        response.raise_for_status()  # This will raise an HTTPError for 4xx/5xx responses
-        
-        # Attempt to parse JSON only if status is OK
         response_data = response.json()
         assistant_message = response_data['message']['content']
-        
-        # Add the user's *text* message and assistant's response to history *only after successful API call*.
-        # The 'user_message' passed here is the original text from the frontend.
-        # If the original user_message was empty but an image was provided, add a placeholder text for history.
-        user_message_for_history = user_message
-        if not user_message_for_history and current_user_message_images:
-            user_message_for_history = "Image provided."  # Or "Analyze this image." for clarity in history
-        
-        add_message_to_history('user', user_message_for_history)
-        add_message_to_history('assistant', assistant_message)
-        
+
         return {"success": True, "message": assistant_message}
 
     except requests.exceptions.ConnectionError:
@@ -266,21 +204,310 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
         logging.warning(error_msg)
         return {"success": False, "message": error_msg}
     except requests.exceptions.RequestException as e:
-        # e.response should now be populated here if an HTTP error occurred
         status_code = e.response.status_code if e.response is not None else 'N/A'
         response_text = e.response.text if e.response is not None else 'N/A'
-
         error_msg = (f"Ollama: API request failed: {e}. Status Code: {status_code}. Response: {response_text}")
         logging.error(error_msg)
-
-        if e.response is not None:
-            try:
-                detailed_response_content = e.response.json()
-                logging.error(f"Ollama detailed error JSON response: {json.dumps(detailed_response_content, indent=2)}")
-            except json.JSONDecodeError:
-                logging.error(f"Ollama detailed error raw text response (non-JSON): {e.response.text}") 
         return {"success": False, "message": error_msg}
     except Exception as e:
         error_msg = f"An unexpected error occurred during Ollama chat: {e}"
         logging.exception(error_msg)
         return {"success": False, "message": error_msg}
+
+def generate_openai_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
+    """
+    Sends a chat message to OpenAI's API. Supports multimodal input.
+    """
+    api_key = get_openai_api_key()
+    if not api_key:
+        return {"success": False, "message": "OpenAI API key is not configured."}
+
+    client = openai.OpenAI(api_key=api_key)
+
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+
+    # Add historical messages (already text-only)
+    if chat_history:
+        messages.extend(chat_history)
+
+    current_user_content_blocks = []
+    if user_message:
+        current_user_content_blocks.append({"type": "text", "text": user_message})
+
+    if image_base64 and image_mime_type:
+        # OpenAI expects the full data URL for images
+        image_url = f"data:{image_mime_type};base64,{image_base64}"
+        current_user_content_blocks.append({"type": "image_url", "image_url": {"url": image_url}})
+        if not user_message: # If only image, add a default prompt
+            current_user_content_blocks.append({"type": "text", "text": "Analyze this image."})
+
+    if not current_user_content_blocks:
+        return {"success": False, "message": "No message or image provided for LLM."}
+
+    messages.append({"role": "user", "content": current_user_content_blocks})
+
+    try:
+        logging.info(f"OpenAI: Sending payload for model '{model_name}'. Message count: {len(messages)}. Has images: {bool(image_base64)}.")
+        logging.debug(f"OpenAI: Full API PAYLOAD (truncated for images): {json.dumps(messages, indent=2)[:500]}...")
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=0.7, # You can adjust this
+            max_tokens=1024, # You can adjust this
+        )
+        assistant_message = response.choices[0].message.content
+        return {"success": True, "message": assistant_message}
+
+    except openai.APIConnectionError as e:
+        error_msg = f"OpenAI: Connection error: {e.human_readable_message}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except openai.RateLimitError as e:
+        error_msg = f"OpenAI: Rate limit exceeded: {e.human_readable_message}"
+        logging.warning(error_msg)
+        return {"success": False, "message": error_msg}
+    except openai.APIStatusError as e:
+        error_msg = f"OpenAI: API error: {e.status_code} - {e.response}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during OpenAI chat: {e}"
+        logging.exception(error_msg)
+        return {"success": False, "message": error_msg}
+
+def generate_anthropic_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
+    """
+    Sends a chat message to Anthropic's API. Supports multimodal input.
+    """
+    api_key = get_anthropic_api_key()
+    if not api_key:
+        return {"success": False, "message": "Anthropic API key is not configured."}
+
+    client = Anthropic(api_key=api_key)
+
+    messages = []
+    # Anthropic's API takes system prompt as a separate argument, not in messages list
+    # The `messages` list should only contain 'user' and 'assistant' roles.
+    
+    # Reconstruct messages list for Anthropic format, which doesn't directly take system_prompt
+    # and has a specific structure for content blocks.
+    anthropic_messages = []
+    
+    # Process history: Anthropic expects alternating user/assistant messages.
+    # The history deque stores simple content strings. We need to convert them to Anthropic's text block format.
+    if chat_history:
+        for msg in chat_history:
+            anthropic_messages.append({"role": msg['role'], "content": [{"type": "text", "text": msg['content']}]})
+
+    current_user_content_blocks = []
+    if user_message:
+        current_user_content_blocks.append({"type": "text", "text": user_message})
+
+    if image_base64 and image_mime_type:
+        # Anthropic expects image as a media_type and base64 data
+        anthropic_image_data = {
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": image_mime_type,
+                "data": image_base64,
+            },
+        }
+        current_user_content_blocks.append(anthropic_image_data)
+        if not user_message: # If only image, add a default prompt
+            current_user_content_blocks.append({"type": "text", "text": "Analyze this image."})
+
+    if not current_user_content_blocks:
+        return {"success": False, "message": "No message or image provided for LLM."}
+
+    anthropic_messages.append({"role": "user", "content": current_user_content_blocks})
+
+    try:
+        logging.info(f"Anthropic: Sending payload for model '{model_name}'. Message count: {len(anthropic_messages)}. Has images: {bool(image_base64)}.")
+        logging.debug(f"Anthropic: Full API PAYLOAD (truncated for images): {json.dumps(anthropic_messages, indent=2)[:500]}...")
+
+        response = client.messages.create(
+            model=model_name,
+            max_tokens=1024, # You can adjust this
+            system=system_prompt, # System prompt handled separately
+            messages=anthropic_messages,
+        )
+        assistant_message = response.content[0].text # Response content is a list of text blocks
+        return {"success": True, "message": assistant_message}
+
+    except Anthropic.APIConnectionError as e:
+        error_msg = f"Anthropic: Connection error: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Anthropic.RateLimitError as e:
+        error_msg = f"Anthropic: Rate limit exceeded: {e}"
+        logging.warning(error_msg)
+        return {"success": False, "message": error_msg}
+    except Anthropic.APIStatusError as e:
+        error_msg = f"Anthropic: API error: {e.status_code} - {e.response}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during Anthropic chat: {e}"
+        logging.exception(error_msg)
+        return {"success": False, "message": error_msg}
+
+def generate_google_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
+    """
+    Sends a chat message to Google Gemini's API. Supports multimodal input.
+    """
+    api_key = get_google_api_key()
+    if not api_key:
+        return {"success": False, "message": "Google API key is not configured."}
+
+    genai.configure(api_key=api_key)
+
+    # Prepare chat history for Google's API, which expects a list of content blocks
+    # Each content block can be a string or a list of parts (e.g., text and image)
+    google_history = []
+    if chat_history:
+        for msg in chat_history:
+            # Google's API expects content as a list of parts, even for pure text
+            google_history.append({"role": msg['role'], "parts": [msg['content']]})
+
+    # Prepare current user message content
+    parts = []
+    if user_message:
+        parts.append(user_message)
+
+    if image_base64 and image_mime_type:
+        # Convert base64 image to Google's Image.from_bytes format
+        try:
+            # Correct way to convert base64 string to bytes for PIL Image.from_bytes
+            # (base64 module is already imported at the top)
+            image_bytes = base64.b64decode(image_base64)
+            
+            from PIL import Image
+            from io import BytesIO
+            img_part = Image.open(BytesIO(image_bytes))
+            parts.append(img_part) # Pass PIL Image object directly
+        except Exception as e:
+            logging.error(f"Google Gemini: Error processing image for API: {e}")
+            return {"success": False, "message": "Failed to process image for Google Gemini."}
+
+        if not user_message: # If only image, add a default prompt
+            parts.append("Analyze this image.")
+
+    if not parts:
+        return {"success": False, "message": "No message or image provided for LLM."}
+
+    try:
+        model = genai.GenerativeModel(model_name=model_name, system_instruction=system_prompt)
+        
+        # Start a chat session with history
+        chat = model.start_chat(history=google_history)
+
+        logging.info(f"Google: Sending payload for model '{model_name}'. Message count: {len(google_history) + 1}. Has images: {bool(image_base64)}.")
+        logging.debug(f"Google: Current message parts: {parts}. History: {google_history}")
+
+        response = chat.send_message(parts)
+        response.resolve() # Ensure response is resolved if it's a stream object
+        
+        assistant_message = response.text
+        return {"success": True, "message": assistant_message}
+
+    except genai.APIError as e:
+        error_msg = f"Google Gemini: API error: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except genai.ClientError as e:
+        error_msg = f"Google Gemini: Client error: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during Google Gemini chat: {e}"
+        logging.exception(error_msg)
+        return {"success": False, "message": error_msg}
+
+
+# --- Model Discovery Functions ---
+
+def get_available_ollama_models():
+    """Fetches available models from the Ollama API."""
+    ollama_url = get_ollama_base_url()
+    try:
+        response = requests.get(f"{ollama_url}/api/tags", timeout=5)
+        response.raise_for_status()
+        models_data = response.json()
+        return [f"ollama-{model['name']}" for model in models_data.get('models', [])] # Prefix with "ollama-"
+    except requests.exceptions.ConnectionError:
+        logging.error(f"Ollama: Connection error to {ollama_url}. Is Ollama running?")
+        return ["ollama-Error: Not reachable"]
+    except requests.exceptions.Timeout:
+        logging.warning(f"Ollama: Timeout connecting to {ollama_url}.")
+        return ["ollama-Error: Timeout"]
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Ollama: An unexpected error occurred: {e}")
+        return [f"ollama-Error: {e}"]
+    except Exception as e:
+        logging.error(f"Ollama: Failed to parse models: {e}")
+        return ["ollama-Error: Failed to parse models"]
+
+def get_available_openai_models():
+    """Returns a list of common OpenAI chat models."""
+    api_key = get_openai_api_key()
+    if not api_key:
+        return [] # Return empty if no key
+    
+    # In a production app, you might use client.models.list() and filter for chat models.
+    # For simplicity and to avoid excessive API calls on page load:
+    models = [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo",
+    ]
+    return [f"openai-{model}" for model in models]
+
+def get_available_anthropic_models():
+    """Returns a list of common Anthropic chat models."""
+    api_key = get_anthropic_api_key()
+    if not api_key:
+        return []
+    
+    models = [
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307",
+    ]
+    return [f"anthropic-{model}" for model in models]
+
+def get_available_google_models():
+    """Returns a list of common Google Gemini chat models, or queries the API if needed."""
+    api_key = get_google_api_key()
+    if not api_key:
+        return []
+
+    models = [
+        "gemini-pro",
+        "gemini-pro-vision", # Supports images
+        "gemini-1.5-pro-latest",
+        "gemini-1.5-flash-latest",
+    ]
+    return [f"google-{model}" for model in models]
+
+def get_all_available_llm_models():
+    """Aggregates models from all configured LLM providers."""
+    all_models = []
+    
+    # Prioritize non-Ollama models first in the list
+    all_models.extend(get_available_openai_models())
+    all_models.extend(get_available_anthropic_models())
+    all_models.extend(get_available_google_models())
+    
+    # Then add Ollama models (which might include errors if not reachable)
+    all_models.extend(get_available_ollama_models())
+
+    # Filter out empty strings or duplicate error messages
+    all_models = [m for m in all_models if m] # Remove empty strings
+    all_models = list(dict.fromkeys(all_models)) # Remove duplicates while preserving order (Python 3.7+)
+
+    return all_models

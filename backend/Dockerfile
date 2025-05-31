@@ -14,6 +14,12 @@ ENV FLASK_ENV=development
 # This ensures Python output is unbuffered for immediate output from Python prints
 ENV PYTHONUNBUFFERED=1
 
+# Ensure no proxy environment variables interfere with HTTPX clients
+ENV HTTP_PROXY=""
+ENV HTTPS_PROXY=""
+ENV ALL_PROXY=""
+ENV NO_PROXY=""
+
 EXPOSE 5000
 
 # Use the Exec Form. Ensure 'backend:create_app()' is the LAST element.
