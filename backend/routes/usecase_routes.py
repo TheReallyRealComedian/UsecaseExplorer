@@ -87,7 +87,7 @@ def view_usecase(usecase_id):
         flash("An error occurred while fetching usecase details.", "danger")
         return redirect(url_for('index'))
     finally:
-        SessionLocal.remove()
+        pass
 
 
 @usecase_routes.route('/<int:usecase_id>/edit', methods=['GET', 'POST'])
@@ -107,7 +107,6 @@ def edit_usecase(usecase_id):
 
     if usecase is None:
         flash(f"Use Case with ID {usecase_id} not found.", "warning")
-        SessionLocal.remove()
         return redirect(url_for('index'))
 
     current_step_for_bc = usecase.process_step
@@ -128,7 +127,6 @@ def edit_usecase(usecase_id):
                     usecase.priority = priority_val
                 else:
                     flash("Invalid priority value. Must be a number between 1 and 4, or empty.", "danger")
-                    SessionLocal.remove()
                     return render_template(
                         'edit_usecase.html',
                         title=f"Edit Use Case: {usecase.name}",
@@ -146,7 +144,6 @@ def edit_usecase(usecase_id):
                     )
             else:
                  flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
-                 SessionLocal.remove()
                  return render_template(
                      'edit_usecase.html',
                      title=f"Edit Use Case: {usecase.name}",
@@ -190,7 +187,6 @@ def edit_usecase(usecase_id):
 
         if not usecase.name or not usecase.bi_id or not usecase.process_step_id:
             flash("Use Case Name, BI_ID, and Process Step are required.", "danger")
-            SessionLocal.remove()
             return render_template(
                 'edit_usecase.html',
                 title=f"Edit Use Case: {usecase.name}",
@@ -213,7 +209,6 @@ def edit_usecase(usecase_id):
                 .first()
             if existing_uc:
                 flash(f"Another use case with BI_ID '{usecase.bi_id}' already exists.", "danger")
-                SessionLocal.remove()
                 return render_template(
                     'edit_usecase.html',
                     title=f"Edit Use Case: {usecase.name}",
@@ -260,7 +255,6 @@ def edit_usecase(usecase_id):
             session.rollback()
             flash(f"An unexpected error occurred: {e}", "danger")
             print(f"Error updating use case {usecase_id}: {e}")
-            SessionLocal.remove()
             return render_template(
                 'edit_usecase.html',
                 title=f"Edit Use Case: {usecase.name}", # Page title
@@ -278,7 +272,6 @@ def edit_usecase(usecase_id):
             )
 
     # For GET or re-render on error (if not handled by POST's error returns)
-    SessionLocal.remove()
     return render_template(
         'edit_usecase.html',
         title=f"Edit Use Case: {usecase.name}",
@@ -324,5 +317,4 @@ def delete_usecase(usecase_id):
             if step_id_for_redirect is not None:
                  redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
 
-    SessionLocal.remove()
     return redirect(redirect_url)

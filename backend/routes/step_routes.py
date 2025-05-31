@@ -74,7 +74,8 @@ def view_step(step_id):
         flash("An error occurred while fetching step details. Please check server logs.", "danger")
         return redirect(url_for('index'))
     finally:
-        SessionLocal.remove()
+        # REMOVE THIS LINE: SessionLocal.remove()
+        pass
 
 
 @step_routes.route('/<int:step_id>/edit', methods=['GET', 'POST'])
@@ -92,7 +93,7 @@ def edit_step(step_id):
 
     if step is None:
         flash(f"Process Step with ID {step_id} not found.", "warning")
-        SessionLocal.remove()
+        # REMOVE THIS LINE: SessionLocal.remove()
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -142,12 +143,12 @@ def edit_step(step_id):
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
-                SessionLocal.remove() # Close session before redirect
+                # REMOVE THIS LINE: SessionLocal.remove() # Close session before redirect
                 return redirect(url_for('steps.view_step', step_id=step.id))
             except IntegrityError:
                 session.rollback()
                 flash("Database error: Could not update step. BI_ID might already exist or area is invalid.", "danger")
-                SessionLocal.remove() 
+                # REMOVE THIS LINE: SessionLocal.remove() 
                 return render_template(
                     'edit_step.html',
                     title=f"Edit Step: {step.name}",
@@ -168,7 +169,7 @@ def edit_step(step_id):
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating step {step_id}: {e}")
                 # Fall through to render_template below
-                SessionLocal.remove()
+                # REMOVE THIS LINE: SessionLocal.remove()
                 return render_template(
                     'edit_step.html',
                     title=f"Edit Step: {step.name}",
@@ -185,7 +186,7 @@ def edit_step(step_id):
                     # END NEW BREADCRUMB DATA PASSING
                 )
     
-    SessionLocal.remove() 
+    # REMOVE THIS LINE: SessionLocal.remove() 
     return render_template(
         'edit_step.html',
         title=f"Edit Step: {step.name}", # Page title
@@ -228,5 +229,5 @@ def delete_step(step_id):
             if step.area_id: 
                  redirect_url = url_for('areas.view_area', area_id=step.area_id)
 
-    SessionLocal.remove()
+    # REMOVE THIS LINE: SessionLocal.remove()
     return redirect(redirect_url)

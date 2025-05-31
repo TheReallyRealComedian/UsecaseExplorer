@@ -63,7 +63,8 @@ def view_area(area_id):
         flash("An error occurred while fetching area details.", "danger")
         return redirect(url_for('index'))
     finally:
-        SessionLocal.remove()
+        # SessionLocal.remove() # REMOVED
+        pass
 
 
 @area_routes.route('/<int:area_id>/edit', methods=['GET', 'POST'])
@@ -80,7 +81,7 @@ def edit_area(area_id):
 
     if area is None:
         flash(f"Area with ID {area_id} not found.", "warning")
-        SessionLocal.remove()
+        # SessionLocal.remove() # REMOVED
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -98,7 +99,7 @@ def edit_area(area_id):
                     # Return to form with current (unsaved) data
                     area.name = new_name # To show the problematic name in the form
                     area.description = new_description
-                    SessionLocal.remove()
+                    # SessionLocal.remove() # REMOVED
                     return render_template(
                         'edit_area.html', 
                         title=f"Edit Area: {area.name}", 
@@ -119,18 +120,20 @@ def edit_area(area_id):
             try:
                 session.commit()
                 flash("Area updated successfully!", "success")
-                SessionLocal.remove()
+                # SessionLocal.remove() # REMOVED
                 return redirect(url_for('areas.view_area', area_id=area.id))
             except IntegrityError: # Should be caught by the explicit check above, but as a fallback
                 session.rollback()
                 flash("Database error: Could not update area. The name might already exist.", "danger")
+                # SessionLocal.remove() # REMOVED
             except Exception as e:
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating area {area_id}: {e}")
+                # SessionLocal.remove() # REMOVED
     
     # For GET request or if POST had errors and needs to re-render
-    SessionLocal.remove() # Remove session if it wasn't already (e.g. on GET)
+    # SessionLocal.remove() # REMOVED
     return render_template(
         'edit_area.html', 
         title=f"Edit Area: {area.name}", 
@@ -165,5 +168,5 @@ def delete_area(area_id):
             flash(f"Error deleting area: {e}", "danger")
             print(f"Error deleting area {area_id}: {e}")
     
-    SessionLocal.remove()
+    # SessionLocal.remove() # REMOVED
     return redirect(url_for('index'))

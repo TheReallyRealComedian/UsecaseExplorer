@@ -59,7 +59,8 @@ def manage_settings():
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
         # END NEW BREADCRUMB DATA FETCHING
-        SessionLocal.remove() # Ensure session is closed after all DB ops, especially if no redirect happens
+        # REMOVED: SessionLocal.remove() as per change instructions
+        pass
 
     # For GET requests or if POST failed before redirect
     return render_template(

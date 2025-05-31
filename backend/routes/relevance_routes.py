@@ -431,11 +431,11 @@ def edit_area_relevance(relevance_id):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove() # Close session before re-rendering template
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='area', 
-                    all_usecases=all_usecases, 
-                    all_areas=all_areas, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='area',
+                    all_usecases=all_usecases,
+                    all_areas=all_areas,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -448,11 +448,11 @@ def edit_area_relevance(relevance_id):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='area', 
-                all_usecases=all_usecases, 
-                all_areas=all_areas, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='area',
+                all_usecases=all_usecases,
+                all_areas=all_areas,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -477,11 +477,11 @@ def edit_area_relevance(relevance_id):
                 flash("A relevance link between the selected Use Case and Area already exists.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='area', 
-                    all_usecases=all_usecases, 
-                    all_areas=all_areas, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='area',
+                    all_usecases=all_usecases,
+                    all_areas=all_areas,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -490,16 +490,16 @@ def edit_area_relevance(relevance_id):
                     all_steps_flat=all_steps_flat,
                     all_usecases_flat=all_usecases_flat
                 )
-            
+
             # Update source and target IDs
             link.source_usecase_id = new_source_usecase_id
             link.target_area_id = new_target_area_id
-            
+
             # Update the relationship objects if they were loaded to reflect the change for re-render
             # This is important if an error occurs and the template re-renders with the link object
             link.source_usecase = session.query(UseCase).get(new_source_usecase_id)
             link.target_area = session.query(Area).get(new_target_area_id)
-            
+
         link.relevance_score = score
         link.relevance_content = content if content else None
 
@@ -575,11 +575,11 @@ def edit_step_relevance(relevance_id):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='step', 
-                    all_usecases=all_usecases, 
-                    all_steps=all_steps, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='step',
+                    all_usecases=all_usecases,
+                    all_steps=all_steps,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -592,11 +592,11 @@ def edit_step_relevance(relevance_id):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='step', 
-                all_usecases=all_usecases, 
-                all_steps=all_steps, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='step',
+                all_usecases=all_usecases,
+                all_steps=all_steps,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -619,11 +619,11 @@ def edit_step_relevance(relevance_id):
                 flash("A relevance link between the selected Use Case and Process Step already exists.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='step', 
-                    all_usecases=all_usecases, 
-                    all_steps=all_steps, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='step',
+                    all_usecases=all_usecases,
+                    all_steps=all_steps,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -632,7 +632,7 @@ def edit_step_relevance(relevance_id):
                     all_steps_flat=all_steps_flat,
                     all_usecases_flat=all_usecases_flat
                 )
-            
+
             link.source_usecase_id = new_source_usecase_id
             link.target_process_step_id = new_target_process_step_id
 
@@ -709,10 +709,10 @@ def edit_usecase_relevance(relevance_id):
             flash("Cannot link a Use Case to itself.", "warning")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='usecase', 
-                all_usecases=all_usecases, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='usecase',
+                all_usecases=all_usecases,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -728,10 +728,10 @@ def edit_usecase_relevance(relevance_id):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='usecase', 
-                    all_usecases=all_usecases, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='usecase',
+                    all_usecases=all_usecases,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -744,10 +744,10 @@ def edit_usecase_relevance(relevance_id):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='usecase', 
-                all_usecases=all_usecases, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='usecase',
+                all_usecases=all_usecases,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -770,10 +770,10 @@ def edit_usecase_relevance(relevance_id):
                 flash("A relevance link between the selected Use Cases already exists.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='usecase', 
-                    all_usecases=all_usecases, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='usecase',
+                    all_usecases=all_usecases,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -782,7 +782,7 @@ def edit_usecase_relevance(relevance_id):
                     all_steps_flat=all_steps_flat,
                     all_usecases_flat=all_usecases_flat
                 )
-            
+
             link.source_usecase_id = new_source_usecase_id
             link.target_usecase_id = new_target_usecase_id
 
@@ -860,10 +860,10 @@ def edit_step_to_step_relevance(relevance_id):
             flash("Cannot link a Process Step to itself.", "warning")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='step_to_step', 
-                all_steps=all_steps, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='step_to_step',
+                all_steps=all_steps,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -879,10 +879,10 @@ def edit_step_to_step_relevance(relevance_id):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='step_to_step', 
-                    all_steps=all_steps, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='step_to_step',
+                    all_steps=all_steps,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -895,10 +895,10 @@ def edit_step_to_step_relevance(relevance_id):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
             return render_template(
-                'edit_relevance.html', 
-                relevance_link=link, 
-                link_type='step_to_step', 
-                all_steps=all_steps, 
+                'edit_relevance.html',
+                relevance_link=link,
+                link_type='step_to_step',
+                all_steps=all_steps,
                 current_item=None,
                 current_area=None, # Ensure consistency
                 current_step=None, # Ensure consistency
@@ -921,10 +921,10 @@ def edit_step_to_step_relevance(relevance_id):
                 flash("A relevance link between the selected Process Steps already exists.", "danger")
                 SessionLocal.remove()
                 return render_template(
-                    'edit_relevance.html', 
-                    relevance_link=link, 
-                    link_type='step_to_step', 
-                    all_steps=all_steps, 
+                    'edit_relevance.html',
+                    relevance_link=link,
+                    link_type='step_to_step',
+                    all_steps=all_steps,
                     current_item=None,
                     current_area=None, # Ensure consistency
                     current_step=None, # Ensure consistency
@@ -933,13 +933,13 @@ def edit_step_to_step_relevance(relevance_id):
                     all_steps_flat=all_steps_flat,
                     all_usecases_flat=all_usecases_flat
                 )
-            
+
             link.source_process_step_id = new_source_process_step_id
             link.target_process_step_id = new_target_process_step_id
 
             link.source_process_step = session.query(ProcessStep).get(new_source_process_step_id)
             link.target_process_step = session.query(ProcessStep).get(new_target_process_step_id)
-            
+
         link.relevance_score = score
         link.relevance_content = content if content else None
         try:
@@ -983,7 +983,7 @@ def edit_step_to_step_relevance(relevance_id):
 @login_required
 def visualize_relevance():
     session = SessionLocal()
-    
+
     # NEW BREADCRUMB DATA FETCHING
     all_areas_flat = []
     all_steps_flat = []
@@ -996,7 +996,7 @@ def visualize_relevance():
             joinedload(ProcessStep.area),
             joinedload(ProcessStep.use_cases)
         ).order_by(ProcessStep.area_id, ProcessStep.name).all()
-        
+
         relevances = session.query(ProcessStepProcessStepRelevance).all()
 
         echarts_categories = []
@@ -1035,7 +1035,7 @@ def visualize_relevance():
                 continue
 
             num_use_cases = len(step.use_cases) if step.use_cases else 0
-            symbol_size = 15 + (num_use_cases * 1.5) 
+            symbol_size = 15 + (num_use_cases * 1.5)
 
             node_display_name = step.name
             if len(node_display_name) > 25:
@@ -1068,8 +1068,8 @@ def visualize_relevance():
             target_node = next((node for node in echarts_nodes if node['id'] == str(rel.target_process_step_id)), None)
 
             if source_node and target_node:
-                link_width = max(0.5, rel.relevance_score / 25) 
-                
+                link_width = max(0.5, rel.relevance_score / 25)
+
                 # --- START MODIFICATION FOR TOOLTIP CONTENT ---
                 # Process relevance_content to HTML for the tooltip
                 tooltip_content_html = ""
@@ -1108,7 +1108,7 @@ def visualize_relevance():
                         )
                     }
                 })
-        
+
         # NEW BREADCRUMB DATA FETCHING
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
