@@ -18,32 +18,11 @@
         <h2 class="card-title">Full Database Management</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h3>Import Database</h3>
-                <p>
-                    Upload a previously exported database JSON file.
-                    <strong>Warning:</strong> This can overwrite existing data if "Clear existing data" is checked.
-                </p>
-                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data">                    <div class="mb-3">
-                        <label for="database_file" class="form-label">Database JSON File:</label>
-                        <input type="file" id="database_file" name="database_file" accept=".json" required class="form-control">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" id="clear_existing_data" name="clear_existing_data" class="form-check-input">
-                        <label for="clear_existing_data" class="form-check-label">Clear ALL existing data before import (USE WITH CAUTION!)</label>
-                    </div>
-                    <button type="submit" class="btn btn-danger"><i class="fas fa-database me-1"></i> Import Database</button>
-                </form>
-            </div>
-            <div class="col-md-6">
                 <h3>Export Database</h3>
                 <p>Download a complete backup of your database as a JSON file.</p>
                 <a href="{{ url_for('export.export_db_json') }}" class="btn btn-info">
                     <i class="fas fa-download me-1"></i> Export Full Database (JSON)
                 </a>
-            </div>
-        </div>
     </div>
 </div>
 

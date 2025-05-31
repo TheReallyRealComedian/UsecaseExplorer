@@ -30,11 +30,11 @@ export function initializeLLMChat(
     const imagePreview = imagePreviewId ? document.getElementById(imagePreviewId) : null;
     const clearImageButton = clearImageButtonId ? document.getElementById(clearImageButtonId) : null;
 
-    let currentImageBase64 = null; // Stores the Base64 string of the pasted image
+    let currentImageBase64 = null;
+    let currentImageMimeType = null;
 
     // --- Helper Functions ---
 
-    // Function to convert markdown to HTML using marked.js
     function markdownToHtml(markdownText) {
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
             return marked.parse(markdownText);
@@ -43,12 +43,10 @@ export function initializeLLMChat(
         return markdownText;
     }
 
-    // Function to add a message to the chat display
     function addMessageToChat(role, content, imageUrl = null) {
         const messageElement = document.createElement('div');
         messageElement.classList.add('chat-bubble', `chat-bubble-${role}`);
-        
-        // Add image preview if available
+
         if (imageUrl) {
             const img = document.createElement('img');
             img.src = imageUrl;
@@ -60,7 +58,6 @@ export function initializeLLMChat(
             messageElement.appendChild(img);
         }
 
-        // Add text content
         const textContent = document.createElement('div');
         textContent.innerHTML = markdownToHtml(content);
         messageElement.appendChild(textContent);
@@ -69,9 +66,9 @@ export function initializeLLMChat(
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
 
-    // Function to clear the image input area
     function clearImageInput() {
         currentImageBase64 = null;
+        currentImageMimeType = null;
         if (imagePreview) {
             imagePreview.src = '';
             imagePreview.style.display = 'none';
@@ -82,31 +79,92 @@ export function initializeLLMChat(
         if (imagePasteArea) {
             imagePasteArea.textContent = 'Paste (Ctrl+V) or drag & drop a screenshot here.';
             imagePasteArea.classList.remove('has-image');
-            imagePasteArea.style.cursor = 'pointer'; // Restore cursor
+            imagePasteArea.style.cursor = 'pointer';
         }
+    }
+
+    /**
+     * Resizes and compresses an image file to a maximum size (MAX_SIZE) and returns its Base64 data.
+     * Converts non-JPEG/PNG types to PNG for consistent output.
+     * @param {File} file - The image file to process.
+     * @returns {Promise<{ base64Data: string, mimeType: string }>} A promise that resolves with the Base64 data and MIME type, or rejects on error.
+     */
+    function resizeAndCompressImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const MAX_SIZE = 1024; // Max width or height in pixels
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    let outputMimeType = file.type;
+                    let quality = 0.9; // Default JPEG quality
+
+                    if (outputMimeType !== 'image/png' && outputMimeType !== 'image/jpeg' && outputMimeType !== 'image/jpg') {
+                        // For other types (e.g., GIF), convert to PNG to ensure compatibility and reasonable size.
+                        outputMimeType = 'image/png';
+                    }
+
+                    try {
+                        const resizedDataUrl = canvas.toDataURL(outputMimeType, quality);
+                        const base64Data = resizedDataUrl.split(',')[1];
+                        resolve({ base64Data, mimeType: outputMimeType });
+                    } catch (canvasError) {
+                        console.error('Canvas toDataURL error:', canvasError);
+                        reject('Failed to convert image via canvas.');
+                    }
+                };
+                img.onerror = (imgError) => {
+                    console.error('Image loading error for resizing:', imgError);
+                    reject('Failed to load image for processing.');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = (readError) => {
+                console.error('FileReader error:', readError);
+                reject('Failed to read image file.');
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     // --- Core Event Listeners ---
 
-    // Initial setup: Populate chat history from API
-    // If the chatDisplay already has content (e.g., from Flask template rendering),
-    // we assume it's valid history and just ensure scroll. If it's just a placeholder,
-    // we'll clear it when fetching history.
     if (chatDisplay) {
-        // If it contains only the placeholder element, clear it for dynamic history loading
         if (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('chat-placeholder')) {
             chatDisplay.innerHTML = '';
         }
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
-    
-    // --- New: Fetch and populate LLM models ---
+
     async function fetchAndPopulateModels() {
         try {
             const response = await fetch('/llm/get_llm_models');
             const data = await response.json();
             if (data.success && data.models) {
-                llmModelSelect.innerHTML = ''; // Clear "Loading models..."
+                llmModelSelect.innerHTML = '';
                 if (data.models.length > 0) {
                     data.models.forEach(model => {
                         const option = document.createElement('option');
@@ -114,7 +172,7 @@ export function initializeLLMChat(
                         option.textContent = model;
                         llmModelSelect.appendChild(option);
                     });
-                    llmModelSelect.value = data.models[0]; // Select the first one by default
+                    llmModelSelect.value = data.models[0];
                 } else {
                     const option = document.createElement('option');
                     option.value = "";
@@ -137,16 +195,15 @@ export function initializeLLMChat(
         }
     }
 
-    // --- New: Fetch and populate chat history ---
     async function fetchAndPopulateChatHistory() {
         try {
             const response = await fetch('/llm/get_chat_history');
             const data = await response.json();
             if (data.success && data.history) {
-                chatDisplay.innerHTML = ''; // Clear the chat display, including any placeholder
+                chatDisplay.innerHTML = '';
                 if (data.history.length > 0) {
                     data.history.forEach(msg => {
-                        addMessageToChat(msg.role, msg.content); // History is text-only from API
+                        addMessageToChat(msg.role, msg.content);
                     });
                 } else {
                     chatDisplay.innerHTML = '<div class="chat-placeholder"><i class="fas fa-comments"></i><p>Start a conversation with the LLM!</p></div>';
@@ -160,22 +217,16 @@ export function initializeLLMChat(
         }
     }
 
-    // Call fetch functions on initialization
     fetchAndPopulateModels();
-    // Only fetch history if the chat display starts empty (not pre-rendered by Flask)
-    // This avoids double-loading if the main llm_data_prep.html already renders history.
     if (chatDisplay.children.length === 0 || (chatDisplay.children.length === 1 && chatDisplay.children[0].classList.contains('chat-placeholder'))) {
         fetchAndPopulateChatHistory();
     }
 
-
-    // Send message handler
     if (sendMessageButton && chatInput && llmModelSelect) {
         sendMessageButton.addEventListener('click', async () => {
             const message = chatInput.value.trim();
             const selectedModel = llmModelSelect.value;
-            // systemPromptContent is read client-side for each send from the input field
-            const systemPromptContent = systemPromptInput ? systemPromptInput.value.trim() : ''; // This is not used in the payload to Flask currently, backend uses user.system_prompt.
+            const systemPromptContent = systemPromptInput ? systemPromptInput.value.trim() : '';
 
             if (!message && !currentImageBase64) {
                 alert('Please enter a message or paste an image.');
@@ -186,25 +237,33 @@ export function initializeLLMChat(
                 return;
             }
 
-            // Display user message in chat *before* constructing the payload (good for UX)
-            addMessageToChat('user', message, currentImageBase64 ? `data:image/png;base64,${currentImageBase64}` : null);
-            
-            // Construct the payload with the current state of inputs
+            const displayImageUrl = currentImageBase64 && currentImageMimeType
+                ? `data:${currentImageMimeType};base64,${currentImageBase64}`
+                : null;
+            addMessageToChat('user', message, displayImageUrl);
+
             const payload = {
                 message: message,
                 model: selectedModel,
+                image_base64: currentImageBase64,
+                image_mime_type: currentImageMimeType
             };
-            if (currentImageBase64) { // This check will now correctly be true if an image was pasted
-                payload.image_base64 = currentImageBase64;
+
+            // Construct the content array for multimodal input
+            payload.content = [];
+            if (message) payload.content.push({ type: "text", text: message });
+            if (currentImageBase64 && currentImageMimeType) {
+                payload.content.push({
+                    type: "image_url",
+                    image_url: { url: `data:${currentImageMimeType};base64,${currentImageBase64}` }
+                });
             }
 
-            console.log("Frontend sending payload to Flask:", payload); // Log the payload *before* clearing inputs
+            console.log("Frontend sending payload to Flask:", payload);
 
-            // Clear input fields and image *after* payload construction, but before the async network request
             chatInput.value = '';
-            clearImageInput(); // This now happens *after* currentImageBase64 has been used for 'payload'
+            clearImageInput();
 
-            // Disable UI elements to prevent double-submission
             sendMessageButton.disabled = true;
             chatInput.disabled = true;
             llmModelSelect.disabled = true;
@@ -219,8 +278,7 @@ export function initializeLLMChat(
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
 
             try {
-                // Now, the 'payload' being sent via fetch will correctly include 'image_base64'
-                const response = await fetch('/llm/chat', { 
+                const response = await fetch('/llm/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
@@ -243,7 +301,6 @@ export function initializeLLMChat(
                 loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
                 loadingBubble.style.color = 'var(--raw-alert-danger-text)';
             } finally {
-                // Re-enable UI elements
                 sendMessageButton.disabled = false;
                 chatInput.disabled = false;
                 llmModelSelect.disabled = false;
@@ -254,7 +311,6 @@ export function initializeLLMChat(
             }
         });
 
-        // Send message on Enter key press in chat input (Shift+Enter for new line)
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -263,7 +319,6 @@ export function initializeLLMChat(
         });
     }
 
-    // Clear chat history handler
     if (clearChatButton && chatDisplay) {
         clearChatButton.addEventListener('click', async () => {
             if (confirm('Are you sure you want to clear the entire chat history? This cannot be undone.')) {
@@ -272,8 +327,6 @@ export function initializeLLMChat(
                     const data = await response.json();
                     if (data.success) {
                         chatDisplay.innerHTML = '<div class="chat-placeholder"><i class="fas fa-comments"></i><p>Start a conversation with the LLM!</p></div>';
-                        // After clearing, re-fetch the empty history to update state consistently
-                        // fetchAndPopulateChatHistory(); // This would re-add the placeholder from API
                         alert('Chat history cleared!');
                     } else {
                         alert(`Failed to clear chat history: ${data.message}`);
@@ -286,12 +339,9 @@ export function initializeLLMChat(
         });
     }
 
-    // Save system prompt handler
     if (saveSystemPromptButton && systemPromptInput) {
-        // Create a dedicated message element next to the button for feedback
         const saveSystemPromptMessage = document.createElement('span');
         saveSystemPromptMessage.classList.add('ms-3', 'small', 'text-muted');
-        // Insert it right after the button
         saveSystemPromptButton.parentNode.insertBefore(saveSystemPromptMessage, saveSystemPromptButton.nextSibling);
 
         saveSystemPromptButton.addEventListener('click', async () => {
@@ -299,7 +349,7 @@ export function initializeLLMChat(
             saveSystemPromptButton.disabled = true;
             systemPromptInput.disabled = true;
             saveSystemPromptMessage.textContent = 'Saving...';
-            saveSystemPromptMessage.style.color = 'var(--text-secondary)'; // Use a neutral color for 'Saving'
+            saveSystemPromptMessage.style.color = 'var(--text-secondary)';
 
             try {
                 const response = await fetch('/llm/system-prompt', {
@@ -325,7 +375,6 @@ export function initializeLLMChat(
             } finally {
                 saveSystemPromptButton.disabled = false;
                 systemPromptInput.disabled = false;
-                // Clear message after a short delay
                 setTimeout(() => {
                     saveSystemPromptMessage.textContent = '';
                 }, 3000);
@@ -340,7 +389,6 @@ export function initializeLLMChat(
         imagePasteArea.addEventListener('drop', handleImageDrop);
         clearImageButton.addEventListener('click', clearImageInput);
 
-        // Add this listener for debugging
         imagePasteArea.addEventListener('dragenter', (event) => {
             console.log('Drag entered imagePasteArea');
         });
@@ -349,7 +397,6 @@ export function initializeLLMChat(
         });
     }
 
-    // Prevents default paste behavior and processes image data from clipboard
     function handleImagePaste(event) {
         event.preventDefault();
         console.log('handleImagePaste triggered');
@@ -357,7 +404,6 @@ export function initializeLLMChat(
         processImageItems(items);
     }
 
-    // Highlights drop area on drag over
     function handleDragOver(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -366,7 +412,6 @@ export function initializeLLMChat(
         }
     }
 
-    // Processes image data dropped onto the area
     function handleImageDrop(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -378,69 +423,62 @@ export function initializeLLMChat(
         processImageItems(items);
     }
 
-    // Reads and displays image from DataTransferItem list
-    function processImageItems(items) {
+    async function processImageItems(items) {
         console.log('processImageItems: Starting to process items.', items);
         if (!items || items.length === 0) {
             console.log('processImageItems: No items found.');
             return;
         }
 
-        let imageFound = false;
+        let imageFile = null;
         for (let i = 0; i < items.length; i++) {
-            console.log(`  Item ${i}: type = ${items[i].type}, kind = ${items[i].kind}`);
             if (items[i].type.indexOf('image') !== -1) {
-                const file = items[i].getAsFile();
-                if (file) {
-                    imageFound = true;
-                    console.log(`  Image file found! Name: ${file.name}, Type: ${file.type}, Size: ${file.size} bytes`);
-                    
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        console.log('FileReader onload: Image loaded into FileReader.');
-                        console.log('  e.target.result (first 50 chars):', e.target.result ? e.target.result.substring(0, 50) + '...' : 'empty result');
-                        
-                        const base64Data = e.target.result.split(',')[1]; // Extract Base64 part
-                        
-                        // Add validation before assigning
-                        if (!base64Data || base64Data.length < 100) { // arbitrary length check
-                            console.error('  Extracted Base64 data appears too short or invalid.');
-                            return; // Don't proceed with invalid data
-                        }
-
-                        currentImageBase64 = base64Data;
-                        console.log('  currentImageBase64 set (first 50 chars):', currentImageBase64.substring(0, 50) + '...');
-                        
-                        if (imagePreview) {
-                            imagePreview.src = e.target.result; // Display full data URL
-                            imagePreview.style.display = 'block';
-                            console.log('  Image preview updated.');
-                        }
-                        if (clearImageButton) {
-                            clearImageButton.style.display = 'inline-block';
-                            console.log('  Clear image button displayed.');
-                        }
-                        if (imagePasteArea) {
-                            imagePasteArea.textContent = 'Image loaded. Add your prompt and send.';
-                            imagePasteArea.classList.add('has-image');
-                            imagePasteArea.style.cursor = 'default';
-                            console.log('  Image paste area updated for loaded image.');
-                        }
-                    };
-
-                    reader.onerror = function(e) {
-                        console.error('FileReader onerror: Error reading file:', e);
-                    };
-
-                    reader.readAsDataURL(file);
-                    break; // Only process the first image found
-                } else {
-                    console.warn(`  Item ${i}: Is an image type, but getAsFile() returned null.`);
+                imageFile = items[i].getAsFile();
+                if (imageFile) {
+                    break;
                 }
             }
         }
-        if (!imageFound) {
+
+        if (imageFile) {
+            console.log(`Image file found! Name: ${imageFile.name}, Type: ${imageFile.type}, Size: ${imageFile.size} bytes`);
+            
+            if (imagePasteArea) {
+                imagePasteArea.textContent = 'Processing image... please wait.';
+                imagePasteArea.classList.add('has-image');
+                imagePasteArea.style.cursor = 'wait';
+            }
+
+            try {
+                const { base64Data, mimeType } = await resizeAndCompressImage(imageFile);
+
+                currentImageBase64 = base64Data;
+                currentImageMimeType = mimeType;
+                
+                console.log('Image processed. New MIME Type:', currentImageMimeType, 'New Base64 Length:', currentImageBase64.length);
+
+                if (imagePreview) {
+                    imagePreview.src = `data:${currentImageMimeType};base64,${currentImageBase64}`;
+                    imagePreview.style.display = 'block';
+                }
+                if (clearImageButton) {
+                    clearImageButton.style.display = 'inline-block';
+                }
+                if (imagePasteArea) {
+                    imagePasteArea.textContent = 'Image loaded. Add your prompt and send.';
+                    imagePasteArea.style.cursor = 'default';
+                }
+            } catch (error) {
+                console.error('Error processing image:', error);
+                alert('Failed to process image: ' + error);
+                clearImageInput();
+                if (imagePasteArea) {
+                    imagePasteArea.textContent = 'Paste (Ctrl+V) or drag & drop a screenshot here.';
+                    imagePasteArea.classList.remove('has-image');
+                    imagePasteArea.style.cursor = 'pointer';
+                }
+            }
+        } else {
             console.log('processImageItems: No image items found in clipboard/dragged data.');
         }
     }

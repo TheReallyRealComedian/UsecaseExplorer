@@ -1,30 +1,33 @@
 /* style.css - Modern Dashboard Design */
 :root {
     /* --- Updated Color Palette for Modern Look --- */
-    --raw-white: #ffffff;
-    --raw-black: #000000;
+    /* Semantic Color Definitions (replacing --raw-* and aliased variables) */
+    --color-white: #ffffff;
+    --color-black: #000000;
 
     /* Modern Greys */
-    --raw-light-grey-100: #f8fafc; /* Very light background */
-    --raw-light-grey-200: #f1f5f9; /* Card backgrounds, subtle elements */
-    --raw-light-grey-300: #e2e8f0; /* Borders, subtle dividers */
-    --raw-medium-grey-100: #94a3b8; /* Muted text */
-    --raw-medium-grey-200: #64748b; /* Secondary text */
-    --raw-medium-grey-300: #475569; /* Darker secondary */
-    --raw-dark-grey-100: #334155; /* Primary text */
-    --raw-dark-grey-200: #1e293b; /* Headings */
-    --raw-dark-grey-panel: #0f172a; /* Sidebar */
-    --raw-panel-text: #cbd5e1; /* Sidebar text */
-    --raw-panel-border-subtle: rgba(255, 255, 255, 0.1);
+    --color-grey-100: #f8fafc; /* Very light background */
+    --color-grey-200: #f1f5f9; /* Card backgrounds, subtle elements */
+    --color-grey-300: #e2e8f0; /* Borders, subtle dividers */
+    --color-grey-400: #94a3b8; /* Muted text */
+    --color-grey-500: #64748b; /* Secondary text */
+    --color-grey-600: #475569; /* Darker secondary */
+    --color-grey-700: #334155; /* Primary text */
+    --color-grey-800: #1e293b; /* Headings */
 
-    /* Modern Color Scheme */
-    --raw-primary: #6366f1; /* Modern indigo */
-    --raw-primary-light: #a5b4fc;
-    --raw-primary-dark: #4338ca;
-    --raw-secondary: #f59e0b; /* Modern amber */
-    --raw-secondary-light: #fbbf24;
-    --raw-accent: #10b981; /* Modern emerald */
-    --raw-accent-light: #34d399;
+    /* Panel Specific Colors (formerly --raw-dark-grey-panel, --raw-panel-text, --raw-panel-border-subtle) */
+    --color-panel-bg: #0f172a; /* Sidebar background */
+    --color-panel-text: #cbd5e1; /* Sidebar text */
+    --color-panel-border-subtle: rgba(255, 255, 255, 0.1);
+
+    /* Modern Color Scheme (formerly --raw-primary, etc.) */
+    --color-primary: #6366f1; /* Modern indigo */
+    --color-primary-light: #a5b4fc;
+    --color-primary-dark: #4338ca;
+    --color-secondary: #f59e0b; /* Modern amber */
+    --color-secondary-light: #fbbf24;
+    --color-accent: #10b981; /* Modern emerald */
+    --color-accent-light: #34d399;
 
     /* Gradient Definitions */
     --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -32,23 +35,22 @@
     --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     --gradient-cool: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-
     /* Darker gradients for sidebar hover/active to ensure white text visibility */
     --gradient-sidebar-dark: linear-gradient(135deg, #4338ca 0%, #065f46 100%); /* primary-dark to a darker emerald */
 
-    /* Alert Colors - Modern */
-    --raw-alert-success-text: #059669;
-    --raw-alert-success-bg: #ecfdf5;
-    --raw-alert-success-border: #a7f3d0;
-    --raw-alert-danger-text: #dc2626;
-    --raw-alert-danger-bg: #fef2f2;
-    --raw-alert-danger-border: #fecaca;
-    --raw-alert-warning-text: #d97706;
-    --raw-alert-warning-bg: #fffbeb;
-    --raw-alert-warning-border: #fed7aa;
-    --raw-alert-info-text: #0284c7;
-    --raw-alert-info-bg: #f0f9ff;
-    --raw-alert-info-border: #bae6fd;
+    /* Alert Colors - Modern (formerly --raw-alert-*) */
+    --color-alert-success-text: #059669;
+    --color-alert-success-bg: #ecfdf5;
+    --color-alert-success-border: #a7f3d0;
+    --color-alert-danger-text: #dc2626;
+    --color-alert-danger-bg: #fef2f2;
+    --color-alert-danger-border: #fecaca;
+    --color-alert-warning-text: #d97706;
+    --color-alert-warning-bg: #fffbeb;
+    --color-alert-warning-border: #fed7aa;
+    --color-alert-info-text: #0284c7;
+    --color-alert-info-bg: #f0f9ff;
+    --color-alert-info-border: #bae6fd;
 
     /* Modern Shadow System */
     --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -57,36 +59,26 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-    /* --- Variable Assignments --- */
-    --primary-color: var(--raw-primary);
-    --primary-color-dark: var(--raw-primary-dark);
-    --primary-color-light: var(--raw-primary-light);
-    --secondary-color: var(--raw-secondary);
-    --accent-color: var(--raw-accent);
-
-    /* Backgrounds */
-    --body-bg-color: var(--raw-light-grey-100);
-    --main-content-bg: var(--raw-light-grey-100);
-    --left-panel-bg: var(--raw-dark-grey-panel);
-    --card-bg: var(--raw-white);
-    --header-bg: var(--raw-white);
-    --element-bg-light: var(--raw-light-grey-200);
+    /* --- General Variable Assignments (using new semantic names) --- */
+    --body-bg-color: var(--color-grey-100);
+    --main-content-bg: var(--color-grey-100);
+    --card-bg: var(--color-white);
+    --header-bg: var(--color-white);
+    --element-bg-light: var(--color-grey-200);
 
     /* Text colors */
-    --text-primary: var(--raw-dark-grey-100);
-    --text-secondary: var(--raw-medium-grey-200);
-    --text-muted: var(--raw-medium-grey-100);
-    --text-color-sidebar: var(--raw-panel-text);
-    --text-color-sidebar-active: var(--raw-white);
-    --text-color-on-primary: var(--raw-white);
-    --text-color-on-dark: var(--raw-white);
+    --text-primary: var(--color-grey-700);
+    --text-secondary: var(--color-grey-500);
+    --text-muted: var(--color-grey-400);
+    --text-color-sidebar-active: var(--color-white);
+    --text-color-on-primary: var(--color-white);
+    --text-color-on-dark: var(--color-white);
 
     /* Borders */
-    --border-color: var(--raw-light-grey-300);
-    --sidebar-border-color: var(--raw-panel-border-subtle);
+    --border-color: var(--color-grey-300);
 
     /* Generic */
-    --white: var(--raw-white);
+    --white: var(--color-white); /* Kept for legacy usage, though --color-white is preferred */
 
     /* Modern Component Styling */
     --box-shadow: var(--shadow-sm);
@@ -95,32 +87,32 @@
     --border-radius: 16px; /* Much more rounded */
     --border-radius-lg: 24px; /* Large radius */
     --border-radius-sm: 12px; /* Small radius */
-    --border-radius-xs: 8px; /* Extra small style.css - Modern Dashboard Design */
+    --border-radius-xs: 8px; /* Extra small style */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     /* Breadcrumb variables */
     --breadcrumb-arrow-width: 15px;
-    --breadcrumb-active-bg: var(--primary-color);
-    --breadcrumb-default-bg: var(--raw-medium-grey-200);
-    --breadcrumb-disabled-bg: var(--raw-light-grey-200);
+    --breadcrumb-active-bg: var(--color-primary);
+    --breadcrumb-default-bg: var(--color-grey-500);
+    --breadcrumb-disabled-bg: var(--color-grey-200);
     --breadcrumb-text-color: var(--text-color-on-dark);
     --breadcrumb-disabled-text-color: var(--text-muted);
-    --breadcrumb-hover-bg: var(--raw-medium-grey-300);
-    --breadcrumb-active-hover-bg: var(--primary-color-dark);
+    --breadcrumb-hover-bg: var(--color-grey-600);
+    --breadcrumb-active-hover-bg: var(--color-primary-dark);
 
     /* Alert variables */
-    --alert-success-text: var(--raw-alert-success-text);
-    --alert-success-bg: var(--raw-alert-success-bg);
-    --alert-success-border: var(--raw-alert-success-border);
-    --alert-danger-text: var(--raw-alert-danger-text);
-    --alert-danger-bg: var(--raw-alert-danger-bg);
-    --alert-danger-border: var(--raw-alert-danger-border);
-    --alert-warning-text: var(--raw-alert-warning-text);
-    --alert-warning-bg: var(--raw-alert-warning-bg);
-    --alert-warning-border: var(--raw-alert-warning-border);
-    --alert-info-text: var(--raw-alert-info-text); /* Used the variable for consistency */
-    --alert-info-bg: var(--raw-alert-info-bg);
-    --alert-info-border: var(--raw-alert-info-border);
+    --alert-success-text: var(--color-alert-success-text);
+    --alert-success-bg: var(--color-alert-success-bg);
+    --alert-success-border: var(--color-alert-success-border);
+    --alert-danger-text: var(--color-alert-danger-text);
+    --alert-danger-bg: var(--color-alert-danger-bg);
+    --alert-danger-border: var(--color-alert-danger-border);
+    --alert-warning-text: var(--color-alert-warning-text);
+    --alert-warning-bg: var(--color-alert-warning-bg);
+    --alert-warning-border: var(--color-alert-warning-border);
+    --alert-info-text: var(--color-alert-info-text);
+    --alert-info-bg: var(--color-alert-info-bg);
+    --alert-info-border: var(--color-alert-info-border);
 }
 
 /* Reset and Base Styles */
@@ -145,19 +137,19 @@ body {
 
 a {
     text-decoration: none;
-    color: var(--primary-color);
+    color: var(--color-primary);
     transition: all 0.2s ease;
 }
 
 a:hover {
-    color: var(--primary-color-dark);
+    color: var(--color-primary-dark);
 }
 
 ul {
     list-style: none;
 }
 
-/* Main Layout */
+/* Layout Components */
 .app-container {
     display: flex;
     min-height: 100vh;
@@ -166,8 +158,8 @@ ul {
 /* Modern Sidebar Styles */
 .sidebar {
     width: 280px; /* Slightly wider */
-    background: linear-gradient(180deg, var(--left-panel-bg) 0%, #0f1419 100%);
-    color: var(--text-color-sidebar);
+    background: linear-gradient(180deg, var(--color-panel-bg) 0%, #0f1419 100%);
+    color: var(--color-panel-text);
     display: flex;
     flex-direction: column;
     padding: 30px 0;
@@ -181,13 +173,13 @@ ul {
 .sidebar-header {
     padding: 0 30px 30px 30px;
     margin-bottom: 30px;
-    border-bottom: 1px solid var(--sidebar-border-color);
+    border-bottom: 1px solid var(--color-panel-border-subtle);
 }
 
 .sidebar-header .logo {
     font-size: 1.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -203,7 +195,7 @@ ul {
     display: flex;
     align-items: center;
     padding: 16px 20px;
-    color: var(--text-color-sidebar);
+    color: var(--color-panel-text);
     transition: all 0.3s ease;
     font-size: 0.95rem;
     font-weight: 500;
@@ -237,7 +229,7 @@ ul {
 
 .sidebar-menu li a i,
 .sidebar-footer-menu li a i {
-    margin-right: 15px;
+    margin-inline-end: 15px; /* Use logical property */
     font-size: 1.2rem;
     width: 24px;
     text-align: center;
@@ -263,7 +255,7 @@ ul {
 .sidebar-footer-menu {
     margin-top: auto;
     padding: 20px 15px 20px;
-    border-top: 1px solid var(--sidebar-border-color);
+    border-top: 1px solid var(--color-panel-border-subtle);
 }
 
 /* Modern Main Content */
@@ -292,6 +284,8 @@ ul {
     min-height: 80px;
 }
 
+/* UI Components */
+
 /* Modern Breadcrumbs */
 .breadcrumbs {
     display: flex;
@@ -305,7 +299,7 @@ ul {
     background: linear-gradient(135deg, var(--breadcrumb-default-bg) 0%, #718096 100%);
     color: var(--breadcrumb-text-color);
     padding: 12px calc(var(--breadcrumb-arrow-width) + 12px) 12px calc(var(--breadcrumb-arrow-width) + 16px);
-    margin-right: calc(-1 * var(--breadcrumb-arrow-width) + 1px);
+    margin-inline-end: calc(-1 * var(--breadcrumb-arrow-width) + 1px); /* Use logical property */
     clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%, var(--breadcrumb-arrow-width) 50%);
     position: relative;
     text-decoration: none;
@@ -326,19 +320,19 @@ ul {
 
 .breadcrumb-item:first-child {
     clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%);
-    padding-left: 20px;
+    padding-inline-start: 20px; /* Use logical property */
     border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
 }
 
 .breadcrumb-item.active {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     color: var(--breadcrumb-text-color);
     z-index: 10;
     box-shadow: var(--shadow-sm);
 }
 
 .breadcrumb-item.active:hover {
-    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
 }
 
 .breadcrumb-item.disabled {
@@ -352,7 +346,6 @@ ul {
     background: linear-gradient(135deg, var(--breadcrumb-disabled-bg) 0%, #d1d5db 100%); /* No hover effect for disabled */
     transform: none; /* Override hover lift */
 }
-
 
 /* Modern Search Bar */
 .search-bar {
@@ -369,14 +362,14 @@ ul {
 }
 
 .search-bar:focus-within {
-    border-color: var(--primary-color);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    background-color: var(--white);
+    background-color: var(--color-white);
 }
 
 .search-bar i {
     color: var(--text-muted);
-    margin-right: 12px;
+    margin-inline-end: 12px; /* Use logical property */
     font-size: 1.1rem;
 }
 
@@ -413,7 +406,7 @@ ul {
 }
 
 .icon-button:hover {
-    color: var(--primary-color);
+    color: var(--color-primary);
     background-color: var(--element-bg-light);
     transform: translateY(-2px);
 }
@@ -447,15 +440,15 @@ ul {
     align-items: center;
     padding: 24px 30px;
     margin-bottom: 0;
-    border-bottom: 1px solid var(--raw-light-grey-300);
-    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%);
+    border-bottom: 1px solid var(--color-grey-300);
+    background: linear-gradient(135deg, var(--color-grey-100) 0%, #f8fafc 100%);
     position: relative;
 }
 
 .card-title {
     font-size: 1.4rem;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -474,7 +467,7 @@ ul {
 }
 
 .card-link:hover {
-    color: var(--primary-color);
+    color: var(--color-primary);
     transform: translateX(4px);
 }
 
@@ -494,8 +487,8 @@ form {
 .form-row,
 .form-check,
 .checkbox-group {
-    display: flex !important;
-    flex-direction: row !important;
+    display: flex; /* Removed !important */
+    flex-direction: row; /* Removed !important */
     align-items: center;
     gap: 12px;
 }
@@ -507,48 +500,49 @@ form label {
     font-size: 0.95rem;
 }
 
-form input[type="text"],
-form input[type="password"],
-form input[type="email"],
-form input[type="number"],
-form input[type="file"],
-form select,
-form textarea {
+.form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
     padding: 16px 20px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 0.95rem;
-    background-color: var(--white);
+    background-color: var(--color-white);
     color: var(--text-primary);
     transition: all 0.3s ease;
     font-weight: 500;
 }
 
-form input[type="text"]:focus,
-form input[type="password"]:focus,
-form input[type="email"]:focus,
-form input[type="number"]:focus,
-form select:focus,
-form textarea:focus {
-    border-color: var(--primary-color);
+.form-control:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
     outline: none;
     background-color: #fefefe;
 }
 
-form input[type="text"]::placeholder,
-form input[type="password"]::placeholder,
-form input[type="email"]::placeholder,
-form input[type="number"]::placeholder,
-form textarea::placeholder {
+.form-control::placeholder,
+input[type="text"]::placeholder,
+input[type="password"]::placeholder,
+input[type="email"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder {
     color: var(--text-muted);
 }
 
 form input[type="checkbox"] {
-    margin-right: 12px;
+    margin-inline-end: 12px; /* Use logical property */
     align-self: flex-start;
-    /* REMOVED: width: auto; */
-    /* REMOVED: height: auto; */
     vertical-align: middle;
 }
 
@@ -557,77 +551,135 @@ form input[type="checkbox"] {
     font-weight: 500;
 }
 
-form textarea {
+textarea.form-control { /* Specific override for textarea */
     min-height: 120px;
     resize: vertical;
 }
 
-/* Modern Button Styles */
-form button[type="submit"],
-.btn {
+/* Modern Button Styles - Consolidated */
+.btn-base {
     border-radius: var(--border-radius-sm);
     font-weight: 600;
     transition: all 0.3s ease;
-    border: none; /* Keep as none, specific btn classes add border */
+    border: none;
     padding: 16px 32px;
     cursor: pointer;
     font-size: 0.95rem;
-    align-self: flex-start;
+    text-align: center;
+    position: relative;
+}
+
+/* Common gradient button styles */
+.btn-gradient {
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Apply base styles to .btn and form submit buttons */
+form button[type="submit"],
+.btn {
+    /* Inherit from btn-base or apply directly */
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    padding: 16px 32px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    align-self: flex-start; /* Specific alignment for form submit, could be removed if not universally desired */
     text-align: center;
     position: relative;
 }
 
 form button[type="submit"].btn-primary,
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-    color: var(--white);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    color: var(--color-white);
+    border: 1px solid var(--color-primary);
+    /* Inherit gradient and hover from .btn-gradient conceptually, apply directly */
     box-shadow: var(--shadow-sm);
-    border: 1px solid var(--primary-color); /* Explicit border */
+}
+form button[type="submit"].btn-primary:hover,
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
 }
 
-form button[type="submit"]:hover,
-.btn-primary:hover {
+.btn-secondary {
+    background: linear-gradient(135deg, var(--text-secondary) 0%, var(--color-grey-600) 100%);
+    color: var(--color-white);
+    border: 1px solid var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, var(--color-grey-600) 0%, #334155 100%);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
-.btn-secondary {
-    background: linear-gradient(135deg, var(--text-secondary) 0%, var(--raw-medium-grey-300) 100%);
-    color: var(--white);
-    border: 1px solid var(--text-secondary); /* Explicit border */
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, var(--raw-medium-grey-300) 0%, #334155 100%);
-    transform: translateY(-2px);
-}
-
 .btn-danger {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: var(--white);
-    border: 1px solid #dc2626; /* Explicit border */
+    background: linear-gradient(135deg, var(--color-alert-danger-text) 0%, #b91c1c 100%);
+    color: var(--color-white);
+    border: 1px solid var(--color-alert-danger-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-danger:hover {
     background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-info {
-    background: linear-gradient(135deg, var(--raw-alert-info-text) 0%, #0369a1 100%);
-    color: var(--white);
-    border: 1px solid var(--raw-alert-info-text); /* Explicit border */
+    background: linear-gradient(135deg, var(--color-alert-info-text) 0%, #0369a1 100%);
+    color: var(--color-white);
+    border: 1px solid var(--color-alert-info-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-info:hover {
     background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-sm {
     padding: 12px 24px;
     font-size: 0.875rem;
     border-radius: var(--border-radius-xs);
+}
+
+/* Specific button overrides, removed !important */
+.btn.btn-success {
+    background: linear-gradient(135deg, var(--color-alert-success-text) 0%, #047857 100%);
+    border: none;
+    color: var(--color-white);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+.btn.btn-success:hover {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn.btn-danger { /* Duplicate definition, but needed for specific `.btn.btn-danger` selector */
+    background: linear-gradient(135deg, var(--color-alert-danger-text) 0%, #be123c 100%);
+    border: none;
+    color: var(--color-white);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+.btn.btn-danger:hover {
+    background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 /* Modern Flash Messages */
@@ -669,6 +721,39 @@ form button[type="submit"]:hover,
     border-left-color: var(--alert-info-text);
 }
 
+/* Corrected collapse button styling and icon handling */
+.card-header button.btn-link {
+    padding: 0;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    background: none; /* Removed !important */
+    border: none; /* Removed !important */
+    text-decoration: none;
+    position: relative;
+    z-index: 1;
+}
+
+.card-header button.btn-link:hover {
+    color: var(--color-primary);
+    text-decoration: none;
+    background: none; /* Removed !important */
+}
+
+.card-header button.btn-link:focus {
+    box-shadow: none;
+    text-decoration: none;
+    background: none; /* Removed !important */
+    outline: 2px solid var(--color-primary); /* Add visible focus indicator */
+    outline-offset: 2px;
+}
+
+.card-header button.btn-link i {
+    transition: transform 0.3s ease; /* Keep the transition for smooth icon changes */
+    display: inline-block; /* Ensure transform works correctly */
+}
+
+/* Page-Specific Styles */
+
 /* Index page specific styles */
 .welcome-message {
     margin-bottom: 30px;
@@ -678,7 +763,7 @@ form button[type="submit"]:hover,
     font-size: 2rem;
     font-weight: 800;
     margin-bottom: 8px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -697,7 +782,7 @@ form button[type="submit"]:hover,
     font-size: 1.4rem;
     font-weight: 700;
     margin-bottom: 20px;
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
 
 .area-card {
@@ -706,7 +791,7 @@ form button[type="submit"]:hover,
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
     border-left: 5px solid;
-    border-image: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) 1;
+    border-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%) 1;
     padding: 24px;
     transition: all 0.3s ease;
 }
@@ -720,11 +805,11 @@ form button[type="submit"]:hover,
     font-size: 1.2rem;
     margin-bottom: 16px;
     font-weight: 700;
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
 
 .area-card ul {
-    padding-left: 24px;
+    padding-inline-start: 24px; /* Use logical property */
     list-style: disc;
 }
 
@@ -739,11 +824,11 @@ form button[type="submit"]:hover,
 .area-card .step-details {
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-left: 8px;
+    margin-inline-start: 8px; /* Use logical property */
 }
 
 .area-card .usecase-list {
-    padding-left: 30px;
+    padding-inline-start: 30px; /* Use logical property */
     margin-top: 8px;
     list-style: circle;
 }
@@ -755,7 +840,7 @@ form button[type="submit"]:hover,
 .area-card .usecase-list .uc-details {
     font-size: 0.8rem;
     color: var(--text-muted);
-    margin-left: 8px;
+    margin-inline-start: 8px; /* Use logical property */
 }
 
 .area-card p em {
@@ -768,19 +853,19 @@ form button[type="submit"]:hover,
 .page-content > h1 {
     font-size: 2.2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary-color-dark) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin-bottom: 30px;
     padding-bottom: 20px;
     border-bottom: 3px solid transparent;
-    border-image: linear-gradient(135deg, var(--primary-color-light) 0%, var(--accent-color) 100%) 1;
+    border-image: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent) 100%) 1;
     letter-spacing: -0.5px;
 }
 
 .page-content p.text-muted {
-    color: var(--text-secondary) !important;
+    color: var(--text-secondary); /* Removed !important */
     font-size: 1.05rem;
     margin-top: 2px;
     margin-bottom: 30px;
@@ -795,15 +880,15 @@ form button[type="submit"]:hover,
 
 .card-body dl.info-list dt {
     font-weight: 700;
-    color: var(--raw-dark-grey-100);
+    color: var(--color-grey-700);
     font-size: 0.95rem;
     padding-top: 4px;
     text-align: right;
-    padding-right: 20px;
+    padding-inline-end: 20px; /* Use logical property */
 }
 
 .card-body dl.info-list dd {
-    margin-left: 0;
+    margin-inline-start: 0; /* Use logical property */
     font-size: 1rem;
     color: var(--text-primary);
     word-break: break-word;
@@ -817,7 +902,7 @@ form button[type="submit"]:hover,
 .relevance-section li.relevance-item pre {
     background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
     padding: 16px 20px;
-    border: 1px solid var(--raw-light-grey-200);
+    border: 1px solid var(--color-grey-200);
     border-radius: var(--border-radius-sm);
     font-size: 0.9rem;
     line-height: 1.6;
@@ -832,12 +917,12 @@ form button[type="submit"]:hover,
 /* Item Lists (ul.item-list) for lists of steps/use cases */
 .card-body ul.item-list {
     list-style: none;
-    padding-left: 0;
+    padding-inline-start: 0; /* Use logical property */
     margin-bottom: 0;
 }
 .card-body ul.item-list > li {
     padding: 15px;
-    border-bottom: 1px dashed var(--raw-light-grey-200);
+    border-bottom: 1px dashed var(--color-grey-200);
     transition: background-color 0.2s ease;
     border-radius: var(--border-radius-sm);
 }
@@ -845,22 +930,22 @@ form button[type="submit"]:hover,
     border-bottom: none;
 }
 .card-body ul.item-list > li:hover {
-    background-color: var(--primary-color-light);
+    background-color: var(--color-primary-light);
 }
 .card-body ul.item-list > li:hover a {
-    color: var(--primary-color-dark);
+    color: var(--color-primary-dark);
 }
 .card-body ul.item-list .item-title a,
 .card-body ul.item-list > li > a {
     font-weight: 600;
-    color: var(--primary-color);
+    color: var(--color-primary);
     font-size: 1.05rem;
     display: block;
     margin-bottom: 4px;
 }
 .card-body ul.item-list .item-title a:hover,
 .card-body ul.item-list > li > a:hover {
-    color: var(--primary-color-dark);
+    color: var(--color-primary-dark);
     text-decoration: none;
 }
 .card-body ul.item-list .item-meta,
@@ -873,7 +958,7 @@ form button[type="submit"]:hover,
 
 /* Nested Use Case Lists (e.g., on Area Detail or Index) */
 .card-body ul.item-list ul.usecase-list {
-    padding-left: 25px;
+    padding-inline-start: 25px; /* Use logical property */
     margin-top: 10px;
     list-style: circle; /* Changed from none to circle as per area-card intent */
 }
@@ -910,25 +995,25 @@ form button[type="submit"]:hover,
 /* Relevance Section Styling */
 .relevance-section h2 {
     font-size: 1.5rem;
-    color: var(--primary-color-dark);
+    color: var(--color-primary-dark);
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--raw-light-grey-300);
+    border-bottom: 1px solid var(--color-grey-300);
 }
-.relevance-section .card .card-header .card-title {
+.relevance-section .card-title { /* Simplified from .relevance-section .card .card-header .card-title */
     color: var(--text-primary);
     font-size: 1.1rem;
 }
 .relevance-section ul {
     list-style: none;
-    padding-left: 0;
+    padding-inline-start: 0; /* Use logical property */
 }
 .relevance-section li.relevance-item {
-    background-color: var(--white);
+    background-color: var(--color-white);
     padding: 20px;
     margin-bottom: 15px;
     border-radius: var(--border-radius); /* Use default border-radius */
-    border: 1px solid var(--raw-light-grey-200);
+    border: 1px solid var(--color-grey-200);
     box-shadow: var(--shadow-sm); /* Use shadow system */
     transition: all 0.3s ease; /* Add transition for hover */
 }
@@ -953,31 +1038,31 @@ form button[type="submit"]:hover,
 .relevance-section li.relevance-item > div:last-child:not(:first-child) {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px dashed var(--raw-light-grey-200);
+    border-top: 1px dashed var(--color-grey-200);
 }
 
 /* Forms for Adding Relevance */
 .add-relevance-forms h3 {
     font-size: 1.5rem;
-    color: var(--primary-color-dark);
+    color: var(--color-primary-dark);
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--raw-light-grey-300);
+    border-bottom: 1px solid var(--color-grey-300);
 }
 .add-relevance-form {
-    background-color: var(--raw-light-grey-100);
+    background-color: var(--color-grey-100);
     padding: 25px;
-    border: 1px solid var(--raw-light-grey-300);
+    border: 1px solid var(--color-grey-300);
     border-radius: var(--border-radius-sm);
     box-shadow: none;
     margin-bottom: 20px;
 }
 .add-relevance-form h4 {
-    color: var(--primary-color);
+    color: var(--color-primary);
     font-size: 1.1rem;
     margin-bottom: 15px;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--raw-light-grey-200);
+    border-bottom: 1px solid var(--color-grey-200);
 }
 
 /* Login/Register Page Styles */
@@ -993,7 +1078,7 @@ form button[type="submit"]:hover,
     text-align: center;
     margin-bottom: 25px;
     font-size: 1.6rem;
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
 .auth-container form button[type="submit"] {
     width: 100%;
@@ -1007,7 +1092,7 @@ form button[type="submit"]:hover,
     color: var(--text-muted);
 }
 .auth-container p a {
-    color: var(--primary-color);
+    color: var(--color-primary);
     font-weight: 500;
 }
 
@@ -1022,7 +1107,7 @@ form button[type="submit"]:hover,
 .injection-form-section h2 {
     font-size: 1.3rem;
     margin-bottom: 10px;
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
 .injection-form-section p {
     font-size: 0.9rem;
@@ -1036,11 +1121,11 @@ form button[type="submit"]:hover,
     border-radius: var(--border-radius-sm);
     font-size: 0.85rem;
     color: var(--text-primary);
-    border: 1px solid var(--raw-light-grey-300);
+    border: 1px solid var(--color-grey-300);
 }
 .export-section ul {
     list-style: none;
-    padding-left: 0;
+    padding-inline-start: 0; /* Use logical property */
 }
 .export-section li a {
     display: inline-block;
@@ -1050,10 +1135,10 @@ form button[type="submit"]:hover,
     transition: background-color 0.2s ease;
 }
 .export-section li a:hover {
-    background-color: var(--raw-light-grey-300);
+    background-color: var(--color-grey-300);
 }
 .export-section li a i {
-    margin-right: 8px;
+    margin-inline-end: 8px; /* Use logical property */
 }
 
 /* Markdown Specific Styles */
@@ -1062,7 +1147,7 @@ form button[type="submit"]:hover,
 }
 .markdown-content ul,
 .markdown-content ol {
-    margin-left: 20px;
+    margin-inline-start: 20px; /* Use logical property */
     margin-bottom: 1em;
 }
 .markdown-content li {
@@ -1076,12 +1161,12 @@ form button[type="submit"]:hover,
 }
 .markdown-content th,
 .markdown-content td {
-    border: 1px solid var(--raw-light-grey-300);
+    border: 1px solid var(--color-grey-300);
     padding: 8px;
     text-align: left;
 }
 .markdown-content th {
-    background-color: var(--raw-light-grey-100);
+    background-color: var(--color-grey-100);
     font-weight: bold;
 }
 
@@ -1107,10 +1192,6 @@ form button[type="submit"]:hover,
     font-size: 1.1rem;
 }
 
-/* --- REMOVED custom collapse CSS for llm-data-prep-page --- */
-/* Let Bootstrap handle all collapse states. */
-
-
 /* Better card styling */
 .llm-data-prep-page .card {
     border: none;
@@ -1127,23 +1208,19 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .card-header {
-    background: linear-gradient(135deg, var(--raw-light-grey-100) 0%, #f8fafc 100%);
-    border-bottom: 1px solid var(--raw-light-grey-300);
+    background: linear-gradient(135deg, var(--color-grey-100) 0%, #f8fafc 100%);
+    border-bottom: 1px solid var(--color-grey-300);
     padding: 1.5rem 2rem;
 }
 
 .llm-data-prep-page .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0;
-}
-
-.llm-data-prep-page .card-body {
-    padding: 2rem;
 }
 
 /* Improved selection grid */
@@ -1160,8 +1237,8 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .selection-item {
-    background: var(--raw-light-grey-100);
-    border: 1px solid var(--raw-light-grey-300);
+    background: var(--color-grey-100);
+    border: 1px solid var(--color-grey-300);
     border-radius: var(--border-radius-sm);
     padding: 1.5rem;
 }
@@ -1176,8 +1253,8 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .count-badge {
-    background: var(--primary-color);
-    color: white;
+    background: var(--color-primary);
+    color: var(--color-white);
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
     border-radius: 10px;
@@ -1186,7 +1263,7 @@ form button[type="submit"]:hover,
 
 /* Better search controls */
 .llm-data-prep-page .search-button-row {
-    display: flex !important;
+    display: flex; /* Removed !important */
     gap: 0.75rem;
     margin-bottom: 1rem;
     align-items: center;
@@ -1202,12 +1279,12 @@ form button[type="submit"]:hover,
 
 .llm-data-prep-page .search-input:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .llm-data-prep-page .button-group {
-    display: flex !important;
+    display: flex; /* Removed !important */
     gap: 0.5rem;
 }
 
@@ -1224,19 +1301,19 @@ form button[type="submit"]:hover,
     min-height: 120px;
     max-height: 200px;
     overflow-y: auto;
-    background: var(--white);
+    background: var(--color-white);
 }
 
 .llm-data-prep-page .select-option {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--raw-light-grey-200);
+    border-bottom: 1px solid var(--color-grey-200);
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .select-option:hover {
-    background: var(--raw-light-grey-100);
+    background: var(--color-grey-100);
 }
 
 .llm-data-prep-page .select-option:last-child {
@@ -1244,8 +1321,8 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .select-option.selected {
-    background: var(--raw-alert-info-bg);
-    border-left: 3px solid var(--primary-color);
+    background: var(--color-alert-info-bg);
+    border-left: 3px solid var(--color-primary);
     font-weight: 500;
 }
 
@@ -1269,15 +1346,15 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .field-group {
-    background: var(--raw-light-grey-100);
-    border: 1px solid var(--raw-light-grey-300);
+    background: var(--color-grey-100);
+    border: 1px solid var(--color-grey-300);
     border-radius: var(--border-radius);
     overflow: hidden;
 }
 
 /* Fix field group header to work with Bootstrap */
 .llm-data-prep-page .field-group-header {
-    background: var(--raw-light-grey-300);
+    background: var(--color-grey-300);
     padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
@@ -1288,7 +1365,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .field-group-header:hover {
-    background: var(--raw-medium-grey-100);
+    background: var(--color-grey-400);
 }
 
 .llm-data-prep-page .field-group-title {
@@ -1320,7 +1397,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .checkbox-item:hover {
-    background: var(--white);
+    background: var(--color-white);
 }
 
 .llm-data-prep-page .checkbox-item input[type="checkbox"] {
@@ -1351,7 +1428,7 @@ form button[type="submit"]:hover,
 
 .llm-data-prep-page .system-prompt textarea:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -1375,12 +1452,12 @@ form button[type="submit"]:hover,
 
 /* Chat improvements */
 .llm-data-prep-page .chat-container {
-    background: var(--raw-light-grey-100);
+    background: var(--color-grey-100);
     border-radius: var(--border-radius);
     min-height: 300px;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--raw-light-grey-300);
+    border: 1px solid var(--color-grey-300);
 }
 
 .llm-data-prep-page .chat-display {
@@ -1403,12 +1480,12 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .chat-input-area {
-    border-top: 1px solid var(--raw-light-grey-300);
+    border-top: 1px solid var(--color-grey-300);
     padding: 1rem 1.5rem;
     display: flex;
     gap: 1rem;
     align-items: center;
-    background: var(--white);
+    background: var(--color-white);
     border-bottom-left-radius: var(--border-radius);
     border-bottom-right-radius: var(--border-radius);
 }
@@ -1429,9 +1506,9 @@ form button[type="submit"]:hover,
 
 /* Better buttons for LLM page */
 .llm-data-prep-page .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     border: none;
-    color: var(--white);
+    color: var(--color-white);
     font-weight: 600;
     padding: 16px 32px;
     border-radius: var(--border-radius-sm);
@@ -1440,13 +1517,13 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-color-dark) 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .llm-data-prep-page .btn-primary i {
-    margin-right: 0.5rem;
+    margin-inline-end: 0.5rem; /* Use logical property */
 }
 
 .llm-data-prep-page .btn-link {
@@ -1458,47 +1535,8 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .btn-link:hover {
-    color: var(--primary-color);
+    color: var(--color-primary);
 }
-
-/* --- Corrected collapse button styling and icon handling --- */
-.card-header button.btn-link {
-    padding: 0;
-    font-size: 1rem;
-    color: var(--text-secondary);
-    background: none !important; /* Ensure no background from Bootstrap's button styles */
-    border: none !important; /* Ensure no border from Bootstrap's button styles */
-    text-decoration: none;
-    position: relative; /* Ensure z-index works if needed */
-    z-index: 1; /* Ensure it's above other elements in the header if layout overlaps */
-    /* Removed redundant `outline` from here, kept only on `:focus` below */
-}
-
-.card-header button.btn-link:hover {
-    color: var(--primary-color);
-    text-decoration: none;
-    background: none !important;
-}
-
-.card-header button.btn-link:focus {
-    box-shadow: none;
-    text-decoration: none;
-    background: none !important;
-    outline: 2px solid var(--primary-color); /* Add visible focus indicator */
-    outline-offset: 2px;
-}
-
-/* Icon rotation for collapse buttons:
-   We are relying on JS to swap fa-chevron-up and fa-chevron-down classes.
-   So, we only need to ensure 'i' is an inline-block for transforms to work.
-   No custom rotate rules are needed here, as the JS already controls the icon glyph.
-*/
-.card-header button.btn-link i {
-    transition: transform 0.3s ease; /* Keep the transition for smooth icon changes */
-    display: inline-block; /* Ensure transform works correctly */
-    /* Specific rotation rules that conflicted with JS class toggling are removed */
-}
-
 
 .llm-data-prep-page .form-check {
     display: flex;
@@ -1539,7 +1577,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .form-check-inline {
-    margin-right: 0;
+    margin-inline-end: 0; /* Use logical property */
     margin-bottom: 0;
     padding: 0;
 }
@@ -1548,7 +1586,7 @@ form button[type="submit"]:hover,
     font-weight: normal;
     font-size: 0.8em;
     color: var(--text-muted);
-    margin-left: 8px;
+    margin-inline-start: 8px; /* Use logical property */
 }
 
 /* LLM Data Prep Table Styles */
@@ -1573,7 +1611,7 @@ form button[type="submit"]:hover,
 }
 
 .llm-data-prep-page .table thead.table-light th {
-    background-color: var(--raw-light-grey-100);
+    background-color: var(--color-grey-100);
     border-bottom-width: 2px;
     font-weight: 600;
     text-align: left;
@@ -1598,7 +1636,7 @@ form button[type="submit"]:hover,
     display: block;
     width: 100%;
     box-sizing: border-box;
-    padding-right: 5px;
+    padding-inline-end: 5px; /* Use logical property */
 }
 
 .llm-data-prep-page .table .scrollable-cell-content {
@@ -1628,7 +1666,7 @@ form button[type="submit"]:hover,
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     margin-top: 1rem;
-    background-color: var(--raw-light-grey-200);
+    background-color: var(--color-grey-200);
 }
 
 #jsonDataPreview {
@@ -1646,40 +1684,13 @@ form button[type="submit"]:hover,
 /* Button styling for copy/toggle JSON */
 #copyJsonButton, #toggleJsonPreview {
     border: 1px solid var(--border-color);
-    background-color: var(--white);
+    background-color: var(--color-white);
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 #copyJsonButton:hover, #toggleJsonPreview:hover {
-    background-color: var(--raw-light-grey-200);
+    background-color: var(--color-grey-200);
     color: var(--text-primary);
-}
-
-/* Ensure all buttons respect the new gradient and shadow system */
-.btn.btn-success {
-    background: linear-gradient(135deg, var(--raw-alert-success-text) 0%, #047857 100%) !important;
-    border: none !important;
-    color: var(--white) !important;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-}
-.btn.btn-success:hover {
-    background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.btn.btn-danger {
-    background: linear-gradient(135deg, var(--raw-alert-danger-text) 0%, #be123c 100%) !important;
-    border: none !important;
-    color: var(--white) !important;
-    box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-}
-.btn.btn-danger:hover {
-    background: linear-gradient(135deg, #be123c 0%, #9f1239 100%) !important;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
 /* LLM Chat Window Styles */
@@ -1695,7 +1706,7 @@ form button[type="submit"]:hover,
     border-radius: var(--border-radius);
     padding: 15px;
     overflow-y: auto;
-    background-color: var(--raw-light-grey-100);
+    background-color: var(--color-grey-100);
     max-height: 500px;
     margin-bottom: 15px;
 }
@@ -1712,16 +1723,16 @@ form button[type="submit"]:hover,
 }
 
 .chat-bubble-user {
-    background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
     color: var(--text-color-on-primary);
-    margin-left: auto;
+    margin-inline-start: auto; /* Use logical property */
     border-bottom-right-radius: 4px;
 }
 
 .chat-bubble-assistant {
-    background: linear-gradient(135deg, var(--card-bg) 0%, var(--raw-light-grey-100) 100%);
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--color-grey-100) 100%);
     color: var(--text-primary);
-    margin-right: auto;
+    margin-inline-end: auto; /* Use logical property */
     border: 1px solid var(--border-color);
     border-bottom-left-radius: 4px;
 }
@@ -1729,7 +1740,7 @@ form button[type="submit"]:hover,
 /* Markdown formatting within chat bubbles */
 .chat-bubble pre {
     background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
-    border: 1px solid var(--raw-light-grey-200);
+    border: 1px solid var(--color-grey-200);
     border-radius: var(--border-radius-sm);
     padding: 10px;
     margin-top: 10px;
@@ -1770,59 +1781,6 @@ form button[type="submit"]:hover,
     flex-shrink: 0;
 }
 
-/* Utility Classes */
-.text-center { text-align: center !important; }
-.text-secondary { color: var(--text-secondary); }
-.mb-1 { margin-bottom: 0.25rem !important; }
-.mb-2 { margin-bottom: 0.5rem !important; }
-.mb-3 { margin-bottom: 1rem !important; }
-.mt-1 { margin-top: 0.25rem !important; }
-.mt-2 { margin-top: 0.5rem !important; }
-.mt-3 { margin-top: 1rem !important; }
-.me-1 { margin-right: 0.25rem !important; }
-.me-2 { margin-right: 0.5rem !important; }
-
-/* Add some modern utility classes */
-.gradient-bg-primary {
-    background: var(--gradient-primary);
-}
-
-.gradient-bg-secondary {
-    background: var(--gradient-secondary);
-}
-
-.gradient-bg-accent {
-    background: var(--gradient-accent);
-}
-
-.gradient-text-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius); /* Added radius */
-}
-
-.modern-shadow {
-    box-shadow: var(--shadow-lg);
-}
-
-.hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hover-lift:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-xl);
-}
-
-
 /* Relevance Map Page Specific Styles */
 .relevance-visualize-page .card-body {
     display: flex;
@@ -1848,31 +1806,30 @@ form button[type="submit"]:hover,
     box-sizing: border-box;
 }
 
-/* Adjustments for checkbox columns in fieldsets - FIXED COMPLETELY */
+/* Adjustments for checkbox columns in fieldsets */
 .llm-data-prep-page .fieldset-dashed-border .row {
-    display: flex !important;
-    flex-wrap: wrap !important;
+    display: flex; /* Removed !important */
+    flex-wrap: wrap; /* Removed !important */
 }
 
 .llm-data-prep-page .fieldset-dashed-border .col {
-    display: block !important;
-    flex-direction: unset !important;
+    display: block; /* Removed !important */
+    flex-direction: unset; /* Removed !important */
 }
 
 .llm-data-prep-page .form-check .form-check-input {
-    margin-top: 0 !important;
-    margin-right: 0.5rem !important;
-    margin-bottom: 0 !important;
-    flex-shrink: 0 !important;
-    /* REMOVED: position: static !important; */
+    margin-top: 0; /* Removed !important */
+    margin-inline-end: 0.5rem; /* Use logical property, removed !important */
+    margin-bottom: 0; /* Removed !important */
+    flex-shrink: 0; /* Removed !important */
 }
 
 .llm-data-prep-page .form-check .form-check-label {
-    margin-bottom: 0 !important;
-    word-break: break-word !important;
-    line-height: 1.4 !important;
-    cursor: pointer !important;
-    padding-left: 0 !important;
+    margin-bottom: 0; /* Removed !important */
+    word-break: break-word; /* Removed !important */
+    line-height: 1.4; /* Removed !important */
+    cursor: pointer; /* Removed !important */
+    padding-inline-start: 0; /* Use logical property, removed !important */
 }
 
 /* Data Alignment Page Specific Styles */
@@ -1882,13 +1839,13 @@ form button[type="submit"]:hover,
 
 /* For unsaved changes */
 .unsaved-change {
-    background-color: var(--raw-alert-warning-bg) !important;
-    border-color: var(--raw-alert-warning-border) !important;
+    background-color: var(--color-alert-warning-bg); /* Removed !important */
+    border-color: var(--color-alert-warning-border); /* Removed !important */
     transition: background-color 0.3s ease;
 }
 
 .unsaved-change select {
-    border-color: var(--raw-alert-warning-text) !important;
+    border-color: var(--color-alert-warning-text); /* Removed !important */
 }
 
 /* For buttons */
@@ -1907,6 +1864,154 @@ form button[type="submit"]:hover,
     font-weight: 500;
 }
 
+/* LLM Helper Specific Styles for edit_multiple_usecases.html */
+.llm-helper-section .chat-container {
+    min-height: 350px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-grey-100);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-grey-300);
+}
+.llm-helper-section .chat-display {
+    flex-grow: 1;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: var(--color-grey-100);
+    margin-bottom: 15px;
+}
+.llm-helper-section .image-paste-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+    text-align: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+    position: relative;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    background-color: var(--color-grey-100);
+}
+.llm-helper-section .image-paste-area:hover,
+.llm-helper-section .image-paste-area.drag-over {
+    border-color: var(--color-primary);
+    background-color: var(--color-grey-200);
+}
+.llm-helper-section .image-paste-area.has-image {
+    border-color: var(--color-primary-light);
+    background-color: var(--color-alert-info-bg);
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: default;
+}
+.llm-helper-section #llmHelperImagePreview {
+    max-width: 100%;
+    max-height: 200px;
+    display: none;
+    margin-top: 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    object-fit: contain;
+}
+.llm-helper-section .image-controls {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+.llm-helper-section .chat-input-area {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+    border-top: 1px solid var(--color-grey-300);
+    padding: 1rem 1.5rem;
+    background: var(--color-white);
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+.llm-helper-section .chat-input-area textarea {
+    flex-grow: 1;
+    resize: vertical;
+    min-height: 40px;
+    max-height: 120px;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
+}
+.llm-helper-section .chat-input-area select,
+.llm-helper-section .chat-input-area button {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+.llm-helper-section .chat-bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+/* Utilities */
+.text-center { text-align: center !important; }
+.text-secondary { color: var(--text-secondary); }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.me-1 { margin-inline-end: 0.25rem !important; } /* Use logical property */
+.me-2 { margin-inline-end: 0.5rem !important; } /* Use logical property */
+
+/* Add some modern utility classes */
+.gradient-bg-primary {
+    background: var(--gradient-primary);
+}
+
+.gradient-bg-secondary {
+    background: var(--gradient-secondary);
+}
+
+.gradient-bg-accent {
+    background: var(--gradient-accent);
+}
+
+.gradient-text-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius); /* Added radius */
+}
+
+.modern-shadow {
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform; /* Optimize performance */
+}
+
+.hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Responsive Styles */
 /* Consolidated Responsive Rules */
 @media (max-width: 1024px) {
     .sidebar {
@@ -1926,9 +2031,10 @@ form button[type="submit"]:hover,
     .sidebar {
         width: 100%;
         height: auto;
-        position: relative;
+        position: fixed; /* Changed from relative to fixed as per recommendation */
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        z-index: 1000; /* Ensure sidebar is on top for mobile */
     }
 
     .sidebar.show {
@@ -1990,133 +2096,35 @@ form button[type="submit"]:hover,
     }
 }
 
-/* ECharts Tooltip Styling for text wrapping */
-
+/* ECharts Tooltip Styling for text wrapping (removed !important per instruction) */
 .echarts-tooltip-container {
-    max-width: 400px !important;
-    box-sizing: border-box !important;
+    max-width: 400px;
+    box-sizing: border-box;
 }
 
 .echarts-tooltip-content {
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .echarts-tooltip-content pre,
 .echarts-tooltip-content code {
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
+    white-space: pre-wrap;
+    word-break: break-all;
     overflow-x: auto;
     font-size: 0.9em;
 }
 
 /* Fix any potential issues with Bootstrap grid inside collapse */
 .collapse .row {
-    margin-left: 0;
-    margin-right: 0;
+    margin-inline-start: 0; /* Use logical property */
+    margin-inline-end: 0; /* Use logical property */
 }
 
 .collapse .col {
-    padding-left: 15px;
-    padding-right: 15px;
-}
-
-/* LLM Helper Specific Styles for edit_multiple_usecases.html */
-.llm-helper-section .chat-container {
-    min-height: 350px;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    background: var(--raw-light-grey-100);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--raw-light-grey-300);
-}
-.llm-helper-section .chat-display {
-    flex-grow: 1;
-    max-height: 300px;
-    overflow-y: auto;
-    /* Removed redundant border/radius as chat-container already provides it */
-    /* border: 1px solid var(--border-color); */
-    /* border-radius: var(--border-radius); */
-    padding: 15px;
-    background-color: var(--raw-light-grey-100);
-    margin-bottom: 15px;
-}
-.llm-helper-section .image-paste-area {
-    border: 2px dashed var(--border-color);
-    border-radius: var(--border-radius-sm);
-    padding: 15px;
-    text-align: center;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
-    position: relative;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9em;
-    background-color: var(--raw-light-grey-100);
-}
-.llm-helper-section .image-paste-area:hover,
-.llm-helper-section .image-paste-area.drag-over {
-    border-color: var(--primary-color);
-    background-color: var(--raw-light-grey-200);
-}
-.llm-helper-section .image-paste-area.has-image {
-    border-color: var(--primary-color-light);
-    background-color: var(--raw-alert-info-bg);
-    color: var(--text-primary);
-    font-weight: 500;
-    cursor: default;
-}
-.llm-helper-section #llmHelperImagePreview {
-    max-width: 100%;
-    max-height: 200px;
-    display: none;
-    margin-top: 10px;
-    border-radius: var(--border-radius-xs);
-    border: 1px solid var(--border-color);
-    object-fit: contain;
-}
-.llm-helper-section .image-controls {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-}
-.llm-helper-section .chat-input-area {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-    align-items: center;
-    border-top: 1px solid var(--raw-light-grey-300);
-    padding: 1rem 1.5rem;
-    background: var(--white);
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-}
-.llm-helper-section .chat-input-area textarea {
-    flex-grow: 1;
-    resize: vertical;
-    min-height: 40px;
-    max-height: 120px;
-    padding: 8px 12px;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
-    font-size: 0.95rem;
-}
-.llm-helper-section .chat-input-area select,
-.llm-helper-section .chat-input-area button {
-    flex-shrink: 0;
-    padding: 8px 12px;
-    font-size: 0.9em;
-}
-.llm-helper-section .chat-bubble img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+    padding-inline-start: 15px; /* Use logical property */
+    padding-inline-end: 15px; /* Use logical property */
 }

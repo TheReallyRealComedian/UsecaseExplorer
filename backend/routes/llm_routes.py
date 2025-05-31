@@ -302,20 +302,27 @@ def analyze_usecase(usecase_id):
 @llm_routes.route('/chat', methods=['POST'])
 @login_required
 def llm_chat():
-    user_message = request.json.get('message')
+    content = request.json.get('content')
     model_name = request.json.get('model')
     image_base64 = request.json.get('image_base64')
+    image_mime_type = request.json.get('image_mime_type')
 
     system_prompt = current_user.system_prompt if current_user.is_authenticated else None
     if system_prompt == "":
         system_prompt = None
 
-    if not user_message and not image_base64:
+    if not content:
+        return jsonify({"success": False, "message": "Content is required."}), 400
+    
+    # Extract text message from content if available
+    user_message = next((item['text'] for item in content if item['type'] == 'text'), '')
+
+    if not user_message and not any(item['type'] == 'image_url' for item in content):
         return jsonify({"success": False, "message": "Message or image is required."}), 400
     if not model_name:
         return jsonify({"success": False, "message": "Model is required."}), 400
 
-    response = generate_ollama_chat_response(model_name, user_message, system_prompt, image_base64)
+    response = generate_ollama_chat_response(model_name, user_message, system_prompt, image_base64, image_mime_type)
     return jsonify(response)
 
 @llm_routes.route('/system-prompt', methods=['POST'])

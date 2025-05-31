@@ -6,10 +6,10 @@ import os
 from flask import session as flask_session, current_app
 from collections import deque
 import logging 
-from flask_login import current_user # Import current_user
-from .db import SessionLocal # Corrected import for SessionLocal
-from .models import User, LLMSettings # Corrected import for User and LLMSettings
-from sqlalchemy.orm import joinedload # Import joinedload for eager loading
+from flask_login import current_user
+from .db import SessionLocal
+from .models import User, LLMSettings
+from sqlalchemy.orm import joinedload
 
 # Configure basic logging for debugging (if not already done globally)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -166,12 +166,12 @@ def clear_chat_history():
     """Clears the chat history from the Flask session."""
     flask_session.pop('llm_chat_history', None)
 
-def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None):
+def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None):
     """
     Sends a chat message to Ollama and returns the assistant's response.
     Includes memory from the session. Supports image input for multimodal models.
     """
-    ollama_url = get_ollama_base_url() # This now uses the modified function
+    ollama_url = get_ollama_base_url()
     
     # Construct messages list for Ollama API payload.
     messages_for_api = []
@@ -183,61 +183,65 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
     for msg in _get_history_deque():
         messages_for_api.append({'role': msg['role'], 'content': msg['content']})
 
-    current_user_message_content = user_message # Default to plain text
+    # Prepare the current user message - Ollama format
+    # In Ollama, content is always a string, images go in separate 'images' field
+    current_user_message_content = user_message if user_message else ""
+    current_user_message_images = []
     
     if image_base64:
-        # Add a log for the size of the base64 string
-        logging.info(f"Received image_base64 in backend. Length: {len(image_base64)} characters.")
-        
-        # If an image is present, the content must be a list (multimodal)
-        current_user_message_content_list = []
-        if user_message:
-            current_user_message_content_list.append({'type': 'text', 'text': user_message})
+        # Add a log for the size of the base64 string and MIME type
+        logging.info(f"Received image_base64 in backend. Length: {len(image_base64)} characters. MIME Type: {image_mime_type}")
         
         try:
-            if not image_base64.startswith("data:"):
-                full_image_url = f"data:image/png;base64,{image_base64}"
-            else:
-                full_image_url = image_base64
-            current_user_message_content_list.append({'type': 'image_url', 'image_url': {'url': full_image_url}})
-            logging.info(f"Image Base64 URL added to payload (first 50 chars): {full_image_url[:50]}...")
+            # For Ollama, we just need the base64 data without the data URL prefix
+            current_user_message_images.append(image_base64)
+            logging.info(f"Image added to Ollama images array. Base64 length: {len(image_base64)}")
         except Exception as e:
             logging.error(f"Error processing base64 image data: {e}")
             return {"success": False, "message": "Invalid image data provided."}
 
-        # If message is empty but image is present, add a default text prompt for the current turn
-        if not user_message and image_base64:
-            current_user_message_content_list.insert(0, {'type': 'text', 'text': 'Analyze this image.'})
+        # If message is empty but image is present, add a default text prompt
+        if not current_user_message_content:
+            current_user_message_content = "Analyze this image."
 
-        current_user_message_content = current_user_message_content_list
-
-    # Check if the overall content is empty after potential processing
-    if (isinstance(current_user_message_content, str) and not current_user_message_content.strip()) and \
-       (isinstance(current_user_message_content, list) and not current_user_message_content):
+    # Check if we have any content
+    if not current_user_message_content and not current_user_message_images:
         return {"success": False, "message": "No message or image provided for LLM."}
 
-
-    # Add the current user message (which can be a string or multimodal array)
-    # This must be the *last* message in the `messages` array for the current turn.
-    messages_for_api.append({'role': 'user', 'content': current_user_message_content})
+    # Build the current user message using Ollama's format
+    current_user_message = {'role': 'user', 'content': current_user_message_content}
+    if current_user_message_images:
+        current_user_message['images'] = current_user_message_images
+    
+    # Add the current user message to the messages array
+    messages_for_api.append(current_user_message)
 
     try:
         payload = {
             "model": model_name,
             "messages": messages_for_api,
-            "stream": False # Changed from `false` to `False` (Python boolean literal)
+            "stream": False
         }
         
         headers = {"Content-Type": "application/json"}
         
-        logging.info(f"Sending Ollama API Payload for model '{model_name}'. Message count: {len(messages_for_api)}. "
-                     f"Current user message content: {type(current_user_message_content)}. " # Log type
+        logging.info(f"Sending Ollama API Payload for model '{model_name}'. Message count: {len(payload['messages'])}. "
+                     f"Current user message content type: string. "
+                     f"Has images: {len(current_user_message_images) > 0}. "
                      f"Payload size (approx): {len(json.dumps(payload))} bytes.")
-        logging.debug(f"Full Ollama API PAYLOAD: {json.dumps(payload, indent=2)}") 
+        logging.debug(f"Full Ollama API PAYLOAD: {json.dumps(payload, indent=2)}")
 
-        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=300) # Increased timeout for images
-        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+        # Send the request
+        response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=300)
+
+        # Log detailed response BEFORE raising for status
+        logging.debug(f"Ollama API raw response status code: {response.status_code}")
+        logging.debug(f"Ollama API raw response headers: {response.headers}")
+        logging.debug(f"Ollama API raw response text (first 500 chars): {response.text[:500]}...")
+
+        response.raise_for_status()  # This will raise an HTTPError for 4xx/5xx responses
         
+        # Attempt to parse JSON only if status is OK
         response_data = response.json()
         assistant_message = response_data['message']['content']
         
@@ -245,10 +249,10 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
         # The 'user_message' passed here is the original text from the frontend.
         # If the original user_message was empty but an image was provided, add a placeholder text for history.
         user_message_for_history = user_message
-        if not user_message_for_history and image_base64:
-            user_message_for_history = "Image provided." # Or "Analyze this image." for clarity in history
+        if not user_message_for_history and current_user_message_images:
+            user_message_for_history = "Image provided."  # Or "Analyze this image." for clarity in history
         
-        add_message_to_history('user', user_message_for_history) 
+        add_message_to_history('user', user_message_for_history)
         add_message_to_history('assistant', assistant_message)
         
         return {"success": True, "message": assistant_message}
@@ -262,21 +266,21 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
         logging.warning(error_msg)
         return {"success": False, "message": error_msg}
     except requests.exceptions.RequestException as e:
-        # THIS BLOCK IS CRUCIAL FOR DEBUGGING THE 400 ERROR
-        error_msg = (f"Ollama: API request failed: {e}. Status Code: "
-                     f"{e.response.status_code if e.response else 'N/A'}. "
-                     f"Response: {e.response.text if e.response else 'N/A'}")
+        # e.response should now be populated here if an HTTP error occurred
+        status_code = e.response.status_code if e.response is not None else 'N/A'
+        response_text = e.response.text if e.response is not None else 'N/A'
+
+        error_msg = (f"Ollama: API request failed: {e}. Status Code: {status_code}. Response: {response_text}")
         logging.error(error_msg)
-        if e.response:
-            # Attempt to parse as JSON first (Ollama often returns JSON errors)
+
+        if e.response is not None:
             try:
                 detailed_response_content = e.response.json()
                 logging.error(f"Ollama detailed error JSON response: {json.dumps(detailed_response_content, indent=2)}")
             except json.JSONDecodeError:
-                # If not JSON, log as raw text
                 logging.error(f"Ollama detailed error raw text response (non-JSON): {e.response.text}") 
         return {"success": False, "message": error_msg}
     except Exception as e:
         error_msg = f"An unexpected error occurred during Ollama chat: {e}"
-        logging.exception(error_msg) # Use exception for full traceback
+        logging.exception(error_msg)
         return {"success": False, "message": error_msg}
