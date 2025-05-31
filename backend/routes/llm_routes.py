@@ -12,6 +12,9 @@ from sqlalchemy import select
 from ..llm_service import get_available_ollama_models, generate_ollama_chat_response, clear_chat_history, get_chat_history
 from ..db import SessionLocal
 from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance 
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 # Helper function to count tokens
 def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
@@ -83,8 +86,8 @@ def llm_data_prep_page():
     session = SessionLocal()
     try:
         areas = session.query(Area).order_by(Area.name).all()
-        all_steps = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
-        all_usecases = session.query(UseCase).options(
+        all_steps_db = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        all_usecases_db = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
 
@@ -236,12 +239,18 @@ def llm_data_prep_page():
         ollama_models = get_available_ollama_models() 
         chat_history = list(get_chat_history()) 
 
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
         return render_template(
             'llm_data_prep.html',
             title="LLM Data Preparation",
             areas=areas,
-            all_steps=all_steps,
-            all_usecases=all_usecases,
+            all_steps=all_steps_db, # Use all_steps_db here
+            all_usecases=all_usecases_db, # Use all_usecases_db here
             selectable_fields_steps=SELECTABLE_STEP_FIELDS,
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data=prepared_data,
@@ -256,7 +265,15 @@ def llm_data_prep_page():
             chat_history=chat_history,
             config=current_app.config,
             user_system_prompt=user_system_prompt,
-            current_item=None # Indicates this is a top-level page
+            current_item=None, # Indicates this is a top-level page
+            current_area=None, # Ensure consistency
+            current_step=None, # Ensure consistency
+            current_usecase=None, # Ensure consistency
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
 
     except Exception as e:
@@ -288,11 +305,18 @@ def llm_data_prep_page():
             chat_history=[],
             config=current_app.config,
             user_system_prompt=user_system_prompt_on_error,
-            current_item=None # Indicates this is a top-level page
+            current_item=None, # Indicates this is a top-level page
+            current_area=None, # Ensure consistency
+            current_step=None, # Ensure consistency
+            current_usecase=None, # Ensure consistency
+            # NEW BREADCRUMB DATA PASSING (empty if error)
+            all_areas_flat=[],
+            all_steps_flat=[],
+            all_usecases_flat=[]
+            # END NEW BREADCRUMB DATA PASSING
         )
     finally:
         SessionLocal.remove()
-
 
 @llm_routes.route('/analyze/<int:usecase_id>', methods=['POST', 'GET'])
 @login_required

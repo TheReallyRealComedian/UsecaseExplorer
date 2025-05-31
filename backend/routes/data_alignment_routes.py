@@ -6,6 +6,9 @@ from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
 from ..models import Area, ProcessStep, UseCase
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 data_alignment_routes = Blueprint('data_alignment', __name__,
                                    template_folder='../templates',
@@ -15,6 +18,13 @@ data_alignment_routes = Blueprint('data_alignment', __name__,
 @login_required
 def data_alignment_page():
     session = SessionLocal()
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         # Section 1: Areas & Steps
         # Load all areas with their process steps, and eager load the area for each step
@@ -38,6 +48,12 @@ def data_alignment_page():
         # Eager load the area for each step for displaying (Area Name - BI_ID) in dropdown
         all_steps = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
 
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
         return render_template(
             'data_alignment.html',
             title='Data Alignment',
@@ -48,7 +64,12 @@ def data_alignment_page():
             current_area=None, # No specific area context for breadcrumbs
             current_step=None, # No specific step context for breadcrumbs
             current_usecase=None, # No specific usecase context for breadcrumbs
-            current_item=None # Indicates this is a top-level page
+            current_item=None, # Indicates this is a top-level page
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         flash(f"An error occurred while loading data: {e}", "danger")

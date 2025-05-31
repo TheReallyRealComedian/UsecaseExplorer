@@ -6,6 +6,9 @@ from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
 from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance # NEW Import
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
@@ -15,6 +18,13 @@ step_routes = Blueprint('steps', __name__,
 @login_required
 def view_step(step_id):
     session = SessionLocal()
+
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         step = session.query(ProcessStep).options(
             joinedload(ProcessStep.area),
@@ -38,6 +48,12 @@ def view_step(step_id):
             .order_by(ProcessStep.name)\
             .all()
 
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
         return render_template(
             'step_detail.html',
             title=f"Process Step: {step.name}",
@@ -45,7 +61,13 @@ def view_step(step_id):
             other_steps=other_steps, # Pass other steps to the template for the 'add relevance' form
             current_step=step, # For breadcrumbs (the step itself)
             current_area=step.area, # For breadcrumbs (the parent area)
-            current_item=step # The specific item for "active" breadcrumb logic
+            current_usecase=None, # Ensure consistency
+            current_item=step, # The specific item for "active" breadcrumb logic
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching step {step_id}: {e}")
@@ -61,6 +83,12 @@ def edit_step(step_id):
     session = SessionLocal()
     step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
     all_areas = session.query(Area).order_by(Area.name).all()
+
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
 
     if step is None:
         flash(f"Process Step with ID {step_id} not found.", "warning")
@@ -102,7 +130,13 @@ def edit_step(step_id):
                         all_areas=all_areas, # For the dropdown
                         current_step=step, # For breadcrumbs (the step itself)
                         current_area=step.area, # For breadcrumbs (the parent area)
-                        current_item=step # The specific item for "active" breadcrumb logic
+                        current_usecase=None, # Ensure consistency
+                        current_item=step, # The specific item for "active" breadcrumb logic
+                        # NEW BREADCRUMB DATA PASSING
+                        all_areas_flat=all_areas_flat,
+                        all_steps_flat=all_steps_flat,
+                        all_usecases_flat=all_usecases_flat
+                        # END NEW BREADCRUMB DATA PASSING
                     )
             
             try:
@@ -121,7 +155,13 @@ def edit_step(step_id):
                     all_areas=all_areas, # For the dropdown
                     current_step=step, # For breadcrumbs (the step itself)
                     current_area=step.area, # For breadcrumbs (the parent area)
-                    current_item=step # The specific item for "active" breadcrumb logic
+                    current_usecase=None, # Ensure consistency
+                    current_item=step, # The specific item for "active" breadcrumb logic
+                    # NEW BREADCRUMB DATA PASSING
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                    # END NEW BREADCRUMB DATA PASSING
                 )
             except Exception as e:
                 session.rollback()
@@ -136,7 +176,13 @@ def edit_step(step_id):
                     all_areas=all_areas, # For the dropdown
                     current_step=step, # For breadcrumbs (the step itself)
                     current_area=step.area, # For breadcrumbs (the parent area)
-                    current_item=step # The specific item for "active" breadcrumb logic
+                    current_usecase=None, # Ensure consistency
+                    current_item=step, # The specific item for "active" breadcrumb logic
+                    # NEW BREADCRUMB DATA PASSING
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                    # END NEW BREADCRUMB DATA PASSING
                 )
     
     SessionLocal.remove() 
@@ -147,7 +193,13 @@ def edit_step(step_id):
         all_areas=all_areas, # For the dropdown
         current_step=step, # For breadcrumbs (the step itself)
         current_area=step.area, # For breadcrumbs (the parent area)
-        current_item=step # The specific item for "active" breadcrumb logic
+        current_usecase=None, # Ensure consistency
+        current_item=step, # The specific item for "active" breadcrumb logic
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 

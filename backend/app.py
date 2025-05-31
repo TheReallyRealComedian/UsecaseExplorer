@@ -14,6 +14,31 @@ from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db
 
 from . import llm_service
 
+# NEW IMPORTS FOR BREADCRUMBS
+from .models import Area, ProcessStep, UseCase # Ensure these are imported if not already
+from flask import url_for # Ensure url_for is imported
+
+# Helper to convert query results to flat dicts for JavaScript
+def serialize_for_js(obj_list, item_type):
+    data = []
+    for obj in obj_list:
+        item_dict = {
+            'id': obj.id,
+            'name': obj.name,
+        }
+        # Add URLs dynamically based on type
+        if item_type == 'area':
+            item_dict['url'] = url_for('areas.view_area', area_id=obj.id)
+        elif item_type == 'step':
+            item_dict['area_id'] = obj.area_id
+            item_dict['url'] = url_for('steps.view_step', step_id=obj.id)
+        elif item_type == 'usecase':
+            item_dict['step_id'] = obj.process_step_id
+            item_dict['url'] = url_for('usecases.view_usecase', usecase_id=obj.id)
+        data.append(item_dict)
+    return data
+# END NEW IMPORTS AND HELPER
+
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Please log in to access this page.'
@@ -152,16 +177,43 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            session = flask_sqlalchemy_db.session
+            session_db = flask_sqlalchemy_db.session
             areas = []
+            
+            # NEW BREADCRUMB DATA FETCHING
+            all_areas_flat = []
+            all_steps_flat = []
+            all_usecases_flat = []
+            # END NEW BREADCRUMB DATA FETCHING
+            
             try:
-                areas = session.query(Area).options(
+                areas = session_db.query(Area).options(
                     joinedload(Area.process_steps).joinedload(ProcessStep.use_cases)
                 ).order_by(Area.name).all()
+
+                # NEW BREADCRUMB DATA FETCHING
+                all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+                all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+                all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+                # END NEW BREADCRUMB DATA FETCHING
+
             except Exception as e:
                 print(f"Error querying areas with steps and use cases: {e}")
                 flash("Could not load necessary data from the database.", "danger")
-            return render_template('index.html', title='Home', areas=areas, current_item=None) # Pass current_item=None for home page
+            return render_template(
+                'index.html', 
+                title='Home', 
+                areas=areas, 
+                current_item=None, # Pass current_item=None for home page
+                current_area=None, # Ensure these are passed as None for consistency
+                current_step=None,
+                current_usecase=None,
+                # NEW BREADCRUMB DATA PASSING
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+                # END NEW BREADCRUMB DATA PASSING
+            )
         else:
             return redirect(url_for('auth.login'))
 

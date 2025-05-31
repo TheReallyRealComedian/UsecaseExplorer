@@ -10,6 +10,9 @@ from ..models import (
 )
 from sqlalchemy.exc import IntegrityError
 import markdown # Add this import at the top of the file
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 relevance_routes = Blueprint('relevance', __name__, url_prefix='/relevance')
 
@@ -409,6 +412,12 @@ def edit_area_relevance(relevance_id):
     all_usecases = session.query(UseCase).order_by(UseCase.name).all()
     all_areas = session.query(Area).order_by(Area.name).all()
 
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
+
     if request.method == 'POST':
         new_source_usecase_id = request.form.get('source_id', type=int)
         new_target_area_id = request.form.get('target_id', type=int)
@@ -421,11 +430,37 @@ def edit_area_relevance(relevance_id):
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove() # Close session before re-rendering template
-                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='area', 
+                    all_usecases=all_usecases, 
+                    all_areas=all_areas, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='area', 
+                all_usecases=all_usecases, 
+                all_areas=all_areas, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         # Check if source or target has actually changed
         if (link.source_usecase_id != new_source_usecase_id or
@@ -441,7 +476,20 @@ def edit_area_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Case and Area already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='area', 
+                    all_usecases=all_usecases, 
+                    all_areas=all_areas, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
             
             # Update source and target IDs
             link.source_usecase_id = new_source_usecase_id
@@ -479,7 +527,16 @@ def edit_area_relevance(relevance_id):
                            link_type='area',
                            all_usecases=all_usecases,
                            all_areas=all_areas,
-                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
+                           current_item=None, # Editing a relevance link, not a core object for breadcrumbs
+                           current_area=None, # Ensure consistency
+                           current_step=None, # Ensure consistency
+                           current_usecase=None, # Ensure consistency
+                           # NEW BREADCRUMB DATA PASSING
+                           all_areas_flat=all_areas_flat,
+                           all_steps_flat=all_steps_flat,
+                           all_usecases_flat=all_usecases_flat
+                           # END NEW BREADCRUMB DATA PASSING
+    )
 
 
 @relevance_routes.route('/edit/step/<int:relevance_id>', methods=['GET', 'POST'])
@@ -500,6 +557,12 @@ def edit_step_relevance(relevance_id):
     all_usecases = session.query(UseCase).order_by(UseCase.name).all()
     all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
 
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
+
     if request.method == 'POST':
         new_source_usecase_id = request.form.get('source_id', type=int)
         new_target_process_step_id = request.form.get('target_id', type=int)
@@ -511,11 +574,37 @@ def edit_step_relevance(relevance_id):
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='step', 
+                    all_usecases=all_usecases, 
+                    all_steps=all_steps, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='step', 
+                all_usecases=all_usecases, 
+                all_steps=all_steps, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         if (link.source_usecase_id != new_source_usecase_id or
             link.target_process_step_id != new_target_process_step_id):
@@ -529,7 +618,20 @@ def edit_step_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Case and Process Step already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='step', 
+                    all_usecases=all_usecases, 
+                    all_steps=all_steps, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
             
             link.source_usecase_id = new_source_usecase_id
             link.target_process_step_id = new_target_process_step_id
@@ -562,7 +664,16 @@ def edit_step_relevance(relevance_id):
                            link_type='step',
                            all_usecases=all_usecases,
                            all_steps=all_steps,
-                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
+                           current_item=None, # Editing a relevance link, not a core object for breadcrumbs
+                           current_area=None, # Ensure consistency
+                           current_step=None, # Ensure consistency
+                           current_usecase=None, # Ensure consistency
+                           # NEW BREADCRUMB DATA PASSING
+                           all_areas_flat=all_areas_flat,
+                           all_steps_flat=all_steps_flat,
+                           all_usecases_flat=all_usecases_flat
+                           # END NEW BREADCRUMB DATA PASSING
+    )
 
 
 @relevance_routes.route('/edit/usecase/<int:relevance_id>', methods=['GET', 'POST'])
@@ -582,6 +693,12 @@ def edit_usecase_relevance(relevance_id):
     # Fetch all UCs for the dropdowns
     all_usecases = session.query(UseCase).order_by(UseCase.name).all()
 
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
+
     if request.method == 'POST':
         new_source_usecase_id = request.form.get('source_id', type=int)
         new_target_usecase_id = request.form.get('target_id', type=int)
@@ -591,18 +708,54 @@ def edit_usecase_relevance(relevance_id):
         if new_source_usecase_id == new_target_usecase_id:
             flash("Cannot link a Use Case to itself.", "warning")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='usecase', 
+                all_usecases=all_usecases, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='usecase', 
+                    all_usecases=all_usecases, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='usecase', 
+                all_usecases=all_usecases, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         if (link.source_usecase_id != new_source_usecase_id or
             link.target_usecase_id != new_target_usecase_id):
@@ -616,7 +769,19 @@ def edit_usecase_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Cases already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='usecase', 
+                    all_usecases=all_usecases, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
             
             link.source_usecase_id = new_source_usecase_id
             link.target_usecase_id = new_target_usecase_id
@@ -651,7 +816,16 @@ def edit_usecase_relevance(relevance_id):
                            relevance_link=link,
                            link_type='usecase',
                            all_usecases=all_usecases,
-                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
+                           current_item=None, # Editing a relevance link, not a core object for breadcrumbs
+                           current_area=None, # Ensure consistency
+                           current_step=None, # Ensure consistency
+                           current_usecase=None, # Ensure consistency
+                           # NEW BREADCRUMB DATA PASSING
+                           all_areas_flat=all_areas_flat,
+                           all_steps_flat=all_steps_flat,
+                           all_usecases_flat=all_usecases_flat
+                           # END NEW BREADCRUMB DATA PASSING
+    )
 
 @relevance_routes.route('/edit/step_to_step/<int:relevance_id>', methods=['GET', 'POST'])
 @login_required
@@ -670,6 +844,12 @@ def edit_step_to_step_relevance(relevance_id):
     # Fetch all Steps for the dropdowns
     all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
 
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
+
     if request.method == 'POST':
         new_source_process_step_id = request.form.get('source_id', type=int)
         new_target_process_step_id = request.form.get('target_id', type=int)
@@ -679,18 +859,54 @@ def edit_step_to_step_relevance(relevance_id):
         if new_source_process_step_id == new_target_process_step_id:
             flash("Cannot link a Process Step to itself.", "warning")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='step_to_step', 
+                all_steps=all_steps, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='step_to_step', 
+                    all_steps=all_steps, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
+            return render_template(
+                'edit_relevance.html', 
+                relevance_link=link, 
+                link_type='step_to_step', 
+                all_steps=all_steps, 
+                current_item=None,
+                current_area=None, # Ensure consistency
+                current_step=None, # Ensure consistency
+                current_usecase=None, # Ensure consistency
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+            )
 
         if (link.source_process_step_id != new_source_process_step_id or
             link.target_process_step_id != new_target_process_step_id):
@@ -704,7 +920,19 @@ def edit_step_to_step_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Process Steps already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
+                return render_template(
+                    'edit_relevance.html', 
+                    relevance_link=link, 
+                    link_type='step_to_step', 
+                    all_steps=all_steps, 
+                    current_item=None,
+                    current_area=None, # Ensure consistency
+                    current_step=None, # Ensure consistency
+                    current_usecase=None, # Ensure consistency
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
             
             link.source_process_step_id = new_source_process_step_id
             link.target_process_step_id = new_target_process_step_id
@@ -739,13 +967,29 @@ def edit_step_to_step_relevance(relevance_id):
                            relevance_link=link,
                            link_type='step_to_step',
                            all_steps=all_steps,
-                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
+                           current_item=None, # Editing a relevance link, not a core object for breadcrumbs
+                           current_area=None, # Ensure consistency
+                           current_step=None, # Ensure consistency
+                           current_usecase=None, # Ensure consistency
+                           # NEW BREADCRUMB DATA PASSING
+                           all_areas_flat=all_areas_flat,
+                           all_steps_flat=all_steps_flat,
+                           all_usecases_flat=all_usecases_flat
+                           # END NEW BREADCRUMB DATA PASSING
+    )
 
 
 @relevance_routes.route('/visualize')
 @login_required
 def visualize_relevance():
     session = SessionLocal()
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         areas = session.query(Area).order_by(Area.name).all()
         steps = session.query(ProcessStep).options(
@@ -864,6 +1108,12 @@ def visualize_relevance():
                         )
                     }
                 })
+        
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
 
         return render_template(
             'relevance_visualize.html',
@@ -873,7 +1123,15 @@ def visualize_relevance():
                 'links': echarts_links,
                 'categories': echarts_categories
             },
-            current_item=None # Indicates this is a top-level page
+            current_item=None, # Indicates this is a top-level page
+            current_area=None, # Ensure consistency
+            current_step=None, # Ensure consistency
+            current_usecase=None, # Ensure consistency
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
 
     except Exception as e:
@@ -883,7 +1141,15 @@ def visualize_relevance():
             'relevance_visualize.html',
             title='Process Relevance Map',
             echarts_data={'nodes': [], 'links': [], 'categories': []},
-            current_item=None # Still a top-level page even on error
+            current_item=None, # Still a top-level page even on error
+            current_area=None, # Ensure consistency
+            current_step=None, # Ensure consistency
+            current_usecase=None, # Ensure consistency
+            # NEW BREADCRUMB DATA PASSING (empty if error)
+            all_areas_flat=[],
+            all_steps_flat=[],
+            all_usecases_flat=[]
+            # END NEW BREADCRUMB DATA PASSING
         )
     finally:
         SessionLocal.remove()

@@ -1,10 +1,13 @@
 # backend/routes/export_routes.py
-from flask import Blueprint, Response, flash, redirect, url_for
+from flask import Blueprint, Response, flash, redirect, url_for, render_template
 from flask_login import login_required
 from ..export_service import export_database_to_json_string, export_area_to_markdown
-from ..models import Area # To fetch area name for filename
+from ..models import Area, ProcessStep, UseCase # To fetch area name for filename
 from ..db import SessionLocal as RouteSessionLocal # Avoid conflict if service also uses SessionLocal
 import datetime
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 export_routes = Blueprint('export', __name__, url_prefix='/export')
 
@@ -45,4 +48,4 @@ def export_area_md(area_id):
         )
     else:
         flash(f"Failed to export area {area_id} to Markdown. Area may not exist or an error occurred.", "danger")
-        return redirect(url_for('areas.view_area', area_id=area_id))
+        return redirect(url_for('areas.view_area', area_id=area_id)) # Redirect to view area for now

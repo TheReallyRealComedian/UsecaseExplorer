@@ -9,6 +9,9 @@ from ..models import (
     UseCase, ProcessStep, Area,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
 )
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 usecase_routes = Blueprint(
     'usecases',
@@ -21,6 +24,13 @@ usecase_routes = Blueprint(
 @login_required
 def view_usecase(usecase_id):
     session = SessionLocal()
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         usecase = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area),
@@ -49,6 +59,12 @@ def view_usecase(usecase_id):
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
         current_item_for_bc = usecase # The specific item for "active" breadcrumb logic
 
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
         return render_template(
             'usecase_detail.html',
             title=f"Use Case: {usecase.name}",
@@ -59,7 +75,12 @@ def view_usecase(usecase_id):
             current_usecase=usecase, # For breadcrumbs (the usecase itself)
             current_step=current_step_for_bc, # For breadcrumbs (the parent step)
             current_area=current_area_for_bc, # For breadcrumbs (the parent area)
-            current_item=current_item_for_bc
+            current_item=current_item_for_bc,
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching usecase {usecase_id}: {e}")
@@ -77,6 +98,12 @@ def edit_usecase(usecase_id):
         joinedload(UseCase.process_step).joinedload(ProcessStep.area)
     ).get(usecase_id)
     all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
 
     if usecase is None:
         flash(f"Use Case with ID {usecase_id} not found.", "warning")
@@ -110,7 +137,12 @@ def edit_usecase(usecase_id):
                         current_usecase=usecase, # For breadcrumbs
                         current_step=current_step_for_bc, # For breadcrumbs
                         current_area=current_area_for_bc, # For breadcrumbs
-                        current_item=current_item_for_bc # For "active" breadcrumb logic
+                        current_item=current_item_for_bc, # For "active" breadcrumb logic
+                        # NEW BREADCRUMB DATA PASSING
+                        all_areas_flat=all_areas_flat,
+                        all_steps_flat=all_steps_flat,
+                        all_usecases_flat=all_usecases_flat
+                        # END NEW BREADCRUMB DATA PASSING
                     )
             else:
                  flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
@@ -123,7 +155,12 @@ def edit_usecase(usecase_id):
                      current_usecase=usecase, # For breadcrumbs
                      current_step=current_step_for_bc, # For breadcrumbs
                      current_area=current_area_for_bc, # For breadcrumbs
-                     current_item=current_item_for_bc # For "active" breadcrumb logic
+                     current_item=current_item_for_bc, # For "active" breadcrumb logic
+                     # NEW BREADCRUMB DATA PASSING
+                     all_areas_flat=all_areas_flat,
+                     all_steps_flat=all_steps_flat,
+                     all_usecases_flat=all_usecases_flat
+                     # END NEW BREADCRUMB DATA PASSING
                  )
         else:
             usecase.priority = None
@@ -162,7 +199,12 @@ def edit_usecase(usecase_id):
                 current_usecase=usecase, # For breadcrumbs
                 current_step=current_step_for_bc, # For breadcrumbs
                 current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc # For "active" breadcrumb logic
+                current_item=current_item_for_bc, # For "active" breadcrumb logic
+                # NEW BREADCRUMB DATA PASSING
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+                # END NEW BREADCRUMB DATA PASSING
             )
 
         if usecase.bi_id != original_bi_id:
@@ -180,7 +222,12 @@ def edit_usecase(usecase_id):
                     current_usecase=usecase, # For breadcrumbs
                     current_step=current_step_for_bc, # For breadcrumbs
                     current_area=current_area_for_bc, # For breadcrumbs
-                    current_item=current_item_for_bc # For "active" breadcrumb logic
+                    current_item=current_item_for_bc, # For "active" breadcrumb logic
+                    # NEW BREADCRUMB DATA PASSING
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                    # END NEW BREADCRUMB DATA PASSING
                 )
 
         try:
@@ -202,7 +249,12 @@ def edit_usecase(usecase_id):
                 current_usecase=usecase, # For breadcrumbs
                 current_step=current_step_for_bc, # For breadcrumbs
                 current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc # For "active" breadcrumb logic
+                current_item=current_item_for_bc, # For "active" breadcrumb logic
+                # NEW BREADCRUMB DATA PASSING
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+                # END NEW BREADCRUMB DATA PASSING
             )
         except Exception as e:
             session.rollback()
@@ -217,7 +269,12 @@ def edit_usecase(usecase_id):
                 current_usecase=usecase, # For breadcrumbs
                 current_step=current_step_for_bc, # For breadcrumbs
                 current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc # For "active" breadcrumb logic
+                current_item=current_item_for_bc, # For "active" breadcrumb logic
+                # NEW BREADCRUMB DATA PASSING
+                all_areas_flat=all_areas_flat,
+                all_steps_flat=all_steps_flat,
+                all_usecases_flat=all_usecases_flat
+                # END NEW BREADCRUMB DATA PASSING
             )
 
     # For GET or re-render on error (if not handled by POST's error returns)
@@ -230,7 +287,12 @@ def edit_usecase(usecase_id):
         current_usecase=usecase,
         current_step=current_step_for_bc,
         current_area=current_area_for_bc,
-        current_item=current_item_for_bc
+        current_item=current_item_for_bc,
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 

@@ -7,6 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from ..db import SessionLocal
 # Ensure all necessary models are imported
 from ..models import Area, ProcessStep, UseCase, UsecaseAreaRelevance
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 # Define the blueprint IN THIS FILE
 area_routes = Blueprint('areas', __name__,
@@ -17,6 +20,13 @@ area_routes = Blueprint('areas', __name__,
 @login_required
 def view_area(area_id):
     session = SessionLocal()
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         area = session.query(Area).options(
             selectinload(Area.process_steps).selectinload(ProcessStep.use_cases),
@@ -28,12 +38,25 @@ def view_area(area_id):
             flash(f"Area with ID {area_id} not found.", "warning")
             return redirect(url_for('index'))
 
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
         return render_template(
             'area_detail.html',
             title=f"Area: {area.name}",
             area=area,
             current_area=area,
-            current_item=area  # ADDED
+            current_item=area,  # ADDED
+            current_step=None, # Ensure consistency
+            current_usecase=None, # Ensure consistency
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching area {area_id}: {e}")
@@ -48,6 +71,12 @@ def view_area(area_id):
 def edit_area(area_id):
     session = SessionLocal()
     area = session.query(Area).get(area_id)
+
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    # END NEW BREADCRUMB DATA FETCHING
 
     if area is None:
         flash(f"Area with ID {area_id} not found.", "warning")
@@ -70,7 +99,20 @@ def edit_area(area_id):
                     area.name = new_name # To show the problematic name in the form
                     area.description = new_description
                     SessionLocal.remove()
-                    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area, current_item=area) # ADDED current_item
+                    return render_template(
+                        'edit_area.html', 
+                        title=f"Edit Area: {area.name}", 
+                        area=area, 
+                        current_area=area, 
+                        current_item=area, # ADDED current_item
+                        current_step=None, # Ensure consistency
+                        current_usecase=None, # Ensure consistency
+                        # NEW BREADCRUMB DATA PASSING
+                        all_areas_flat=all_areas_flat,
+                        all_steps_flat=all_steps_flat,
+                        all_usecases_flat=all_usecases_flat
+                        # END NEW BREADCRUMB DATA PASSING
+                    )
             
             area.name = new_name
             area.description = new_description if new_description else None
@@ -89,7 +131,20 @@ def edit_area(area_id):
     
     # For GET request or if POST had errors and needs to re-render
     SessionLocal.remove() # Remove session if it wasn't already (e.g. on GET)
-    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area, current_item=area) # ADDED current_item
+    return render_template(
+        'edit_area.html', 
+        title=f"Edit Area: {area.name}", 
+        area=area, 
+        current_area=area, 
+        current_item=area, # ADDED current_item
+        current_step=None, # Ensure consistency
+        current_usecase=None, # Ensure consistency
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
+    )
 
 
 @area_routes.route('/<int:area_id>/delete', methods=['POST'])

@@ -19,6 +19,9 @@ from ..injection_service import (
     finalize_step_import
 )
 from ..db import SessionLocal
+# NEW IMPORT FOR BREADCRUMBS DATA
+from ..app import serialize_for_js
+# END NEW IMPORT
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
@@ -105,6 +108,12 @@ def data_update_page():
     all_step_names = []
     all_usecase_names = []
 
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         all_areas = session_db.query(Area).order_by(Area.name).all() # Keep order by name for datalist suggestions
         all_steps = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.id).all()
@@ -116,6 +125,12 @@ def data_update_page():
         all_area_names = sorted(list(set([area.name for area in all_areas]))) # Get unique names
         all_step_names = sorted(list(set([step.name for step in all_steps]))) # Get unique names
         all_usecase_names = sorted(list(set([uc.name for uc in all_usecases]))) # Get unique names
+
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
 
     except Exception as e:
         print(f"Error loading initial data for data_update_page: {e}")
@@ -326,7 +341,15 @@ def data_update_page():
         all_area_names=all_area_names,
         all_step_names=all_step_names,
         all_usecase_names=all_usecase_names,
-        current_item=None # Indicates this is a top-level page
+        current_item=None, # Indicates this is a top-level page
+        current_area=None, # Ensure consistency
+        current_step=None, # Ensure consistency
+        current_usecase=None, # Ensure consistency
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 @injection_routes.route('/steps/prepare-for-edit', methods=['POST'])
@@ -448,10 +471,24 @@ def edit_selected_steps():
 
     session_db = SessionLocal()
     all_areas_for_dropdown = []
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         all_areas_for_dropdown = session_db.query(Area).order_by(Area.name).all()
         # Convert to serializable dicts if not already (for passing to JS)
         all_areas_for_dropdown = [{'id': a.id, 'name': a.name} for a in all_areas_for_dropdown]
+        
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
     except Exception as e:
         print(f"Error loading areas for dropdown in edit_selected_steps: {e}")
         flash("Error loading areas for dropdowns. Area selection might be limited.", "danger")
@@ -464,7 +501,15 @@ def edit_selected_steps():
         steps_data=steps_data, # The data being edited
         editable_fields=PROCESS_STEP_EDITABLE_FIELDS, # Config for fields
         all_areas=all_areas_for_dropdown, # For area dropdowns in the edit form
-        current_item=None # Indicates this is a top-level page
+        current_item=None, # Indicates this is a top-level page
+        current_area=None, # Ensure consistency
+        current_step=None, # Ensure consistency
+        current_usecase=None, # Ensure consistency
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 @injection_routes.route('/usecases/edit-selected-usecases', methods=['GET'])
@@ -477,10 +522,24 @@ def edit_selected_usecases():
 
     session_db = SessionLocal()
     all_steps_for_dropdown = []
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
     try:
         all_steps_for_dropdown = session_db.query(ProcessStep).order_by(ProcessStep.name).all()
         # Convert to serializable dicts (for passing to JS)
         all_steps_for_dropdown = [{'id': ps.id, 'name': ps.name, 'bi_id': ps.bi_id} for ps in all_steps_for_dropdown]
+
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
     except Exception as e:
         print(f"Error loading steps for dropdown in edit_selected_usecases: {e}")
         flash("Error loading steps for dropdowns. Step selection might be limited.", "danger")
@@ -493,7 +552,15 @@ def edit_selected_usecases():
         usecases_data=usecases_data, # The data being edited
         editable_fields=PROCESS_USECASE_EDITABLE_FIELDS, # Config for fields
         all_steps=all_steps_for_dropdown, # For process step dropdowns in the edit form
-        current_item=None # Indicates this is a top-level page
+        current_item=None, # Indicates this is a top-level page
+        current_area=None, # Ensure consistency
+        current_step=None, # Ensure consistency
+        current_usecase=None, # Ensure consistency
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 @injection_routes.route('/steps/save-all-changes', methods=['POST'])
@@ -669,6 +736,12 @@ def preview_steps_injection():
 
     # Convert SQLAlchemy Area objects to dictionaries for JSON serialization
     serializable_areas = []
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+    
     try:
         areas_from_db = db_session.query(Area).order_by(Area.name).all()
         for area in areas_from_db:
@@ -677,6 +750,12 @@ def preview_steps_injection():
                 'name': area.name,
                 'description': area.description # Include other relevant fields if needed in JS
             })
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(db_session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
     except Exception as e:
         flash("Error loading areas for preview. Some area selections might be missing.", "danger")
         print(f"Error converting areas for JSON serialization: {e}")
@@ -689,7 +768,15 @@ def preview_steps_injection():
         preview_data=preview_data,
         step_detail_fields=STEP_DETAIL_FIELDS, # RENAMED context variable
         all_areas=serializable_areas, # Pass the serializable list for dropdowns
-        current_item=None # Indicates this is a top-level page
+        current_item=None, # Indicates this is a top-level page
+        current_area=None, # Ensure consistency
+        current_step=None, # Ensure consistency
+        current_usecase=None, # Ensure consistency
+        # NEW BREADCRUMB DATA PASSING
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+        # END NEW BREADCRUMB DATA PASSING
     )
 
 @injection_routes.route('/steps/finalize', methods=['POST'])
