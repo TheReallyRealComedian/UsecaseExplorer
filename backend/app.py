@@ -161,7 +161,7 @@ def create_app():
             except Exception as e:
                 print(f"Error querying areas with steps and use cases: {e}")
                 flash("Could not load necessary data from the database.", "danger")
-            return render_template('index.html', title='Home', areas=areas)
+            return render_template('index.html', title='Home', areas=areas, current_item=None) # Pass current_item=None for home page
         else:
             return redirect(url_for('auth.login'))
 

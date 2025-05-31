@@ -42,12 +42,13 @@ def data_alignment_page():
             'data_alignment.html',
             title='Data Alignment',
             areas_with_steps=areas_with_steps,
-            all_areas=all_areas,
-            areas_steps_usecases=areas_steps_usecases,
-            all_steps=all_steps,
+            all_areas=all_areas, # For the dropdown
+            areas_steps_usecases=areas_steps_usecases, # For the accordion view
+            all_steps=all_steps, # For the dropdown
             current_area=None, # No specific area context for breadcrumbs
             current_step=None, # No specific step context for breadcrumbs
-            current_usecase=None # No specific usecase context for breadcrumbs
+            current_usecase=None, # No specific usecase context for breadcrumbs
+            current_item=None # Indicates this is a top-level page
         )
     except Exception as e:
         flash(f"An error occurred while loading data: {e}", "danger")

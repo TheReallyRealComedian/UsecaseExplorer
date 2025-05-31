@@ -47,6 +47,7 @@ def view_usecase(usecase_id):
 
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+        current_item_for_bc = usecase # The specific item for "active" breadcrumb logic
 
         return render_template(
             'usecase_detail.html',
@@ -54,10 +55,11 @@ def view_usecase(usecase_id):
             usecase=usecase,
             all_areas=all_areas,
             all_steps=all_steps,
-            other_usecases=other_usecases,
-            current_usecase=usecase,
-            current_step=current_step_for_bc,
-            current_area=current_area_for_bc
+            other_usecases=other_usecases, # For the 'add relevance' forms
+            current_usecase=usecase, # For breadcrumbs (the usecase itself)
+            current_step=current_step_for_bc, # For breadcrumbs (the parent step)
+            current_area=current_area_for_bc, # For breadcrumbs (the parent area)
+            current_item=current_item_for_bc
         )
     except Exception as e:
         print(f"Error fetching usecase {usecase_id}: {e}")
@@ -83,6 +85,7 @@ def edit_usecase(usecase_id):
 
     current_step_for_bc = usecase.process_step
     current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+    current_item_for_bc = usecase # For "active" breadcrumb logic
 
     if request.method == 'POST':
         original_bi_id = usecase.bi_id
@@ -102,11 +105,12 @@ def edit_usecase(usecase_id):
                     return render_template(
                         'edit_usecase.html',
                         title=f"Edit Use Case: {usecase.name}",
-                        usecase=usecase,
-                        all_steps=all_steps,
-                        current_usecase=usecase,
-                        current_step=current_step_for_bc,
-                        current_area=current_area_for_bc
+                        usecase=usecase, # For the page's data
+                        all_steps=all_steps, # For the dropdown
+                        current_usecase=usecase, # For breadcrumbs
+                        current_step=current_step_for_bc, # For breadcrumbs
+                        current_area=current_area_for_bc, # For breadcrumbs
+                        current_item=current_item_for_bc # For "active" breadcrumb logic
                     )
             else:
                  flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
@@ -114,11 +118,12 @@ def edit_usecase(usecase_id):
                  return render_template(
                      'edit_usecase.html',
                      title=f"Edit Use Case: {usecase.name}",
-                     usecase=usecase,
-                     all_steps=all_steps,
-                     current_usecase=usecase,
-                     current_step=current_step_for_bc,
-                     current_area=current_area_for_bc
+                     usecase=usecase, # For the page's data
+                     all_steps=all_steps, # For the dropdown
+                     current_usecase=usecase, # For breadcrumbs
+                     current_step=current_step_for_bc, # For breadcrumbs
+                     current_area=current_area_for_bc, # For breadcrumbs
+                     current_item=current_item_for_bc # For "active" breadcrumb logic
                  )
         else:
             usecase.priority = None
@@ -152,11 +157,12 @@ def edit_usecase(usecase_id):
             return render_template(
                 'edit_usecase.html',
                 title=f"Edit Use Case: {usecase.name}",
-                usecase=usecase,
-                all_steps=all_steps,
-                current_usecase=usecase,
-                current_step=current_step_for_bc,
-                current_area=current_area_for_bc
+                usecase=usecase, # For the page's data
+                all_steps=all_steps, # For the dropdown
+                current_usecase=usecase, # For breadcrumbs
+                current_step=current_step_for_bc, # For breadcrumbs
+                current_area=current_area_for_bc, # For breadcrumbs
+                current_item=current_item_for_bc # For "active" breadcrumb logic
             )
 
         if usecase.bi_id != original_bi_id:
@@ -169,11 +175,12 @@ def edit_usecase(usecase_id):
                 return render_template(
                     'edit_usecase.html',
                     title=f"Edit Use Case: {usecase.name}",
-                    usecase=usecase,
-                    all_steps=all_steps,
-                    current_usecase=usecase,
-                    current_step=current_step_for_bc,
-                    current_area=current_area_for_bc
+                    usecase=usecase, # For the page's data
+                    all_steps=all_steps, # For the dropdown
+                    current_usecase=usecase, # For breadcrumbs
+                    current_step=current_step_for_bc, # For breadcrumbs
+                    current_area=current_area_for_bc, # For breadcrumbs
+                    current_item=current_item_for_bc # For "active" breadcrumb logic
                 )
 
         try:
@@ -190,11 +197,12 @@ def edit_usecase(usecase_id):
             return render_template(
                 'edit_usecase.html',
                 title=f"Edit Use Case: {usecase.name}",
-                usecase=usecase,
-                all_steps=all_steps,
-                current_usecase=usecase,
-                current_step=current_step_for_bc,
-                current_area=current_area_for_bc
+                usecase=usecase, # For the page's data
+                all_steps=all_steps, # For the dropdown
+                current_usecase=usecase, # For breadcrumbs
+                current_step=current_step_for_bc, # For breadcrumbs
+                current_area=current_area_for_bc, # For breadcrumbs
+                current_item=current_item_for_bc # For "active" breadcrumb logic
             )
         except Exception as e:
             session.rollback()
@@ -203,12 +211,13 @@ def edit_usecase(usecase_id):
             SessionLocal.remove()
             return render_template(
                 'edit_usecase.html',
-                title=f"Edit Use Case: {usecase.name}",
-                usecase=usecase,
-                all_steps=all_steps,
-                current_usecase=usecase,
-                current_step=current_step_for_bc,
-                current_area=current_area_for_bc
+                title=f"Edit Use Case: {usecase.name}", # Page title
+                usecase=usecase, # For the page's data
+                all_steps=all_steps, # For the dropdown
+                current_usecase=usecase, # For breadcrumbs
+                current_step=current_step_for_bc, # For breadcrumbs
+                current_area=current_area_for_bc, # For breadcrumbs
+                current_item=current_item_for_bc # For "active" breadcrumb logic
             )
 
     # For GET or re-render on error (if not handled by POST's error returns)
@@ -220,7 +229,8 @@ def edit_usecase(usecase_id):
         all_steps=all_steps,
         current_usecase=usecase,
         current_step=current_step_for_bc,
-        current_area=current_area_for_bc
+        current_area=current_area_for_bc,
+        current_item=current_item_for_bc
     )
 
 

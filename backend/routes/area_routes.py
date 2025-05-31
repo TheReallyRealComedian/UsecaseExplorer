@@ -4,7 +4,7 @@ from flask_login import login_required
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
-from ..db import SessionLocal # CHANGED
+from ..db import SessionLocal
 # Ensure all necessary models are imported
 from ..models import Area, ProcessStep, UseCase, UsecaseAreaRelevance
 
@@ -32,7 +32,8 @@ def view_area(area_id):
             'area_detail.html',
             title=f"Area: {area.name}",
             area=area,
-            current_area=area
+            current_area=area,
+            current_item=area  # ADDED
         )
     except Exception as e:
         print(f"Error fetching area {area_id}: {e}")
@@ -69,7 +70,7 @@ def edit_area(area_id):
                     area.name = new_name # To show the problematic name in the form
                     area.description = new_description
                     SessionLocal.remove()
-                    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area)
+                    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area, current_item=area) # ADDED current_item
             
             area.name = new_name
             area.description = new_description if new_description else None
@@ -88,7 +89,7 @@ def edit_area(area_id):
     
     # For GET request or if POST had errors and needs to re-render
     SessionLocal.remove() # Remove session if it wasn't already (e.g. on GET)
-    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area)
+    return render_template('edit_area.html', title=f"Edit Area: {area.name}", area=area, current_area=area, current_item=area) # ADDED current_item
 
 
 @area_routes.route('/<int:area_id>/delete', methods=['POST'])

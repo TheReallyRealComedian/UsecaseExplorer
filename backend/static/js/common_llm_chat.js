@@ -291,15 +291,13 @@ export function initializeLLMChat(
                     addMessageToChat('assistant', data.message);
                 } else {
                     loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error: ${data.message}`;
-                    loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
-                    loadingBubble.style.color = 'var(--raw-alert-danger-text)';
+                    loadingBubble.classList.add('chat-bubble-error'); // Add the new error class
                     console.error('LLM Chat Error:', data.message);
                 }
             } catch (error) {
                 console.error('Network or server error:', error);
                 loadingBubble.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Network Error: Could not reach LLM service.`;
-                loadingBubble.style.backgroundColor = 'var(--raw-alert-danger-bg)';
-                loadingBubble.style.color = 'var(--raw-alert-danger-text)';
+                loadingBubble.classList.add('chat-bubble-error'); // Add the new error class
             } finally {
                 sendMessageButton.disabled = false;
                 chatInput.disabled = false;

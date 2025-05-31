@@ -51,5 +51,6 @@ def manage_settings():
     return render_template(
         'settings.html',
         title='Application Settings',
-        settings=user_settings # This will be the LLMSettings object or None
+        settings=user_settings, # This will be the LLMSettings object or None for the form
+        current_item=None # Indicates this is a top-level page
     )

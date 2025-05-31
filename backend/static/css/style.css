@@ -1,4 +1,14 @@
-/* style.css - Modern Dashboard Design */
+/*
+ * Usecase Explorer - Main Stylesheet (style.css)
+ *
+ * This file contains all global, layout, UI component, and page-specific styles
+ * for the Usecase Explorer application. It aims for a modern, clean dashboard design.
+ *
+ */
+
+/* ========================================================================== */
+/* --- 0. CSS Variables (Design Tokens) --- */
+/* ========================================================================== */
 :root {
     /* --- Updated Color Palette for Modern Look --- */
     /* Semantic Color Definitions (replacing --raw-* and aliased variables) */
@@ -51,13 +61,6 @@
     --color-alert-info-text: #0284c7;
     --color-alert-info-bg: #f0f9ff;
     --color-alert-info-border: #bae6fd;
-
-    /* Modern Shadow System */
-    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
     /* --- General Variable Assignments (using new semantic names) --- */
     --body-bg-color: var(--color-grey-100);
@@ -115,7 +118,9 @@
     --alert-info-border: var(--color-alert-info-border);
 }
 
-/* Reset and Base Styles */
+/* ========================================================================== */
+/* --- 1. Base Styles & Reset --- */
+/* ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -149,13 +154,16 @@ ul {
     list-style: none;
 }
 
-/* Layout Components */
+/* ========================================================================== */
+/* --- 2. Layout Components --- */
+/* ========================================================================== */
+
 .app-container {
     display: flex;
     min-height: 100vh;
 }
 
-/* Modern Sidebar Styles */
+/* 2.1 Sidebar */
 .sidebar {
     width: 280px; /* Slightly wider */
     background: linear-gradient(180deg, var(--color-panel-bg) 0%, #0f1419 100%);
@@ -258,7 +266,7 @@ ul {
     border-top: 1px solid var(--color-panel-border-subtle);
 }
 
-/* Modern Main Content */
+/* 2.2 Main Content Area */
 .main-content {
     flex-grow: 1;
     display: flex;
@@ -267,142 +275,102 @@ ul {
     overflow-x: hidden;
 }
 
-/* Modern Header */
+/* 2.3 Header */
 .main-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 40px;
+    align-items: center; /* Vertically align items */
+    justify-content: flex-end; /* Push items to the right */
+    padding: 10px 40px; /* Reduced vertical padding */
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     position: sticky;
+    width: 100%; /* Ensure it spans full width */
     top: 0;
     z-index: 1000;
-    gap: 30px;
-    min-height: 80px;
+    gap: 20px; /* Reduced gap */
+    min-height: 60px; /* Reduced min-height */
 }
 
-/* UI Components */
-
-/* Modern Breadcrumbs */
-.breadcrumbs {
-    display: flex;
-    align-items: center;
+/* 2.4 Page Content Wrapper */
+.page-content {
+    padding: 40px 50px;
     flex-grow: 1;
-    overflow: hidden;
-    white-space: nowrap;
+    overflow-y: auto;
 }
 
-.breadcrumb-item {
-    background: linear-gradient(135deg, var(--breadcrumb-default-bg) 0%, #718096 100%);
-    color: var(--breadcrumb-text-color);
-    padding: 12px calc(var(--breadcrumb-arrow-width) + 12px) 12px calc(var(--breadcrumb-arrow-width) + 16px);
-    margin-inline-end: calc(-1 * var(--breadcrumb-arrow-width) + 1px); /* Use logical property */
-    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%, var(--breadcrumb-arrow-width) 50%);
-    position: relative;
-    text-decoration: none;
+/* ========================================================================== */
+/* --- 3. UI Components (General) --- */
+/* ========================================================================== */
+
+/* 3.1 Breadcrumbs - REVISED DESIGN */
+.breadcrumbs-fixed { /* New container class to isolate breadcrumbs visually */
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping */
+    align-items: center;
+    padding: 10px 40px 0; /* Add padding for visual space */
     font-size: 0.9rem;
-    line-height: 1.4;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    flex-grow: 1; /* Allow to take available space */
+}
+
+.breadcrumbs-fixed .breadcrumb-item {
+    background: none; /* Remove background */
+    color: var(--text-secondary); /* Default text color */
+    padding: 5px 0; /* Adjust padding */
+    text-decoration: none;
     font-weight: 500;
+    transition: color 0.2s ease;
+    line-height: 1.4; /* Allow multiple lines if content wraps */
+    flex-shrink: 0; /* Don't shrink links */
 }
 
-.breadcrumb-item:hover {
-    background: linear-gradient(135deg, var(--breadcrumb-hover-bg) 0%, #4a5568 100%);
-    transform: translateY(-2px);
-    z-index: 5;
+.breadcrumbs-fixed .breadcrumb-item:hover {
+    color: var(--color-primary);
+    transform: none; /* Remove transform on hover */
+    background: none; /* Ensure no background on hover */
 }
 
-.breadcrumb-item:first-child {
-    clip-path: polygon(0% 0%, calc(100% - var(--breadcrumb-arrow-width)) 0%, 100% 50%, calc(100% - var(--breadcrumb-arrow-width)) 100%, 0% 100%);
-    padding-inline-start: 20px; /* Use logical property */
-    border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
+.breadcrumbs-fixed .breadcrumb-item.active {
+    color: var(--color-primary-dark); /* Active item is darker primary */
+    font-weight: 600;
+    background: none;
+    box-shadow: none;
 }
 
-.breadcrumb-item.active {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    color: var(--breadcrumb-text-color);
-    z-index: 10;
-    box-shadow: var(--shadow-sm);
-}
-
-.breadcrumb-item.active:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
-}
-
-.breadcrumb-item.disabled {
-    background: linear-gradient(135deg, var(--breadcrumb-disabled-bg) 0%, #d1d5db 100%); /* Add gradient */
-    color: var(--breadcrumb-disabled-text-color);
-    cursor: default;
-    /* z-index: 1; Keep as 1 or remove if transform handles layering */
-}
-
-.breadcrumb-item.disabled:hover {
-    background: linear-gradient(135deg, var(--breadcrumb-disabled-bg) 0%, #d1d5db 100%); /* No hover effect for disabled */
-    transform: none; /* Override hover lift */
-}
-
-/* Modern Search Bar */
-.search-bar {
-    display: flex;
-    align-items: center;
-    background-color: var(--element-bg-light);
-    padding: 12px 20px;
-    border-radius: var(--border-radius-lg);
-    width: 350px;
-    flex-shrink: 0;
-    border: 1px solid transparent;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-xs);
-}
-
-.search-bar:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    background-color: var(--color-white);
-}
-
-.search-bar i {
+.breadcrumbs-fixed .breadcrumb-separator {
     color: var(--text-muted);
-    margin-inline-end: 12px; /* Use logical property */
-    font-size: 1.1rem;
+    margin: 0 8px; /* Space out separator */
+    font-size: 0.8rem;
 }
 
-.search-bar input {
-    border: none;
-    outline: none;
-    background-color: transparent;
-    width: 100%;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    font-weight: 500;
-}
+/* 3.2 Search Bar */
+/* This section was removed as per change instructions. */
 
-.search-bar input::placeholder {
-    color: var(--text-muted);
-}
-
+/* 3.3 Header Action Buttons */
 .header-actions {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
+/* ADJUSTED: Smaller and more consistent icon buttons */
 .icon-button {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.4rem;
+    font-size: 1.2rem; /* Reduced from 1.4rem */
     color: var(--text-muted);
     transition: all 0.3s ease;
-    padding: 12px;
-    border-radius: var(--border-radius-sm);
+    padding: 8px; /* Reduced from 12px */
+    border-radius: var(--border-radius-sm); /* Keep consistent radius */
     position: relative;
+    width: 40px; /* Fixed width to ensure consistency regardless of icon */
+    height: 40px; /* Fixed height */
+    display: flex; /* Use flexbox to center icon */
+    align-items: center;
+    justify-content: center;
 }
 
 .icon-button:hover {
@@ -411,14 +379,7 @@ ul {
     transform: translateY(-2px);
 }
 
-/* Modern Page Content */
-.page-content {
-    padding: 40px 50px;
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-/* Modern Card Styles */
+/* 3.4 Cards */
 .card {
     background-color: var(--card-bg);
     border: none;
@@ -471,7 +432,7 @@ ul {
     transform: translateX(4px);
 }
 
-/* Modern Form Styles */
+/* 3.5 Forms */
 form {
     display: flex;
     flex-direction: column;
@@ -487,8 +448,8 @@ form {
 .form-row,
 .form-check,
 .checkbox-group {
-    display: flex; /* Removed !important */
-    flex-direction: row; /* Removed !important */
+    display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 12px;
 }
@@ -551,12 +512,12 @@ form input[type="checkbox"] {
     font-weight: 500;
 }
 
-textarea.form-control { /* Specific override for textarea */
+textarea.form-control {
     min-height: 120px;
     resize: vertical;
 }
 
-/* Modern Button Styles - Consolidated */
+/* 3.6 Buttons */
 .btn-base {
     border-radius: var(--border-radius-sm);
     font-weight: 600;
@@ -569,7 +530,6 @@ textarea.form-control { /* Specific override for textarea */
     position: relative;
 }
 
-/* Common gradient button styles */
 .btn-gradient {
     box-shadow: var(--shadow-sm);
 }
@@ -579,10 +539,8 @@ textarea.form-control { /* Specific override for textarea */
     box-shadow: var(--shadow-md);
 }
 
-/* Apply base styles to .btn and form submit buttons */
 form button[type="submit"],
 .btn {
-    /* Inherit from btn-base or apply directly */
     border-radius: var(--border-radius-sm);
     font-weight: 600;
     transition: all 0.3s ease;
@@ -590,7 +548,7 @@ form button[type="submit"],
     padding: 16px 32px;
     cursor: pointer;
     font-size: 0.95rem;
-    align-self: flex-start; /* Specific alignment for form submit, could be removed if not universally desired */
+    align-self: flex-start;
     text-align: center;
     position: relative;
 }
@@ -600,7 +558,6 @@ form button[type="submit"].btn-primary,
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     color: var(--color-white);
     border: 1px solid var(--color-primary);
-    /* Inherit gradient and hover from .btn-gradient conceptually, apply directly */
     box-shadow: var(--shadow-sm);
 }
 form button[type="submit"].btn-primary:hover,
@@ -623,19 +580,6 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: var(--shadow-md);
 }
 
-.btn-danger {
-    background: linear-gradient(135deg, var(--color-alert-danger-text) 0%, #b91c1c 100%);
-    color: var(--color-white);
-    border: 1px solid var(--color-alert-danger-text);
-    box-shadow: var(--shadow-sm);
-}
-
-.btn-danger:hover {
-    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
 .btn-info {
     background: linear-gradient(135deg, var(--color-alert-info-text) 0%, #0369a1 100%);
     color: var(--color-white);
@@ -649,13 +593,14 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: var(--shadow-md);
 }
 
+/* ADJUSTED: Make btn-sm more compact for action buttons like Edit/Delete/Export */
 .btn-sm {
-    padding: 12px 24px;
-    font-size: 0.875rem;
+    padding: 8px 16px; /* Reduced from 12px 24px */
+    font-size: 0.8rem; /* Reduced from 0.875rem */
     border-radius: var(--border-radius-xs);
+    white-space: nowrap; /* ADDED: Prevent text from wrapping inside the button */
 }
 
-/* Specific button overrides, removed !important */
 .btn.btn-success {
     background: linear-gradient(135deg, var(--color-alert-success-text) 0%, #047857 100%);
     border: none;
@@ -669,7 +614,9 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: var(--shadow-md);
 }
 
-.btn.btn-danger { /* Duplicate definition, but needed for specific `.btn.btn-danger` selector */
+.btn.btn-danger {
+    padding: 8px 16px; /* Reduced from 12px 24px */
+    border-radius: var(--border-radius-xs);
     background: linear-gradient(135deg, var(--color-alert-danger-text) 0%, #be123c 100%);
     border: none;
     color: var(--color-white);
@@ -682,7 +629,7 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: var(--shadow-md);
 }
 
-/* Modern Flash Messages */
+/* 3.7 Flash Messages (Alerts) */
 .flash-messages {
     margin-bottom: 30px;
 }
@@ -718,16 +665,16 @@ form button[type="submit"].btn-primary:hover,
 .alert-info {
     color: var(--alert-info-text);
     background: linear-gradient(135deg, var(--alert-info-bg) 0%, #eff6ff 100%);
-    border-left-color: var(--alert-info-text);
+    border-left-color: var(--alert-info-border);
 }
 
-/* Corrected collapse button styling and icon handling */
+/* 3.8 Collapse Button Styling (e.g., for Card Headers) */
 .card-header button.btn-link {
     padding: 0;
     font-size: 1rem;
     color: var(--text-secondary);
-    background: none; /* Removed !important */
-    border: none; /* Removed !important */
+    background: none;
+    border: none;
     text-decoration: none;
     position: relative;
     z-index: 1;
@@ -736,141 +683,23 @@ form button[type="submit"].btn-primary:hover,
 .card-header button.btn-link:hover {
     color: var(--color-primary);
     text-decoration: none;
-    background: none; /* Removed !important */
+    background: none;
 }
 
 .card-header button.btn-link:focus {
     box-shadow: none;
     text-decoration: none;
-    background: none; /* Removed !important */
-    outline: 2px solid var(--color-primary); /* Add visible focus indicator */
+    background: none;
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
 
 .card-header button.btn-link i {
-    transition: transform 0.3s ease; /* Keep the transition for smooth icon changes */
-    display: inline-block; /* Ensure transform works correctly */
+    transition: transform 0.3s ease;
+    display: inline-block;
 }
 
-/* Page-Specific Styles */
-
-/* Index page specific styles */
-.welcome-message {
-    margin-bottom: 30px;
-}
-
-.welcome-message h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.welcome-message p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-}
-
-.data-section {
-    margin-bottom: 40px;
-}
-
-.data-section h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 20px;
-    color: var(--color-primary);
-}
-
-.area-card {
-    background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 24px;
-    border-left: 5px solid;
-    border-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%) 1;
-    padding: 24px;
-    transition: all 0.3s ease;
-}
-
-.area-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-}
-
-.area-card h3 {
-    font-size: 1.2rem;
-    margin-bottom: 16px;
-    font-weight: 700;
-    color: var(--color-primary);
-}
-
-.area-card ul {
-    padding-inline-start: 24px; /* Use logical property */
-    list-style: disc;
-}
-
-.area-card li {
-    margin-bottom: 12px;
-}
-
-.area-card strong {
-    font-weight: 600;
-}
-
-.area-card .step-details {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-inline-start: 8px; /* Use logical property */
-}
-
-.area-card .usecase-list {
-    padding-inline-start: 30px; /* Use logical property */
-    margin-top: 8px;
-    list-style: circle;
-}
-
-.area-card .usecase-list li a {
-    font-weight: 600;
-}
-
-.area-card .usecase-list .uc-details {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-inline-start: 8px; /* Use logical property */
-}
-
-.area-card p em {
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* Detail Page Enhancements */
-.page-content > .d-flex > h1,
-.page-content > h1 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 3px solid transparent;
-    border-image: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent) 100%) 1;
-    letter-spacing: -0.5px;
-}
-
-.page-content p.text-muted {
-    color: var(--text-secondary); /* Removed !important */
-    font-size: 1.05rem;
-    margin-top: 2px;
-    margin-bottom: 30px;
-}
-
+/* 3.9 List Styles (e.g., info-list, item-list) */
 .card-body dl.info-list {
     display: grid;
     grid-template-columns: minmax(200px, max-content) auto;
@@ -986,13 +815,181 @@ form button[type="submit"].btn-primary:hover,
     font-size: 0.95rem;
 }
 
-/* Action buttons (Edit/Delete) on detail pages */
-.page-content .d-flex.justify-content-between.align-items-center > div {
-    display: flex;
-    gap: 12px;
+/* 3.10 General Utilities */
+.text-center { text-align: center !important; }
+.text-secondary { color: var(--text-secondary); }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.me-1 { margin-inline-end: 0.25rem !important; } /* Use logical property */
+.me-2 { margin-inline-end: 0.5rem !important; } /* Use logical property */
+
+/* Add some modern utility classes */
+.gradient-bg-primary {
+    background: var(--gradient-primary);
 }
 
-/* Relevance Section Styling */
+.gradient-bg-secondary {
+    background: var(--gradient-secondary);
+}
+
+.gradient-bg-accent {
+    background: var(--gradient-accent);
+}
+
+.gradient-text-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius); /* Added radius */
+}
+
+.modern-shadow {
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform; /* Optimize performance */
+}
+
+.hover-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* ========================================================================== */
+/* --- 4. Page-Specific Styles --- */
+/* ========================================================================== */
+
+/* 4.1 Index Page */
+.welcome-message {
+    margin-bottom: 30px;
+}
+
+.welcome-message h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-message p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.data-section {
+    margin-bottom: 40px;
+}
+
+.data-section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+.area-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    border-left: 5px solid;
+    border-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%) 1;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.area-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.area-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.area-card ul {
+    padding-inline-start: 24px; /* Use logical property */
+    list-style: disc;
+}
+
+.area-card li {
+    margin-bottom: 12px;
+}
+
+.area-card strong {
+    font-weight: 600;
+}
+
+.area-card .step-details {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-inline-start: 8px; /* Use logical property */
+}
+
+.area-card .usecase-list {
+    padding-inline-start: 30px; /* Use logical property */
+    margin-top: 8px;
+    list-style: circle;
+}
+
+.area-card .usecase-list li a {
+    font-weight: 600;
+}
+
+.area-card .usecase-list .uc-details {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-inline-start: 8px; /* Use logical property */
+}
+
+.area-card p em {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* 4.2 Detail Pages (Area, Step, Usecase) */
+.page-content > .d-flex > h1,
+.page-content > h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent) 100%) 1;
+    letter-spacing: -0.5px;
+}
+
+.page-content p.text-muted {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin-top: 2px;
+    margin-bottom: 30px;
+}
+
+/* 4.3 Relevance Sections (on Detail Pages) */
 .relevance-section h2 {
     font-size: 1.5rem;
     color: var(--color-primary-dark);
@@ -1000,7 +997,7 @@ form button[type="submit"].btn-primary:hover,
     padding-bottom: 10px;
     border-bottom: 1px solid var(--color-grey-300);
 }
-.relevance-section .card-title { /* Simplified from .relevance-section .card .card-header .card-title */
+.relevance-section .card-title {
     color: var(--text-primary);
     font-size: 1.1rem;
 }
@@ -1012,14 +1009,14 @@ form button[type="submit"].btn-primary:hover,
     background-color: var(--color-white);
     padding: 20px;
     margin-bottom: 15px;
-    border-radius: var(--border-radius); /* Use default border-radius */
+    border-radius: var(--border-radius);
     border: 1px solid var(--color-grey-200);
-    box-shadow: var(--shadow-sm); /* Use shadow system */
-    transition: all 0.3s ease; /* Add transition for hover */
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
 }
 .relevance-section li.relevance-item:hover {
-    transform: translateY(-2px); /* Add hover lift */
-    box-shadow: var(--shadow-md); /* Add hover shadow */
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 .relevance-section li.relevance-item strong {
     min-width: 90px;
@@ -1041,7 +1038,7 @@ form button[type="submit"].btn-primary:hover,
     border-top: 1px dashed var(--color-grey-200);
 }
 
-/* Forms for Adding Relevance */
+/* 4.4 Add Relevance Forms */
 .add-relevance-forms h3 {
     font-size: 1.5rem;
     color: var(--color-primary-dark);
@@ -1065,7 +1062,7 @@ form button[type="submit"].btn-primary:hover,
     border-bottom: 1px solid var(--color-grey-200);
 }
 
-/* Login/Register Page Styles */
+/* 4.5 Login/Register Pages */
 .auth-container {
     max-width: 400px;
     margin: 50px auto;
@@ -1096,7 +1093,7 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 500;
 }
 
-/* Injection Page Styles */
+/* 4.6 Data Update (Injection) Page */
 .injection-form-section {
     background-color: var(--card-bg);
     margin-bottom: 25px;
@@ -1141,7 +1138,7 @@ form button[type="submit"].btn-primary:hover,
     margin-inline-end: 8px; /* Use logical property */
 }
 
-/* Markdown Specific Styles */
+/* 4.7 Markdown Content Rendering */
 .markdown-content p:last-child {
     margin-bottom: 0;
 }
@@ -1170,7 +1167,7 @@ form button[type="submit"].btn-primary:hover,
     font-weight: bold;
 }
 
-/* --- LLM Data Prep Page Specific Styles --- */
+/* 4.8 LLM Data Preparation Page */
 .llm-data-prep-page {
     max-width: 1200px;
     margin: 0 auto;
@@ -1192,7 +1189,7 @@ form button[type="submit"].btn-primary:hover,
     font-size: 1.1rem;
 }
 
-/* Better card styling */
+/* LLM Data Prep - Card Styling */
 .llm-data-prep-page .card {
     border: none;
     border-radius: var(--border-radius);
@@ -1223,7 +1220,7 @@ form button[type="submit"].btn-primary:hover,
     margin: 0;
 }
 
-/* Improved selection grid */
+/* LLM Data Prep - Selection Grid */
 .llm-data-prep-page .selection-grid {
     display: grid;
     gap: 1.5rem;
@@ -1261,9 +1258,9 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 500;
 }
 
-/* Better search controls */
+/* LLM Data Prep - Search Controls */
 .llm-data-prep-page .search-button-row {
-    display: flex; /* Removed !important */
+    display: flex;
     gap: 0.75rem;
     margin-bottom: 1rem;
     align-items: center;
@@ -1284,7 +1281,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .button-group {
-    display: flex; /* Removed !important */
+    display: flex;
     gap: 0.5rem;
 }
 
@@ -1294,7 +1291,7 @@ form button[type="submit"].btn-primary:hover,
     white-space: nowrap;
 }
 
-/* Custom select styling */
+/* LLM Data Prep - Custom Selects */
 .llm-data-prep-page .custom-select {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
@@ -1333,7 +1330,7 @@ form button[type="submit"].btn-primary:hover,
     line-height: 1.4;
 }
 
-/* Field groups improvements */
+/* LLM Data Prep - Field Groups */
 .llm-data-prep-page .field-groups {
     display: grid;
     gap: 1.5rem;
@@ -1352,7 +1349,7 @@ form button[type="submit"].btn-primary:hover,
     overflow: hidden;
 }
 
-/* Fix field group header to work with Bootstrap */
+/* LLM Data Prep - Field Group Header */
 .llm-data-prep-page .field-group-header {
     background: var(--color-grey-300);
     padding: 1rem 1.5rem;
@@ -1414,7 +1411,7 @@ form button[type="submit"].btn-primary:hover,
     font-weight: normal;
 }
 
-/* System prompt improvements */
+/* LLM Data Prep - System Prompt */
 .llm-data-prep-page .system-prompt textarea {
     width: 100%;
     min-height: 120px;
@@ -1432,7 +1429,7 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-/* Preview section improvements */
+/* LLM Data Prep - Preview Section */
 .llm-data-prep-page .preview-empty {
     text-align: center;
     padding: 3rem 2rem;
@@ -1450,7 +1447,7 @@ form button[type="submit"].btn-primary:hover,
     color: var(--text-primary);
 }
 
-/* Chat improvements */
+/* LLM Data Prep - Chat Window */
 .llm-data-prep-page .chat-container {
     background: var(--color-grey-100);
     border-radius: var(--border-radius);
@@ -1504,7 +1501,7 @@ form button[type="submit"].btn-primary:hover,
     border-radius: var(--border-radius-sm);
 }
 
-/* Better buttons for LLM page */
+/* LLM Data Prep - Buttons */
 .llm-data-prep-page .btn-primary {
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
     border: none;
@@ -1589,7 +1586,7 @@ form button[type="submit"].btn-primary:hover,
     margin-inline-start: 8px; /* Use logical property */
 }
 
-/* LLM Data Prep Table Styles */
+/* LLM Data Prep - Table Styles */
 .llm-data-prep-page .table-responsive {
     overflow-x: auto;
     margin-top: 1rem;
@@ -1661,7 +1658,7 @@ form button[type="submit"].btn-primary:hover,
     word-break: break-word;
 }
 
-/* JSON Preview container */
+/* LLM Data Prep - JSON Preview */
 #jsonPreviewContainer {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
@@ -1681,7 +1678,7 @@ form button[type="submit"].btn-primary:hover,
     border-radius: 0;
 }
 
-/* Button styling for copy/toggle JSON */
+/* LLM Data Prep - JSON Buttons */
 #copyJsonButton, #toggleJsonPreview {
     border: 1px solid var(--border-color);
     background-color: var(--color-white);
@@ -1693,22 +1690,11 @@ form button[type="submit"].btn-primary:hover,
     color: var(--text-primary);
 }
 
-/* LLM Chat Window Styles */
+/* 4.9 LLM Chat Window (General) */
 .chat-container {
     display: flex;
     flex-direction: column;
     min-height: 400px;
-}
-
-.chat-display {
-    flex-grow: 1;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 15px;
-    overflow-y: auto;
-    background-color: var(--color-grey-100);
-    max-height: 500px;
-    margin-bottom: 15px;
 }
 
 .chat-bubble {
@@ -1735,6 +1721,13 @@ form button[type="submit"].btn-primary:hover,
     margin-inline-end: auto; /* Use logical property */
     border: 1px solid var(--border-color);
     border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-error {
+    background-color: var(--color-alert-danger-bg);
+    color: var(--color-alert-danger-text);
+    border: 1px solid var(--color-alert-danger-border);
+    font-weight: 600;
 }
 
 /* Markdown formatting within chat bubbles */
@@ -1781,7 +1774,7 @@ form button[type="submit"].btn-primary:hover,
     flex-shrink: 0;
 }
 
-/* Relevance Map Page Specific Styles */
+/* 4.10 Relevance Map Page */
 .relevance-visualize-page .card-body {
     display: flex;
     justify-content: center;
@@ -1796,59 +1789,33 @@ form button[type="submit"].btn-primary:hover,
     margin: 0 auto;
 }
 
-/* Enhance System Prompt Textarea on LLM Data Prep page to fix rendering issues */
-.llm-data-prep-page #systemPromptInput {
-    display: block;
-    width: 100%;
-    white-space: pre-wrap;
-    word-break: break-word;
-    overflow: auto;
+/* ECharts Tooltip Styling for text wrapping */
+.echarts-tooltip-container {
+    max-width: 400px;
     box-sizing: border-box;
 }
 
-/* Adjustments for checkbox columns in fieldsets */
-.llm-data-prep-page .fieldset-dashed-border .row {
-    display: flex; /* Removed !important */
-    flex-wrap: wrap; /* Removed !important */
+.echarts-tooltip-content {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-.llm-data-prep-page .fieldset-dashed-border .col {
-    display: block; /* Removed !important */
-    flex-direction: unset; /* Removed !important */
+.echarts-tooltip-content pre,
+.echarts-tooltip-content code {
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+    font-size: 0.9em;
 }
 
-.llm-data-prep-page .form-check .form-check-input {
-    margin-top: 0; /* Removed !important */
-    margin-inline-end: 0.5rem; /* Use logical property, removed !important */
-    margin-bottom: 0; /* Removed !important */
-    flex-shrink: 0; /* Removed !important */
-}
-
-.llm-data-prep-page .form-check .form-check-label {
-    margin-bottom: 0; /* Removed !important */
-    word-break: break-word; /* Removed !important */
-    line-height: 1.4; /* Removed !important */
-    cursor: pointer; /* Removed !important */
-    padding-inline-start: 0; /* Use logical property, removed !important */
-}
-
-/* Data Alignment Page Specific Styles */
+/* 4.11 Data Alignment Page */
 .data-alignment-page .table td {
     vertical-align: middle;
 }
 
-/* For unsaved changes */
-.unsaved-change {
-    background-color: var(--color-alert-warning-bg); /* Removed !important */
-    border-color: var(--color-alert-warning-border); /* Removed !important */
-    transition: background-color 0.3s ease;
-}
-
-.unsaved-change select {
-    border-color: var(--color-alert-warning-text); /* Removed !important */
-}
-
-/* For buttons */
 .data-alignment-actions {
     display: flex;
     gap: 15px;
@@ -1864,15 +1831,120 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 500;
 }
 
-/* LLM Helper Specific Styles for edit_multiple_usecases.html */
+/* 4.12 Settings Page */
+/* (Currently no specific styles beyond generic UI components) */
+
+/* 4.13 Step Injection Preview Page */
+/* This page reuses .unsaved-change from Data Alignment */
+.step-injection-preview-page .status-badge {
+    min-width: 70px;
+    display: inline-block;
+}
+
+
+/* ========================================================================== */
+/* --- 5. Bulk Edit Page Specific Styles (for Steps and Use Cases) --- */
+/* (Extracted from edit_multiple_steps.html and edit_multiple_usecases.html) */
+/* ========================================================================== */
+.edit-step-card .card-body,
+.edit-usecase-card .card-body {
+    padding: 1.5rem;
+}
+.edit-step-card .info-list dt,
+.edit-usecase-card .info-list dt {
+    text-align: left;
+    padding-right: 0;
+    font-size: 0.95rem;
+}
+.edit-step-card .field-row,
+.edit-usecase-card .field-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 1.5fr; /* Field Name | Current Value | New Value */
+    gap: 15px;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px dashed var(--border-color);
+    align-items: top;
+}
+.edit-step-card .field-row:last-child,
+.edit-usecase-card .field-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.edit-step-card .field-row h5,
+.edit-usecase-card .field-row h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+.edit-step-card .field-row .current-value-display,
+.edit-usecase-card .field-row .current-value-display {
+    min-height: 80px; /* Consistent min-height for display and input */
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: pre-wrap; /* Preserve line breaks */
+    word-break: break-word; /* Break long words */
+    padding: 8px; /* Add padding to prevent text from touching scrollbar */
+    border: 1px solid var(--color-grey-200);
+    background-color: var(--element-bg-light);
+    border-radius: var(--border-radius-sm);
+}
+.edit-step-card .field-row .new-value-input,
+.edit-step-card .field-row .new-value-select,
+.edit-usecase-card .field-row .new-value-input,
+.edit-usecase-card .field-row .new-value-select {
+    font-size: 0.9rem;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+}
+.edit-step-card .field-row.area-field .new-value-select {
+    min-height: unset; /* Override textarea's min-height */
+    height: auto;
+}
+.edit-usecase-card .field-row.process_step-field .new-value-select,
+.edit-usecase-card .field-row.priority-field .new-value-input { /* Specific styles for select/number inputs */
+    min-height: unset; /* Override textarea's min-height */
+    height: auto;
+}
+.unsaved-field-change {
+    background-color: var(--color-alert-warning-bg);
+    border-color: var(--color-alert-warning-border) !important;
+}
+.unsaved-field-change .new-value-input,
+.unsaved-field-change .new-value-select {
+    border-color: var(--color-alert-warning-text) !important;
+}
+.action-buttons-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end; /* Align buttons to the right */
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-color);
+}
+.save-all-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 25px;
+}
+.save-all-controls .btn {
+    min-width: 150px;
+}
+
+/* 5.1 LLM Helper Section (on Bulk Edit Use Cases Page) */
 .llm-helper-section .chat-container {
+    background: var(--color-grey-100);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-grey-300);
     min-height: 350px;
     height: auto;
     display: flex;
     flex-direction: column;
-    background: var(--color-grey-100);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--color-grey-300);
 }
 .llm-helper-section .chat-display {
     flex-grow: 1;
@@ -1958,61 +2030,11 @@ form button[type="submit"].btn-primary:hover,
     border: 1px solid var(--border-color);
 }
 
-/* Utilities */
-.text-center { text-align: center !important; }
-.text-secondary { color: var(--text-secondary); }
-.mb-1 { margin-bottom: 0.25rem !important; }
-.mb-2 { margin-bottom: 0.5rem !important; }
-.mb-3 { margin-bottom: 1rem !important; }
-.mt-1 { margin-top: 0.25rem !important; }
-.mt-2 { margin-top: 0.5rem !important; }
-.mt-3 { margin-top: 1rem !important; }
-.me-1 { margin-inline-end: 0.25rem !important; } /* Use logical property */
-.me-2 { margin-inline-end: 0.5rem !important; } /* Use logical property */
 
-/* Add some modern utility classes */
-.gradient-bg-primary {
-    background: var(--gradient-primary);
-}
+/* ========================================================================== */
+/* --- 6. Responsive Styles --- */
+/* ========================================================================== */
 
-.gradient-bg-secondary {
-    background: var(--gradient-secondary);
-}
-
-.gradient-bg-accent {
-    background: var(--gradient-accent);
-}
-
-.gradient-text-primary {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.glass-effect {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius); /* Added radius */
-}
-
-.modern-shadow {
-    box-shadow: var(--shadow-lg);
-}
-
-.hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    will-change: transform; /* Optimize performance */
-}
-
-.hover-lift:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-xl);
-}
-
-/* Responsive Styles */
-/* Consolidated Responsive Rules */
 @media (max-width: 1024px) {
     .sidebar {
         width: 250px;
@@ -2028,13 +2050,17 @@ form button[type="submit"].btn-primary:hover,
 }
 
 @media (max-width: 768px) {
+    .main-header {
+        padding: 10px 25px; /* Adjust header padding for smaller screens */
+    }
+
     .sidebar {
         width: 100%;
         height: auto;
-        position: fixed; /* Changed from relative to fixed as per recommendation */
+        position: fixed;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
-        z-index: 1000; /* Ensure sidebar is on top for mobile */
+        z-index: 1000;
     }
 
     .sidebar.show {
@@ -2042,25 +2068,16 @@ form button[type="submit"].btn-primary:hover,
     }
 
     .main-header {
-        padding: 15px 25px;
+        padding: 10px 25px; /* Adjust header padding */
         flex-direction: column;
         gap: 15px;
         min-height: auto;
+        align-items: flex-end; /* Align icons to the right if in column */
     }
 
-    .search-bar {
-        width: 100%;
-        margin-top: 0;
-    }
-
-    .breadcrumb-item {
-        font-size: 0.8rem;
-        padding: 10px calc(var(--breadcrumb-arrow-width) + 8px) 10px calc(var(--breadcrumb-arrow-width) + 12px);
-        height: 40px;
-    }
-
-    .page-content {
-        padding: 25px;
+    .breadcrumbs-fixed {
+        padding: 10px 25px 0; /* Adjust padding for smaller screens */
+        font-size: 0.85rem;
     }
 
     .card-body {
@@ -2094,9 +2111,24 @@ form button[type="submit"].btn-primary:hover,
     .llm-data-prep-page .chat-input-area input {
         width: 100%;
     }
+
+    /* Fix any potential issues with Bootstrap grid inside collapse */
+    .collapse .row {
+        margin-inline-start: 0; /* Use logical property */
+        margin-inline-end: 0; /* Use logical property */
+    }
+
+    .collapse .col {
+        padding-inline-start: 15px; /* Use logical property */
+        padding-inline-end: 15px; /* Use logical property */
+    }
 }
 
-/* ECharts Tooltip Styling for text wrapping (removed !important per instruction) */
+/* ========================================================================== */
+/* --- 7. Overrides & Specific Fixes --- */
+/* ========================================================================== */
+
+/* ECharts Tooltip Styling for text wrapping */
 .echarts-tooltip-container {
     max-width: 400px;
     box-sizing: border-box;
@@ -2118,13 +2150,49 @@ form button[type="submit"].btn-primary:hover,
     font-size: 0.9em;
 }
 
-/* Fix any potential issues with Bootstrap grid inside collapse */
-.collapse .row {
-    margin-inline-start: 0; /* Use logical property */
-    margin-inline-end: 0; /* Use logical property */
+/* Data Alignment Page - For unsaved changes */
+.unsaved-change {
+    background-color: var(--color-alert-warning-bg);
+    border-color: var(--color-alert-warning-border) !important;
+    transition: background-color 0.3s ease;
 }
 
-.collapse .col {
-    padding-inline-start: 15px; /* Use logical property */
-    padding-inline-end: 15px; /* Use logical property */
+.unsaved-change select {
+    border-color: var(--color-alert-warning-text) !important;
+}
+
+/* LLM Data Prep Page - Enhance System Prompt Textarea to fix rendering issues */
+.llm-data-prep-page #systemPromptInput {
+    display: block;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow: auto;
+    box-sizing: border-box;
+}
+
+/* LLM Data Prep Page - Adjustments for checkbox columns in fieldsets */
+.llm-data-prep-page .fieldset-dashed-border .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.llm-data-prep-page .fieldset-dashed-border .col {
+    display: block;
+    flex-direction: unset;
+}
+
+.llm-data-prep-page .form-check .form-check-input {
+    margin-top: 0;
+    margin-inline-end: 0.5rem; /* Use logical property */
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.llm-data-prep-page .form-check .form-check-label {
+    margin-bottom: 0;
+    word-break: break-word;
+    line-height: 1.4;
+    cursor: pointer;
+    padding-inline-start: 0; /* Use logical property */
 }

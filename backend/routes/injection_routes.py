@@ -325,7 +325,8 @@ def data_update_page():
         # NEW: Pass datalist names
         all_area_names=all_area_names,
         all_step_names=all_step_names,
-        all_usecase_names=all_usecase_names
+        all_usecase_names=all_usecase_names,
+        current_item=None # Indicates this is a top-level page
     )
 
 @injection_routes.route('/steps/prepare-for-edit', methods=['POST'])
@@ -460,9 +461,10 @@ def edit_selected_steps():
     return render_template(
         'edit_multiple_steps.html',
         title='Bulk Edit Process Steps',
-        steps_data=steps_data,
-        editable_fields=PROCESS_STEP_EDITABLE_FIELDS,
-        all_areas=all_areas_for_dropdown
+        steps_data=steps_data, # The data being edited
+        editable_fields=PROCESS_STEP_EDITABLE_FIELDS, # Config for fields
+        all_areas=all_areas_for_dropdown, # For area dropdowns in the edit form
+        current_item=None # Indicates this is a top-level page
     )
 
 @injection_routes.route('/usecases/edit-selected-usecases', methods=['GET'])
@@ -488,9 +490,10 @@ def edit_selected_usecases():
     return render_template(
         'edit_multiple_usecases.html',
         title='Bulk Edit Use Cases',
-        usecases_data=usecases_data,
-        editable_fields=PROCESS_USECASE_EDITABLE_FIELDS,
-        all_steps=all_steps_for_dropdown
+        usecases_data=usecases_data, # The data being edited
+        editable_fields=PROCESS_USECASE_EDITABLE_FIELDS, # Config for fields
+        all_steps=all_steps_for_dropdown, # For process step dropdowns in the edit form
+        current_item=None # Indicates this is a top-level page
     )
 
 @injection_routes.route('/steps/save-all-changes', methods=['POST'])
@@ -685,7 +688,8 @@ def preview_steps_injection():
         title='Process Step Injection Preview',
         preview_data=preview_data,
         step_detail_fields=STEP_DETAIL_FIELDS, # RENAMED context variable
-        all_areas=serializable_areas # Pass the serializable list
+        all_areas=serializable_areas, # Pass the serializable list for dropdowns
+        current_item=None # Indicates this is a top-level page
     )
 
 @injection_routes.route('/steps/finalize', methods=['POST'])

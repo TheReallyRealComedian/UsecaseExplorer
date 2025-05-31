@@ -421,11 +421,11 @@ def edit_area_relevance(relevance_id):
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove() # Close session before re-rendering template
-                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
 
         # Check if source or target has actually changed
         if (link.source_usecase_id != new_source_usecase_id or
@@ -441,7 +441,7 @@ def edit_area_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Case and Area already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='area', all_usecases=all_usecases, all_areas=all_areas, current_item=None)
             
             # Update source and target IDs
             link.source_usecase_id = new_source_usecase_id
@@ -478,7 +478,8 @@ def edit_area_relevance(relevance_id):
                            relevance_link=link,
                            link_type='area',
                            all_usecases=all_usecases,
-                           all_areas=all_areas)
+                           all_areas=all_areas,
+                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
 
 
 @relevance_routes.route('/edit/step/<int:relevance_id>', methods=['GET', 'POST'])
@@ -510,11 +511,11 @@ def edit_step_relevance(relevance_id):
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
 
         if (link.source_usecase_id != new_source_usecase_id or
             link.target_process_step_id != new_target_process_step_id):
@@ -528,7 +529,7 @@ def edit_step_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Case and Process Step already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step', all_usecases=all_usecases, all_steps=all_steps, current_item=None)
             
             link.source_usecase_id = new_source_usecase_id
             link.target_process_step_id = new_target_process_step_id
@@ -560,7 +561,8 @@ def edit_step_relevance(relevance_id):
                            relevance_link=link,
                            link_type='step',
                            all_usecases=all_usecases,
-                           all_steps=all_steps)
+                           all_steps=all_steps,
+                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
 
 
 @relevance_routes.route('/edit/usecase/<int:relevance_id>', methods=['GET', 'POST'])
@@ -589,18 +591,18 @@ def edit_usecase_relevance(relevance_id):
         if new_source_usecase_id == new_target_usecase_id:
             flash("Cannot link a Use Case to itself.", "warning")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
 
         if (link.source_usecase_id != new_source_usecase_id or
             link.target_usecase_id != new_target_usecase_id):
@@ -614,7 +616,7 @@ def edit_usecase_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Use Cases already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='usecase', all_usecases=all_usecases, current_item=None)
             
             link.source_usecase_id = new_source_usecase_id
             link.target_usecase_id = new_target_usecase_id
@@ -648,7 +650,8 @@ def edit_usecase_relevance(relevance_id):
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='usecase',
-                           all_usecases=all_usecases)
+                           all_usecases=all_usecases,
+                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
 
 @relevance_routes.route('/edit/step_to_step/<int:relevance_id>', methods=['GET', 'POST'])
 @login_required
@@ -676,18 +679,18 @@ def edit_step_to_step_relevance(relevance_id):
         if new_source_process_step_id == new_target_process_step_id:
             flash("Cannot link a Process Step to itself.", "warning")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
 
         try:
             score = int(score_str)
             if not (0 <= score <= 100):
                 flash("Relevance score must be between 0 and 100.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
         except (ValueError, TypeError):
             flash("Invalid score format. Relevance score must be a number.", "danger")
             SessionLocal.remove()
-            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
+            return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
 
         if (link.source_process_step_id != new_source_process_step_id or
             link.target_process_step_id != new_target_process_step_id):
@@ -701,7 +704,7 @@ def edit_step_to_step_relevance(relevance_id):
             if existing_duplicate_link:
                 flash("A relevance link between the selected Process Steps already exists.", "danger")
                 SessionLocal.remove()
-                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps)
+                return render_template('edit_relevance.html', relevance_link=link, link_type='step_to_step', all_steps=all_steps, current_item=None)
             
             link.source_process_step_id = new_source_process_step_id
             link.target_process_step_id = new_target_process_step_id
@@ -735,7 +738,8 @@ def edit_step_to_step_relevance(relevance_id):
     return render_template('edit_relevance.html',
                            relevance_link=link,
                            link_type='step_to_step',
-                           all_steps=all_steps)
+                           all_steps=all_steps,
+                           current_item=None) # Editing a relevance link, not a core object for breadcrumbs
 
 
 @relevance_routes.route('/visualize')
@@ -868,7 +872,8 @@ def visualize_relevance():
                 'nodes': echarts_nodes,
                 'links': echarts_links,
                 'categories': echarts_categories
-            }
+            },
+            current_item=None # Indicates this is a top-level page
         )
 
     except Exception as e:
@@ -877,7 +882,8 @@ def visualize_relevance():
         return render_template(
             'relevance_visualize.html',
             title='Process Relevance Map',
-            echarts_data={'nodes': [], 'links': [], 'categories': []}
+            echarts_data={'nodes': [], 'links': [], 'categories': []},
+            current_item=None # Still a top-level page even on error
         )
     finally:
         SessionLocal.remove()

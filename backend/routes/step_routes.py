@@ -42,9 +42,10 @@ def view_step(step_id):
             'step_detail.html',
             title=f"Process Step: {step.name}",
             step=step,
-            other_steps=other_steps, # Pass other steps to the template
-            current_step=step,
-            current_area=step.area
+            other_steps=other_steps, # Pass other steps to the template for the 'add relevance' form
+            current_step=step, # For breadcrumbs (the step itself)
+            current_area=step.area, # For breadcrumbs (the parent area)
+            current_item=step # The specific item for "active" breadcrumb logic
         )
     except Exception as e:
         print(f"Error fetching step {step_id}: {e}")
@@ -97,15 +98,17 @@ def edit_step(step_id):
                     return render_template(
                         'edit_step.html',
                         title=f"Edit Step: {step.name}",
-                        step=step,
-                        all_areas=all_areas,
-                        current_step=step,
-                        current_area=step.area
+                        step=step, # The object for the page's data
+                        all_areas=all_areas, # For the dropdown
+                        current_step=step, # For breadcrumbs (the step itself)
+                        current_area=step.area, # For breadcrumbs (the parent area)
+                        current_item=step # The specific item for "active" breadcrumb logic
                     )
             
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
+                SessionLocal.remove() # Close session before redirect
                 return redirect(url_for('steps.view_step', step_id=step.id))
             except IntegrityError:
                 session.rollback()
@@ -114,33 +117,37 @@ def edit_step(step_id):
                 return render_template(
                     'edit_step.html',
                     title=f"Edit Step: {step.name}",
-                    step=step,
-                    all_areas=all_areas,
-                    current_step=step,
-                    current_area=step.area
+                    step=step, # The object for the page's data
+                    all_areas=all_areas, # For the dropdown
+                    current_step=step, # For breadcrumbs (the step itself)
+                    current_area=step.area, # For breadcrumbs (the parent area)
+                    current_item=step # The specific item for "active" breadcrumb logic
                 )
             except Exception as e:
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating step {step_id}: {e}")
+                # Fall through to render_template below
                 SessionLocal.remove()
                 return render_template(
                     'edit_step.html',
                     title=f"Edit Step: {step.name}",
-                    step=step,
-                    all_areas=all_areas,
-                    current_step=step,
-                    current_area=step.area
+                    step=step, # The object for the page's data
+                    all_areas=all_areas, # For the dropdown
+                    current_step=step, # For breadcrumbs (the step itself)
+                    current_area=step.area, # For breadcrumbs (the parent area)
+                    current_item=step # The specific item for "active" breadcrumb logic
                 )
     
     SessionLocal.remove() 
     return render_template(
         'edit_step.html',
-        title=f"Edit Step: {step.name}",
-        step=step,
-        all_areas=all_areas,
-        current_step=step,
-        current_area=step.area
+        title=f"Edit Step: {step.name}", # Page title
+        step=step, # The object for the page's data
+        all_areas=all_areas, # For the dropdown
+        current_step=step, # For breadcrumbs (the step itself)
+        current_area=step.area, # For breadcrumbs (the parent area)
+        current_item=step # The specific item for "active" breadcrumb logic
     )
 
 

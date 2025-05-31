@@ -255,7 +255,8 @@ def llm_data_prep_page():
             ollama_models=ollama_models,
             chat_history=chat_history,
             config=current_app.config,
-            user_system_prompt=user_system_prompt
+            user_system_prompt=user_system_prompt,
+            current_item=None # Indicates this is a top-level page
         )
 
     except Exception as e:
@@ -286,7 +287,8 @@ def llm_data_prep_page():
             ollama_models=[],
             chat_history=[],
             config=current_app.config,
-            user_system_prompt=user_system_prompt_on_error
+            user_system_prompt=user_system_prompt_on_error,
+            current_item=None # Indicates this is a top-level page
         )
     finally:
         SessionLocal.remove()

@@ -67,42 +67,7 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Header -->
-            <header class="main-header">
-                <div class="breadcrumbs">
-                    {% block breadcrumbs %}
-                        {% if current_area %}
-                            <a href="{{ url_for('index') }}" class="breadcrumb-item">Home</a>
-                            <a href="{{ url_for('areas.view_area', area_id=current_area.id) }}" class="breadcrumb-item active">{{ current_area.name }}</a>
-                        {% elif current_step %}
-                            <a href="{{ url_for('index') }}" class="breadcrumb-item">Home</a>
-                            {% if current_step.area %}
-                                <a href="{{ url_for('areas.view_area', area_id=current_step.area.id) }}" class="breadcrumb-item">{{ current_step.area.name }}</a>
-                            {% else %}
-                                <span class="breadcrumb-item disabled">No Area</span>
-                            {% endif %}
-                            <a href="{{ url_for('steps.view_step', step_id=current_step.id) }}" class="breadcrumb-item active">{{ current_step.name }}</a>
-                        {% elif current_usecase %}
-                            <a href="{{ url_for('index') }}" class="breadcrumb-item">Home</a>
-                            {% if current_usecase.process_step and current_usecase.process_step.area %}
-                                <a href="{{ url_for('areas.view_area', area_id=current_usecase.process_step.area.id) }}" class="breadcrumb-item">{{ current_usecase.process_step.area.name }}</a>
-                            {% else %}
-                                <span class="breadcrumb-item disabled">No Area</span>
-                            {% endif %}
-                            {% if current_usecase.process_step %}
-                                <a href="{{ url_for('steps.view_step', step_id=current_usecase.process_step.id) }}" class="breadcrumb-item">{{ current_usecase.process_step.name }}</a>
-                            {% else %}
-                                <span class="breadcrumb-item disabled">No Step</span>
-                            {% endif %}
-                            <a href="{{ url_for('usecases.view_usecase', usecase_id=current_usecase.id) }}" class="breadcrumb-item active">{{ current_usecase.name }}</a>
-                        {% else %}
-                            <span class="breadcrumb-item active">Home</span>
-                        {% endif %}
-                    {% endblock %}
-                </div>
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search...">
-                </div>
+            <header class="main-header" style="min-height: 60px;"> {# Adjust min-height directly here for lean look #}
                 <div class="header-actions">
                     <button class="icon-button"><i class="fas fa-bell"></i></button>
                     <a href="{{ url_for('settings.manage_settings') }}" class="icon-button" title="Settings"><i class="fas fa-cog"></i></a> {# NEW: Settings button #}
@@ -113,6 +78,40 @@
                     {% endif %}
                 </div>
             </header>
+
+            <div class="breadcrumbs-fixed"> {# NEW: A separate div for breadcrumbs, not part of the flexible header #}
+                <a href="{{ url_for('index') }}" class="breadcrumb-item {% if current_item is none and request.endpoint == 'index' %}active{% endif %}">Home</a>
+
+                {% if current_area and current_item != current_area %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <a href="{{ url_for('areas.view_area', area_id=current_area.id) }}" class="breadcrumb-item">{{ current_area.name }}</a>
+                {% elif current_area and current_item == current_area %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <span class="breadcrumb-item active">{{ current_area.name }}</span>
+                {% endif %}
+
+                {% if current_step and current_item != current_step %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <a href="{{ url_for('steps.view_step', step_id=current_step.id) }}" class="breadcrumb-item">{{ current_step.name }}</a>
+                {% elif current_step and current_item == current_step %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <span class="breadcrumb-item active">{{ current_step.name }}</span>
+                {% endif %}
+
+                {% if current_usecase and current_item != current_usecase %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <a href="{{ url_for('usecases.view_usecase', usecase_id=current_usecase.id) }}" class="breadcrumb-item">{{ current_usecase.name }}</a>
+                {% elif current_usecase and current_item == current_usecase %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <span class="breadcrumb-item active">{{ current_usecase.name }}</span>
+                {% endif %}
+
+                {# Handling for other top-level pages not directly tied to Area/Step/Usecase objects #}
+                {% if current_item is none and request.endpoint != 'index' %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <span class="breadcrumb-item active">{{ title }}</span> {# Use the page's title directly #}
+                {% endif %}
+            </div>
 
             <!-- Page Content -->
             <div class="page-content">
