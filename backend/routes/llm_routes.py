@@ -247,7 +247,7 @@ def llm_data_prep_page():
 
         return render_template(
             'llm_data_prep.html',
-            title="LLM Data Preparation",
+            title="Data Mining",
             areas=areas,
             all_steps=all_steps_db, # Use all_steps_db here
             all_usecases=all_usecases_db, # Use all_usecases_db here
@@ -287,7 +287,7 @@ def llm_data_prep_page():
         user_system_prompt_on_error = current_user.system_prompt if current_user.is_authenticated else ""
         return render_template(
             'llm_data_prep.html',
-            title="LLM Data Preparation",
+            title="Data Mining",
             areas=[],
             all_steps=[],
             all_usecases=[],

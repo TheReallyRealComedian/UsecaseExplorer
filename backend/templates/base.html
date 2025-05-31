@@ -43,7 +43,7 @@
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
                     </li>
                     <li class="{% if request.blueprint == 'llm' %}active{% endif %}">
-                        <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> LLM Data Prep</a>
+                        <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> Data Mining</a>
                     </li>
                     <li class="{% if request.blueprint == 'injection' %}active{% endif %}">
                         <a href="{{ url_for('injection.data_update_page') }}"><i class="fas fa-upload"></i> Data Update</a>

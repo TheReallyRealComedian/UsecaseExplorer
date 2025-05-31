@@ -15,7 +15,7 @@
     </p>
 
     {# LLM Helper Section #}
-    <div class="card mb-4 llm-helper-section">
+    <div class="mb-xl llm-helper-section">
         <div class="card-header d-flex justify-content-between align-items-center" id="llmHelperHeader">
             <h2 class="card-title mb-0">LLM Helper (Llama 3.1-Vision)</h2>
             <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#llmHelperBody" aria-expanded="true" aria-controls="llmHelperBody">
@@ -92,7 +92,7 @@
         </div>
 
         {% for uc_item in usecases_data %}
-        <div class="card mb-4 edit-usecase-card" data-uc-id="{{ uc_item.id }}">
+        <div class="mb-xl edit-usecase-card" data-uc-id="{{ uc_item.id }}">
             <div class="card-header">
                 <h2 class="card-title">
                     Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=uc_item.id) }}">{{ uc_item.name }}</a>

@@ -26,7 +26,7 @@
         </div>
 
         {% for step_item in steps_data %}
-        <div class="card mb-4 edit-step-card" data-step-id="{{ step_item.id }}">
+        <div class="mb-xl edit-step-card" data-step-id="{{ step_item.id }}">
             <div class="card-header">
                 <h2 class="card-title">
                     Step: <a href="{{ url_for('steps.view_step', step_id=step_item.id) }}">{{ step_item.name }}</a>
