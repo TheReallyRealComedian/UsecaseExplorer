@@ -1534,30 +1534,9 @@ form button[type="submit"].btn-primary:hover,
     color: var(--border-color);
 }
 
-.llm-data-prep-page .chat-input-area {
-    border-top: 1px solid var(--color-grey-300);
-    padding: 1rem 1.5rem;
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    background: var(--color-white);
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-}
-
-.llm-data-prep-page .chat-input-area select {
-    min-width: 150px;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-}
-
-.llm-data-prep-page .chat-input-area input {
-    flex: 1;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-}
+/* Removed specific .llm-data-prep-page .chat-input-area and its children, 
+   as the general .chat-input-area (4.9) now provides comprehensive styling.
+   This simplifies the stylesheet and promotes reusability. */
 
 /* LLM Data Prep - Buttons */
 .llm-data-prep-page .btn-primary {
@@ -1817,20 +1796,92 @@ form button[type="submit"].btn-primary:hover,
     margin-bottom: 0;
 }
 
+/* General Chat Input Area Styling */
 .chat-input-area {
+    border-top: 1px solid var(--color-grey-300);
+    padding: 1rem 1.5rem;
     display: flex;
-    gap: 10px;
-    width: 100%;
+    flex-direction: column; /* Stack children (image wrapper, main input row) vertically */
+    gap: 0.75rem; /* Spacing between the rows */
+    background: var(--color-white);
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
 }
-.chat-input-area .form-control {
-    flex-grow: 1;
+
+/* New: Styles for the image preview and its clear button wrapper */
+.chat-input-area .image-preview-wrapper {
+    width: 100%; /* Take full width */
+    /* `display:flex` and `align-items:center` `gap:10px` are set by bootstrap `d-flex align-items-center mb-2` */
 }
-.chat-input-area .btn {
-    flex-shrink: 0;
+.chat-input-area .image-preview-wrapper img {
+    max-width: 150px; /* Constrain image width */
+    max-height: 100px; /* Constrain image height */
+    height: auto; /* Maintain aspect ratio */
+    display: block;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    object-fit: contain;
 }
-.chat-input-area .form-select {
-    flex-shrink: 0;
+
+/* New: Styles for the main input row containing select, textarea, and send buttons */
+.chat-input-area .main-input-row {
+    display: flex;
+    align-items: flex-end; /* Align items to the bottom (important for textarea) */
+    gap: 1rem; /* Spacing between elements in this row */
+    width: 100%; /* Take full width */
 }
+
+/* Specific styling for the model select */
+.chat-input-area .main-input-row select {
+    flex-shrink: 0; /* Prevent shrinking */
+    width: auto; /* Allow content to dictate width, up to max-width */
+    min-width: 100px; /* Smaller min-width to prevent excessive size */
+    max-width: 180px; /* Set a reasonable max width for the dropdown */
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    /* Remove `min-width: 150px` from global `.chat-input-area select` if present,
+       or override it here if it's more specific. I'll make sure this overrides. */
+}
+
+/* Specific styling for the chat textarea */
+.chat-input-area .main-input-row textarea {
+    flex-grow: 1; /* Allow textarea to expand and fill available space */
+    resize: vertical;
+    min-height: 40px; /* Single line height */
+    max-height: 150px; /* Cap max height for responsiveness */
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.95rem;
+}
+
+/* Specific styling for the buttons in the main input row */
+.chat-input-area .main-input-row .btn {
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+    padding: 0.5rem 1rem; /* Adjust padding for smaller, more compact buttons */
+    font-size: 0.9em; /* Smaller font size for buttons */
+}
+
+
+/* Add drag-over style to chat input area itself */
+.chat-input-area textarea.drag-over {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+/* Style for chat input when it has an image (or indicates it's ready for text after image) */
+.chat-input-area textarea.has-image {
+    background-color: var(--color-alert-info-bg);
+    border-color: var(--color-primary-light);
+    font-weight: 500;
+}
+/* Style for sub-headers within cards, like for System Prompt */
+.card-header-subtle { /* Renamed from .llm-helper-section .card-header-subtle to be more general */
+    border-bottom: 1px solid var(--color-grey-200); /* Lighter border */
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
 
 /* 4.10 Relevance Map Page */
 .relevance-visualize-page .card-body {
@@ -1902,7 +1953,7 @@ form button[type="submit"].btn-primary:hover,
 
 /* ========================================================================== */
 /* --- 5. Bulk Edit Page Specific Styles (for Steps and Use Cases) --- */
-/* (Extracted from edit_multiple_steps.html and edit_multiple_usecases.html) */
+/* (Extracted from edit_multiple_usecases.html and edit_multiple_usecases.html) */
 /* ========================================================================== */
 .edit-step-card .card-body,
 .edit-usecase-card .card-body {
@@ -1994,100 +2045,7 @@ form button[type="submit"].btn-primary:hover,
     min-width: 150px;
 }
 
-/* 5.1 LLM Helper Section (on Bulk Edit Use Cases Page) */
-.llm-helper-section .chat-container {
-    background: var(--color-grey-100);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--color-grey-300);
-    min-height: 350px;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-}
-.llm-helper-section .chat-display {
-    flex-grow: 1;
-    max-height: 300px;
-    overflow-y: auto;
-    padding: 15px;
-    background-color: var(--color-grey-100);
-    margin-bottom: 15px;
-}
-.llm-helper-section .image-paste-area {
-    border: 2px dashed var(--border-color);
-    border-radius: var(--border-radius-sm);
-    padding: 15px;
-    text-align: center;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
-    position: relative;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9em;
-    background-color: var(--color-grey-100);
-}
-.llm-helper-section .image-paste-area:hover,
-.llm-helper-section .image-paste-area.drag-over {
-    border-color: var(--color-primary);
-    background-color: var(--color-grey-200);
-}
-.llm-helper-section .image-paste-area.has-image {
-    border-color: var(--color-primary-light);
-    background-color: var(--color-alert-info-bg);
-    color: var(--text-primary);
-    font-weight: 500;
-    cursor: default;
-}
-.llm-helper-section #llmHelperImagePreview {
-    max-width: 100%;
-    max-height: 200px;
-    display: none;
-    margin-top: 10px;
-    border-radius: var(--border-radius-xs);
-    border: 1px solid var(--border-color);
-    object-fit: contain;
-}
-.llm-helper-section .image-controls {
-    margin-top: 10px;
-    display: flex;
-    justify-content: flex-end;
-}
-.llm-helper-section .chat-input-area {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-    align-items: center;
-    border-top: 1px solid var(--color-grey-300);
-    padding: 1rem 1.5rem;
-    background: var(--color-white);
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-}
-.llm-helper-section .chat-input-area textarea {
-    flex-grow: 1;
-    resize: vertical;
-    min-height: 40px;
-    max-height: 120px;
-    padding: 8px 12px;
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
-    font-size: 0.95rem;
-}
-.llm-helper-section .chat-input-area select,
-.llm-helper-section .chat-input-area button {
-    flex-shrink: 0;
-    padding: 8px 12px;
-    font-size: 0.9em;
-}
-.llm-helper-section .chat-bubble img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
+/* Removed: 5.1 LLM Helper Section (on Bulk Edit Use Cases Page) specific styles */
 
 /* ========================================================================== */
 /* --- 6. Responsive Styles --- */
@@ -2161,13 +2119,18 @@ form button[type="submit"].btn-primary:hover,
     .llm-data-prep-page .button-group {
         justify-content: center;
     }
-    .llm-data-prep-page .chat-input-area {
+    /* The general .chat-input-area mobile rule will apply to .llm-data-prep-page now */
+    .chat-input-area .main-input-row {
         flex-direction: column;
-        gap: 0.75rem;
+        align-items: stretch; /* Stretch items in column for full width */
+        gap: 0.75rem; /* Consistent spacing */
     }
-    .llm-data-prep-page .chat-input-area select,
-    .llm-data-prep-page .chat-input-area input {
+    .chat-input-area .main-input-row select,
+    .chat-input-area .main-input-row textarea,
+    .chat-input-area .main-input-row .btn {
         width: 100%;
+        max-width: 100%; /* Ensure they stretch */
+        min-width: unset; /* Remove explicit min-width for selects */
     }
 
     /* Fix any potential issues with Bootstrap grid inside collapse */

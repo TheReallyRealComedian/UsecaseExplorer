@@ -1,5 +1,5 @@
 // UsecaseExplorer/backend/static/js/edit_multiple_usecases_ui.js
-import { initializeLLMChat } from './common_llm_chat.js'; // Import the new common module
+// This module is no longer used here
 
 document.addEventListener('DOMContentLoaded', function() {
     const usecasesData = INITIAL_USETYPE_DATA; // Passed from Flask template
@@ -13,19 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelAllChangesBtnBottom = document.getElementById('cancelAllChangesBtnBottom');
     const pendingChangesCountBottom = document.getElementById('pendingChangesCountBottom');
 
-    // --- LLM Helper specific UI Elements (New IDs for this page) ---
-    // These IDs must match the ones defined in edit_multiple_usecases.html
-    const llmHelperChatDisplayId = 'llmHelperChatDisplay';
-    const llmHelperChatInputId = 'llmHelperChatInput';
-    const llmHelperSendMessageButtonId = 'llmHelperSendMessageButton';
-    const llmHelperClearChatButtonId = 'llmHelperClearChatButton';
-    const llmHelperModelSelectId = 'llmHelperModelSelect';
-    const llmHelperSystemPromptInputId = 'llmHelperSystemPromptInput'; // Unique ID for this page's system prompt
-    const llmHelperSaveSystemPromptButtonId = 'llmHelperSaveSystemPromptButton'; // Unique ID for this page's save button
-    const llmHelperImagePasteAreaId = 'llmHelperImagePasteArea';
-    const llmHelperImagePreviewId = 'llmHelperImagePreview';
-    const llmHelperClearImageButtonId = 'llmHelperClearImageButton';
-
+    // Removed: LLM Helper specific UI Elements (all related constants)
 
     // --- Helper Functions (Bulk Edit specific) ---
     function updatePendingChangesCount() {
@@ -240,55 +228,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial update of count and button states (Bulk Edit specific)
     updatePendingChangesCount();
 
-    // --- Initialize LLM Chat Helper on this page using the common module ---
-    const llmHelperHeader = document.getElementById('llmHelperHeader'); // This is the div.card-header
-    
-    // **FIX START**
-    // Get the actual button element inside the header that controls the collapse
-    let collapseToggleButton = null;
-    if (llmHelperHeader) {
-        collapseToggleButton = llmHelperHeader.querySelector('[data-bs-toggle="collapse"]');
-    }
-
-    if (llmHelperHeader && collapseToggleButton) { // Ensure both elements exist
-        const targetId = collapseToggleButton.getAttribute('data-bs-target');
-        const collapseElement = document.getElementById(targetId.substring(1)); // Get the target element by ID
-        const iconElement = collapseToggleButton.querySelector('i'); // Get icon from the button
-        
-        if (collapseElement && iconElement) {
-            // Set initial icon state based on 'show' class
-            if (collapseElement.classList.contains('show')) {
-                iconElement.classList.remove('fa-chevron-down');
-                iconElement.classList.add('fa-chevron-up');
-            } else {
-                iconElement.classList.remove('fa-chevron-up');
-                iconElement.classList.add('fa-chevron-down');
-            }
-
-            // Add event listeners for Bootstrap collapse events
-            collapseElement.addEventListener('shown.bs.collapse', () => {
-                iconElement.classList.remove('fa-chevron-down');
-                iconElement.classList.add('fa-chevron-up');
-            });
-            collapseElement.addEventListener('hidden.bs.collapse', () => {
-                iconElement.classList.remove('fa-chevron-up');
-                iconElement.classList.add('fa-chevron-down');
-            });
-        }
-    }
-    // **FIX END**
-
-    // Initialize LLM Chat Helper
-    initializeLLMChat(
-        llmHelperChatDisplayId,
-        llmHelperChatInputId,
-        llmHelperSendMessageButtonId,
-        llmHelperClearChatButtonId,
-        llmHelperModelSelectId,
-        llmHelperSystemPromptInputId,
-        llmHelperSaveSystemPromptButtonId,
-        llmHelperImagePasteAreaId,
-        llmHelperImagePreviewId,
-        llmHelperClearImageButtonId
-    );
+    // Removed: LLM Chat Helper initialization and related collapse logic
 });

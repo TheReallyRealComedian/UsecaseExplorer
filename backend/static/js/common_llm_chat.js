@@ -10,14 +10,14 @@
  * @param {string} llmModelSelectId - ID of the select element for LLM model selection.
  * @param {string} systemPromptInputId - ID of the textarea for system prompt (optional, can be null).
  * @param {string} saveSystemPromptButtonId - ID of the button to save system prompt (optional, can be null).
- * @param {string} imagePasteAreaId - ID of the div/element where images can be pasted/dropped (optional, for multimodal chat).
+ * @param {string} imageInputTargetId - ID of the element where images can be pasted/dropped (e.g., chat input textarea).
  * @param {string} imagePreviewId - ID of the img element to display pasted image (optional, for multimodal chat).
  * @param {string} clearImageButtonId - ID of the button to clear pasted image (optional, for multimodal chat).
  */
 export function initializeLLMChat(
     chatDisplayId, chatInputId, sendMessageButtonId, clearChatButtonId, llmModelSelectId,
     systemPromptInputId = null, saveSystemPromptButtonId = null,
-    imagePasteAreaId = null, imagePreviewId = null, clearImageButtonId = null
+    imageInputTargetId = null, imagePreviewId = null, clearImageButtonId = null
 ) {
     const chatDisplay = document.getElementById(chatDisplayId);
     const chatInput = document.getElementById(chatInputId);
@@ -26,9 +26,14 @@ export function initializeLLMChat(
     const llmModelSelect = document.getElementById(llmModelSelectId);
     const systemPromptInput = systemPromptInputId ? document.getElementById(systemPromptInputId) : null;
     const saveSystemPromptButton = saveSystemPromptButtonId ? document.getElementById(saveSystemPromptButtonId) : null;
-    const imagePasteArea = imagePasteAreaId ? document.getElementById(imagePasteAreaId) : null;
+    
+    // The target element where image paste/drop events will be listened on.
+    const imageInputTarget = imageInputTargetId ? document.getElementById(imageInputTargetId) : null;
     const imagePreview = imagePreviewId ? document.getElementById(imagePreviewId) : null;
     const clearImageButton = clearImageButtonId ? document.getElementById(clearImageButtonId) : null;
+
+    // Get the wrapper for image preview and its clear button
+    const imagePreviewWrapper = imagePreview ? imagePreview.closest('.image-preview-wrapper') : null;
 
     let currentImageBase64 = null;
     let currentImageMimeType = null;
@@ -71,15 +76,14 @@ export function initializeLLMChat(
         currentImageMimeType = null;
         if (imagePreview) {
             imagePreview.src = '';
-            imagePreview.style.display = 'none';
         }
-        if (clearImageButton) {
-            clearImageButton.style.display = 'none';
+        // Hide the entire wrapper for image preview and its clear button
+        if (imagePreviewWrapper) {
+            imagePreviewWrapper.style.display = 'none';
         }
-        if (imagePasteArea) {
-            imagePasteArea.textContent = 'Paste (Ctrl+V) or drag & drop a screenshot here.';
-            imagePasteArea.classList.remove('has-image');
-            imagePasteArea.style.cursor = 'pointer';
+        if (imageInputTarget && imageInputTarget.id === chatInputId) {
+            chatInput.placeholder = 'Type your message or paste/drag an image here...';
+            chatInput.classList.remove('has-image'); // Remove the visual cue for image in input
         }
     }
 
@@ -243,22 +247,12 @@ export function initializeLLMChat(
             addMessageToChat('user', message, displayImageUrl);
 
             const payload = {
-                message: message,
+                message: message, // Primary text message
                 model: selectedModel,
                 image_base64: currentImageBase64,
                 image_mime_type: currentImageMimeType
             };
-
-            // Construct the content array for multimodal input
-            payload.content = [];
-            if (message) payload.content.push({ type: "text", text: message });
-            if (currentImageBase64 && currentImageMimeType) {
-                payload.content.push({
-                    type: "image_url",
-                    image_url: { url: `data:${currentImageMimeType};base64,${currentImageBase64}` }
-                });
-            }
-
+            
             console.log("Frontend sending payload to Flask:", payload);
 
             chatInput.value = '';
@@ -269,7 +263,11 @@ export function initializeLLMChat(
             llmModelSelect.disabled = true;
             if (systemPromptInput) systemPromptInput.disabled = true;
             if (saveSystemPromptButton) saveSystemPromptButton.disabled = true;
-            if (clearImageButton) clearImageButton.disabled = true;
+            
+            // Disable image input target (if it's the textarea, apply styling)
+            if (imageInputTarget && imageInputTarget.id === chatInputId) {
+                chatInput.classList.add('disabled-for-chat'); 
+            }
 
             const loadingBubble = document.createElement('div');
             loadingBubble.classList.add('chat-bubble', 'chat-bubble-assistant');
@@ -304,7 +302,11 @@ export function initializeLLMChat(
                 llmModelSelect.disabled = false;
                 if (systemPromptInput) systemPromptInput.disabled = false;
                 if (saveSystemPromptButton) saveSystemPromptButton.disabled = false;
-                if (clearImageButton) clearImageButton.disabled = false;
+                
+                // Re-enable image input target
+                if (imageInputTarget && imageInputTarget.id === chatInputId) {
+                    chatInput.classList.remove('disabled-for-chat'); 
+                }
                 chatInput.focus();
             }
         });
@@ -325,6 +327,7 @@ export function initializeLLMChat(
                     const data = await response.json();
                     if (data.success) {
                         chatDisplay.innerHTML = '<div class="chat-placeholder"><i class="fas fa-comments"></i><p>Start a conversation with the LLM!</p></div>';
+                        clearImageInput(); // Also clear image if any
                         alert('Chat history cleared!');
                     } else {
                         alert(`Failed to clear chat history: ${data.message}`);
@@ -381,17 +384,25 @@ export function initializeLLMChat(
     }
 
     // --- Image Paste/Drop Functionality ---
-    if (imagePasteArea && imagePreview && clearImageButton) {
-        imagePasteArea.addEventListener('paste', handleImagePaste);
-        imagePasteArea.addEventListener('dragover', handleDragOver);
-        imagePasteArea.addEventListener('drop', handleImageDrop);
+    if (imageInputTarget && imagePreview && clearImageButton && imagePreviewWrapper) {
+        imageInputTarget.addEventListener('paste', handleImagePaste);
+        imageInputTarget.addEventListener('dragover', handleDragOver);
+        imageInputTarget.addEventListener('drop', handleImageDrop);
         clearImageButton.addEventListener('click', clearImageInput);
 
-        imagePasteArea.addEventListener('dragenter', (event) => {
-            console.log('Drag entered imagePasteArea');
+        imageInputTarget.addEventListener('dragenter', (event) => {
+            event.preventDefault(); 
+            event.stopPropagation();
+            if (imageInputTarget.id === chatInputId) {
+                chatInput.classList.add('drag-over');
+            } 
         });
-        imagePasteArea.addEventListener('dragleave', (event) => {
-            console.log('Drag left imagePasteArea');
+        imageInputTarget.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (imageInputTarget.id === chatInputId) {
+                chatInput.classList.remove('drag-over');
+            }
         });
     }
 
@@ -405,16 +416,20 @@ export function initializeLLMChat(
     function handleDragOver(event) {
         event.preventDefault();
         event.stopPropagation();
-        if (imagePasteArea) {
-            imagePasteArea.classList.add('drag-over');
+        if (imageInputTarget) {
+            if (imageInputTarget.id === chatInputId) {
+                chatInput.classList.add('drag-over');
+            }
         }
     }
 
     function handleImageDrop(event) {
         event.preventDefault();
         event.stopPropagation();
-        if (imagePasteArea) {
-            imagePasteArea.classList.remove('drag-over');
+        if (imageInputTarget) {
+            if (imageInputTarget.id === chatInputId) {
+                chatInput.classList.remove('drag-over');
+            }
         }
         console.log('handleImageDrop triggered');
         const items = event.dataTransfer.items;
@@ -441,10 +456,10 @@ export function initializeLLMChat(
         if (imageFile) {
             console.log(`Image file found! Name: ${imageFile.name}, Type: ${imageFile.type}, Size: ${imageFile.size} bytes`);
             
-            if (imagePasteArea) {
-                imagePasteArea.textContent = 'Processing image... please wait.';
-                imagePasteArea.classList.add('has-image');
-                imagePasteArea.style.cursor = 'wait';
+            // Provide immediate feedback to the user on the textarea
+            if (imageInputTarget.id === chatInputId) {
+                chatInput.placeholder = 'Processing image... please wait.';
+                chatInput.classList.add('has-image');
             }
 
             try {
@@ -457,23 +472,23 @@ export function initializeLLMChat(
 
                 if (imagePreview) {
                     imagePreview.src = `data:${currentImageMimeType};base64,${currentImageBase64}`;
-                    imagePreview.style.display = 'block';
                 }
-                if (clearImageButton) {
-                    clearImageButton.style.display = 'inline-block';
+                // Show the entire wrapper for image preview and its clear button
+                if (imagePreviewWrapper) {
+                    imagePreviewWrapper.style.display = 'flex'; 
                 }
-                if (imagePasteArea) {
-                    imagePasteArea.textContent = 'Image loaded. Add your prompt and send.';
-                    imagePasteArea.style.cursor = 'default';
+                
+                if (imageInputTarget.id === chatInputId) {
+                    chatInput.placeholder = 'Image loaded. Add your prompt and send.';
                 }
             } catch (error) {
                 console.error('Error processing image:', error);
                 alert('Failed to process image: ' + error);
                 clearImageInput();
-                if (imagePasteArea) {
-                    imagePasteArea.textContent = 'Paste (Ctrl+V) or drag & drop a screenshot here.';
-                    imagePasteArea.classList.remove('has-image');
-                    imagePasteArea.style.cursor = 'pointer';
+                // Reset placeholder/visual state on error
+                if (imageInputTarget.id === chatInputId) {
+                    chatInput.placeholder = 'Type your message or paste/drag an image here...';
+                    chatInput.classList.remove('has-image');
                 }
             }
         } else {

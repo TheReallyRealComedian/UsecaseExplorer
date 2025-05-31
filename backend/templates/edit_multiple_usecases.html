@@ -14,71 +14,7 @@
         Edit the fields of your selected Use Cases. Changes are saved in bulk.
     </p>
 
-    {# LLM Helper Section #}
-    <div class="mb-xl llm-helper-section">
-        <div class="card-header d-flex justify-content-between align-items-center" id="llmHelperHeader">
-            <h2 class="card-title mb-0">LLM Helper (Llama 3.1-Vision)</h2>
-            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#llmHelperBody" aria-expanded="true" aria-controls="llmHelperBody">
-                <i class="fas fa-chevron-up"></i>
-            </button>
-        </div>
-        <div id="llmHelperBody" class="card-body collapse show">
-            <p class="text-muted">Ask Llama 3.1-Vision about your Use Cases, or paste a screenshot for analysis.</p>
-
-            <div class="mb-3">
-                <label for="llmHelperModelSelect" class="form-label">Select LLM:</label>
-                <select id="llmHelperModelSelect" class="form-select">
-                    <option value="">Loading models...</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="llmHelperSystemPromptInput" class="form-label">System Prompt (Global for your user):</label>
-                <textarea class="form-control" id="llmHelperSystemPromptInput" rows="3" placeholder="e.g., 'You are a helpful assistant. Provide concise answers.'">{{ current_user.system_prompt | default('', true) }}</textarea>
-                <div class="d-flex justify-content-end mt-2">
-                    <button type="button" class="btn btn-sm btn-primary" id="llmHelperSaveSystemPromptButton">
-                        <i class="fas fa-save"></i> Save Global System Prompt
-                    </button>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Paste or Drop Image:</label>
-                <div class="image-paste-area" id="llmHelperImagePasteArea">
-                    Paste (Ctrl+V) or drag & drop a screenshot here.
-                </div>
-                <img id="llmHelperImagePreview" src="" alt="Pasted Image Preview">
-                <div class="image-controls">
-                    <button type="button" class="btn btn-sm btn-secondary" id="llmHelperClearImageButton" style="display:none;">
-                        <i class="fas fa-times-circle"></i> Clear Image
-                    </button>
-                </div>
-            </div>
-
-            <div class="chat-container">
-                <div class="chat-display" id="llmHelperChatDisplay">
-                    {# Chat history for this helper will be loaded/managed by JS #}
-                    <div class="chat-placeholder">
-                        <i class="fas fa-comments"></i>
-                        <p>Ask Llama 3.1-Vision anything!</p>
-                    </div>
-                </div>
-                <div class="chat-input-area">
-                    <textarea id="llmHelperChatInput" class="form-control" placeholder="Type your message... (Shift+Enter for new line)" rows="1"></textarea>
-                    <button class="btn btn-primary" id="llmHelperSendMessageButton">
-                        <i class="fas fa-paper-plane"></i> Send
-                    </button>
-                    <button class="btn btn-secondary" id="llmHelperClearChatButton">
-                        <i class="fas fa-eraser"></i> Clear Chat
-                    </button>
-                </div>
-            </div>
-            <div class="help-text" style="margin-top: 0.5rem;">
-                This chat uses a limited history. Your global system prompt is used.
-            </div>
-        </div>
-    </div>
-
+    {# The entire LLM Helper section previously here is removed. #}
 
     {% if usecases_data %}
         <div class="save-all-controls">
@@ -164,7 +100,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{# No more Marked.js or common_llm_chat.js needed here #}
 
 <script type="text/javascript">
     // Pass initial data to JavaScript for client-side processing
@@ -172,6 +108,6 @@
     const ALL_STEPS_DATA_FOR_DROPDOWN = {{ all_steps | tojson | safe }};
     const EDITABLE_FIELDS_CONFIG = {{ editable_fields | tojson | safe }};
 </script>
-{# New JavaScript file for bulk edit UI and LLM helper. It imports common_llm_chat.js #}
+{# New JavaScript file for bulk edit UI. Removed import of common_llm_chat.js #}
 <script type="module" src="{{ url_for('static', filename='js/edit_multiple_usecases_ui.js') }}"></script>
 {% endblock %}

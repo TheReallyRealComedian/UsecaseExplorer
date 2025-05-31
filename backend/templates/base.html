@@ -42,7 +42,12 @@
                     <li class="{% if request.blueprint == 'relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
                     </li>
-                    <li class="{% if request.blueprint == 'llm' %}active{% endif %}">
+                    {# ADDED LLM Chat Menu Item #}
+                    <li class="{% if request.endpoint == 'llm.llm_chat_page' %}active{% endif %}">
+                        <a href="{{ url_for('llm.llm_chat_page') }}"><i class="fas fa-comments"></i> LLM Chat</a>
+                    </li>
+                    {# Adjusted 'active' condition for Data Mining #}
+                    <li class="{% if request.blueprint == 'llm' and request.endpoint != 'llm.llm_chat_page' %}active{% endif %}">
                         <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> Data Mining</a>
                     </li>
                     <li class="{% if request.blueprint == 'injection' %}active{% endif %}">

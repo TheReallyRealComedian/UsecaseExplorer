@@ -79,6 +79,64 @@ SELECTABLE_USECASE_FIELDS = {
     'related_projects_text': "Related Projects",
 }
 
+@llm_routes.route('/chat-dedicated') # New route for the dedicated LLM Chat page
+@login_required
+def llm_chat_page():
+    session_db = SessionLocal()
+    user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
+
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
+    try:
+        # These are fetched by JS now, but kept for consistency in parameters if needed
+        # ollama_models = get_available_ollama_models() 
+        # chat_history = list(get_chat_history()) 
+
+        # NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
+        return render_template(
+            'llm_chat.html', # Render the new template
+            title="LLM Chat",
+            config=current_app.config,
+            user_system_prompt=user_system_prompt,
+            current_item=None,
+            current_area=None,
+            current_step=None,
+            current_usecase=None,
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
+        )
+    except Exception as e:
+        print(f"Error loading LLM Chat page: {e}")
+        flash("An error occurred while loading the LLM Chat page.", "danger")
+        return render_template(
+            'llm_chat.html',
+            title="LLM Chat",
+            config=current_app.config,
+            user_system_prompt=user_system_prompt,
+            current_item=None,
+            current_area=None,
+            current_step=None,
+            current_usecase=None,
+            # NEW BREADCRUMB DATA PASSING (empty if error)
+            all_areas_flat=[],
+            all_steps_flat=[],
+            all_usecases_flat=[]
+            # END NEW BREADCRUMB DATA PASSING
+        )
+    finally:
+        SessionLocal.remove()
 
 @llm_routes.route('/data-prep', methods=['GET', 'POST'])
 @login_required
@@ -328,7 +386,8 @@ def analyze_usecase(usecase_id):
 @llm_routes.route('/chat', methods=['POST'])
 @login_required
 def llm_chat():
-    content = request.json.get('content')
+    # Change 'content' to 'message' to match the frontend payload
+    user_message = request.json.get('message') 
     model_name = request.json.get('model')
     image_base64 = request.json.get('image_base64')
     image_mime_type = request.json.get('image_mime_type')
@@ -337,17 +396,15 @@ def llm_chat():
     if system_prompt == "":
         system_prompt = None
 
-    if not content:
-        return jsonify({"success": False, "message": "Content is required."}), 400
-    
-    # Extract text message from content if available
-    user_message = next((item['text'] for item in content if item['type'] == 'text'), '')
-
-    if not user_message and not any(item['type'] == 'image_url' for item in content):
+    # Update validation logic: check if *either* user_message (text) *or* image_base64 (image) is present.
+    # The previous `if not content:` and the extraction logic are no longer needed.
+    if not user_message and not image_base64: # If no text and no image
         return jsonify({"success": False, "message": "Message or image is required."}), 400
+    
     if not model_name:
         return jsonify({"success": False, "message": "Model is required."}), 400
 
+    # The generate_ollama_chat_response already expects user_message, image_base64, image_mime_type as separate arguments
     response = generate_ollama_chat_response(model_name, user_message, system_prompt, image_base64, image_mime_type)
     return jsonify(response)
 

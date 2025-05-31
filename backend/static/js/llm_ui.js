@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateAllCounts();
 
     // Initialize the LLM Chat functionality using the common module
-    // This page (llm_data_prep.html) does NOT have image input.
+    // This page (llm_data_prep.html) now integrates image input directly into chatInput
     initializeLLMChat(
         'chatDisplay',
         'chatInput',
@@ -18,8 +18,10 @@ document.addEventListener('DOMContentLoaded', function () {
         'clearChatButton',
         'llmModelSelect',
         'systemPromptInput',
-        'saveSystemPromptButton'
-        // Image paste related parameters are omitted here as they are optional
+        'saveSystemPromptButton',
+        'chatInput', // Pass chatInput as the target for image paste/drop
+        'imagePreview', // ID of the image preview element
+        'clearImageButton' // ID of the button to clear the image
     );
 
     // --- Custom Select Implementation (existing, no change) ---
