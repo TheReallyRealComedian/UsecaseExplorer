@@ -1,3 +1,4 @@
+# backend/injection_service.py
 import json
 import traceback
 from sqlalchemy import text
@@ -10,15 +11,19 @@ from .models import (
 )
 from datetime import datetime
 
-# --- Keep existing functions as they are (datetime_serializer, export_database_to_json_string, export_area_to_markdown, process_area_file) ---
-# ... (contents of process_area_file, etc.) ...
+def datetime_serializer(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
 
 def process_area_file(file_stream):
     session = SessionLocal()
     added_count = 0
     updated_count = 0
     skipped_count = 0
-    duplicates_not_updated = []
+    duplicates_not_updated = [] # Items that already existed but had no empty fields to fill
+    skipped_errors_details = [] # NEW: To store specific reasons for skipping
+
     message = ""
     success = False
 
@@ -31,31 +36,33 @@ def process_area_file(file_stream):
             data = json.loads(file_stream.read().decode('utf-8'))
 
         if not isinstance(data, list):
-            raise ValueError("Invalid JSON format: Top level must be a list.")
+            raise ValueError("Invalid JSON format: Top level must be a list of area objects.")
 
-        for item in data:
-            if not (isinstance(item, dict) and
-                    'name' in item and
-                    isinstance(item['name'], str) and
-                    item['name'].strip()):
+        for i, item in enumerate(data):
+            item_identifier = f"Item {i+1}"
+            if isinstance(item, dict) and 'name' in item and isinstance(item['name'], str) and item['name'].strip():
+                area_name = item['name'].strip()
+                item_identifier = f"Area '{area_name}'"
+            else:
                 skipped_count += 1
+                skipped_errors_details.append(f"{item_identifier}: Invalid format or missing/empty 'name' field.")
                 continue
 
-            area_name = item['name'].strip()
             description_from_json = item.get('description')
             if description_from_json is not None:
                 if not isinstance(description_from_json, str):
-                    description_from_json = None
+                    description_from_json = None # Treat non-string description as None
+                    skipped_errors_details.append(f"{item_identifier}: 'description' field was not a string, treated as empty.")
                 else:
                     description_from_json = description_from_json.strip()
-                    if not description_from_json: 
+                    if not description_from_json:
                         description_from_json = None
-
 
             existing_area = session.query(Area).filter_by(name=area_name).first()
             item_updated = False
 
             if existing_area:
+                # Update logic: only fill if DB field is currently None or empty string
                 if description_from_json and \
                    (existing_area.description is None or existing_area.description == ''):
                     existing_area.description = description_from_json
@@ -64,13 +71,15 @@ def process_area_file(file_stream):
                 if item_updated:
                     updated_count += 1
                 else:
+                    # Item exists but no relevant fields were empty to update
                     if area_name not in duplicates_not_updated:
                         duplicates_not_updated.append(area_name)
-                    skipped_count +=1 
+                    skipped_count += 1 # This counts as skipped for the purpose of the summary count
             else:
+                # New area
                 new_area = Area(
                     name=area_name,
-                    description=description_from_json if description_from_json else None
+                    description=description_from_json
                 )
                 session.add(new_area)
                 added_count += 1
@@ -89,34 +98,25 @@ def process_area_file(file_stream):
             message = f"Processing complete. {', '.join(parts)}."
 
         if duplicates_not_updated:
-            message += f" Existing items not updated (no empty fields to fill or data matched): {len(duplicates_not_updated)}."
+            message += f" (Existing items not updated: {len(duplicates_not_updated)}). "
+        if skipped_errors_details:
+            message += f" (Details on specific skips available in server logs). "
 
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_area_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_area_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
-        added_count = 0
-        updated_count = 0
-        skipped_count = 0
-        duplicates_not_updated = []
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_area_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
-        added_count = 0
-        updated_count = 0
-        skipped_count = 0
-        duplicates_not_updated = []
     except Exception as e:
         traceback.print_exc()
         session.rollback()
         success = False
-        message = f"An error occurred: {str(e)}"
-        added_count = 0
-        updated_count = 0
-        skipped_count = 0
-        duplicates_not_updated = []
+        message = f"An unexpected error occurred: {str(e)}"
     finally:
         SessionLocal.remove()
 
@@ -126,11 +126,11 @@ def process_area_file(file_stream):
         "added_count": added_count,
         "updated_count": updated_count,
         "skipped_count": skipped_count,
-        "duplicates_not_updated": duplicates_not_updated
+        "duplicates_not_updated": duplicates_not_updated,
+        "skipped_errors_details": skipped_errors_details # NEW: Return detailed errors
     }
 
 
-# MODIFIED: process_step_file to correctly handle nested JSON and add more logging
 def process_step_file(file_content_json):
     """
     Parses a JSON file of process steps, compares with existing data,
@@ -139,7 +139,7 @@ def process_step_file(file_content_json):
     Does NOT commit any changes to the database.
     """
     session = SessionLocal()
-    preview_data = [] # This will store the structured preview
+    preview_data = []
     
     # Helper to convert an SQLAlchemy model instance to a dict for comparison/JSON
     def model_to_dict(obj, fields_to_include, session):
@@ -190,18 +190,22 @@ def process_step_file(file_content_json):
         
         print(f"Number of items found in JSON for processing: {len(json_data_list)}")
 
-        if not json_data_list: # Check if the list is empty after extraction
+        if not json_data_list:
             print("json_data_list is empty. Returning success=True with empty preview_data.")
             return {"success": True, "preview_data": [], "message": "No process steps found in the uploaded file."}
 
 
         for item_from_json in json_data_list:
-            print(f"\nProcessing JSON item: {item_from_json.get('bi_id', 'N/A')} - {item_from_json.get('name', 'N/A')}")
+            # Print for server logs, useful for large files
+            bi_id_log = item_from_json.get('bi_id', 'N/A')
+            name_log = item_from_json.get('name', 'N/A')
+            print(f"\nProcessing JSON item: BI_ID='{bi_id_log}' Name='{name_log}'")
+            
             entry = {
-                'status': 'skipped', # Default status
-                'bi_id': item_from_json.get('bi_id'),
-                'name': item_from_json.get('name'),
-                'area_name': item_from_json.get('area_name'), # Area name from JSON
+                'status': 'skipped', # Default status, will be updated
+                'bi_id': bi_id_log,
+                'name': name_log,
+                'area_name': item_from_json.get('area_name', 'N/A'), # Area name from JSON
                 'json_data': {}, # Raw data from JSON (cleaned)
                 'db_data': {},   # Current data from DB (cleaned)
                 'conflicts': {}, # Fields with differences (old_value, new_value)
@@ -216,7 +220,7 @@ def process_step_file(file_content_json):
                     isinstance(item_from_json['name'], str) and item_from_json['name'].strip() and
                     isinstance(item_from_json['area_name'], str) and item_from_json['area_name'].strip()):
                 entry['messages'].append("Skipped: Invalid JSON format or missing required fields (bi_id, name, area_name).")
-                print(f"  Skipped due to invalid format: {item_from_json.get('bi_id', 'N/A')}")
+                print(f"  Skipped due to invalid format: BI_ID='{bi_id_log}'")
                 preview_data.append(entry)
                 continue
 
@@ -224,15 +228,16 @@ def process_step_file(file_content_json):
             name = item_from_json['name'].strip()
             area_name_json = item_from_json['area_name'].strip()
 
-            entry['bi_id'] = bi_id
+            entry['bi_id'] = bi_id # Ensure stripped values are used
             entry['name'] = name
             entry['area_name'] = area_name_json
 
             json_values_cleaned = {}
             for field in step_fields:
                 val = item_from_json.get(field)
+                # Use .strip() if string, otherwise keep original value or set to None
                 json_values_cleaned[field] = val.strip() if isinstance(val, str) and val.strip() else None
-            json_values_cleaned['name'] = name
+            json_values_cleaned['name'] = name # Ensure name is also cleaned for comparison
             json_values_cleaned['bi_id'] = bi_id
             json_values_cleaned['area_name'] = area_name_json
             
@@ -243,28 +248,38 @@ def process_step_file(file_content_json):
             area_id_from_json = area_name_to_id_map.get(area_name_json)
 
             if existing_step:
-                print(f"  Existing step found in DB: {existing_step.name} (BI_ID: {existing_step.bi_id})")
+                print(f"  Existing step found in DB: '{existing_step.name}' (BI_ID: '{existing_step.bi_id}')")
+                # Prepare existing DB data for comparison
                 entry['db_data'] = model_to_dict(existing_step, step_fields + ['bi_id', 'area_id', 'name'], session)
-                entry['new_values'] = dict(entry['db_data']) # Initialize new_values with current DB data
                 
-                is_dirty = False
+                # Initialize new_values with current DB data. This is the default resolution.
+                entry['new_values'] = {k: (v.strip() if isinstance(v, str) else v) for k, v in entry['db_data'].items()}
+                # Ensure area_id is numeric in new_values
+                if 'area_id' in entry['new_values']:
+                    entry['new_values']['area_id'] = existing_step.area_id
                 
-                # Check for area_id change (takes precedence if JSON provides a valid area)
+                is_dirty = False # Flag if any field will cause an update or conflict
+
+                # Check for area_id change
+                # Priority: If JSON provides a valid area, and it's different, it's a conflict
                 if area_id_from_json is None:
                     # If JSON's area_name doesn't resolve to an ID, keep DB's area_id and warn.
-                    entry['messages'].append(f"Warning: Area '{area_name_json}' for step BI_ID '{bi_id}' from JSON not found in database. Keeping existing area.")
+                    entry['messages'].append(f"Warning: Area '{area_name_json}' from JSON not found in database. Keeping existing area for '{name}'.")
                     print(f"  Warning: Area '{area_name_json}' not found for existing step. Keeping DB value.")
+                    # new_values['area_id'] remains existing_step.area_id (from db_data init)
                 elif existing_step.area_id != area_id_from_json:
-                    # If JSON area_id is different and valid, it's a conflict and JSON's area is the new_value
+                    # If JSON area_id is different and valid, it's a conflict.
+                    # Default proposal is to take the JSON's new area.
                     entry['conflicts']['area_id'] = {
-                        'old_value': area_id_to_name_map.get(existing_step.area_id, 'N/A (ID: ' + str(existing_step.area_id) + ')'),
+                        'old_value': area_id_to_name_map.get(existing_step.area_id, f'N/A (ID: {existing_step.area_id})'),
                         'new_value': area_name_json,
                         'db_id': existing_step.area_id,
                         'json_id': area_id_from_json
                     }
                     entry['new_values']['area_id'] = area_id_from_json # Proposed default: take JSON's new area
                     is_dirty = True
-                    print(f"  Conflict detected for area_id: DB '{existing_step.area_id}' vs JSON '{area_id_from_json}'")
+                    entry['messages'].append(f"Conflict: Area changed from '{entry['conflicts']['area_id']['old_value']}' to '{entry['conflicts']['area_id']['new_value']}'.")
+                    print(f"  Conflict detected for area_id: DB '{existing_step.area_id}' vs JSON '{area_id_from_json}' (Proposing JSON)")
                 else:
                     # Area matches, no change to new_values['area_id'] needed as it was initialized from db_data.
                     entry['messages'].append(f"Area '{area_name_json}' matches existing area.")
@@ -278,7 +293,7 @@ def process_step_file(file_content_json):
                     # Get JSON value, already normalized to None for empty strings by json_values_cleaned
                     normalized_json_value = json_values_cleaned.get(field)
 
-                    # Scenario 1: JSON has a value, and it's different from DB's (or DB is empty)
+                    # Scenario 1: JSON has a non-empty value, and DB has a different (or empty) value.
                     if normalized_json_value is not None and normalized_json_value != normalized_db_value:
                         entry['conflicts'][field] = {
                             'old_value': normalized_db_value if normalized_db_value is not None else "N/A (Empty in DB)",
@@ -286,19 +301,22 @@ def process_step_file(file_content_json):
                         }
                         entry['new_values'][field] = normalized_json_value # Propose JSON value as default
                         is_dirty = True
+                        entry['messages'].append(f"Conflict: Field '{field}' changed from '{normalized_db_value}' to '{normalized_json_value}'.")
                         print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON '{normalized_json_value}' (Proposing JSON)")
-                    # Scenario 2: JSON is None (or empty string), but DB has a value
+                    # Scenario 2: JSON is None (or empty string), but DB has a value.
+                    # This is a conflict if JSON is trying to clear an existing value.
                     elif normalized_json_value is None and normalized_db_value is not None:
                         entry['conflicts'][field] = {
                             'old_value': normalized_db_value,
-                            'new_value': "None (from JSON)" # Indicate JSON provided no value
+                            'new_value': "N/A (Empty in JSON)" # Indicate JSON provided no value
                         }
                         # For this scenario, new_values[field] already contains normalized_db_value
                         # because it was initialized from entry['db_data']. So, no change needed here.
                         # This effectively makes the default resolution "keep existing DB value".
                         is_dirty = True # Still mark as dirty because there's a conflict to review
+                        entry['messages'].append(f"Conflict: Field '{field}' exists in DB but is empty in JSON. Keeping DB value.")
                         print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON 'None' (Proposing DB)")
-                    # Scenario 3: No actual difference (both are the same value, or both are None)
+                    # Scenario 3: No actual difference (both are the same value, or both are None/empty)
                     else:
                         # new_values[field] is already correct from initialization based on db_data.
                         pass 
@@ -306,18 +324,18 @@ def process_step_file(file_content_json):
                 # Determine overall status for the item
                 if is_dirty:
                     entry['status'] = 'update'
-                    entry['messages'].append("Existing step has changes or conflicts. Review details to finalize.")
+                    entry['messages'].unshift("Existing step has changes or conflicts. Review details to finalize."); # Prepend
                     print(f"  Status set to 'update' for {bi_id}.")
                 else:
                     entry['status'] = 'no_change'
-                    entry['messages'].append("Existing step found with no changes detected.")
+                    entry['messages'].unshift("Existing step found with no changes detected."); # Prepend
                     print(f"  Status set to 'no_change' for {bi_id}.")
             else:
                 # New step
-                print(f"  No existing step found for BI_ID: {bi_id}")
+                print(f"  No existing step found for BI_ID: '{bi_id}'")
                 if area_id_from_json is None:
                     entry['status'] = 'skipped'
-                    entry['messages'].append(f"Skipped: Area '{area_name_json}' not found for new step BI_ID '{bi_id}'.")
+                    entry['messages'].append(f"Skipped: Area '{area_name_json}' for new step BI_ID '{bi_id}' not found in database. Please create the area first.")
                     print(f"  Skipped new step because Area '{area_name_json}' was not found.")
                 else:
                     entry['status'] = 'new'
@@ -329,7 +347,7 @@ def process_step_file(file_content_json):
             preview_data.append(entry)
         
         print(f"\nFinished processing file. Total items in preview_data: {len(preview_data)}")
-        return {"success": True, "preview_data": preview_data}
+        return {"success": True, "preview_data": preview_data, "message": "Step file processed successfully for preview."}
 
     except ValueError as ve:
         print(f"Value Error in process_step_file (for preview): {ve}")
@@ -342,14 +360,14 @@ def process_step_file(file_content_json):
         SessionLocal.remove()
 
 
-# NEW: Function to finalize step import based on user's resolved data
 def finalize_step_import(resolved_steps_data):
     """
-    Receives resolved step data from the frontend and performs database operations.
+    Receives resolved step data from the frontend and performs database updates.
     """
     session = SessionLocal()
     add_count = 0
     update_count = 0
+    skip_count = 0 # Track skips from the action choices
     fail_count = 0
     messages = []
 
@@ -363,8 +381,8 @@ def finalize_step_import(resolved_steps_data):
                 try:
                     new_step = ProcessStep(
                         bi_id=bi_id,
-                        name=final_data.get('name'), # Ensure 'name' is in final_data
-                        area_id=final_data.get('area_id'), # Ensure 'area_id' is in final_data
+                        name=final_data.get('name'),
+                        area_id=final_data.get('area_id'),
                         step_description=final_data.get('step_description'),
                         raw_content=final_data.get('raw_content'),
                         summary=final_data.get('summary'),
@@ -377,17 +395,21 @@ def finalize_step_import(resolved_steps_data):
                         targets_text=final_data.get('targets_text')
                     )
                     session.add(new_step)
+                    session.flush() # Flush to detect integrity errors early
                     add_count += 1
-                    messages.append(f"Added new step: {new_step.name} (BI_ID: {new_step.bi_id})")
+                    messages.append(f"Successfully added new step: {new_step.name} (BI_ID: {new_step.bi_id})")
                 except IntegrityError as ie:
-                    session.rollback()
+                    session.rollback() # Rollback the current transaction for this item
                     fail_count += 1
+                    # Attempt to re-establish session or simply log and continue (new session will be created next loop)
                     messages.append(f"Failed to add new step {bi_id}: BI_ID already exists or invalid area_id. Error: {ie}")
-                    session = SessionLocal() # Re-create session after rollback
+                    print(f"IntegrityError adding step {bi_id}: {ie}")
+                    session = SessionLocal() # Re-create a fresh session for the next item
                 except Exception as e:
                     session.rollback()
                     fail_count += 1
                     messages.append(f"Failed to add new step {bi_id}: Unexpected error. Error: {e}")
+                    print(f"Unexpected error adding step {bi_id}: {e}")
                     session = SessionLocal()
 
             elif action == 'update':
@@ -396,49 +418,62 @@ def finalize_step_import(resolved_steps_data):
                     try:
                         changes = []
                         for field, value in final_data.items():
-                            # Special handling for area_id to update directly on model
+                            # Normalize value: empty string to None, strip strings
+                            normalized_value = value.strip() if isinstance(value, str) and value.strip() else None
+                            
+                            # Special handling for integer fields
                             if field == 'area_id':
-                                if existing_step.area_id != value:
-                                    existing_step.area_id = value
+                                current_value = existing_step.area_id
+                                new_value_int = int(normalized_value) if normalized_value is not None else None
+                                if current_value != new_value_int:
+                                    existing_step.area_id = new_value_int
                                     changes.append('area_id')
-                            # Handle other fields
-                            elif field not in ['bi_id'] and getattr(existing_step, field) != value: # 'id' not a field to update
-                                setattr(existing_step, field, value)
-                                changes.append(field)
+                            elif field not in ['bi_id', 'id']: # 'id' and 'bi_id' are primary/unique identifiers, not meant for update this way
+                                current_value = getattr(existing_step, field)
+                                current_value_normalized = current_value.strip() if isinstance(current_value, str) and current_value.strip() else None
+                                if current_value_normalized != normalized_value:
+                                    setattr(existing_step, field, normalized_value)
+                                    changes.append(field)
+                        
                         if changes:
+                            # session.flush() # Optional: flush to detect errors per item, then commit later
                             update_count += 1
-                            messages.append(f"Updated step: {existing_step.name} (BI_ID: {bi_id}). Fields changed: {', '.join(changes)}")
+                            messages.append(f"Successfully updated step: {existing_step.name} (BI_ID: {bi_id}). Fields changed: {', '.join(changes)}")
                         else:
-                            messages.append(f"No changes applied to step {bi_id}.")
+                            messages.append(f"No changes applied to step {bi_id} (data matched existing values).")
+                            skip_count += 1 # Count as skipped if no actual changes
                     except Exception as e:
                         session.rollback()
                         fail_count += 1
                         messages.append(f"Failed to update step {bi_id}: Unexpected error. Error: {e}")
-                        session = SessionLocal() # Re-create session after rollback
+                        print(f"Unexpected error updating step {bi_id}: {e}")
+                        session = SessionLocal()
                 else:
                     fail_count += 1
-                    messages.append(f"Failed to update step {bi_id}: Original step not found in database.")
+                    messages.append(f"Failed to update step {bi_id}: Original step not found in database for update. (Possibly deleted mid-process?)")
             elif action == 'skip':
-                messages.append(f"Skipped step: {bi_id}")
-            # Add other actions if needed (e.g., 'delete')
+                skip_count += 1
+                messages.append(f"Skipped step: {bi_id} as per user selection.")
         
         session.commit()
         return {
             "success": True,
             "added_count": add_count,
             "updated_count": update_count,
+            "skipped_count": skip_count,
             "failed_count": fail_count,
             "messages": messages
         }
 
     except Exception as e:
         session.rollback()
-        messages.append(f"An unexpected error occurred during final import: {str(e)}")
+        messages.append(f"An unexpected error occurred during final import transaction: {str(e)}")
         traceback.print_exc()
         return {
             "success": False,
             "added_count": 0,
             "updated_count": 0,
+            "skipped_count": 0,
             "failed_count": len(resolved_steps_data), # All data is considered failed if the global transaction rolls back
             "messages": messages
         }
@@ -450,11 +485,17 @@ def process_usecase_file(file_stream):
     session = SessionLocal()
     added_count = 0
     updated_count = 0
+    skipped_count_total = 0 # NEW: Unified skipped count
+    # Specific skipped categories
     skipped_invalid_format = 0
     skipped_existing_no_update_uc_bi_id_count = 0 
     skipped_missing_step = 0
+    skipped_invalid_priority = 0 # NEW: For invalid priority values
+
     uc_bi_ids_existing_no_update = [] 
     missing_step_bi_ids = []
+    skipped_errors_details = [] # NEW: General detailed error messages for individual items
+
     message = ""
     success = False
 
@@ -465,7 +506,7 @@ def process_usecase_file(file_stream):
         'summary': 'summary',
         'inspiration': 'inspiration',
         'wave': 'wave',
-        'effort': 'effort_level', 
+        'effort': 'effort_level', # Assuming 'effort' in JSON maps to 'effort_level'
         'status': 'status',
         'BUSINESS PROBLEM SOLVED': 'business_problem_solved',
         'TARGET / SOLUTION DESCRIPTION': 'target_solution_description',
@@ -485,7 +526,6 @@ def process_usecase_file(file_stream):
         'Related ongoing projects (incl. contact person)': 'related_projects_text',
     }
 
-
     try:
         print("Processing use case file (with update logic)")
         step_lookup = {
@@ -500,19 +540,28 @@ def process_usecase_file(file_stream):
             data = json.loads(file_stream.read().decode('utf-8'))
 
         if not isinstance(data, list):
-            raise ValueError("Invalid JSON format: Top level must be a list.")
+            raise ValueError("Invalid JSON format: Top level must be a list of use case objects.")
 
-        for item in data:
+        for i, item in enumerate(data):
+            item_identifier = f"Item {i+1}"
+            uc_bi_id_from_json = item.get('bi_id', 'N/A')
+            uc_name_from_json = item.get('name', 'N/A')
+            process_step_bi_id_from_json = item.get('process_step_bi_id', 'N/A')
+            item_log_string = f"UC BI_ID '{uc_bi_id_from_json}' (Name: '{uc_name_from_json}', Parent: '{process_step_bi_id_from_json}')"
+
             if not (isinstance(item, dict) and
                     all(k in item for k in ('bi_id', 'name', 'process_step_bi_id')) and
                     isinstance(item['bi_id'], str) and item['bi_id'].strip() and
                     isinstance(item['name'], str) and item['name'].strip() and
                     isinstance(item['process_step_bi_id'], str) and item['process_step_bi_id'].strip()):
                 skipped_invalid_format += 1
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Invalid format or missing/empty 'bi_id', 'name', or 'process_step_bi_id'.")
                 continue
 
             uc_bi_id = item['bi_id'].strip()
-            process_step_bi_id_from_json = item['process_step_bi_id'].strip()
+            # Ensure process_step_bi_id_from_json is used from the current item
+            process_step_bi_id = item['process_step_bi_id'].strip()
 
             existing_usecase = session.query(UseCase).filter_by(bi_id=uc_bi_id).first()
             item_updated = False
@@ -524,62 +573,86 @@ def process_usecase_file(file_stream):
                     priority_val = None
                     if json_value is not None:
                         try:
+                            # Convert to int, ensure it's in valid range, else set to None
                             priority_int = int(json_value)
                             if 1 <= priority_int <= 4:
                                 priority_val = priority_int
                             else:
-                                print(f"Warning: Invalid priority value '{json_value}' for UC BI_ID '{uc_bi_id}'. Skipping priority.")
+                                skipped_invalid_priority += 1
+                                skipped_errors_details.append(f"{item_log_string}: Invalid priority value '{json_value}' (must be 1-4). Skipping priority for this item.")
                         except ValueError:
-                            print(f"Warning: Non-integer priority '{json_value}' for UC BI_ID '{uc_bi_id}'. Skipping priority.")
+                            skipped_invalid_priority += 1
+                            skipped_errors_details.append(f"{item_log_string}: Non-integer priority '{json_value}'. Skipping priority for this item.")
                     uc_fields_from_json[model_attr] = priority_val
                 elif isinstance(json_value, str):
                     stripped_value = json_value.strip()
                     uc_fields_from_json[model_attr] = stripped_value if stripped_value else None
-                elif json_value is not None : 
-                     print(f"Warning: Field '{model_attr}' (from JSON key '{json_key}') for UC BI_ID '{uc_bi_id}' was not a string, setting to None. Value: {json_value}")
-                     uc_fields_from_json[model_attr] = None
-                else: 
-                    uc_fields_from_json[model_attr] = None
+                else: # Handle non-string, non-none values (e.g., numbers that aren't priority) or just set to None if it's not a string
+                    uc_fields_from_json[model_attr] = None 
+                    if json_value is not None:
+                        skipped_errors_details.append(f"{item_log_string}: Field '{model_attr}' (from JSON key '{json_key}') was not a string, treated as empty.")
             
-            if 'name' not in uc_fields_from_json :
-                 name_val = item['name'].strip()
-                 uc_fields_from_json['name'] = name_val if name_val else None
-
+            # Ensure 'name' is in uc_fields_from_json, taking priority from map or directly if not found
+            if 'name' not in uc_fields_from_json or uc_fields_from_json['name'] is None:
+                 name_val = item.get('name')
+                 if isinstance(name_val, str) and name_val.strip():
+                     uc_fields_from_json['name'] = name_val.strip()
+                 else:
+                     skipped_errors_details.append(f"{item_log_string}: 'name' field missing or empty after processing, will use N/A if added.")
+                     uc_fields_from_json['name'] = None # Ensure it's explicitly None if not set
 
             if existing_usecase:
+                # Compare and update existing use case fields if current DB value is empty/None
+                current_process_step_id = existing_usecase.process_step_id
+                
+                # Check for process step change
+                new_process_step_id = step_lookup.get(process_step_bi_id)
+                if new_process_step_id is None:
+                    # If JSON's process_step_bi_id doesn't resolve to an ID, keep existing step and warn.
+                    skipped_errors_details.append(f"{item_log_string}: Parent Process Step BI_ID '{process_step_bi_id}' from JSON not found. Keeping existing parent step.")
+                elif new_process_step_id != current_process_step_id:
+                    # If JSON provides a new valid parent step, update it.
+                    existing_usecase.process_step_id = new_process_step_id
+                    item_updated = True
+                    skipped_errors_details.append(f"{item_log_string}: Parent Process Step changed from ID '{current_process_step_id}' to '{new_process_step_id}'.")
+
+                # Check other fields
                 for model_attr, json_val in uc_fields_from_json.items():
+                    # Skip if it's process_step_id as it was handled above
+                    if model_attr == 'process_step_id':
+                        continue
+
                     db_value = getattr(existing_usecase, model_attr)
-                    if model_attr == 'priority':
-                        if json_val is not None and db_value is None : 
-                            setattr(existing_usecase, model_attr, json_val)
-                            item_updated = True
-                    elif json_val and (db_value is None or db_value == ''):
+                    db_value_normalized = db_value.strip() if isinstance(db_value, str) and db_value.strip() else None
+
+                    # Update logic: only fill if DB field is currently None or empty string, and JSON has a value
+                    if json_val is not None and (db_value_normalized is None or db_value_normalized == ''):
                         setattr(existing_usecase, model_attr, json_val)
                         item_updated = True
-                
-                if process_step_bi_id_from_json in step_lookup and existing_usecase.process_step_id != step_lookup[process_step_bi_id_from_json]:
-                    print(f"UC BI_ID {uc_bi_id} has process_step_bi_id '{process_step_bi_id_from_json}' in JSON, different from current. Step re-association logic not fully implemented here for updates.")
-                    pass
-
-
+            
                 if item_updated:
                     updated_count += 1
                 else:
                     skipped_existing_no_update_uc_bi_id_count += 1
+                    skipped_count_total += 1
                     if uc_bi_id not in uc_bi_ids_existing_no_update:
                         uc_bi_ids_existing_no_update.append(uc_bi_id)
+                    skipped_errors_details.append(f"{item_log_string}: Already exists with no empty fields to fill or data matched. Skipped update.")
             else:
-                if process_step_bi_id_from_json not in step_lookup:
+                # New use case
+                if process_step_bi_id not in step_lookup:
                     skipped_missing_step += 1
-                    if process_step_bi_id_from_json not in missing_step_bi_ids:
-                        missing_step_bi_ids.append(process_step_bi_id_from_json)
+                    skipped_count_total += 1
+                    if process_step_bi_id not in missing_step_bi_ids:
+                        missing_step_bi_ids.append(process_step_bi_id)
+                    skipped_errors_details.append(f"{item_log_string}: Parent Process Step BI_ID '{process_step_bi_id}' not found. Cannot add new use case.")
                     continue
 
-                area_id = step_lookup[process_step_bi_id_from_json] # This was originally `area_id = area_lookup[area_name]` in process_step_file, should be `process_step_id` here.
-                process_step_id = step_lookup[process_step_bi_id_from_json]
+                process_step_id = step_lookup[process_step_bi_id]
                 new_uc_data = {
                     "bi_id": uc_bi_id,
                     "process_step_id": process_step_id,
+                    # Initialize LLM comments to None, or leave them out if they are not coming from JSON
                     "llm_comment_1": None, "llm_comment_2": None, "llm_comment_3": None,
                     "llm_comment_4": None, "llm_comment_5": None,
                 }
@@ -595,26 +668,23 @@ def process_usecase_file(file_stream):
         parts = []
         if added_count > 0: parts.append(f"Added: {added_count}")
         if updated_count > 0: parts.append(f"Updated: {updated_count}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Format/Priority): {skipped_invalid_format}")
-        if skipped_existing_no_update_uc_bi_id_count > 0: parts.append(f"Skipped (Existing UC, No Update): {skipped_existing_no_update_uc_bi_id_count}")
-        if skipped_missing_step > 0: parts.append(f"Skipped (Missing Step): {skipped_missing_step}")
+        if skipped_count_total > 0: parts.append(f"Skipped: {skipped_count_total}")
 
         if not parts:
             message = "Processing complete. No Use Case data found or processed."
         else:
             message = f"Processing complete. {', '.join(parts)}."
+        
+        if skipped_errors_details:
+             message += f" (Details on specific skips available in server logs). "
 
-        if uc_bi_ids_existing_no_update:
-            message += f" Existing UC BI_IDs not updated (no empty fields to fill or data matched): {len(uc_bi_ids_existing_no_update)}."
-        if missing_step_bi_ids:
-            message += f" Missing Step BI_IDs for new UCs: {', '.join(missing_step_bi_ids)}."
-
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_usecase_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_usecase_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -622,16 +692,21 @@ def process_usecase_file(file_stream):
         traceback.print_exc()
         session.rollback()
         success = False
-        message = f"An error occurred: {str(e)}"
+        message = f"An unexpected error occurred: {str(e)}"
     finally:
-        if not success: 
+        # Only set counts to zero if the entire transaction failed
+        if not success:
             added_count = 0
             updated_count = 0
+            skipped_count_total = 0 # Ensure this is reset too if overall failure
             skipped_invalid_format = 0
             skipped_existing_no_update_uc_bi_id_count = 0
             skipped_missing_step = 0
+            skipped_invalid_priority = 0
             uc_bi_ids_existing_no_update = []
             missing_step_bi_ids = []
+            skipped_errors_details = [] # Reset this too
+
         SessionLocal.remove()
 
     return {
@@ -639,23 +714,28 @@ def process_usecase_file(file_stream):
         "message": message,
         "added_count": added_count,
         "updated_count": updated_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_no_update_uc_bi_id_count + skipped_missing_step,
+        "skipped_count": skipped_count_total, # Total skipped count
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_no_update_uc_bi_id_count": skipped_existing_no_update_uc_bi_id_count,
         "skipped_missing_step": skipped_missing_step,
+        "skipped_invalid_priority": skipped_invalid_priority, # NEW: Return invalid priority count
         "uc_bi_ids_existing_no_update": uc_bi_ids_existing_no_update, 
-        "missing_step_bi_ids": missing_step_bi_ids
+        "missing_step_bi_ids": missing_step_bi_ids,
+        "skipped_errors_details": skipped_errors_details # NEW: Return general detailed errors
     }
 
-# NEW FUNCTION: process_ps_ps_relevance_file
+
 def process_ps_ps_relevance_file(file_stream):
     session = SessionLocal()
     added_count = 0
+    skipped_count_total = 0 # NEW: Unified skipped count
+    # Specific skipped categories
     skipped_invalid_format = 0
     skipped_existing_link = 0
     skipped_missing_step = 0
     skipped_self_link = 0
-    skipped_errors = []
+    skipped_errors_details = [] # Renamed from skipped_errors for consistency with other functions
+
     message = ""
     success = False
 
@@ -673,15 +753,20 @@ def process_ps_ps_relevance_file(file_stream):
             data = json.loads(file_stream.read().decode('utf-8'))
 
         if not isinstance(data, list):
-            raise ValueError("Invalid JSON format: Top level must be a list.")
+            raise ValueError("Invalid JSON format: Top level must be a list of relevance objects.")
 
-        for item in data:
+        for i, item in enumerate(data):
+            source_bi_id_log = item.get('source_process_step_bi_id', 'N/A')
+            target_bi_id_log = item.get('target_process_step_bi_id', 'N/A')
+            item_log_string = f"Link {i+1} ('{source_bi_id_log}' -> '{target_bi_id_log}')"
+
             if not (isinstance(item, dict) and
                     all(k in item for k in ('source_process_step_bi_id', 'target_process_step_bi_id', 'relevance_score')) and
                     isinstance(item['source_process_step_bi_id'], str) and item['source_process_step_bi_id'].strip() and
                     isinstance(item['target_process_step_bi_id'], str) and item['target_process_step_bi_id'].strip()):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Invalid format for item: {item.get('source_process_step_bi_id', 'N/A')} -> {item.get('target_process_step_bi_id', 'N/A')}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Invalid format or missing required fields (source_process_step_bi_id, target_process_step_bi_id, relevance_score).")
                 continue
 
             source_bi_id = item['source_process_step_bi_id'].strip()
@@ -692,7 +777,7 @@ def process_ps_ps_relevance_file(file_stream):
             # Convert content to string and handle empty
             if relevance_content is not None:
                 if not isinstance(relevance_content, str):
-                    print(f"Warning: Relevance content for {source_bi_id} -> {target_bi_id} was not a string, setting to None. Value: {relevance_content}")
+                    skipped_errors_details.append(f"{item_log_string}: Relevance content was not a string, treated as empty.")
                     relevance_content = None
                 else:
                     stripped_content = relevance_content.strip()
@@ -701,7 +786,8 @@ def process_ps_ps_relevance_file(file_stream):
 
             if source_bi_id == target_bi_id:
                 skipped_self_link += 1
-                skipped_errors.append(f"Self-relevance link: {source_bi_id} -> {target_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Cannot link a Process Step to itself.")
                 continue
 
             source_id = step_lookup.get(source_bi_id)
@@ -709,22 +795,26 @@ def process_ps_ps_relevance_file(file_stream):
 
             if source_id is None:
                 skipped_missing_step += 1
-                skipped_errors.append(f"Missing source step BI_ID: {source_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Source Process Step BI_ID '{source_bi_id}' not found.")
                 continue
             if target_id is None:
                 skipped_missing_step += 1
-                skipped_errors.append(f"Missing target step BI_ID: {target_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Target Process Step BI_ID '{target_bi_id}' not found.")
                 continue
 
             try:
                 score = int(relevance_score_raw)
                 if not (0 <= score <= 100):
                     skipped_invalid_format += 1
-                    skipped_errors.append(f"Invalid score for {source_bi_id} -> {target_bi_id}: {relevance_score_raw}")
+                    skipped_count_total += 1
+                    skipped_errors_details.append(f"{item_log_string}: Invalid relevance score '{relevance_score_raw}' (must be 0-100).")
                     continue
             except (ValueError, TypeError):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Non-integer score for {source_bi_id} -> {target_bi_id}: {relevance_score_raw}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Non-integer relevance score '{relevance_score_raw}'.")
                 continue
 
             existing_link = session.query(ProcessStepProcessStepRelevance).filter_by(
@@ -734,15 +824,10 @@ def process_ps_ps_relevance_file(file_stream):
 
             if existing_link:
                 skipped_existing_link += 1
-                # You could add update logic here if desired, but for simplicity, we skip duplicates
-                skipped_errors.append(f"Existing link skipped: {source_bi_id} -> {target_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Link already exists. Skipped.")
                 continue
             
-            # Check for reverse link already existing to avoid inserting A->B and then B->A if only one direction is desired.
-            # Your unique constraint (source, target) allows A->B and B->A to exist separately.
-            # If you want to prevent both, you'd need more complex logic or a different constraint.
-            # For now, we only check for exact duplicates (source=S, target=T).
-
             new_link = ProcessStepProcessStepRelevance(
                 source_process_step_id=source_id,
                 target_process_step_id=target_id,
@@ -757,22 +842,23 @@ def process_ps_ps_relevance_file(file_stream):
 
         parts = []
         if added_count > 0: parts.append(f"Added: {added_count}")
-        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
-        if skipped_self_link > 0: parts.append(f"Skipped (Self-Links): {skipped_self_link}")
-        if skipped_missing_step > 0: parts.append(f"Skipped (Missing Steps): {skipped_missing_step}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+        if skipped_count_total > 0: parts.append(f"Skipped: {skipped_count_total}")
 
         if not parts:
             message = "Processing complete. No process step relevance links found or processed."
         else:
             message = f"Processing complete. {', '.join(parts)}."
+        
+        if skipped_errors_details:
+             message += f" (Details on specific skips available in server logs). "
 
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_ps_ps_relevance_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_ps_ps_relevance_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_ps_ps_relevance_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -788,23 +874,24 @@ def process_ps_ps_relevance_file(file_stream):
         "success": success,
         "message": message,
         "added_count": added_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_step + skipped_self_link,
+        "skipped_count": skipped_count_total,
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_link": skipped_existing_link,
         "skipped_missing_step": skipped_missing_step,
         "skipped_self_link": skipped_self_link,
-        "skipped_errors": skipped_errors # Provide detailed skipped errors for debugging
+        "skipped_errors_details": skipped_errors_details # NEW: Return detailed errors
     }
 
-# --- NEW FUNCTIONS FOR USECASE RELEVANCE INJECTION ---
+# --- Replicating the pattern for other relevance injection files ---
 
 def process_usecase_area_relevance_file(file_stream):
     session = SessionLocal()
     added_count = 0
+    skipped_count_total = 0
     skipped_invalid_format = 0
     skipped_existing_link = 0
     skipped_missing_entities = 0
-    skipped_errors = []
+    skipped_errors_details = []
     message = ""
     success = False
 
@@ -822,13 +909,18 @@ def process_usecase_area_relevance_file(file_stream):
         if not isinstance(data, list):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
-        for item in data:
+        for i, item in enumerate(data):
+            source_uc_bi_id_log = item.get('source_usecase_bi_id', 'N/A')
+            target_area_name_log = item.get('target_area_name', 'N/A')
+            item_log_string = f"Link {i+1} ('{source_uc_bi_id_log}' -> '{target_area_name_log}')"
+
             if not (isinstance(item, dict) and
                     all(k in item for k in ('source_usecase_bi_id', 'target_area_name', 'relevance_score')) and
                     isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
                     isinstance(item['target_area_name'], str) and item['target_area_name'].strip()):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Invalid format for item: {item}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Invalid format or missing required fields.")
                 continue
 
             source_uc_bi_id = item['source_usecase_bi_id'].strip()
@@ -836,12 +928,13 @@ def process_usecase_area_relevance_file(file_stream):
             relevance_score_raw = item['relevance_score']
             relevance_content = item.get('relevance_content')
 
-            if relevance_content is not None and not isinstance(relevance_content, str):
-                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_area_name} was not a string, setting to None. Value: {relevance_content}")
-                relevance_content = None
-            elif isinstance(relevance_content, str):
-                stripped_content = relevance_content.strip()
-                relevance_content = stripped_content if stripped_content else None
+            if relevance_content is not None:
+                if not isinstance(relevance_content, str):
+                    skipped_errors_details.append(f"{item_log_string}: Relevance content was not a string, treated as empty.")
+                    relevance_content = None
+                else:
+                    stripped_content = relevance_content.strip()
+                    relevance_content = stripped_content if stripped_content else None
             
 
             source_uc_id = usecase_lookup.get(source_uc_bi_id)
@@ -849,22 +942,26 @@ def process_usecase_area_relevance_file(file_stream):
 
             if source_uc_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Source Use Case BI_ID '{source_uc_bi_id}' not found.")
                 continue
             if target_area_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing target Area Name: {target_area_name}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Target Area Name '{target_area_name}' not found.")
                 continue
             
             try:
                 score = int(relevance_score_raw)
                 if not (0 <= score <= 100):
                     skipped_invalid_format += 1
-                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_area_name}: {relevance_score_raw}")
+                    skipped_count_total += 1
+                    skipped_errors_details.append(f"{item_log_string}: Invalid score '{relevance_score_raw}' (must be 0-100).")
                     continue
             except (ValueError, TypeError):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_area_name}: {relevance_score_raw}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Non-integer score '{relevance_score_raw}'.")
                 continue
 
             existing_link = session.query(UsecaseAreaRelevance).filter_by(
@@ -874,7 +971,8 @@ def process_usecase_area_relevance_file(file_stream):
 
             if existing_link:
                 skipped_existing_link += 1
-                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_area_name}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Link already exists. Skipped.")
                 continue
 
             new_link = UsecaseAreaRelevance(
@@ -891,21 +989,23 @@ def process_usecase_area_relevance_file(file_stream):
 
         parts = []
         if added_count > 0: parts.append(f"Added: {added_count}")
-        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
-        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+        if skipped_count_total > 0: parts.append(f"Skipped: {skipped_count_total}")
 
         if not parts:
             message = "Processing complete. No Use Case-Area relevance links found or processed."
         else:
             message = f"Processing complete. {', '.join(parts)}."
+        
+        if skipped_errors_details:
+             message += f" (Details on specific skips available in server logs). "
 
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_area_relevance_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_usecase_area_relevance_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_usecase_area_relevance_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -921,20 +1021,21 @@ def process_usecase_area_relevance_file(file_stream):
         "success": success,
         "message": message,
         "added_count": added_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities,
+        "skipped_count": skipped_count_total,
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_link": skipped_existing_link,
         "skipped_missing_entities": skipped_missing_entities,
-        "skipped_errors": skipped_errors
+        "skipped_errors_details": skipped_errors_details
     }
 
 def process_usecase_step_relevance_file(file_stream):
     session = SessionLocal()
     added_count = 0
+    skipped_count_total = 0
     skipped_invalid_format = 0
     skipped_existing_link = 0
     skipped_missing_entities = 0
-    skipped_errors = []
+    skipped_errors_details = []
     message = ""
     success = False
 
@@ -952,13 +1053,18 @@ def process_usecase_step_relevance_file(file_stream):
         if not isinstance(data, list):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
-        for item in data:
+        for i, item in enumerate(data):
+            source_uc_bi_id_log = item.get('source_usecase_bi_id', 'N/A')
+            target_ps_bi_id_log = item.get('target_process_step_bi_id', 'N/A')
+            item_log_string = f"Link {i+1} ('{source_uc_bi_id_log}' -> '{target_ps_bi_id_log}')"
+
             if not (isinstance(item, dict) and
                     all(k in item for k in ('source_usecase_bi_id', 'target_process_step_bi_id', 'relevance_score')) and
                     isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
                     isinstance(item['target_process_step_bi_id'], str) and item['target_process_step_bi_id'].strip()):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Invalid format for item: {item}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Invalid format or missing required fields.")
                 continue
 
             source_uc_bi_id = item['source_usecase_bi_id'].strip()
@@ -966,12 +1072,13 @@ def process_usecase_step_relevance_file(file_stream):
             relevance_score_raw = item['relevance_score']
             relevance_content = item.get('relevance_content')
 
-            if relevance_content is not None and not isinstance(relevance_content, str):
-                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_ps_bi_id} was not a string, setting to None. Value: {relevance_content}")
-                relevance_content = None
-            elif isinstance(relevance_content, str):
-                stripped_content = relevance_content.strip()
-                relevance_content = stripped_content if stripped_content else None
+            if relevance_content is not None:
+                if not isinstance(relevance_content, str):
+                    skipped_errors_details.append(f"{item_log_string}: Relevance content was not a string, treated as empty.")
+                    relevance_content = None
+                else:
+                    stripped_content = relevance_content.strip()
+                    relevance_content = stripped_content if stripped_content else None
 
 
             source_uc_id = usecase_lookup.get(source_uc_bi_id)
@@ -979,22 +1086,26 @@ def process_usecase_step_relevance_file(file_stream):
 
             if source_uc_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Source Use Case BI_ID '{source_uc_bi_id}' not found.")
                 continue
             if target_ps_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing target Process Step BI_ID: {target_ps_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Target Process Step BI_ID '{target_ps_bi_id}' not found.")
                 continue
             
             try:
                 score = int(relevance_score_raw)
                 if not (0 <= score <= 100):
                     skipped_invalid_format += 1
-                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_ps_bi_id}: {relevance_score_raw}")
+                    skipped_count_total += 1
+                    skipped_errors_details.append(f"{item_log_string}: Invalid score '{relevance_score_raw}' (must be 0-100).")
                     continue
             except (ValueError, TypeError):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_ps_bi_id}: {relevance_score_raw}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Non-integer score '{relevance_score_raw}'.")
                 continue
 
             existing_link = session.query(UsecaseStepRelevance).filter_by(
@@ -1004,7 +1115,8 @@ def process_usecase_step_relevance_file(file_stream):
 
             if existing_link:
                 skipped_existing_link += 1
-                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_ps_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Link already exists. Skipped.")
                 continue
 
             new_link = UsecaseStepRelevance(
@@ -1021,21 +1133,23 @@ def process_usecase_step_relevance_file(file_stream):
 
         parts = []
         if added_count > 0: parts.append(f"Added: {added_count}")
-        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
-        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+        if skipped_count_total > 0: parts.append(f"Skipped: {skipped_count_total}")
 
         if not parts:
             message = "Processing complete. No Use Case-Step relevance links found or processed."
         else:
             message = f"Processing complete. {', '.join(parts)}."
+        
+        if skipped_errors_details:
+             message += f" (Details on specific skips available in server logs). "
 
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_step_relevance_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_usecase_step_relevance_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_usecase_step_relevance_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -1051,21 +1165,22 @@ def process_usecase_step_relevance_file(file_stream):
         "success": success,
         "message": message,
         "added_count": added_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities,
+        "skipped_count": skipped_count_total,
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_link": skipped_existing_link,
         "skipped_missing_entities": skipped_missing_entities,
-        "skipped_errors": skipped_errors
+        "skipped_errors_details": skipped_errors_details
     }
 
 def process_usecase_usecase_relevance_file(file_stream):
     session = SessionLocal()
     added_count = 0
+    skipped_count_total = 0
     skipped_invalid_format = 0
     skipped_existing_link = 0
     skipped_missing_entities = 0
     skipped_self_link = 0
-    skipped_errors = []
+    skipped_errors_details = []
     message = ""
     success = False
 
@@ -1082,13 +1197,18 @@ def process_usecase_usecase_relevance_file(file_stream):
         if not isinstance(data, list):
             raise ValueError("Invalid JSON format: Top level must be a list.")
 
-        for item in data:
+        for i, item in enumerate(data):
+            source_uc_bi_id_log = item.get('source_usecase_bi_id', 'N/A')
+            target_uc_bi_id_log = item.get('target_usecase_bi_id', 'N/A')
+            item_log_string = f"Link {i+1} ('{source_uc_bi_id_log}' -> '{target_uc_bi_id_log}')"
+
             if not (isinstance(item, dict) and
                     all(k in item for k in ('source_usecase_bi_id', 'target_usecase_bi_id', 'relevance_score')) and
                     isinstance(item['source_usecase_bi_id'], str) and item['source_usecase_bi_id'].strip() and
                     isinstance(item['target_usecase_bi_id'], str) and item['target_usecase_bi_id'].strip()):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Invalid format for item: {item}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Invalid format or missing required fields.")
                 continue
 
             source_uc_bi_id = item['source_usecase_bi_id'].strip()
@@ -1096,17 +1216,19 @@ def process_usecase_usecase_relevance_file(file_stream):
             relevance_score_raw = item['relevance_score']
             relevance_content = item.get('relevance_content')
 
-            if relevance_content is not None and not isinstance(relevance_content, str):
-                print(f"Warning: Relevance content for {source_uc_bi_id} -> {target_uc_bi_id} was not a string, setting to None. Value: {relevance_content}")
-                relevance_content = None
-            elif isinstance(relevance_content, str):
-                stripped_content = relevance_content.strip()
-                relevance_content = stripped_content if stripped_content else None
+            if relevance_content is not None:
+                if not isinstance(relevance_content, str):
+                    skipped_errors_details.append(f"{item_log_string}: Relevance content was not a string, treated as empty.")
+                    relevance_content = None
+                else:
+                    stripped_content = relevance_content.strip()
+                    relevance_content = stripped_content if stripped_content else None
 
 
             if source_uc_bi_id == target_uc_bi_id:
                 skipped_self_link += 1
-                skipped_errors.append(f"Self-relevance link: {source_uc_bi_id} -> {target_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Cannot link a Use Case to itself.")
                 continue
 
             source_uc_id = usecase_lookup.get(source_uc_bi_id)
@@ -1114,22 +1236,26 @@ def process_usecase_usecase_relevance_file(file_stream):
 
             if source_uc_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing source Use Case BI_ID: {source_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Source Use Case BI_ID '{source_uc_bi_id}' not found.")
                 continue
             if target_uc_id is None:
                 skipped_missing_entities += 1
-                skipped_errors.append(f"Missing target Use Case BI_ID: {target_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Target Use Case BI_ID '{target_uc_bi_id}' not found.")
                 continue
             
             try:
                 score = int(relevance_score_raw)
                 if not (0 <= score <= 100):
                     skipped_invalid_format += 1
-                    skipped_errors.append(f"Invalid score for {source_uc_bi_id} -> {target_uc_bi_id}: {relevance_score_raw}")
+                    skipped_count_total += 1
+                    skipped_errors_details.append(f"{item_log_string}: Invalid score '{relevance_score_raw}' (must be 0-100).")
                     continue
             except (ValueError, TypeError):
                 skipped_invalid_format += 1
-                skipped_errors.append(f"Non-integer score for {source_uc_bi_id} -> {target_uc_bi_id}: {relevance_score_raw}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Non-integer score '{relevance_score_raw}'.")
                 continue
 
             existing_link = session.query(UsecaseUsecaseRelevance).filter_by(
@@ -1139,7 +1265,8 @@ def process_usecase_usecase_relevance_file(file_stream):
 
             if existing_link:
                 skipped_existing_link += 1
-                skipped_errors.append(f"Existing link skipped: {source_uc_bi_id} -> {target_uc_bi_id}")
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Link already exists. Skipped.")
                 continue
 
             new_link = UsecaseUsecaseRelevance(
@@ -1156,22 +1283,23 @@ def process_usecase_usecase_relevance_file(file_stream):
 
         parts = []
         if added_count > 0: parts.append(f"Added: {added_count}")
-        if skipped_existing_link > 0: parts.append(f"Skipped (Already Exists): {skipped_existing_link}")
-        if skipped_self_link > 0: parts.append(f"Skipped (Self-Links): {skipped_self_link}")
-        if skipped_missing_entities > 0: parts.append(f"Skipped (Missing Entities): {skipped_missing_entities}")
-        if skipped_invalid_format > 0: parts.append(f"Skipped (Invalid Data): {skipped_invalid_format}")
+        if skipped_count_total > 0: parts.append(f"Skipped: {skipped_count_total}")
 
         if not parts:
             message = "Processing complete. No Use Case-Use Case relevance links found or processed."
         else:
             message = f"Processing complete. {', '.join(parts)}."
+        
+        if skipped_errors_details:
+             message += f" (Details on specific skips available in server logs). "
 
-    except json.JSONDecodeError:
-        print("JSON Decode Error in process_usecase_usecase_relevance_file")
+    except json.JSONDecodeError as e:
+        print(f"JSON Decode Error in process_usecase_usecase_relevance_file: {e}")
         session.rollback()
         success = False
-        message = "Invalid JSON format in the uploaded file."
+        message = f"Invalid JSON format in the uploaded file: {e}."
     except ValueError as ve:
+        print(f"Value Error in process_usecase_usecase_relevance_file: {ve}")
         session.rollback()
         success = False
         message = f"Error: {ve}"
@@ -1187,23 +1315,21 @@ def process_usecase_usecase_relevance_file(file_stream):
         "success": success,
         "message": message,
         "added_count": added_count,
-        "skipped_count": skipped_invalid_format + skipped_existing_link + skipped_missing_entities + skipped_self_link,
+        "skipped_count": skipped_count_total,
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_link": skipped_existing_link,
         "skipped_missing_entities": skipped_missing_entities,
         "skipped_self_link": skipped_self_link,
-        "skipped_errors": skipped_errors
+        "skipped_errors_details": skipped_errors_details
     }
 
 
-# MODIFIED: import_database_from_json to accept a string instead of a file stream
 def import_database_from_json(json_string, clear_existing_data=False):
     # Get a fresh session for the import process
     session_local = SessionLocal() 
 
     try:
         print("import_database_from_json service function called.")
-        # Now use json.loads directly on the string content
         data_to_import = json.loads(json_string)
         print(f"JSON content loaded. Found {len(data_to_import.get('data', {}).keys())} top-level data keys.")
 
@@ -1219,147 +1345,88 @@ def import_database_from_json(json_string, clear_existing_data=False):
         if clear_existing_data:
             print("Clearing existing data...")
             
-            # Test DB query (already exists)
-            test_result = session_local.execute(text("SELECT 1")).scalar()
-            print(f"Test DB query successful: {test_result}")
-
-            # --- CRITICAL CHANGE: Force closure of all other connections if possible ---
-            # This is a drastic measure but might be needed to clear lingering locks.
-            # Only do this if you are absolutely sure no other parts of your app
-            # are currently in critical operations.
-            # This is targeting other active connections that might prevent TRUNCATE.
-            # try:
-            #     # Disconnect all other clients from the database *for this user*
-            #     # You might need to adjust the database name and user.
-            #     # This needs superuser privileges usually, or specific user's own connections.
-            #     # For `user:password@db:5432/usecase_explorer_db`, you can try:
-            #     db_name = flask_sqlalchemy_db.engine.url.database
-            #     db_user = flask_sqlalchemy_db.engine.url.username
-                
-            #     # Check if current connection is active, if not, create one to run this query
-            #     # Use a separate connection to avoid issues with the current transaction
-            #     with flask_sqlalchemy_db.engine.connect() as admin_conn:
-            #         admin_conn.execute(text(f"""
-            #             SELECT pg_terminate_backend(pg_stat_activity.pid)
-            #             FROM pg_stat_activity
-            #             WHERE pg_stat_activity.datname = '{db_name}'
-            #             AND pid <> pg_backend_pid();
-            #         """))
-            #         admin_conn.commit() # Commit the termination commands
-            #     print("DEBUG: Attempted to terminate other database connections.")
-            # except Exception as e:
-            #     print(f"WARNING: Could not terminate other database connections (might lack privileges or none exist): {e}")
-            #     # Don't fail the import for this, just log the warning
-            # --- END CRITICAL CHANGE ---
-
-            # TRUNCATE statements - add specific prints and try flushing
             try:
                 # Add a smaller timeout to each TRUNCATE if it gets stuck
-                print("Executing TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;")
-                session_local.execute(text("TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;").execution_options(timeout=30)) # Add timeout
-                print("Truncated llm_settings.")
-                session_local.commit() # Commit each truncate
-                print("Committed llm_settings truncate.")
-
+                print("Executing TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated process_step_process_step_relevance.")
                 session_local.commit()
-                print("Committed process_step_process_step_relevance truncate.")
 
+                print("Executing TRUNCATE TABLE usecase_usecase_relevance RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE usecase_usecase_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated usecase_usecase_relevance.")
                 session_local.commit()
-                print("Committed usecase_usecase_relevance truncate.")
 
+                print("Executing TRUNCATE TABLE usecase_step_relevance RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE usecase_step_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated usecase_step_relevance.")
                 session_local.commit()
-                print("Committed usecase_step_relevance truncate.")
 
+                print("Executing TRUNCATE TABLE usecase_area_relevance RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE usecase_area_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated usecase_area_relevance.")
                 session_local.commit()
-                print("Committed usecase_area_relevance truncate.")
 
+                print("Executing TRUNCATE TABLE use_cases RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE use_cases RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated use_cases.")
                 session_local.commit()
-                print("Committed use_cases truncate.")
 
+                print("Executing TRUNCATE TABLE process_steps RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE process_steps RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated process_steps.")
                 session_local.commit()
-                print("Committed process_steps truncate.")
 
+                print("Executing TRUNCATE TABLE areas RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE areas RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated areas.")
                 session_local.commit()
-                print("Committed areas truncate.")
 
-                # --- NEW DEBUGGING BLOCK FOR FLASK_SESSIONS ---
                 try:
                     print("Attempting to clear flask_sessions.")
-                    # Change TRUNCATE to DELETE for flask_sessions, as it's safer for active tables
-                    # DELETE also respects any potential locks better than TRUNCATE in some edge cases.
                     session_local.execute(text("DELETE FROM flask_sessions;").execution_options(timeout=30)) 
-                    print("Deleted all records from flask_sessions successfully.")
                     session_local.commit()
-                    print("Committed flask_sessions delete.")
+                    print("Deleted all records from flask_sessions successfully.")
                 except Exception as e:
-                    session_local.rollback() # Rollback changes to the session_local session
+                    session_local.rollback()
                     print(f"CRITICAL ERROR: Failed to clear flask_sessions table during import: {e}")
-                    # traceback import is already at top of injection_service.py
-                    traceback.print_exc() # Print full traceback
+                    traceback.print_exc()
                     return {"success": False, "message": f"Critical error during session table clear: {e}. Import rolled back."}
-                # --- END NEW DEBUGGING BLOCK ---
 
-                # Moved 'users' truncate after the new 'flask_sessions' block
-                session_local.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;").execution_options(timeout=30))
-                print("Truncated users.")
+                print("Executing TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;") # Ensure LLM Settings is truncated
+                session_local.execute(text("TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;").execution_options(timeout=30))
                 session_local.commit()
-                print("Committed users truncate.")
+
+                # Truncate users last if applicable, it might have dependencies
+                print("Executing TRUNCATE TABLE users RESTART IDENTITY CASCADE;")
+                session_local.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;").execution_options(timeout=30))
+                session_local.commit()
                 
                 print("Data cleared.")
 
             except OperationalError as oe: # Specifically catch database operational errors (like timeout)
                 session_local.rollback()
                 print(f"ERROR: TRUNCATE operation timed out or failed with operational error: {oe}")
-                # You might want to use a Flask flash message here, but the function returns dict
                 return {"success": False, "message": f"Clearing data failed: {oe}. Import rolled back."}
             except Exception as e:
                 session_local.rollback()
                 print(f"ERROR: TRUNCATE operations failed unexpectedly: {e}")
-                raise # Re-raise to be caught by outer block
+                raise
             
-            # --- START OF ORIGINAL IMPORT LOGIC (after truncates) ---
-            # ... (your original import logic for users, areas, steps, etc. goes here)
-            # This part will continue to use `session_local` implicitly via add/flush
-
-            # Example for users (the rest will be similar)
-            user_id_map = {}        # old_id -> new_id
-            area_id_map = {}        # old_id -> new_id
-            process_step_id_map = {} # old_id -> new_id
-            usecase_id_map = {}     # old_id -> new_id
+            user_id_map = {}
+            area_id_map = {}
+            process_step_id_map = {}
+            usecase_id_map = {}
 
             print("Importing Users...")
             if "users" in imported_data:
-                print(f"Found {len(imported_data['users'])} users to import.")
                 for u_data in imported_data["users"]:
                     user = User(username=u_data["username"])
                     if 'password' in u_data and u_data['password'] :
-                        user.password = u_data['password'] # Directly assign the HASHED password
+                        user.password = u_data['password']
                     else:
-                        user.set_password("imported_default_password") # Fallback to a default if dump lacks password
+                        user.set_password("imported_default_password")
                     
                     session_local.add(user)
-                    session_local.flush() # Flush to get the new ID assigned by the DB
-                    user_id_map[u_data["id"]] = user.id # Store mapping old_id -> new_id
+                    session_local.flush()
+                    user_id_map[u_data["id"]] = user.id
             print("Users import complete.")
             
-            # Example: Areas
             print("Importing Areas...")
             if "areas" in imported_data:
-                print(f"Found {len(imported_data['areas'])} areas to import.")
                 for a_data in imported_data["areas"]:
                     area = Area(
                         name=a_data["name"],
@@ -1370,16 +1437,14 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     area_id_map[a_data["id"]] = area.id
             print("Areas import complete.")
 
-            # Example: Process Steps
             print("Importing Process Steps...")
             if "process_steps" in imported_data:
-                print(f"Found {len(imported_data['process_steps'])} process steps to import.")
                 for ps_data in imported_data["process_steps"]:
                     old_area_id = ps_data["area_id"]
                     new_area_id = area_id_map.get(old_area_id)
 
                     if new_area_id is None:
-                        print(f"Warning: Original Area ID {old_area_id} for step '{ps_data['name']}' not found in new mapping. Skipping step.")
+                        print(f"Warning: Original Area ID {old_area_id} for step '{ps_data.get('name', 'N/A')}' not found in new mapping. Skipping step.")
                         continue
 
                     step = ProcessStep(
@@ -1402,16 +1467,14 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     process_step_id_map[ps_data["id"]] = step.id
             print("Process Steps import complete.")
 
-            # Example: Use Cases
             print("Importing Use Cases...")
             if "use_cases" in imported_data:
-                print(f"Found {len(imported_data['use_cases'])} use cases to import.")
                 for uc_data in imported_data["use_cases"]:
                     old_process_step_id = uc_data["process_step_id"]
                     new_process_step_id = process_step_id_map.get(old_process_step_id)
 
                     if new_process_step_id is None:
-                        print(f"Warning: Process Step ID {old_process_step_id} for use case '{uc_data['name']}' not found in new mapping. Skipping UC.")
+                        print(f"Warning: Process Step ID {old_process_step_id} for use case '{uc_data.get('name', 'N/A')}' not found in new mapping. Skipping UC.")
                         continue
 
                     use_case = UseCase(
@@ -1447,10 +1510,8 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     usecase_id_map[uc_data["id"]] = use_case.id
             print("Use Cases import complete.")
             
-            # LLMSettings (already added to your code)
             if "llm_settings" in imported_data:
                 print("Importing LLM Settings...")
-                print(f"Found {len(imported_data['llm_settings'])} LLM settings entries to import.")
                 for ls_data in imported_data["llm_settings"]:
                     old_user_id = ls_data["user_id"]
                     new_user_id = user_id_map.get(old_user_id)
@@ -1475,11 +1536,8 @@ def import_database_from_json(json_string, clear_existing_data=False):
             print("LLM Settings import complete.")
 
 
-            # Relevance Links (already added to your code)
             print("Importing Relevance Links...")
-            # Add debug prints for each relevance type
             if "usecase_area_relevance" in imported_data:
-                print(f"Found {len(imported_data['usecase_area_relevance'])} usecase_area_relevance entries to import.")
                 for r_data in imported_data["usecase_area_relevance"]:
                     new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
                     new_target_area_id = area_id_map.get(r_data["target_area_id"])
@@ -1497,7 +1555,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     session_local.add(rel)
             
             if "usecase_step_relevance" in imported_data:
-                print(f"Found {len(imported_data['usecase_step_relevance'])} usecase_step_relevance entries to import.")
                 for r_data in imported_data["usecase_step_relevance"]:
                     new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
                     new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
@@ -1515,7 +1572,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     session_local.add(rel)
 
             if "usecase_usecase_relevance" in imported_data:
-                print(f"Found {len(imported_data['usecase_usecase_relevance'])} usecase_usecase_relevance entries to import.")
                 for r_data in imported_data["usecase_usecase_relevance"]:
                     new_source_usecase_id = usecase_id_map.get(r_data["source_usecase_id"])
                     new_target_usecase_id = usecase_id_map.get(r_data["target_usecase_id"])
@@ -1523,7 +1579,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     if new_source_usecase_id is None or new_target_usecase_id is None:
                         print(f"Warning: Skipping UsecaseUsecaseRelevance link for old UC ID {r_data['source_usecase_id']} to old UC ID {r_data['target_usecase_id']} due to missing mapped entity.")
                         continue
-                    # Also handle self-relevance check here in case the source and target map to the same new ID
                     if new_source_usecase_id == new_target_usecase_id:
                         print(f"Warning: Skipping UsecaseUsecaseRelevance self-link for new UC ID {new_source_usecase_id} (original {r_data['source_usecase_id']}).")
                         continue
@@ -1537,9 +1592,7 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     )
                     session_local.add(rel)
 
-            # NEW: Import ProcessStepProcessStepRelevance
             if "process_step_process_step_relevance" in imported_data:
-                print(f"Found {len(imported_data['process_step_process_step_relevance'])} process_step_process_step_relevance entries to import.")
                 for r_data in imported_data["process_step_process_step_relevance"]:
                     new_source_process_step_id = process_step_id_map.get(r_data["source_process_step_id"])
                     new_target_process_step_id = process_step_id_map.get(r_data["target_process_step_id"])
@@ -1547,7 +1600,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     if new_source_process_step_id is None or new_target_process_step_id is None:
                         print(f"Warning: Skipping ProcessStepProcessStepRelevance link for old PS ID {r_data['source_process_step_id']} to old PS ID {r_data['target_process_step_id']} due to missing mapped entity.")
                         continue
-                    # Handle self-relevance check
                     if new_source_process_step_id == new_target_process_step_id:
                         print(f"Warning: Skipping ProcessStepProcessStepRelevance self-link for new PS ID {new_source_process_step_id} (original {r_data['source_process_step_id']}).")
                         continue
@@ -1583,5 +1635,4 @@ def import_database_from_json(json_string, clear_existing_data=False):
             "message": f"An error occurred: {e}. Import rolled back."
         }
     finally:
-        # SessionLocal.remove() is managed by app.py's teardown_request
         pass

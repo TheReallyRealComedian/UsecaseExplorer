@@ -1,3 +1,4 @@
+
 // UsecaseExplorer/backend/static/js/llm_ui.js
 import { initializeLLMChat } from './common_llm_chat.js'; // Import the new module
 
@@ -10,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updateAllCounts();
 
     // Initialize the LLM Chat functionality using the common module
-    // This page (llm_data_prep.html) now integrates image input directly into chatInput
     initializeLLMChat(
         'chatDisplay',
         'chatInput',
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const inputNameMap = {
             'areas': 'area_ids',
-            'steps': 'step_ids',
+            'steps': 'step_ids', 
             'usecases': 'usecase_ids'
         };
         
@@ -221,22 +221,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // For Process Step Fields
-    document.getElementById('selectAllStepFieldsBtn')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = true);
-    });
-    document.getElementById('clearAllStepFieldsBtn')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = false);
-    });
-
-    // For Use Case Fields
-    document.getElementById('selectAllUsecaseFieldsBtn')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = true);
-    });
-    document.getElementById('clearAllUsecaseFieldsBtn')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = false);
-    });
-
     // --- JSON Preview Control (existing, no change) ---
     const copyJsonButton = document.getElementById('copyJsonButton');
     const jsonDataPreview = document.getElementById('jsonDataPreview');
@@ -305,17 +289,18 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('preparedDataHeader'),
         document.getElementById('llmChatHeader'),
         document.getElementById('systemPromptHeader'),
-        document.getElementById('relevanceLinkBody') // Added to match original
+        document.getElementById('relevanceLinkBody')
     ];
 
     collapseHeaders.forEach(header => {
         if (header) {
             const targetId = header.getAttribute('data-bs-target');
-            if (targetId) { // Check if targetId is not null or undefined
+            if (targetId) {
                 const collapseElement = document.getElementById(targetId.substring(1));
                 const iconElement = header.querySelector('i');
 
                 if (collapseElement && iconElement) {
+                    // Initial state
                     if (collapseElement.classList.contains('show')) {
                         iconElement.classList.remove('fa-chevron-down');
                         iconElement.classList.add('fa-chevron-up');
@@ -335,6 +320,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
+    });
+
+    // --- NEW: Event listeners for Select All / Clear All field checkboxes ---
+    document.getElementById('selectAllStepFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = true);
+    });
+    document.getElementById('clearAllStepFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = false);
+    });
+
+    document.getElementById('selectAllUsecaseFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = true);
+    });
+    document.getElementById('clearAllUsecaseFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = false);
     });
 
 });

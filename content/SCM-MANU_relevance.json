@@ -1,0 +1,149 @@
+[
+  {
+    "source_process_step_bi_id": "00",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Strategic Guidance & Lifecycle Management",
+    "relevance_content": "Product Lifecycle Management (SCM-00) defines the overall product strategy, including new product launches and version changes. This strategic guidance (e.g., \"Launch Coordination\" and \"Version Management\") directly informs and sets the framework for the Production Planning & Scheduling Process (MFG-001), which must prepare detailed plans and schedules to align with these product lifecycle phases and requirements.",
+    "relevance_score": 95
+  },
+  {
+    "source_process_step_bi_id": "00",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "Strategic Guidance & Lifecycle Management",
+    "relevance_content": "The outputs of Product Lifecycle Management (SCM-00), such as final product definitions, approved formulations, packaging changes, and launch timelines, directly dictate what and how Manufacturing Processes (MFG-002) must execute. MFG-002 relies on the established product parameters and changes orchestrated by SCM-00 for digital batch execution and master recipe management.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "00",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_type": "Planning & Resource Coordination",
+    "relevance_content": "Strategic decisions regarding new product launches or significant product changes orchestrated by Product Lifecycle Management (SCM-00) can necessitate new equipment acquisitions, modifications, or automation solutions. These requirements trigger corresponding activities within the Equipment & Automation Lifecycle Process (MFG-004), influencing factory planning and equipment qualification.",
+    "relevance_score": 75
+  },
+  {
+    "source_process_step_bi_id": "01",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Strategic Guidance & Lifecycle Management",
+    "relevance_content": "Strategic S&OP & SC Design (SCM-01) establishes long-term capacity plans and network configurations. These high-level decisions on available manufacturing capacity and strategic investments directly constrain and guide the long-term planning and scheduling activities within Manufacturing's Production Planning & Scheduling Process (MFG-001), ensuring alignment between strategic intent and operational feasibility.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "01",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_type": "Strategic Guidance & Lifecycle Management",
+    "relevance_content": "The strategic decisions made in SCM-01, such as \"Capacity Investment\" and \"Network Design,\" are key drivers for the initiation and execution of the Equipment & Automation Lifecycle Process (MFG-004). These decisions necessitate the acquisition, qualification, and integration of new production equipment and automation solutions.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "02",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "The Demand Planning / Sales Forecasting (SCM-02) process generates consensus demand forecasts that serve as a fundamental input for Manufacturing's Production Planning & Scheduling Process (MFG-001). MFG-001 directly utilizes these forecasts to determine production volumes, allocate resources, and create detailed production schedules.",
+    "relevance_score": 100
+  },
+  {
+    "source_process_step_bi_id": "03",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "Tactical & Operational Supply Planning & Configuration (SCM-03) provides the refined supply plans and production allocation decisions that are a direct input for Manufacturing's Production Planning & Scheduling Process (MFG-001). MFG-001 then converts these plans into specific, executable schedules for the shop floor, coordinating material availability and MRP.",
+    "relevance_score": 100
+  },
+  {
+    "source_process_step_bi_id": "03",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "The tactical supply plans and production allocations determined by SCM-03 provide the operational direction for the Manufacturing Processes (MFG-002). These plans dictate what products need to be manufactured, in what quantities, and from which production sites. Additionally, SCM-03 coordinates intra-plant logistics leading up to the manufacturing lines.",
+    "relevance_score": 95
+  },
+  {
+    "source_process_step_bi_id": "04",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "Production Planning & Detailed Scheduling (SCM-04) generates the final, executable manufacturing orders and detailed schedules. These are directly fed into the Production Planning & Scheduling Process (MFG-001) at the manufacturing sites, providing the precise instructions for initiating production runs, managing resources, and optimizing local operations.",
+    "relevance_score": 98
+  },
+  {
+    "source_process_step_bi_id": "04",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "The detailed production orders and schedules generated by SCM-04 serve as the essential, direct operational instructions for the Manufacturing Processes (MFG-002). MFG-002 executes these orders on the shop floor, following the specified sequences, resource allocations, and campaign plans.",
+    "relevance_score": 100
+  },
+  {
+    "source_process_step_bi_id": "04",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_type": "Planning & Resource Coordination",
+    "relevance_content": "The production sequencing and campaign planning activities in SCM-04 directly influence the timing and nature of changeovers (MFG-003). SCM-04's optimized schedules aim to minimize downtime by planning efficient production runs, thereby coordinating closely with the changeover process to ensure smooth transitions between products.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "05",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "Once products are manufactured by MFG-002, they become the direct input for Global Supply & Transportation Management (SCM-05) for further distribution. SCM-05 manages the physical movement of these finished products from the manufacturing sites to various destinations, including intercompany transfers and external shipments.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "05",
+    "target_process_step_bi_id": "PS-MFG-005",
+    "relevance_type": "Data Exchange & Information Provision",
+    "relevance_content": "Global Supply & Transportation Management (SCM-05) requires comprehensive product, batch, and process data (e.g., Dangerous Goods classification, serialization data, quality releases) from Manufacturing's Product, Site, Process Data Usage (MFG-005) to ensure compliant and traceable international shipments and customs processes.",
+    "relevance_score": 85
+  },
+  {
+    "source_process_step_bi_id": "06",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "Sequential Process Dependency (Input-Output Flow)",
+    "relevance_content": "Logistics (SCM-06) manages the physical movement of materials within plants (\"intra-plant logistics, including material introduction to lines\") that directly feed into the Manufacturing Processes (MFG-002). Conversely, MFG-002 produces finished goods that are then managed, stored, and prepared for distribution by SCM-06.",
+    "relevance_score": 95
+  },
+  {
+    "source_process_step_bi_id": "06",
+    "target_process_step_bi_id": "PS-MFG-005",
+    "relevance_type": "Data Exchange & Information Provision",
+    "relevance_content": "Logistics (SCM-06) requires real-time access to accurate product and batch data (e.g., expiry dates for FEFO, serialization data) for effective \"Inventory Control\" and \"Compliance Management.\" This data is made available and usable through Manufacturing's Product, Site, Process Data Usage (MFG-005).",
+    "relevance_score": 80
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-001",
+    "relevance_type": "Competency & Operational Support Provision",
+    "relevance_content": "The Production Planning & Scheduling Process (MFG-001) requires reliable and harmonized master data (e.g., BOMs, routings, equipment capacities, lead times) and robust system integration for its planning activities. SCM-E01 provides these foundational capabilities through \"Master Data Management\" and \"System Integration,\" enabling efficient manufacturing planning.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-002",
+    "relevance_type": "System/Platform Integration",
+    "relevance_content": "Manufacturing Processes (MFG-002), particularly its advanced \"Automated Data Collection\" and \"Real-time Monitoring\" capabilities, relies on the underlying \"Digital Infrastructure\" and \"System Integration\" (e.g., MES, ERP, LIMS integration) provided and managed by SCM-E01, ensuring seamless data flow from the shop floor.",
+    "relevance_score": 90
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-003",
+    "relevance_type": "Competency & Operational Support Provision",
+    "relevance_content": "The optimization and automation of Change Overs (MFG-003) benefit from the data and system foundations laid by SCM-E01. Accurate equipment and process master data (managed via SCM-E01's \"Master Data Management\") and seamless system integration are essential for automated recipe loading and real-time progress visibility.",
+    "relevance_score": 75
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-004",
+    "relevance_type": "Competency & Operational Support Provision",
+    "relevance_content": "The Equipment & Automation Lifecycle Process (MFG-004), which focuses on managing equipment data and standardization, relies on the \"Master Data Management\" and \"Data Governance\" principles provided by SCM-E01 to ensure consistent and high-quality equipment data across the organization.",
+    "relevance_score": 85
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-005",
+    "relevance_type": "System/Platform Integration",
+    "relevance_content": "SCM-E01 provides the core \"Digital Infrastructure,\" \"System Integration,\" and \"Analytics & Reporting\" capabilities (e.g., Dataland) that are fundamental for Manufacturing's Product, Site, Process Data Usage (MFG-005). MFG-005's purpose of making production data accessible for CPV, deviation management, and self-service analytics is directly enabled by SCM-E01's foundational data platform.",
+    "relevance_score": 98
+  },
+  {
+    "source_process_step_bi_id": "E01",
+    "target_process_step_bi_id": "PS-MFG-006",
+    "relevance_type": "Competency & Operational Support Provision",
+    "relevance_content": "The digital tools and platforms for \"Workplace & Operator Assistance\" (MFG-006), such as AI-powered guidance, digital onboarding, and knowledge management systems, are enabled by the broader \"Digital Infrastructure\" and \"System Integration\" capabilities provided by SCM-E01. Access to high-quality master data (SOPs, MBRs) is also facilitated.",
+    "relevance_score": 80
+  }
+]
