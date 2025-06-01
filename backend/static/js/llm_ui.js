@@ -221,6 +221,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // For Process Step Fields
+    document.getElementById('selectAllStepFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = true);
+    });
+    document.getElementById('clearAllStepFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="step_fields"]').forEach(cb => cb.checked = false);
+    });
+
+    // For Use Case Fields
+    document.getElementById('selectAllUsecaseFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = true);
+    });
+    document.getElementById('clearAllUsecaseFieldsBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = false);
+    });
+
     // --- JSON Preview Control (existing, no change) ---
     const copyJsonButton = document.getElementById('copyJsonButton');
     const jsonDataPreview = document.getElementById('jsonDataPreview');
@@ -322,24 +338,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
-
-// --- GLOBAL FUNCTIONS FOR FIELD CHECKBOXES (existing, no change) ---
-function selectAllStepFields() {
-    const checkboxes = document.querySelectorAll('input[name="step_fields"]');
-    checkboxes.forEach(cb => cb.checked = true);
-}
-
-function clearAllStepFields() {
-    const checkboxes = document.querySelectorAll('input[name="step_fields"]');
-    checkboxes.forEach(cb => cb.checked = false);
-}
-
-function selectAllUsecaseFields() {
-    const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
-    checkboxes.forEach(cb => cb.checked = true);
-}
-
-function clearAllUsecaseFields() {
-    const checkboxes = document.querySelectorAll('input[name="usecase_fields"]');
-    checkboxes.forEach(cb => cb.checked = false);
-}
