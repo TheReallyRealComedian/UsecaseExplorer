@@ -2,7 +2,8 @@
  * Usecase Explorer - Main Stylesheet (style.css)
  *
  * This file contains all global, layout, UI component, and page-specific styles
- * for the Usecase Explorer application. It aims for a modern, clean dashboard design.
+ * for the Usecase Explorer application. It aims for a modern, clean dashboard design,
+ * strictly following the Boehringer Ingelheim brand style guide.
  *
  */
 
@@ -10,125 +11,115 @@
 /* --- 0. CSS Variables (Design Tokens) --- */
 /* ========================================================================== */
 :root {
-    /* --- Updated Color Palette for Modern Look --- */
-    /* Semantic Color Definitions (replacing --raw-* and aliased variables) */
+    /* --- Boehringer Ingelheim Color Palette --- */
+    /* Primary Colors */
+    --color-signature-green: #00e47c; /* Bright green accent */
+    --color-deep-teal: #08312a;     /* Brand secondary, used as primary in UI */
+    --color-light-purple: #c5c3ee;  /* Soft accent */
+
+    /* Neutral Foundation */
     --color-white: #ffffff;
     --color-black: #000000;
+    --color-dark-gray-1: #2d3232; /* Dark gray */
+    --color-dark-gray-2: #1a1c1c; /* Even darker gray, used for sidebar */
+    --color-dark-gray-3: #424747; /* Medium-dark gray */
+    --color-medium-gray: #717780; /* Medium gray for secondary text */
+    --color-muted-green-gray: #6b8375; /* Muted green-gray for subtle accents */
 
-    /* Modern Greys */
-    --color-grey-100: #f8fafc; /* Very light background */
-    --color-grey-200: #f1f5f9; /* Card backgrounds, subtle elements */
-    --color-grey-300: #e2e8f0; /* Borders, subtle dividers */
-    --color-grey-400: #94a3b8; /* Muted text */
-    --color-grey-500: #64748b; /* Secondary text */
-    --color-grey-600: #475569; /* Darker secondary */
-    --color-grey-700: #334155; /* Primary text */
-    --color-grey-800: #1e293b; /* Headings */
+    /* --- Semantic Color Assignments (using BI palette) --- */
+    --body-bg-color: var(--color-white);
+    --main-content-bg: var(--color-white);
+    --card-bg: var(--color-white);
+    --header-bg: var(--color-white);
+    --element-bg-light: #f5f5f5; /* A very light grey for subtle backgrounds */
 
-    /* Panel Specific Colors (formerly --raw-dark-grey-panel, --raw-panel-text, --raw-panel-border-subtle) */
-    --color-panel-bg: #0f172a; /* Sidebar background */
-    --color-panel-text: #cbd5e1; /* Sidebar text */
+    /* Core UI Colors */
+    --color-primary: var(--color-deep-teal);       /* Main brand dark green */
+    --color-primary-light: var(--color-muted-green-gray); /* Greenish-gray as a softer primary tone */
+    --color-primary-dark: #031815;                  /* Derived darker deep teal */
+    --color-accent: var(--color-signature-green);   /* Main brand bright green */
+    --color-secondary: var(--color-light-purple);   /* Soft accent purple */
+
+    /* Text Colors */
+    --text-primary: var(--color-black);             /* High contrast for main text */
+    --text-secondary: var(--color-medium-gray);     /* For secondary information */
+    --text-muted: var(--color-medium-gray);         /* Same as secondary for muted */
+    --text-color-sidebar-active: var(--color-white);
+    --text-color-on-primary: var(--color-white);
+    --text-color-on-dark: var(--color-white);       /* For text on dark backgrounds */
+
+    /* Panel Specific Colors (e.g., sidebar) */
+    --color-panel-bg: var(--color-dark-gray-2);     /* Dark gray for sidebar background */
+    --color-panel-text: var(--color-white);
     --color-panel-border-subtle: rgba(255, 255, 255, 0.1);
 
-    /* Modern Color Scheme (formerly --raw-primary, etc.) */
-    --color-primary: #6366f1; /* Modern indigo */
-    --color-primary-light: #a5b4fc;
-    --color-primary-dark: #4338ca;
-    --color-secondary: #f59e0b; /* Modern amber */
-    --color-secondary-light: #fbbf24;
-    --color-accent: #10b981; /* Modern emerald */
-    --color-accent-light: #34d399;
+    /* Borders */
+    --border-color: #e0e0e0; /* General light grey border */
 
-    /* Gradient Definitions */
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    --gradient-cool: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    /* Darker gradients for sidebar hover/active to ensure white text visibility */
-    --gradient-sidebar-dark: linear-gradient(135deg, #4338ca 0%, #065f46 100%); /* primary-dark to a darker emerald */
+    /* --- General Styling Variables --- */
+    /* Shadows (aligned with modern, clean principle) */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.08); /* Adjusted for more subtle depth */
+    --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.15);
+    --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.2);
 
-    /* Alert Colors - Modern (formerly --raw-alert-*) */
-    --color-alert-success-text: #059669;
-    --color-alert-success-bg: #ecfdf5;
-    --color-alert-success-border: #a7f3d0;
-    --color-alert-danger-text: #dc2626;
+    /* Radii (aligned with modern, clean principle) */
+    --border-radius: 16px;  /* Much more rounded for cards */
+    --border-radius-lg: 24px;
+    --border-radius-md: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-xs: 4px;
+
+    /* Typography Hierarchy (from Brand Style Guide) */
+    --font-family-primary: 'BoehringerForwardHead', sans-serif;
+    --font-family-secondary: 'Space Grotesk Frontify', sans-serif;
+    --font-family-fallback: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --font-family: var(--font-family-primary), var(--font-family-secondary), var(--font-family-fallback);
+
+    --font-size-h1: 60px;
+    --font-size-h2: 66px; /* Note: H2 is larger than H1 as per guide, for specific uses */
+    --font-size-h3: 16px;
+    --font-size-body: 16px;
+    --line-height-body: 1.5; /* 24px for 16px font-size */
+
+    /* Solid Color Replacements for Gradients (Vibrant Accents) */
+    --solid-primary-bg: var(--color-deep-teal);
+    --solid-accent-bg: var(--color-signature-green);
+    --solid-sidebar-active-bg: var(--color-signature-green); /* Primary to Accent for sidebar active */
+    --solid-accent-text-color: var(--color-signature-green); /* For text that was gradient-clipped */
+
+
+    /* Alert Colors (Accessible Design) */
+    --color-alert-success-text: var(--color-signature-green);
+    --color-alert-success-bg: rgba(0, 228, 124, 0.1); /* Light background using signature green */
+    --color-alert-success-border: rgba(0, 228, 124, 0.3);
+    --color-alert-danger-text: #dc2626; /* Standard red for danger */
     --color-alert-danger-bg: #fef2f2;
     --color-alert-danger-border: #fecaca;
-    --color-alert-warning-text: #d97706;
+    --color-alert-warning-text: #d97706; /* Standard orange for warning */
     --color-alert-warning-bg: #fffbeb;
     --color-alert-warning-border: #fed7aa;
-    --color-alert-info-text: #0284c7;
+    --color-alert-info-text: #0284c7; /* Standard blue for info */
     --color-alert-info-bg: #f0f9ff;
     --color-alert-info-border: #bae6fd;
 
-    /* --- General Variable Assignments (using new semantic names) --- */
-    --body-bg-color: var(--color-grey-100);
-    --main-content-bg: var(--color-grey-100);
-    --card-bg: var(--color-white);
-    --header-bg: var(--color-white);
-    --element-bg-light: var(--color-grey-200);
-
-    /* Text colors */
-    --text-primary: var(--color-grey-700);
-    --text-secondary: var(--color-grey-500);
-    --text-muted: var(--color-grey-400);
-    --text-color-sidebar-active: var(--color-white);
-    --text-color-on-primary: var(--color-white);
-    --text-color-on-dark: var(--color-white);
-
-    /* Borders */
-    --border-color: var(--color-grey-300);
-
-    /* Generic */
-    --white: var(--color-white); /* Kept for legacy usage, though --color-white is preferred */
-
-    /* Modern Component Styling */
-    --box-shadow: var(--shadow-sm);
-    --box-shadow-hover: var(--shadow-md);
-    --box-shadow-focus: var(--shadow-lg);
-    --border-radius: 16px; /* Much more rounded */
-    --border-radius-lg: 24px; /* Large radius */
-    --border-radius-sm: 12px; /* Small radius */
-    --border-radius-xs: 8px; /* Extra small style */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-    /* Breadcrumb variables */
-    --breadcrumb-arrow-width: 15px;
-    --breadcrumb-active-bg: var(--color-primary);
-    --breadcrumb-default-bg: var(--color-grey-500);
-    --breadcrumb-disabled-bg: var(--color-grey-200);
-    --breadcrumb-text-color: var(--text-color-on-dark);
-    --breadcrumb-disabled-text-color: var(--text-muted);
-    --breadcrumb-hover-bg: var(--color-grey-600);
-    --breadcrumb-active-hover-bg: var(--color-primary-dark);
-
-    /* Alert variables */
-    --alert-success-text: var(--color-alert-success-text);
-    --alert-success-bg: var(--color-alert-success-bg);
-    --alert-success-border: var(--color-alert-success-border);
-    --alert-danger-text: var(--color-alert-danger-text);
-    --alert-danger-bg: var(--color-alert-danger-bg);
-    --alert-danger-border: var(--color-alert-danger-border);
-    --alert-warning-text: var(--color-alert-warning-text);
-    --alert-warning-bg: var(--color-alert-warning-bg);
-    --alert-warning-border: var(--color-alert-warning-border);
-    --alert-info-text: var(--color-alert-info-text);
-    --alert-info-bg: var(--color-alert-info-bg);
-    --alert-info-border: var(--color-alert-info-border);
-
-    /* Spacing variables based on 8px grid for consistency */
+    /* Spacing variables (based on 8px grid for consistency, Modern & Clean) */
     --spacing-0: 0;
-    --spacing-xs: 4px;   /* For very small spacing */
+    --spacing-xs: 4px;   /* 0.25rem */
     --spacing-sm: 8px;   /* 0.5rem */
-    --spacing-md: 16px;  /* 1rem - equivalent to Bootstrap mb-3 */
-    --spacing-lg: 24px;  /* 1.5rem - equivalent to Bootstrap mb-4 */
-    --spacing-xl: 32px;  /* 2rem - New common card spacing */
-    --spacing-xxl: 48px; /* 3rem - equivalent to Bootstrap mb-5 */
+    --spacing-md: 16px;  /* 1rem */
+    --spacing-lg: 24px;  /* 1.5rem */
+    --spacing-xl: 32px;  /* 2rem */
+    --spacing-xxl: 48px; /* 3rem */
 
-    /* Specific padding for header/breadcrumbs if not aligning to grid perfectly */
+    /* Specific padding for header/breadcrumbs */
     --spacing-header-vertical: 10px;
     --spacing-header-horizontal: 40px;
+
+    /* Breadcrumb variables (accessible design, professional warmth) */
+    --breadcrumb-text-color: var(--text-color-on-dark);
+    --breadcrumb-disabled-text-color: var(--text-muted);
 }
 
 /* ========================================================================== */
@@ -146,12 +137,68 @@ body {
     font-family: var(--font-family);
     background-color: var(--body-bg-color);
     color: var(--text-primary);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: var(--font-size-body); /* Body: 16px */
+    line-height: var(--line-height-body); /* 24px for 16px font-size */
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
+
+/* Typography Hierarchy - Global Headings */
+h1 {
+    font-size: var(--font-size-h1);
+    line-height: 1.1;
+    font-weight: 700;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary); /* Default solid color for general H1s */
+}
+
+h2 {
+    font-size: var(--font-size-h2);
+    line-height: 1.1;
+    font-weight: 700;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary); /* Default solid color for general H2s */
+}
+
+h3 {
+    font-size: var(--font-size-h3); /* Header 3: 16px */
+    line-height: 1.4;
+    font-weight: 600;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+h4 {
+    font-size: 1.25rem; /* ~20px */
+    line-height: 1.4;
+    font-weight: 600;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+h5 {
+    font-size: 1.1rem; /* ~17.6px */
+    line-height: 1.4;
+    font-weight: 500;
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+}
+
+h6 {
+    font-size: 1rem; /* ~16px */
+    line-height: 1.4;
+    font-weight: 500;
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+}
+
 
 a {
     text-decoration: none;
@@ -167,6 +214,13 @@ ul {
     list-style: none;
 }
 
+p {
+    margin-bottom: var(--spacing-md);
+}
+p:last-child {
+    margin-bottom: 0;
+}
+
 /* ========================================================================== */
 /* --- 2. Layout Components --- */
 /* ========================================================================== */
@@ -176,84 +230,74 @@ ul {
     min-height: 100vh;
 }
 
-/* 2.1 Sidebar */
+/* 2.1 Sidebar (Modern & Clean, Glass Effect) */
 .sidebar {
-    width: 280px; /* Slightly wider */
-    background: linear-gradient(180deg, var(--color-panel-bg) 0%, #0f1419 100%);
+    width: 280px;
+    background-color: var(--color-panel-bg);
     color: var(--color-panel-text);
     display: flex;
     flex-direction: column;
-    padding: 30px 0;
+    padding: var(--spacing-xxl) 0; /* 48px */
     flex-shrink: 0;
     height: 100vh;
     position: sticky;
     top: 0;
     backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05); /* Subtle border */
+    box-shadow: var(--shadow-md); /* Subtle shadow for depth */
 }
 
 .sidebar-header {
-    padding: 0 30px 30px 30px;
-    margin-bottom: 30px;
+    padding: 0 var(--spacing-xl) var(--spacing-xl) var(--spacing-xl); /* 32px */
+    margin-bottom: var(--spacing-xl); /* 32px */
     border-bottom: 1px solid var(--color-panel-border-subtle);
 }
 
 .sidebar-header .logo {
-    font-size: 1.5rem;
+    font-size: 1.5rem; /* Keep a reasonable size for the logo */
     font-weight: 800;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--solid-accent-text-color); /* Vibrant Accent */
 }
 
 .sidebar-menu {
     flex-grow: 1;
-    padding: 0 15px;
+    padding: 0 var(--spacing-md); /* 16px */
 }
 
 .sidebar-menu li a,
 .sidebar-footer-menu li a {
     display: flex;
     align-items: center;
-    padding: 16px 20px;
+    padding: var(--spacing-md) var(--spacing-xl); /* 16px 32px */
     color: var(--color-panel-text);
     transition: all 0.3s ease;
     font-size: 0.95rem;
     font-weight: 500;
     border-radius: var(--border-radius-sm);
-    margin-bottom: 8px; /* Standard spacing */
+    margin-bottom: var(--spacing-sm); /* 8px */
     position: relative;
     overflow: hidden;
-    background-color: transparent; /* Ensure link's own background is transparent */
+    background-color: transparent;
 }
 
 .sidebar-menu li a::before {
-    content: ''; /* This creates the gradient box */
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
     height: 100%;
-    background: var(--gradient-sidebar-dark); /* Use the new darker gradient */
+    background-color: var(--solid-sidebar-active-bg); /* Vibrant Accent */
     transition: width 0.3s ease;
-    z-index: -1; /* IMPORTANT: Ensure it's behind the content (text, icon) */
-    width: 0; /* Initially hidden */
+    z-index: -1;
+    width: 0;
 }
 
 .sidebar-menu li a > * {
     position: relative;
     z-index: 1;
 }
-/* Hover effect for the gradient box */
 .sidebar-menu li a:hover::before {
-    width: 100%; /* Expands the gradient box */
-}
-
-.sidebar-menu li a i,
-.sidebar-footer-menu li a i {
-    margin-inline-end: 15px; /* Use logical property */
-    font-size: 1.2rem;
-    width: 24px;
-    text-align: center;
+    width: 100%;
 }
 
 .sidebar-menu li a:hover {
@@ -262,8 +306,7 @@ ul {
 }
 
 .sidebar-menu li.active a {
-    /* Active state: remove direct background, let ::before handle it */
-    background: transparent; /* Ensure no conflicting background on the <a> tag itself */
+    background-color: transparent; /* Background is now handled by ::before */
     color: var(--text-color-on-primary);
     font-weight: 600;
     box-shadow: var(--shadow-md);
@@ -273,9 +316,17 @@ ul {
     width: 100%;
 }
 
+.sidebar-menu li a i,
+.sidebar-footer-menu li a i {
+    margin-inline-end: var(--spacing-md); /* 16px */
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+}
+
 .sidebar-footer-menu {
     margin-top: auto;
-    padding: 20px 15px 20px;
+    padding: var(--spacing-xl) var(--spacing-md); /* 32px 16px */
     border-top: 1px solid var(--color-panel-border-subtle);
 }
 
@@ -284,69 +335,69 @@ ul {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--main-content-bg);
     overflow-x: hidden;
+    overflow-y: auto;
+    background-color: var(--main-content-bg);
 }
 
-/* 2.3 Header */
+/* 2.3 Header (Modern & Clean, Glass Effect) */
 .main-header {
     display: flex;
-    align-items: center; /* Vertically align items */
-    justify-content: flex-end; /* Push items to the right */
+    align-items: center;
+    justify-content: flex-end;
     padding: var(--spacing-header-vertical) var(--spacing-header-horizontal);
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     position: sticky;
-    width: 100%; /* Ensure it spans full width */
+    width: 100%;
     top: 0;
     z-index: 1000;
-    gap: 20px; /* Reduced gap */
-    min-height: 60px; /* Reduced min-height */
+    gap: var(--spacing-xl); /* 32px */
+    min-height: 70px; /* Adjusted for better spacing */
 }
 
 /* 2.4 Page Content Wrapper */
 .page-content {
-    padding: 40px 50px;
+    padding: var(--spacing-xxl) 50px; /* 48px */
     flex-grow: 1;
-    overflow-y: auto;
 }
 
 /* ========================================================================== */
 /* --- 3. UI Components (General) --- */
 /* ========================================================================== */
 
-/* 3.1 Breadcrumbs - REVISED DESIGN */
-.breadcrumbs-fixed { /* New container class to isolate breadcrumbs visually */
+/* 3.1 Breadcrumbs (Professional Warmth, Accessible Design) */
+.breadcrumbs-fixed {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping */
+    flex-wrap: wrap;
     align-items: center;
     padding: var(--spacing-header-vertical) var(--spacing-header-horizontal) var(--spacing-0);
     font-size: 0.9rem;
     color: var(--text-secondary);
-    flex-grow: 1; /* Allow to take available space */
+    flex-grow: 1;
 }
 
 .breadcrumbs-fixed .breadcrumb-item {
-    background: none; /* Remove background */
-    color: var(--text-secondary); /* Default text color */
-    padding: 5px 0; /* Adjust padding */
+    background: none;
+    color: var(--text-secondary);
+    padding: 5px 0;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
-    line-height: 1.4; /* Allow multiple lines if content wraps */
-    flex-shrink: 0; /* Don't shrink links */
+    line-height: 1.4;
+    flex-shrink: 0;
 }
 
 .breadcrumbs-fixed .breadcrumb-item:hover {
     color: var(--color-primary);
-    transform: none; /* Remove transform on hover */
-    background: none; /* Ensure no background on hover */
+    transform: none;
+    background: none;
 }
 
 .breadcrumbs-fixed .breadcrumb-item.active {
-    color: var(--color-primary-dark); /* Active item is darker primary */
+    color: var(--color-primary);
     font-weight: 600;
     background: none;
     box-shadow: none;
@@ -354,38 +405,33 @@ ul {
 
 .breadcrumbs-fixed .breadcrumb-separator {
     color: var(--text-muted);
-    margin: 0 8px; /* Space out separator */
+    margin: 0 var(--spacing-sm); /* 8px */
     font-size: 0.8rem;
 }
 
-/* Added for breadcrumb dropdowns */
 .breadcrumbs-fixed .breadcrumb-dropdown-container {
-    position: relative; /* Crucial for dropdown positioning */
+    position: relative;
     display: flex;
     align-items: center;
 }
 
-/* Specific styling for breadcrumb-item when it's a dropdown toggle */
 .breadcrumbs-fixed .breadcrumb-item.dropdown-toggle {
-    /* Keep existing styles, ensure no extra padding/margins from toggle */
-    padding-right: 1.5em; /* Add space for the caret */
+    padding-inline-end: 1.5em;
 }
 .breadcrumbs-fixed .breadcrumb-item.dropdown-toggle::after {
-    vertical-align: 0.15em; /* Adjust caret position */
+    vertical-align: 0.15em;
 }
 
-
-/* Styling for the dropdown menu itself */
 .breadcrumbs-fixed .dropdown-menu {
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-md);
-    padding: 0.5rem 0;
+    padding: var(--spacing-sm) 0;
     font-size: 0.85rem;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
-    max-height: 300px; /* Limit height for long lists */
-    overflow-y: auto; /* Enable scrolling if needed */
-    z-index: 1050; /* Ensure it's above other content if necessary */
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1050;
 }
 
 .breadcrumbs-fixed .dropdown-item {
@@ -397,38 +443,34 @@ ul {
 .breadcrumbs-fixed .dropdown-item:hover,
 .breadcrumbs-fixed .dropdown-item:focus {
     background-color: var(--color-primary-light);
-    color: var(--color-primary-dark);
+    color: var(--color-primary);
 }
 
 .breadcrumbs-fixed .dropdown-divider {
-    margin: 0.5rem 0;
+    margin: var(--spacing-sm) 0;
 }
 
 
-/* 3.2 Search Bar */
-/* This section was removed as per change instructions. */
-
-/* 3.3 Header Action Buttons */
+/* 3.2 Header Action Buttons (Modern & Clean) */
 .header-actions {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: var(--spacing-xl); /* 32px */
 }
 
-/* ADJUSTED: Smaller and more consistent icon buttons */
 .icon-button {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.2rem; /* Reduced from 1.4rem */
+    font-size: 1.2rem;
     color: var(--text-muted);
     transition: all 0.3s ease;
-    padding: 8px; /* Reduced from 12px */
-    border-radius: var(--border-radius-sm); /* Keep consistent radius */
+    padding: var(--spacing-sm); /* 8px */
+    border-radius: var(--border-radius-sm);
     position: relative;
-    width: 40px; /* Fixed width to ensure consistency regardless of icon */
-    height: 40px; /* Fixed height */
-    display: flex; /* Use flexbox to center icon */
+    width: 40px;
+    height: 40px;
+    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -439,13 +481,12 @@ ul {
     transform: translateY(-2px);
 }
 
-/* 3.4 Cards */
+/* 3.3 Cards (Modern & Clean, Professional Warmth) */
 .card {
     background-color: var(--card-bg);
-    border: none; /* Default is no border */
-    border-radius: var(--border-radius); /* e.g., 16px */
+    border: none;
+    border-radius: var(--border-radius); /* 16px */
     box-shadow: var(--shadow-sm);
-    /* REMOVE: margin-bottom: 40px; */ /* This will be handled by mb-xl in HTML */
     transition: all 0.3s ease;
     overflow: hidden;
 }
@@ -459,25 +500,22 @@ ul {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-lg) var(--spacing-xl); /* Adjusted from 24px 30px to 24px 32px */
+    padding: var(--spacing-lg) var(--spacing-xl); /* 24px 32px */
     margin-bottom: 0;
-    border-bottom: 1px solid var(--color-grey-300);
-    background: linear-gradient(135deg, var(--color-grey-100) 0%, #f8fafc 100%);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--element-bg-light);
     position: relative;
 }
 
 .card-title {
-    font-size: 1.4rem;
+    font-size: 1.4rem; /* Adjusted for card titles */
     font-weight: 700;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--solid-accent-text-color); /* Vibrant Accent */
     margin-bottom: 0;
 }
 
 .card-body {
-    padding: var(--spacing-xl); /* Adjusted from 30px to 32px */
+    padding: var(--spacing-xl); /* 32px */
 }
 
 .card-link {
@@ -492,17 +530,17 @@ ul {
     transform: translateX(4px);
 }
 
-/* 3.5 Forms */
+/* 3.4 Forms (Modern & Clean, Accessible Design) */
 form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--spacing-lg); /* 24px */
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-md); /* 16px */
 }
 
 .form-row,
@@ -511,11 +549,11 @@ form {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: var(--spacing-sm); /* 8px */
 }
 
 form label {
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-xs); /* 4px */
     font-weight: 600;
     color: var(--text-primary);
     font-size: 0.95rem;
@@ -529,7 +567,7 @@ input[type="number"],
 input[type="file"],
 select,
 textarea {
-    padding: 16px 20px;
+    padding: var(--spacing-md) var(--spacing-lg); /* 16px 24px */
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 0.95rem;
@@ -547,7 +585,7 @@ input[type="number"]:focus,
 select:focus,
 textarea:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1); /* Primary color shadow */
     outline: none;
     background-color: #fefefe;
 }
@@ -562,7 +600,7 @@ textarea::placeholder {
 }
 
 form input[type="checkbox"] {
-    margin-inline-end: 12px; /* Use logical property */
+    margin-inline-end: var(--spacing-sm); /* 8px */
     align-self: flex-start;
     vertical-align: middle;
 }
@@ -577,27 +615,28 @@ textarea.form-control {
     resize: vertical;
 }
 
-/* 3.6 Buttons */
+/* 3.5 Buttons (Vibrant Accents, Professional Warmth) */
 .btn-base {
     border-radius: var(--border-radius-sm);
     font-weight: 600;
     transition: all 0.3s ease;
     border: none;
-    padding: 16px 32px;
+    padding: var(--spacing-md) var(--spacing-xl); /* 16px 32px */
     cursor: pointer;
     font-size: 0.95rem;
     text-align: center;
     position: relative;
 }
 
-.btn-gradient {
+/* .btn-gradient was used for primary buttons, now handled by btn-primary with solid color */
+/* .btn-gradient {
     box-shadow: var(--shadow-sm);
 }
 
 .btn-gradient:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-}
+} */
 
 form button[type="submit"],
 .btn {
@@ -605,7 +644,7 @@ form button[type="submit"],
     font-weight: 600;
     transition: all 0.3s ease;
     border: none;
-    padding: 16px 32px;
+    padding: var(--spacing-md) var(--spacing-xl); /* 16px 32px */
     cursor: pointer;
     font-size: 0.95rem;
     align-self: flex-start;
@@ -615,7 +654,7 @@ form button[type="submit"],
 
 form button[type="submit"].btn-primary,
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background-color: var(--solid-primary-bg); /* Vibrant Accent replaced by solid primary */
     color: var(--color-white);
     border: 1px solid var(--color-primary);
     box-shadow: var(--shadow-sm);
@@ -624,79 +663,78 @@ form button[type="submit"].btn-primary:hover,
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
+    background-color: var(--color-primary-dark); /* Darker solid color for hover */
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, var(--text-secondary) 0%, var(--color-grey-600) 100%);
+    background: var(--color-dark-gray-3); /* Using medium-dark gray from BI palette */
     color: var(--color-white);
-    border: 1px solid var(--text-secondary);
+    border: 1px solid var(--color-dark-gray-3);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-    background: linear-gradient(135deg, var(--color-grey-600) 0%, #334155 100%);
+    background: var(--color-dark-gray-1); /* Darker gray on hover */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .btn-info {
-    background: linear-gradient(135deg, var(--color-alert-info-text) 0%, #0369a1 100%);
+    background: var(--color-alert-info-text);
     color: var(--color-white);
     border: 1px solid var(--color-alert-info-text);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-info:hover {
-    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    background: #0369a1; /* Slightly darker info blue */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
-/* ADJUSTED: Make btn-sm more compact for action buttons like Edit/Delete/Export */
 .btn-sm {
-    padding: 8px 16px; /* Reduced from 12px 24px */
-    font-size: 0.8rem; /* Reduced from 0.875rem */
+    padding: var(--spacing-sm) var(--spacing-md); /* 8px 16px */
+    font-size: 0.8rem;
     border-radius: var(--border-radius-xs);
-    white-space: nowrap; /* ADDED: Prevent text from wrapping inside the button */
+    white-space: nowrap;
 }
 
 .btn.btn-success {
-    background: linear-gradient(135deg, var(--color-alert-success-text) 0%, #047857 100%);
+    background: var(--solid-accent-bg); /* Vibrant Accent */
     border: none;
-    color: var(--color-white);
+    color: var(--color-white); /* Ensure text is white on signature green for contrast */
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
 .btn.btn-success:hover {
-    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    background: #00b062; /* Slightly darker signature green */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .btn.btn-danger {
-    padding: 8px 16px; /* Reduced from 12px 24px */
+    padding: var(--spacing-sm) var(--spacing-md); /* 8px 16px */
     border-radius: var(--border-radius-xs);
-    background: linear-gradient(135deg, var(--color-alert-danger-text) 0%, #be123c 100%);
+    background: var(--color-alert-danger-text);
     border: none;
     color: var(--color-white);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
 .btn.btn-danger:hover {
-    background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+    background: #be123c; /* Slightly darker danger red */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
-/* 3.7 Flash Messages (Alerts) */
+/* 3.6 Flash Messages (Alerts) (Accessible Design) */
 .flash-messages {
-    margin-bottom: 30px;
+    margin-bottom: var(--spacing-xl); /* 32px */
 }
 
 .alert {
-    padding: 20px 24px;
-    margin-bottom: 20px;
+    padding: var(--spacing-lg) var(--spacing-xl); /* 24px 32px */
+    margin-bottom: var(--spacing-md); /* 16px */
     border: none;
     border-radius: var(--border-radius);
     font-size: 0.95rem;
@@ -705,30 +743,30 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .alert-success {
-    color: var(--alert-success-text);
-    background: linear-gradient(135deg, var(--alert-success-bg) 0%, #f0fdf4 100%);
-    border-left-color: var(--alert-success-text);
+    color: var(--color-alert-success-text);
+    background: var(--color-alert-success-bg);
+    border-left-color: var(--color-alert-success-text);
 }
 
 .alert-danger {
-    color: var(--alert-danger-text);
-    background: linear-gradient(135deg, var(--alert-danger-bg) 0%, #fef7f7 100%);
-    border-left-color: var(--alert-danger-text);
+    color: var(--color-alert-danger-text);
+    background: var(--color-alert-danger-bg);
+    border-left-color: var(--color-alert-danger-text);
 }
 
 .alert-warning {
-    color: var(--alert-warning-text);
-    background: linear-gradient(135deg, var(--alert-warning-bg) 0%, #fefce8 100%);
-    border-left-color: var(--alert-warning-text);
+    color: var(--color-alert-warning-text);
+    background: var(--color-alert-warning-bg);
+    border-left-color: var(--color-alert-warning-text);
 }
 
 .alert-info {
-    color: var(--alert-info-text);
-    background: linear-gradient(135deg, var(--alert-info-bg) 0%, #eff6ff 100%);
-    border-left-color: var(--alert-info-border);
+    color: var(--color-alert-info-text);
+    background: var(--color-alert-info-bg);
+    border-left-color: var(--color-alert-info-border); /* This was alert-info-border, should be alert-info-text for consistency or specific border color if intended */
 }
 
-/* 3.8 Collapse Button Styling (e.g., for Card Headers) */
+/* 3.7 Collapse Button Styling (e.g., for Card Headers) */
 .card-header button.btn-link {
     padding: 0;
     font-size: 1rem;
@@ -759,25 +797,25 @@ form button[type="submit"].btn-primary:hover,
     display: inline-block;
 }
 
-/* 3.9 List Styles (e.g., info-list, item-list) */
+/* 3.8 List Styles (e.g., info-list, item-list) */
 .card-body dl.info-list {
     display: grid;
     grid-template-columns: minmax(200px, max-content) auto;
-    gap: 16px 24px;
+    gap: var(--spacing-md) var(--spacing-lg); /* 16px 24px */
     margin-bottom: 0;
 }
 
 .card-body dl.info-list dt {
     font-weight: 700;
-    color: var(--color-grey-700);
+    color: var(--text-primary);
     font-size: 0.95rem;
-    padding-top: 4px;
+    padding-top: var(--spacing-xs); /* 4px */
     text-align: right;
-    padding-inline-end: 20px; /* Use logical property */
+    padding-inline-end: var(--spacing-xl); /* 32px */
 }
 
 .card-body dl.info-list dd {
-    margin-inline-start: 0; /* Use logical property */
+    margin-inline-start: 0;
     font-size: 1rem;
     color: var(--text-primary);
     word-break: break-word;
@@ -789,29 +827,29 @@ form button[type="submit"].btn-primary:hover,
 
 .card-body dl.info-list dd pre,
 .relevance-section li.relevance-item pre {
-    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
-    padding: 16px 20px;
-    border: 1px solid var(--color-grey-200);
+    background: var(--element-bg-light);
+    padding: var(--spacing-md) var(--spacing-lg); /* 16px 24px */
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 0.9rem;
     line-height: 1.6;
     max-height: 300px;
     overflow-y: auto;
     color: var(--text-primary);
-    margin-top: 8px;
+    margin-top: var(--spacing-sm); /* 8px */
     white-space: pre-wrap;
     word-break: break-word;
 }
 
-/* Item Lists (ul.item-list) for lists of steps/use cases */
+/* Item Lists (ul.item-list) for lists of steps/use cases (Modern & Clean) */
 .card-body ul.item-list {
     list-style: none;
-    padding-inline-start: 0; /* Use logical property */
+    padding-inline-start: 0;
     margin-bottom: 0;
 }
 .card-body ul.item-list > li {
-    padding: 15px;
-    border-bottom: 1px dashed var(--color-grey-200);
+    padding: 15px; /* Keep for specific visual */
+    border-bottom: 1px dashed var(--border-color);
     transition: background-color 0.2s ease;
     border-radius: var(--border-radius-sm);
 }
@@ -830,7 +868,7 @@ form button[type="submit"].btn-primary:hover,
     color: var(--color-primary);
     font-size: 1.05rem;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-xs); /* 4px */
 }
 .card-body ul.item-list .item-title a:hover,
 .card-body ul.item-list > li > a:hover {
@@ -842,17 +880,16 @@ form button[type="submit"].btn-primary:hover,
     font-size: 0.8rem;
     color: var(--text-secondary);
     display: block;
-
 }
 
 /* Nested Use Case Lists (e.g., on Area Detail or Index) */
 .card-body ul.item-list ul.usecase-list {
-    padding-inline-start: 25px; /* Use logical property */
-    margin-top: 10px;
-    list-style: circle; /* Changed from none to circle as per area-card intent */
+    padding-inline-start: var(--spacing-lg); /* 24px */
+    margin-top: var(--spacing-sm); /* 8px */
+    list-style: circle;
 }
 .card-body ul.item-list ul.usecase-list li {
-    padding: 8px 0;
+    padding: var(--spacing-sm) 0; /* 8px 0 */
     border: none;
     font-size: 0.9rem;
 }
@@ -875,7 +912,7 @@ form button[type="submit"].btn-primary:hover,
     font-size: 0.95rem;
 }
 
-/* 3.10 General Utilities */
+/* 3.9 General Utilities */
 .text-center { text-align: center !important; }
 .text-secondary { color: var(--text-secondary); }
 .mb-1 { margin-bottom: var(--spacing-xs) !important; }
@@ -884,43 +921,31 @@ form button[type="submit"].btn-primary:hover,
 .mt-1 { margin-top: var(--spacing-xs) !important; }
 .mt-2 { margin-top: var(--spacing-sm) !important; }
 .mt-3 { margin-top: var(--spacing-md) !important; }
-.me-1 { margin-inline-end: var(--spacing-xs) !important; } /* Use logical property */
-.me-2 { margin-inline-end: var(--spacing-sm) !important; } /* Use logical property */
+.me-1 { margin-inline-end: var(--spacing-xs) !important; }
+.me-2 { margin-inline-end: var(--spacing-sm) !important; }
 
-/* Add some modern utility classes */
-.gradient-bg-primary {
-    background: var(--gradient-primary);
+.solid-bg-primary { /* Renamed from gradient-bg-primary */
+    background-color: var(--solid-primary-bg);
 }
 
-.gradient-bg-secondary {
-    background: var(--gradient-secondary);
+.solid-bg-accent { /* Renamed from gradient-bg-accent */
+    background-color: var(--solid-accent-bg);
 }
 
-.gradient-bg-accent {
-    background: var(--gradient-accent);
-}
-
-.gradient-text-primary {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.solid-text-accent { /* Renamed from gradient-text-primary */
+    color: var(--solid-accent-text-color);
 }
 
 .glass-effect {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--border-radius); /* Added radius */
-}
-
-.modern-shadow {
-    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius);
 }
 
 .hover-lift {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    will-change: transform; /* Optimize performance */
+    will-change: transform;
 }
 
 .hover-lift:hover {
@@ -932,19 +957,17 @@ form button[type="submit"].btn-primary:hover,
 /* --- 4. Page-Specific Styles --- */
 /* ========================================================================== */
 
-/* 4.1 Index Page */
+/* 4.1 Index Page (Modern & Clean, Vibrant Accents) */
 .welcome-message {
-    margin-bottom: 30px;
+    margin-bottom: var(--spacing-xl); /* 32px */
 }
 
 .welcome-message h1 {
-    font-size: 2rem;
+    font-size: var(--font-size-h1); /* Explicitly using H1 size for main page title */
     font-weight: 800;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    margin-bottom: var(--spacing-sm); /* 8px */
+    color: var(--solid-accent-text-color); /* Vibrant Accent */
+    line-height: 1.1;
 }
 
 .welcome-message p {
@@ -953,23 +976,20 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .data-section {
-    margin-bottom: 40px;
+    margin-bottom: var(--spacing-xxl); /* 48px */
 }
 
 .data-section h2 {
-    font-size: 1.4rem;
+    font-size: 1.8rem; /* Scaled down for section titles, but still prominent */
     font-weight: 700;
-    margin-bottom: 20px;
-    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg); /* 24px */
+    color: var(--color-primary); /* Professional Warmth */
 }
 
 .area-card {
-    background: linear-gradient(135deg, var(--card-bg) 0%, #fafafa 100%);
-    /* border-radius, box-shadow, transition are inherited from .card */
-    /* REMOVE: margin-bottom: 24px; */ /* This will be handled by mb-lg in HTML */
-    border-left: 5px solid;
-    border-image: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%) 1;
-    padding: var(--spacing-lg); /* Adjusted from 24px */
+    background-color: var(--card-bg); /* Replaced gradient with solid color */
+    border-left: 5px solid var(--solid-accent-bg); /* Replaced border-image with solid border */
+    padding: var(--spacing-lg); /* 24px */
 }
 
 .area-card:hover {
@@ -978,19 +998,19 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .area-card h3 {
-    font-size: 1.2rem;
-    margin-bottom: 16px;
+    font-size: 1.2rem; /* Adjusted for area card titles */
+    margin-bottom: var(--spacing-md); /* 16px */
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-primary); /* Professional Warmth */
 }
 
 .area-card ul {
-    padding-inline-start: 24px; /* Use logical property */
+    padding-inline-start: var(--spacing-lg); /* 24px */
     list-style: disc;
 }
 
 .area-card li {
-    margin-bottom: 12px;
+    margin-bottom: var(--spacing-sm); /* 8px */
 }
 
 .area-card strong {
@@ -1000,12 +1020,12 @@ form button[type="submit"].btn-primary:hover,
 .area-card .step-details {
     font-size: 0.85rem;
     color: var(--text-muted);
-    margin-inline-start: 8px; /* Use logical property */
+    margin-inline-start: var(--spacing-sm); /* 8px */
 }
 
 .area-card .usecase-list {
-    padding-inline-start: 30px; /* Use logical property */
-    margin-top: 8px;
+    padding-inline-start: var(--spacing-xl); /* 32px */
+    margin-top: var(--spacing-sm); /* 8px */
     list-style: circle;
 }
 
@@ -1016,7 +1036,7 @@ form button[type="submit"].btn-primary:hover,
 .area-card .usecase-list .uc-details {
     font-size: 0.8rem;
     color: var(--text-muted);
-    margin-inline-start: 8px; /* Use logical property */
+    margin-inline-start: var(--spacing-sm); /* 8px */
 }
 
 .area-card p em {
@@ -1024,51 +1044,51 @@ form button[type="submit"].btn-primary:hover,
     font-style: italic;
 }
 
-/* 4.2 Detail Pages (Area, Step, Usecase) */
+/* 4.2 Detail Pages (Area, Step, Usecase) (Professional Warmth) */
 .page-content > .d-flex > h1,
 .page-content > h1 {
-    font-size: 2.2rem;
+    font-size: var(--font-size-h1); /* Main page title on detail pages */
     font-weight: 800;
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 3px solid transparent;
-    border-image: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent) 100%) 1;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl); /* 32px */
+    padding-bottom: var(--spacing-lg); /* 24px */
+    border-bottom: 3px solid var(--color-primary-light); /* Professional Warmth */
     letter-spacing: -0.5px;
 }
 
 .page-content p.text-muted {
     color: var(--text-secondary);
     font-size: 1.05rem;
-    margin-top: 2px;
-    margin-bottom: 30px;
+    margin-top: var(--spacing-xs); /* 4px */
+    margin-bottom: var(--spacing-xl); /* 32px */
 }
 
 /* 4.3 Relevance Sections (on Detail Pages) */
 .relevance-section h2 {
-    font-size: 1.5rem;
-    color: var(--color-primary-dark);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--color-grey-300);
+    font-size: 1.5rem; /* Section title within details */
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg); /* 24px */
+    padding-bottom: var(--spacing-sm); /* 8px */
+    border-bottom: 1px solid var(--border-color);
 }
 .relevance-section .card-title {
-    color: var(--text-primary);
+    color: var(--text-primary); /* Changed from gradient text */
     font-size: 1.1rem;
+    background: none; /* Removed gradient properties */
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
 }
 .relevance-section ul {
     list-style: none;
-    padding-inline-start: 0; /* Use logical property */
+    padding-inline-start: 0;
 }
 .relevance-section li.relevance-item {
     background-color: var(--color-white);
-    padding: 20px;
-    margin-bottom: 15px;
+    padding: var(--spacing-lg); /* 24px */
+    margin-bottom: var(--spacing-md); /* 16px */
     border-radius: var(--border-radius);
-    border: 1px solid var(--color-grey-200);
+    border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
@@ -1081,7 +1101,7 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 600;
     color: var(--text-secondary);
     display: inline-block;
-    margin-bottom: 6px;
+    margin-bottom: var(--spacing-xs); /* 4px */
     font-size: 0.85rem;
 }
 .relevance-section li.relevance-item .badge {
@@ -1091,57 +1111,54 @@ form button[type="submit"].btn-primary:hover,
 }
 .relevance-section li.relevance-item > .mt-2,
 .relevance-section li.relevance-item > div:last-child:not(:first-child) {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px dashed var(--color-grey-200);
+    margin-top: var(--spacing-md); /* 16px */
+    padding-top: var(--spacing-md); /* 16px */
+    border-top: 1px dashed var(--border-color);
 }
 
 /* 4.4 Add Relevance Forms */
 .add-relevance-forms h3 {
-    font-size: 1.5rem;
-    color: var(--color-primary-dark);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--color-grey-300);
+    font-size: 1.5rem; /* Section title for forms */
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg); /* 24px */
+    padding-bottom: var(--spacing-sm); /* 8px */
+    border-bottom: 1px solid var(--border-color);
 }
-.add-relevance-form { /* This will be used with .card in HTML */
-    background-color: var(--color-grey-100); /* Overrides default card-bg */
-    border: 1px solid var(--color-grey-300); /* Adds a border */
-    border-radius: var(--border-radius-sm); /* Smaller radius (e.g., 8px) */
-    box-shadow: none; /* Removes shadow */
-    /* REMOVE: margin-bottom: 20px; */ /* Handled by mb-lg in HTML */
-    padding: var(--spacing-lg); /* Adjusted from 25px to 24px */
+.add-relevance-form {
+    background-color: var(--element-bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: none;
+    padding: var(--spacing-lg); /* 24px */
 }
 .add-relevance-form h4 {
     color: var(--color-primary);
     font-size: 1.1rem;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--color-grey-200);
+    margin-bottom: var(--spacing-md); /* 16px */
+    padding-bottom: var(--spacing-sm); /* 8px */
+    border-bottom: 1px solid var(--border-color);
 }
 
-/* 4.5 Login/Register Pages */
-/* NEW: .auth-card - to be used with .card */
+/* 4.5 Login/Register Pages (Modern & Clean) */
 .auth-card {
     max-width: 400px;
-    margin: var(--spacing-xxl) auto; /* Adjusted from 50px auto to 48px auto */
-    padding: var(--spacing-xl); /* Adjusted from 30px to 32px */
-    /* background-color, border-radius, box-shadow are now inherited from .card */
+    margin: var(--spacing-xxl) auto; /* 48px auto */
+    padding: var(--spacing-xl); /* 32px */
 }
 .auth-card h1 {
     text-align: center;
-    margin-bottom: 25px;
-    font-size: 1.6rem;
+    margin-bottom: var(--spacing-lg); /* 24px */
+    font-size: 1.6rem; /* Adjusted for auth page title */
     color: var(--color-primary);
 }
 .auth-card form button[type="submit"] {
     width: 100%;
     padding: 12px;
-    margin-top: 10px;
+    margin-top: var(--spacing-sm); /* 8px */
 }
 .auth-card p {
     text-align: center;
-    margin-top: 20px;
+    margin-top: var(--spacing-lg); /* 24px */
     font-size: 0.9rem;
     color: var(--text-muted);
 }
@@ -1150,24 +1167,23 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 500;
 }
 
-
 /* 4.6 Data Update (Injection) Page */
 .injection-form-section {
     background-color: var(--card-bg);
-    margin-bottom: 25px;
+    margin-bottom: var(--spacing-lg); /* 24px */
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: 10px;
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-sm); /* 8px */
 }
 .injection-form-section h2 {
-    font-size: 1.3rem;
-    margin-bottom: 10px;
+    font-size: 1.3rem; /* Adjusted for section title */
+    margin-bottom: var(--spacing-sm); /* 8px */
     color: var(--color-primary);
 }
 .injection-form-section p {
     font-size: 0.9rem;
     color: var(--text-secondary);
-    margin-bottom: 15px;
+    margin-bottom: var(--spacing-md); /* 16px */
     line-height: 1.6;
 }
 .injection-form-section code {
@@ -1176,33 +1192,33 @@ form button[type="submit"].btn-primary:hover,
     border-radius: var(--border-radius-sm);
     font-size: 0.85rem;
     color: var(--text-primary);
-    border: 1px solid var(--color-grey-300);
+    border: 1px solid var(--border-color);
 }
 .export-section ul {
     list-style: none;
-    padding-inline-start: 0; /* Use logical property */
+    padding-inline-start: 0;
 }
 .export-section li a {
     display: inline-block;
-    padding: 8px 12px;
+    padding: var(--spacing-sm) var(--spacing-md); /* 8px 16px */
     background-color: var(--element-bg-light);
     border-radius: var(--border-radius-sm);
     transition: background-color 0.2s ease;
 }
 .export-section li a:hover {
-    background-color: var(--color-grey-300);
+    background-color: var(--border-color);
 }
 .export-section li a i {
-    margin-inline-end: 8px; /* Use logical property */
+    margin-inline-end: var(--spacing-sm); /* 8px */
 }
 
-/* 4.7 Markdown Content Rendering */
+/* 4.7 Markdown Content Rendering (Accessible Design) */
 .markdown-content p:last-child {
     margin-bottom: 0;
 }
 .markdown-content ul,
 .markdown-content ol {
-    margin-inline-start: 20px; /* Use logical property */
+    margin-inline-start: var(--spacing-lg); /* 24px */
     margin-bottom: 1em;
 }
 .markdown-content li {
@@ -1216,30 +1232,30 @@ form button[type="submit"].btn-primary:hover,
 }
 .markdown-content th,
 .markdown-content td {
-    border: 1px solid var(--color-grey-300);
-    padding: 8px;
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-sm); /* 8px */
     text-align: left;
 }
 .markdown-content th {
-    background-color: var(--color-grey-100);
+    background-color: var(--element-bg-light);
     font-weight: bold;
 }
 
-/* 4.8 LLM Data Preparation Page */
+/* 4.8 LLM Data Preparation Page (Modern & Clean) */
 .llm-data-prep-page {
     max-width: 1200px;
     margin: 0 auto;
 }
 
 .llm-data-prep-page .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-xl); /* 32px */
 }
 
 .llm-data-prep-page .page-title {
-    font-size: 2rem;
+    font-size: 2rem; /* Adjusted for LLM page title */
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--spacing-sm); /* 8px */
 }
 
 .llm-data-prep-page .page-subtitle {
@@ -1247,12 +1263,11 @@ form button[type="submit"].btn-primary:hover,
     font-size: 1.1rem;
 }
 
-/* LLM Data Prep - Card Styling */
 .llm-data-prep-page .card {
     border: none;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-xl); /* 32px */
     overflow: hidden;
     transition: all 0.3s ease;
 }
@@ -1263,26 +1278,22 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .card-header {
-    background: linear-gradient(135deg, var(--color-grey-100) 0%, #f8fafc 100%);
-    border-bottom: 1px solid var(--color-grey-300);
+    background: var(--element-bg-light);
+    border-bottom: 1px solid var(--border-color);
     padding: 1.5rem 2rem;
 }
 
 .llm-data-prep-page .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--solid-accent-text-color); /* Vibrant Accent */
     margin: 0;
 }
 
-/* LLM Data Prep - Selection Grid */
 .llm-data-prep-page .selection-grid {
     display: grid;
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: var(--spacing-xl); /* 32px */
 }
 
 @media (min-width: 768px) {
@@ -1292,8 +1303,8 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .selection-item {
-    background: var(--color-grey-100);
-    border: 1px solid var(--color-grey-300);
+    background: var(--element-bg-light);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     padding: 1.5rem;
 }
@@ -1301,7 +1312,7 @@ form button[type="submit"].btn-primary:hover,
 .llm-data-prep-page .selection-label {
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md); /* 16px */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1316,11 +1327,10 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 500;
 }
 
-/* LLM Data Prep - Search Controls */
 .llm-data-prep-page .search-button-row {
     display: flex;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--spacing-md); /* 16px */
     align-items: center;
 }
 
@@ -1335,7 +1345,7 @@ form button[type="submit"].btn-primary:hover,
 .llm-data-prep-page .search-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1);
 }
 
 .llm-data-prep-page .button-group {
@@ -1349,7 +1359,6 @@ form button[type="submit"].btn-primary:hover,
     white-space: nowrap;
 }
 
-/* LLM Data Prep - Custom Selects */
 .llm-data-prep-page .custom-select {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
@@ -1361,14 +1370,14 @@ form button[type="submit"].btn-primary:hover,
 
 .llm-data-prep-page .select-option {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-grey-200);
+    border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     transition: background 0.2s;
     font-size: 0.875rem;
 }
 
 .llm-data-prep-page .select-option:hover {
-    background: var(--color-grey-100);
+    background: var(--element-bg-light);
 }
 
 .llm-data-prep-page .select-option:last-child {
@@ -1388,7 +1397,6 @@ form button[type="submit"].btn-primary:hover,
     line-height: 1.4;
 }
 
-/* LLM Data Prep - Field Groups */
 .llm-data-prep-page .field-groups {
     display: grid;
     gap: 1.5rem;
@@ -1401,15 +1409,14 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .field-group {
-    background: var(--color-grey-100);
-    border: 1px solid var(--color-grey-300);
+    background: var(--element-bg-light);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     overflow: hidden;
 }
 
-/* LLM Data Prep - Field Group Header */
 .llm-data-prep-page .field-group-header {
-    background: var(--color-grey-300);
+    background: var(--border-color);
     padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
@@ -1420,7 +1427,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .field-group-header:hover {
-    background: var(--color-grey-400);
+    background: var(--color-dark-gray-3); /* Darker gray on hover */
 }
 
 .llm-data-prep-page .field-group-title {
@@ -1469,7 +1476,6 @@ form button[type="submit"].btn-primary:hover,
     font-weight: normal;
 }
 
-/* LLM Data Prep - System Prompt */
 .llm-data-prep-page .system-prompt textarea {
     width: 100%;
     min-height: 120px;
@@ -1484,10 +1490,9 @@ form button[type="submit"].btn-primary:hover,
 .llm-data-prep-page .system-prompt textarea:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1);
 }
 
-/* LLM Data Prep - Preview Section */
 .llm-data-prep-page .preview-empty {
     text-align: center;
     padding: 3rem 2rem;
@@ -1505,14 +1510,13 @@ form button[type="submit"].btn-primary:hover,
     color: var(--text-primary);
 }
 
-/* LLM Data Prep - Chat Window */
 .llm-data-prep-page .chat-container {
-    background: var(--color-grey-100);
+    background: var(--element-bg-light);
     border-radius: var(--border-radius);
     min-height: 300px;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--color-grey-300);
+    border: 1px solid var(--border-color);
 }
 
 .llm-data-prep-page .chat-display {
@@ -1534,30 +1538,25 @@ form button[type="submit"].btn-primary:hover,
     color: var(--border-color);
 }
 
-/* Removed specific .llm-data-prep-page .chat-input-area and its children, 
-   as the general .chat-input-area (4.9) now provides comprehensive styling.
-   This simplifies the stylesheet and promotes reusability. */
-
-/* LLM Data Prep - Buttons */
 .llm-data-prep-page .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background-color: var(--solid-primary-bg); /* Vibrant Accent */
     border: none;
     color: var(--color-white);
     font-weight: 600;
-    padding: 16px 32px;
+    padding: var(--spacing-md) var(--spacing-xl); /* 16px 32px */
     border-radius: var(--border-radius-sm);
     transition: all 0.3s ease;
     box-shadow: var(--shadow-sm);
 }
 
 .llm-data-prep-page .btn-primary:hover {
-    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #059669 100%);
+    background-color: var(--color-primary-dark); /* Darker solid color for hover */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .llm-data-prep-page .btn-primary i {
-    margin-inline-end: 0.5rem; /* Use logical property */
+    margin-inline-end: 0.5rem;
 }
 
 .llm-data-prep-page .btn-link {
@@ -1611,7 +1610,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .form-check-inline {
-    margin-inline-end: 0; /* Use logical property */
+    margin-inline-end: 0;
     margin-bottom: 0;
     padding: 0;
 }
@@ -1620,10 +1619,9 @@ form button[type="submit"].btn-primary:hover,
     font-weight: normal;
     font-size: 0.8em;
     color: var(--text-muted);
-    margin-inline-start: 8px; /* Use logical property */
+    margin-inline-start: var(--spacing-sm); /* 8px */
 }
 
-/* LLM Data Prep - Table Styles */
 .llm-data-prep-page .table-responsive {
     overflow-x: auto;
     margin-top: 1rem;
@@ -1645,7 +1643,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .table thead.table-light th {
-    background-color: var(--color-grey-100);
+    background-color: var(--element-bg-light);
     border-bottom-width: 2px;
     font-weight: 600;
     text-align: left;
@@ -1670,7 +1668,7 @@ form button[type="submit"].btn-primary:hover,
     display: block;
     width: 100%;
     box-sizing: border-box;
-    padding-inline-end: 5px; /* Use logical property */
+    padding-inline-end: 5px;
 }
 
 .llm-data-prep-page .table .scrollable-cell-content {
@@ -1695,12 +1693,11 @@ form button[type="submit"].btn-primary:hover,
     word-break: break-word;
 }
 
-/* LLM Data Prep - JSON Preview */
 #jsonPreviewContainer {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     margin-top: 1rem;
-    background-color: var(--color-grey-200);
+    background-color: var(--element-bg-light);
 }
 
 #jsonDataPreview {
@@ -1715,7 +1712,6 @@ form button[type="submit"].btn-primary:hover,
     border-radius: 0;
 }
 
-/* LLM Data Prep - JSON Buttons */
 #copyJsonButton, #toggleJsonPreview {
     border: 1px solid var(--border-color);
     background-color: var(--color-white);
@@ -1723,11 +1719,11 @@ form button[type="submit"].btn-primary:hover,
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 #copyJsonButton:hover, #toggleJsonPreview:hover {
-    background-color: var(--color-grey-200);
+    background-color: var(--element-bg-light);
     color: var(--text-primary);
 }
 
-/* 4.9 LLM Chat Window (General) */
+/* 4.9 LLM Chat Window (General) (Modern & Clean) */
 .chat-container {
     display: flex;
     flex-direction: column;
@@ -1735,9 +1731,9 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .chat-bubble {
-    padding: 12px 18px;
-    border-radius: 16px;
-    margin-bottom: 12px;
+    padding: var(--spacing-md) 18px; /* 16px */
+    border-radius: var(--border-radius); /* 16px */
+    margin-bottom: var(--spacing-sm); /* 8px */
     max-width: 85%;
     line-height: 1.6;
     word-wrap: break-word;
@@ -1746,18 +1742,18 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .chat-bubble-user {
-    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+    background-color: var(--solid-primary-bg); /* Replaced gradient with solid primary */
     color: var(--text-color-on-primary);
-    margin-inline-start: auto; /* Use logical property */
-    border-bottom-right-radius: 4px;
+    margin-inline-start: auto;
+    border-bottom-right-radius: var(--border-radius-xs); /* 4px */
 }
 
 .chat-bubble-assistant {
-    background: linear-gradient(135deg, var(--card-bg) 0%, var(--color-grey-100) 100%);
+    background-color: var(--element-bg-light); /* Replaced gradient with solid color */
     color: var(--text-primary);
-    margin-inline-end: auto; /* Use logical property */
+    margin-inline-end: auto;
     border: 1px solid var(--border-color);
-    border-bottom-left-radius: 4px;
+    border-bottom-left-radius: var(--border-radius-xs); /* 4px */
 }
 
 .chat-bubble-error {
@@ -1767,13 +1763,12 @@ form button[type="submit"].btn-primary:hover,
     font-weight: 600;
 }
 
-/* Markdown formatting within chat bubbles */
 .chat-bubble pre {
-    background: linear-gradient(135deg, var(--element-bg-light) 0%, #f1f5f9 100%);
-    border: 1px solid var(--color-grey-200);
+    background: var(--element-bg-light);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    padding: 10px;
-    margin-top: 10px;
+    padding: var(--spacing-sm); /* 8px */
+    margin-top: var(--spacing-sm); /* 8px */
     white-space: pre-wrap;
     word-break: break-all;
     font-size: 0.8em;
@@ -1796,92 +1791,78 @@ form button[type="submit"].btn-primary:hover,
     margin-bottom: 0;
 }
 
-/* General Chat Input Area Styling */
 .chat-input-area {
-    border-top: 1px solid var(--color-grey-300);
+    border-top: 1px solid var(--border-color);
     padding: 1rem 1.5rem;
     display: flex;
-    flex-direction: column; /* Stack children (image wrapper, main input row) vertically */
-    gap: 0.75rem; /* Spacing between the rows */
+    flex-direction: column;
+    gap: 0.75rem;
     background: var(--color-white);
     border-bottom-left-radius: var(--border-radius);
     border-bottom-right-radius: var(--border-radius);
 }
 
-/* New: Styles for the image preview and its clear button wrapper */
 .chat-input-area .image-preview-wrapper {
-    width: 100%; /* Take full width */
-    /* `display:flex` and `align-items:center` `gap:10px` are set by bootstrap `d-flex align-items-center mb-2` */
+    width: 100%;
 }
 .chat-input-area .image-preview-wrapper img {
-    max-width: 150px; /* Constrain image width */
-    max-height: 100px; /* Constrain image height */
-    height: auto; /* Maintain aspect ratio */
+    max-width: 150px;
+    max-height: 100px;
+    height: auto;
     display: block;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm); /* 8px */
     border: 1px solid var(--border-color);
     object-fit: contain;
 }
 
-/* New: Styles for the main input row containing select, textarea, and send buttons */
 .chat-input-area .main-input-row {
     display: flex;
-    align-items: flex-end; /* Align items to the bottom (important for textarea) */
-    gap: 1rem; /* Spacing between elements in this row */
-    width: 100%; /* Take full width */
+    align-items: flex-end;
+    gap: 1rem;
+    width: 100%;
 }
 
-/* Specific styling for the model select */
 .chat-input-area .main-input-row select {
-    flex-shrink: 0; /* Prevent shrinking */
-    width: auto; /* Allow content to dictate width, up to max-width */
-    min-width: 100px; /* Smaller min-width to prevent excessive size */
-    max-width: 180px; /* Set a reasonable max width for the dropdown */
+    flex-shrink: 0;
+    width: auto;
+    min-width: 100px;
+    max-width: 180px;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    /* Remove `min-width: 150px` from global `.chat-input-area select` if present,
-       or override it here if it's more specific. I'll make sure this overrides. */
 }
 
-/* Specific styling for the chat textarea */
 .chat-input-area .main-input-row textarea {
-    flex-grow: 1; /* Allow textarea to expand and fill available space */
+    flex-grow: 1;
     resize: vertical;
-    min-height: 40px; /* Single line height */
-    max-height: 150px; /* Cap max height for responsiveness */
+    min-height: 40px;
+    max-height: 150px;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 0.95rem;
 }
 
-/* Specific styling for the buttons in the main input row */
 .chat-input-area .main-input-row .btn {
-    flex-shrink: 0; /* Prevent buttons from shrinking */
-    padding: 0.5rem 1rem; /* Adjust padding for smaller, more compact buttons */
-    font-size: 0.9em; /* Smaller font size for buttons */
+    flex-shrink: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9em;
 }
 
-
-/* Add drag-over style to chat input area itself */
 .chat-input-area textarea.drag-over {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1);
 }
-/* Style for chat input when it has an image (or indicates it's ready for text after image) */
 .chat-input-area textarea.has-image {
     background-color: var(--color-alert-info-bg);
     border-color: var(--color-primary-light);
     font-weight: 500;
 }
-/* Style for sub-headers within cards, like for System Prompt */
-.card-header-subtle { /* Renamed from .llm-helper-section .card-header-subtle to be more general */
-    border-bottom: 1px solid var(--color-grey-200); /* Lighter border */
+.card-header-subtle {
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
 }
-
 
 /* 4.10 Relevance Map Page */
 .relevance-visualize-page .card-body {
@@ -1890,34 +1871,12 @@ form button[type="submit"].btn-primary:hover,
     align-items: center;
     min-height: 600px;
     overflow: hidden;
-    padding: 30px;
+    padding: var(--spacing-xl); /* 32px */
 }
 
 #relevanceChart {
     min-width: 300px;
     margin: 0 auto;
-}
-
-/* ECharts Tooltip Styling for text wrapping */
-.echarts-tooltip-container {
-    max-width: 400px;
-    box-sizing: border-box;
-}
-
-.echarts-tooltip-content {
-    white-space: normal;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-.echarts-tooltip-content pre,
-.echarts-tooltip-content code {
-    white-space: pre-wrap;
-    word-break: break-all;
-    overflow-x: auto;
-    font-size: 0.9em;
 }
 
 /* 4.11 Data Alignment Page */
@@ -1927,9 +1886,9 @@ form button[type="submit"].btn-primary:hover,
 
 .data-alignment-actions {
     display: flex;
-    gap: 15px;
+    gap: var(--spacing-md); /* 16px */
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg); /* 24px */
 }
 .data-alignment-actions .btn {
     min-width: 120px;
@@ -1944,7 +1903,6 @@ form button[type="submit"].btn-primary:hover,
 /* (Currently no specific styles beyond generic UI components) */
 
 /* 4.13 Step Injection Preview Page */
-/* This page reuses .unsaved-change from Data Alignment */
 .step-injection-preview-page .status-badge {
     min-width: 70px;
     display: inline-block;
@@ -1953,11 +1911,10 @@ form button[type="submit"].btn-primary:hover,
 
 /* ========================================================================== */
 /* --- 5. Bulk Edit Page Specific Styles (for Steps and Use Cases) --- */
-/* (Extracted from edit_multiple_usecases.html and edit_multiple_usecases.html) */
 /* ========================================================================== */
 .edit-step-card .card-body,
 .edit-usecase-card .card-body {
-    padding: var(--spacing-lg); /* Adjusted from 1.5rem (24px) to use variable */
+    padding: var(--spacing-lg); /* 24px */
 }
 .edit-step-card .info-list dt,
 .edit-usecase-card .info-list dt {
@@ -1969,9 +1926,9 @@ form button[type="submit"].btn-primary:hover,
 .edit-usecase-card .field-row {
     display: grid;
     grid-template-columns: 200px 1fr 1.5fr; /* Field Name | Current Value | New Value */
-    gap: 15px;
-    padding-bottom: 15px;
-    margin-bottom: 15px;
+    gap: var(--spacing-md); /* 16px */
+    padding-bottom: var(--spacing-md); /* 16px */
+    margin-bottom: var(--spacing-md); /* 16px */
     border-bottom: 1px dashed var(--border-color);
     align-items: top;
 }
@@ -1989,13 +1946,13 @@ form button[type="submit"].btn-primary:hover,
 }
 .edit-step-card .field-row .current-value-display,
 .edit-usecase-card .field-row .current-value-display {
-    min-height: 80px; /* Consistent min-height for display and input */
+    min-height: 80px;
     font-size: 0.9rem;
     color: var(--text-secondary);
-    white-space: pre-wrap; /* Preserve line breaks */
-    word-break: break-word; /* Break long words */
-    padding: 8px; /* Add padding to prevent text from touching scrollbar */
-    border: 1px solid var(--color-grey-200);
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: var(--spacing-sm); /* 8px */
+    border: 1px solid var(--border-color);
     background-color: var(--element-bg-light);
     border-radius: var(--border-radius-sm);
 }
@@ -2004,7 +1961,7 @@ form button[type="submit"].btn-primary:hover,
 .edit-usecase-card .field-row .new-value-input,
 .edit-usecase-card .field-row .new-value-select {
     font-size: 0.9rem;
-    padding: 8px 10px;
+    padding: var(--spacing-sm) 10px; /* 8px 10px */
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     width: 100%;
@@ -2012,12 +1969,12 @@ form button[type="submit"].btn-primary:hover,
     resize: vertical;
 }
 .edit-step-card .field-row.area-field .new-value-select {
-    min-height: unset; /* Override textarea's min-height */
+    min-height: unset;
     height: auto;
 }
 .edit-usecase-card .field-row.process_step-field .new-value-select,
-.edit-usecase-card .field-row.priority-field .new-value-input { /* Specific styles for select/number inputs */
-    min-height: unset; /* Override textarea's min-height */
+.edit-usecase-card .field-row.priority-field .new-value-input {
+    min-height: unset;
     height: auto;
 }
 .unsaved-field-change {
@@ -2030,22 +1987,20 @@ form button[type="submit"].btn-primary:hover,
 }
 .action-buttons-group {
     display: flex;
-    gap: 10px;
-    justify-content: flex-end; /* Align buttons to the right */
-    padding-top: 15px;
+    gap: var(--spacing-sm); /* 8px */
+    justify-content: flex-end;
+    padding-top: var(--spacing-md); /* 16px */
     border-top: 1px dashed var(--border-color);
 }
 .save-all-controls {
     display: flex;
-    gap: 15px;
+    gap: var(--spacing-md); /* 16px */
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: var(--spacing-lg); /* 24px */
 }
 .save-all-controls .btn {
     min-width: 150px;
 }
-
-/* Removed: 5.1 LLM Helper Section (on Bulk Edit Use Cases Page) specific styles */
 
 /* ========================================================================== */
 /* --- 6. Responsive Styles --- */
@@ -2067,7 +2022,11 @@ form button[type="submit"].btn-primary:hover,
 
 @media (max-width: 768px) {
     .main-header {
-        padding: 10px 25px; /* Adjust header padding for smaller screens */
+        padding: 10px 25px;
+        flex-direction: column;
+        gap: 15px;
+        min-height: auto;
+        align-items: flex-end;
     }
 
     .sidebar {
@@ -2077,31 +2036,27 @@ form button[type="submit"].btn-primary:hover,
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         z-index: 1000;
+        top: 0; /* Ensure it stays at the top */
+        left: 0; /* Ensure it starts from the left */
+        border-right: none; /* Remove border when it's not a vertical sidebar */
+        box-shadow: none; /* Remove box shadow when it's a mobile slide-out */
     }
 
     .sidebar.show {
         transform: translateX(0);
     }
 
-    .main-header {
-        padding: 10px 25px; /* Adjust header padding */
-        flex-direction: column;
-        gap: 15px;
-        min-height: auto;
-        align-items: flex-end; /* Align icons to the right if in column */
-    }
-
     .breadcrumbs-fixed {
-        padding: 10px 25px 0; /* Adjust padding for smaller screens */
+        padding: 10px 25px 0;
         font-size: 0.85rem;
     }
 
     .card-body {
-        padding: 20px;
+        padding: var(--spacing-lg); /* 24px */
     }
 
     .card-header {
-        padding: 20px;
+        padding: var(--spacing-lg); /* 24px */
     }
 
     /* LLM specific mobile rules */
@@ -2119,29 +2074,49 @@ form button[type="submit"].btn-primary:hover,
     .llm-data-prep-page .button-group {
         justify-content: center;
     }
-    /* The general .chat-input-area mobile rule will apply to .llm-data-prep-page now */
     .chat-input-area .main-input-row {
         flex-direction: column;
-        align-items: stretch; /* Stretch items in column for full width */
-        gap: 0.75rem; /* Consistent spacing */
+        align-items: stretch;
+        gap: 0.75rem;
     }
     .chat-input-area .main-input-row select,
     .chat-input-area .main-input-row textarea,
     .chat-input-area .main-input-row .btn {
         width: 100%;
-        max-width: 100%; /* Ensure they stretch */
-        min-width: unset; /* Remove explicit min-width for selects */
+        max-width: 100%;
+        min-width: unset;
     }
 
-    /* Fix any potential issues with Bootstrap grid inside collapse */
     .collapse .row {
-        margin-inline-start: 0; /* Use logical property */
-        margin-inline-end: 0; /* Use logical property */
+        margin-inline-start: 0;
+        margin-inline-end: 0;
     }
 
     .collapse .col {
-        padding-inline-start: 15px; /* Use logical property */
-        padding-inline-end: 15px; /* Use logical property */
+        padding-inline-start: 15px;
+        padding-inline-end: 15px;
+    }
+
+    /* Area Overview tabs responsive */
+    .container {
+        padding: var(--spacing-md); /* 16px */
+    }
+
+    .header h1 {
+        font-size: 1.75rem;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tab-navigation {
+        overflow-x: auto;
+    }
+
+    .tab-button {
+        padding: var(--spacing-md); /* 16px */
+        font-size: 0.8rem;
     }
 }
 
@@ -2171,7 +2146,7 @@ form button[type="submit"].btn-primary:hover,
     font-size: 0.9em;
 }
 
-/* Data Alignment Page - For unsaved changes */
+/* Data Alignment Page - For unsaved changes (Accessible Design) */
 .unsaved-change {
     background-color: var(--color-alert-warning-bg);
     border-color: var(--color-alert-warning-border) !important;
@@ -2205,7 +2180,7 @@ form button[type="submit"].btn-primary:hover,
 
 .llm-data-prep-page .form-check .form-check-input {
     margin-top: 0;
-    margin-inline-end: 0.5rem; /* Use logical property */
+    margin-inline-end: 0.5rem;
     margin-bottom: 0;
     flex-shrink: 0;
 }
@@ -2215,5 +2190,246 @@ form button[type="submit"].btn-primary:hover,
     word-break: break-word;
     line-height: 1.4;
     cursor: pointer;
-    padding-inline-start: 0; /* Use logical property */
+    padding-inline-start: 0;
 }
+
+/* --- NEW STYLES FOR AREA OVERVIEW TABS AND CARDS (BI BRANDING) --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg); /* 24px */
+}
+
+.header {
+    margin-bottom: var(--spacing-xl); /* 32px */
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 2rem; /* Adjusted for this header specifically */
+    font-weight: 400; /* Lighter weight for modern look */
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm); /* 8px */
+    line-height: 1.2;
+}
+
+.header p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.tab-navigation {
+    background: var(--color-white);
+    border-radius: var(--border-radius-xs); /* 4px */
+    margin-bottom: 0;
+    display: flex;
+    overflow-x: auto;
+    box-shadow: var(--shadow-sm);
+}
+
+.tab-button {
+    padding: var(--spacing-md) var(--spacing-lg); /* 16px 24px */
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-bottom: 2px solid transparent;
+    position: relative;
+}
+
+.tab-button:hover {
+    color: var(--color-primary);
+    background: rgba(8, 49, 42, 0.04); /* Light background using primary color */
+}
+
+.tab-button.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.tab-badge {
+    display: inline-block;
+    background: var(--element-bg-light);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-inline-start: var(--spacing-sm); /* 8px */
+    font-weight: 400;
+}
+
+.tab-button.active .tab-badge {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.tab-content {
+    display: none;
+    background: var(--color-white);
+    padding: var(--spacing-lg); /* 24px */
+    margin-bottom: var(--spacing-md); /* 16px */
+    box-shadow: var(--shadow-sm);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 64px var(--spacing-lg); /* 24px */
+    color: var(--text-secondary);
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-sm); /* 8px */
+    color: var(--text-primary);
+    font-weight: 400;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-md); /* 16px */
+}
+
+.process-card {
+    background: var(--color-white);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: var(--border-radius); /* 16px */
+}
+
+.process-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.process-card .card-header {
+    padding: var(--spacing-lg); /* 24px */
+    border-bottom: 1px solid var(--element-bg-light);
+    position: relative;
+    background: none;
+    box-shadow: none;
+    display: block;
+}
+
+.card-number {
+    position: absolute;
+    top: var(--spacing-md); /* 16px */
+    right: var(--spacing-lg); /* 24px */
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--border-color);
+}
+
+.step-badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm); /* 4px 8px */
+    border-radius: var(--border-radius-xs); /* 4px */
+    font-size: 0.75rem;
+    margin-bottom: var(--spacing-sm); /* 8px */
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+}
+
+.process-card .card-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs); /* 4px */
+    color: var(--text-primary); /* Changed from gradient text */
+    line-height: 1.4;
+    background: none; /* Removed gradient properties */
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.expand-indicator {
+    position: absolute;
+    bottom: var(--spacing-lg); /* 24px */
+    right: var(--spacing-lg); /* 24px */
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.process-card.expanded .expand-indicator {
+    transform: rotate(180deg);
+}
+
+.card-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.card-content.expanded {
+    max-height: 1000px;
+}
+
+.sub-process {
+    display: block;
+    padding: var(--spacing-md) var(--spacing-lg); /* 16px 24px */
+    border-bottom: 1px solid var(--element-bg-light);
+    transition: background-color 0.2s ease;
+}
+
+.sub-process:last-child {
+    border-bottom: none;
+}
+
+.sub-process:hover {
+    background: var(--element-bg-light);
+}
+
+.sub-process-title {
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs); /* 4px */
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.sub-process-id {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.no-use-cases {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    padding: var(--spacing-xl) var(--spacing-lg); /* 32px 24px */
+    text-align: center;
+    font-style: italic;
+}
+
+/* Color variations for different areas (BI Branding) */
+.bio-excellence .step-badge { background: var(--color-signature-green); color: var(--color-deep-teal); } /* Adjusted for better contrast based on brand guidelines (green accent on neutral/dark) */
+.logistics .step-badge { background: var(--color-light-purple); color: var(--color-deep-teal); }
+.maintenance .step-badge { background: var(--color-dark-gray-3); color: var(--color-white); }
+.manufacturing .step-badge { background: var(--color-deep-teal); color: var(--color-white); }
+.performance .step-badge { background: var(--color-dark-gray-1); color: var(--color-white); }
+.quality-assurance .step-badge { background: var(--color-signature-green); color: var(--color-deep-teal); } /* Adjusted for better contrast */
+.quality-control .step-badge { background: var(--color-light-purple); color: var(--color-deep-teal); }
+.strategic-partner .step-badge { background: var(--color-dark-gray-3); color: var(--color-white); }
+.supply-chain .step-badge { background: var(--color-dark-gray-2); color: var(--color-white); }

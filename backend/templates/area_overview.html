@@ -3,64 +3,96 @@
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
-<div class="area-overview-page">
-    <h1>{{ title }}</h1>
-    <p class="text-color-light mb-4">
-        A comprehensive list of all defined Areas, along with their associated Process Steps and Use Cases.
-    </p>
+<div class="container"> {# This container div applies the standalone's max-width/margin/padding from the new CSS #}
+    <div class="header">
+        <h1>{{ title }}</h1>
+        <p>A comprehensive digital transformation roadmap</p>
+    </div>
 
-    <div class="data-section">
+    {# Define a mapping for area names to CSS class names for styling.
+       These names should align with the classes defined in style.css for color variations. #}
+    {% set area_style_map = {
+        "Bio Excellence": "bio-excellence",
+        "Logistics": "logistics",
+        "Maintenance": "maintenance",
+        "Manufacturing": "manufacturing",
+        "Performance Management": "performance",
+        "Quality Assurance": "quality-assurance",
+        "Quality Control": "quality-control",
+        "Strategic Partner Management": "strategic-partner",
+        "Supply Chain Management": "supply-chain"
+    } %}
+    {# Comments for area_style_map associations #}
+    {# "Performance Management" in template maps to "performance" class (matches "Performance Mgmt" in standalone) #}
+    {# "Strategic Partner Management" in template maps to "strategic-partner" class (matches "Strategic Partner" in standalone) #}
+
+    {# Macro to sanitize area names for use as valid HTML IDs and CSS classes #}
+    {% macro get_sanitized_id(area_name) %}
+        {{ area_name | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") }}
+    {% endmacro %}
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
         {% if areas %}
-            {% for area in areas | sort(attribute='name') %} {# Ensure sorting by name #}
-                <div class="area-card mb-xl"> {# Apply mb-xl for consistent spacing #}
-                    <h3>
-                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}">{{ area.name }}</a>
-                        <span class="step-details">(Area ID: {{ area.id }})</span>
-                    </h3>
-                    {% if area.description %}
-                        <p class="text-muted small mb-3">{{ area.description | markdown }}</p>
-                    {% endif %}
-
-                    {% if area.process_steps %}
-                        <h4>Process Steps in this Area:</h4>
-                        <ul class="list-unstyled item-list">
-                            {% for step in area.process_steps | sort(attribute='name') %}
-                                <li class="mb-2">
-                                    <div class="item-title">
-                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
-                                    </div>
-                                    <div class="item-meta">
-                                        <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
-                                    </div>
-                                    {% if step.use_cases %}
-                                        <ul class="usecase-list mt-1">
-                                            {% for uc in step.use_cases | sort(attribute='name') %}
-                                            <li>
-                                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
-                                                <small class="uc-details text-muted">(UC BI_ID: {{ uc.bi_id }})</small>
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <p class="mb-0 ms-3"><em><small>No use cases directly under this step.</small></em></p>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p><em>No process steps found for this area.</em></p>
-                    {% endif %}
-                </div>
+            {% for area in areas | sort(attribute='name') %}
+                {% set area_id = get_sanitized_id(area.name) %}
+                <button class="tab-button {% if loop.first %}active{% endif %}" onclick="showTab({{ area_id|tojson }}, this)">
+                    {{ area.name }} <span class="tab-badge">{{ area.process_steps | length }}</span>
+                </button>
             {% endfor %}
         {% else %}
-            <div class="card">
-                <div class="card-body">
-                    <p class="text-muted text-center"><em>No areas found in the database. You can add areas using the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.</em></p>
-                </div>
-            </div>
+             <p class="text-muted text-center p-3">No areas found.</p>
         {% endif %}
     </div>
 
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+    <!-- Tab Content -->
+    {% if areas %}
+        {% for area in areas | sort(attribute='name') %}
+            {% set area_id = get_sanitized_id(area.name) %}
+            {# Apply area-specific style class from the map, fallback to 'default-color' if not found #}
+            <div class="tab-content {% if loop.first %}active{% endif %} {{ area_style_map.get(area.name, 'default-color') }}" id="{{ area_id }}">
+                {% if area.process_steps %}
+                    <div class="cards-grid">
+                        {% for step in area.process_steps | sort(attribute='name') %}
+                            <div class="process-card" onclick="toggleCard(this)">
+                                <div class="card-header">
+                                    {# card-number: Use loop.index for sequential numbering within the tab #}
+                                    <div class="card-number">{{ loop.index | string | zfill(2) }}</div>
+                                    <div class="step-badge">
+                                        Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}
+                                    </div>
+                                    <div class="card-title">{{ step.name }}</div>
+                                    <div class="card-subtitle">{{ step.step_description | truncate(80, true) | default('No description.', true) }}</div>
+                                    <div class="expand-indicator">▼</div>
+                                </div>
+                                <div class="card-content">
+                                    {% if step.use_cases %}
+                                        {% for use_case in step.use_cases | sort(attribute='name') %}
+                                            <a href="{{ url_for('usecases.view_usecase', usecase_id=use_case.id) }}" class="sub-process">
+                                                <div class="sub-process-title">{{ use_case.name }}</div>
+                                                <div class="sub-process-id">UC ID: {{ use_case.id }}, BI_ID: {{ use_case.bi_id }}</div>
+                                            </a>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="no-use-cases">No use cases found for this process step.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <h3>{{ area.name }}</h3>
+                        <p>No process steps found for this area.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <h3>No Areas Available</h3>
+            <p>Please add areas to the database using the Data Update page.</p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

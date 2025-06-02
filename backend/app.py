@@ -1,6 +1,8 @@
 # backend/app.py
 import os
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, jsonify # Added jsonify for debug_check to return JSON
+import json # Added to explicitly import the standard json module
+
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
 import markupsafe
@@ -9,16 +11,10 @@ import markdown
 from flask_session import Session
 
 from .config import get_config
-# FIX 1: This line needs to be changed from '..' to '.'
 from .models import Base, User, Area, ProcessStep, UseCase, LLMSettings
-from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db # This was already correctly fixed in previous steps
+from .db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
 
 from . import llm_service
-
-# NEW IMPORTS FOR BREADCRUMBS
-# FIX 2: This line also needs to be changed from '..' to '.'
-from .models import Area, ProcessStep, UseCase # Ensure these are imported if not already
-from flask import url_for # Ensure url_for is imported
 
 # Helper to convert query results to flat dicts for JavaScript
 def serialize_for_js(obj_list, item_type):
@@ -26,20 +22,25 @@ def serialize_for_js(obj_list, item_type):
     for obj in obj_list:
         item_dict = {
             'id': obj.id,
-            'name': obj.name,
+            'name': str(obj.name) if obj.name is not None else '', # MODIFIED: Ensure name is always a string
         }
         # Add URLs dynamically based on type
-        if item_type == 'area':
-            item_dict['url'] = url_for('areas.view_area', area_id=obj.id)
-        elif item_type == 'step':
-            item_dict['area_id'] = obj.area_id
-            item_dict['url'] = url_for('steps.view_step', step_id=obj.id)
-        elif item_type == 'usecase':
-            item_dict['step_id'] = obj.process_step_id
-            item_dict['url'] = url_for('usecases.view_usecase', usecase_id=obj.id)
-        data.append(item_dict)
+        try:
+            if item_type == 'area':
+                item_dict['url'] = url_for('areas.view_area', area_id=obj.id)
+            elif item_type == 'step':
+                item_dict['area_id'] = obj.area_id
+                item_dict['url'] = url_for('steps.view_step', step_id=obj.id)
+            elif item_type == 'usecase':
+                item_dict['step_id'] = obj.process_step_id
+                item_dict['url'] = url_for('usecases.view_usecase', usecase_id=obj.id)
+            data.append(item_dict)
+        except Exception as url_error:
+            # Fallback for error in URL generation, print for debug
+            print(f"DEBUG: url_for failed for item {obj.id} ({obj.name}) of type {item_type}: {url_error}")
+            item_dict['url'] = '#' # Provide a safe fallback URL
+            data.append(item_dict) # Still append, but with fallback URL
     return data
-# END NEW IMPORTS AND HELPER
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -99,6 +100,19 @@ def truncate_filter(s, length=255, killwords=False, end='...'):
                 break
         return ' '.join(out) + end
 
+def zfill_filter(value, width):
+    """Fills numeric string with zeros on the left to reach a specified width."""
+    if value is None:
+        return ''
+    return str(value).zfill(width)
+
+def htmlsafe_json_filter(value):
+    """
+    Dumps a Python object to a JSON string and marks it as HTML safe.
+    This is useful for embedding JSON data directly into HTML script tags.
+    """
+    return markupsafe.Markup(json.dumps(value))
+
 
 def create_app():
     """
@@ -119,11 +133,15 @@ def create_app():
     login_manager.init_app(app)
 
     app.jinja_env.filters['nl2br'] = nl2br
-    app.jinja_env.filters['markdown'] = markdown_to_html_filter # Register the new markdown filter
-    app.jinja_env.filters['truncate'] = truncate_filter # Register the new truncate filter
+    app.jinja_env.filters['markdown'] = markdown_to_html_filter
+    app.jinja_env.filters['truncate'] = truncate_filter
+    app.jinja_env.filters['zfill'] = zfill_filter
+    app.jinja_env.filters['htmlsafe_json'] = htmlsafe_json_filter
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
-    print(f"DEBUG: Initializing database with URL: {db_url}") # New print
+    print(f"DEBUG: Initializing database with URL: {db_url}")
+    # Assuming init_app_db is defined elsewhere, e.g., in .db or a similar module
+    # and correctly initializes and returns the SQLAlchemy db instance.
     db_instance = init_app_db(app)
 
     app.config['SESSION_TYPE'] = 'sqlalchemy'
@@ -134,67 +152,55 @@ def create_app():
     app.config['SESSION_USE_SIGNER'] = True
     app.config['SESSION_COOKIE_NAME'] = 'usecase_explorer_session'
     app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_SECURE'] = False # Set to True in production if using HTTPS
     app.config['SESSION_SQLALCHEMY_CREATE_TABLE'] = False
     
-    print("DEBUG: Initializing Flask-Session...") # New print
+    print("DEBUG: Initializing Flask-Session...")
     Session(app) 
-    print("DEBUG: Flask-Session initialized.") # New print
+    print("DEBUG: Flask-Session initialized.")
     
     with app.app_context():
-        # The create_all() block was removed as part of previous fixes.
-        # Ensure it's not present or is correctly commented out.
-        # print("Attempting to create all database tables (if they don't exist)...")
-        # print(f"Models known to SQLAlchemy Base.metadata: {list(Base.metadata.tables.keys())}")
-        # try:
-        #     # flask_sqlalchemy_db.create_all() 
-        #     print("Database tables checked/created successfully (if init.sql ran or already exist).")
-        # except Exception as e:
-        #     print(f"Error creating database tables (possibly already exist or conflict): {e}")
-
         try:
             with db_instance.engine.connect() as connection: 
                 print("Database connection successful!")
         except Exception as e:
             print(f"Database connection failed: {e}")
-        print("DEBUG: Database connection check passed within app_context.") # New print
+        print("DEBUG: Database connection check passed within app_context.")
 
     @app.teardown_request
     def remove_session(exception=None):
         SessionLocal.remove()
 
-    print("DEBUG: About to import and register blueprints.") # New print
-    # Blueprint imports and registrations (add print for each blueprint registration)
+    print("DEBUG: About to import and register blueprints.")
     from .routes.auth_routes import auth_routes
-    print("DEBUG: Registering auth_routes.") # New print
+    print("DEBUG: Registering auth_routes.")
     app.register_blueprint(auth_routes)
     from .routes.injection_routes import injection_routes
-    print("DEBUG: Registering injection_routes.") # New print
+    print("DEBUG: Registering injection_routes.")
     app.register_blueprint(injection_routes)
     from .routes.usecase_routes import usecase_routes
-    print("DEBUG: Registering usecase_routes.") # New print
+    print("DEBUG: Registering usecase_routes.")
     app.register_blueprint(usecase_routes)
     from .routes.relevance_routes import relevance_routes
-    print("DEBUG: Registering relevance_routes.") # New print
+    print("DEBUG: Registering relevance_routes.")
     app.register_blueprint(relevance_routes)
     from .routes.llm_routes import llm_routes
-    print("DEBUG: Registering llm_routes.") # New print
+    print("DEBUG: Registering llm_routes.")
     app.register_blueprint(llm_routes)
     from .routes.area_routes import area_routes
-    print("DEBUG: Registering area_routes.") # New print
+    print("DEBUG: Registering area_routes.")
     app.register_blueprint(area_routes)
     from .routes.step_routes import step_routes
-    print("DEBUG: Registering step_routes.") # New print
+    print("DEBUG: Registering step_routes.")
     app.register_blueprint(step_routes)
     from .routes.export_routes import export_routes 
-    print("DEBUG: Registering export_routes.") # New print
+    print("DEBUG: Registering export_routes.")
     app.register_blueprint(export_routes)
     from .routes.data_alignment_routes import data_alignment_routes
-    print("DEBUG: Registering data_alignment_routes.") # New print
+    print("DEBUG: Registering data_alignment_routes.")
     app.register_blueprint(data_alignment_routes)
-    # NEW: Register settings blueprint
     from .routes.settings_routes import settings_routes
-    print("DEBUG: Registering settings_routes.") # New print
+    print("DEBUG: Registering settings_routes.")
     app.register_blueprint(settings_routes)
     print("Blueprint registration complete.")
 
@@ -204,22 +210,18 @@ def create_app():
             session_db = flask_sqlalchemy_db.session
             areas = []
             
-            # NEW BREADCRUMB DATA FETCHING
             all_areas_flat = []
             all_steps_flat = []
             all_usecases_flat = []
-            # END NEW BREADCRUMB DATA FETCHING
             
             try:
                 areas = session_db.query(Area).options(
                     joinedload(Area.process_steps).joinedload(ProcessStep.use_cases)
                 ).order_by(Area.name).all()
 
-                # NEW BREADCRUMB DATA FETCHING
                 all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
                 all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
                 all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-                # END NEW BREADCRUMB DATA FETCHING
 
             except Exception as e:
                 print(f"Error querying areas with steps and use cases: {e}")
@@ -228,15 +230,13 @@ def create_app():
                 'index.html', 
                 title='Home', 
                 areas=areas, 
-                current_item=None, # Pass current_item=None for home page
-                current_area=None, # Ensure these are passed as None for consistency
+                current_item=None,
+                current_area=None,
                 current_step=None,
                 current_usecase=None,
-                # NEW BREADCRUMB DATA PASSING
                 all_areas_flat=all_areas_flat,
                 all_steps_flat=all_steps_flat,
                 all_usecases_flat=all_usecases_flat
-                # END NEW BREADCRUMB DATA PASSING
             )
         else:
             return redirect(url_for('auth.login'))
@@ -291,7 +291,6 @@ def create_app():
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                # Changed to check list_areas instead of view_area (as view_area requires ID)
                 try:
                     list_areas_url = url_for('areas.list_areas') 
                     results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
@@ -318,9 +317,11 @@ def create_app():
             results["message"] = f"Debug check failed: {e}"
             results["error_type"] = type(e).__name__
             print(f"Error in /debug-check: {e}")
-            return results, 500
+            return jsonify(results), 500 # Return JSON for API-like endpoint
         finally:
-            pass
+            pass # session_for_debug is request-scoped, will be closed by teardown
+        
+        return jsonify(results) # Return JSON for API-like endpoint
 
-    print("DEBUG: create_app function about to return app object.") # New print
+    print("DEBUG: create_app function about to return app object.")
     return app
