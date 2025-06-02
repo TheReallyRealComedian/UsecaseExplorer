@@ -14,6 +14,54 @@ step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
                         url_prefix='/steps')
 
+# NEW: Overview page for all steps
+@step_routes.route('/')
+@login_required
+def list_steps():
+    session = SessionLocal()
+    steps = []
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
+    try:
+        # Load all steps with their area and use cases for the overview
+        steps = session.query(ProcessStep).options(
+            joinedload(ProcessStep.area),
+            joinedload(ProcessStep.use_cases)
+        ).order_by(ProcessStep.name).all()
+
+        # NEW BREADCRUMB DATA FETCHING (for consistency across all routes)
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
+        return render_template(
+            'step_overview.html', # NEW TEMPLATE
+            title="All Process Steps",
+            steps=steps,
+            current_item=None, # No specific item highlighted
+            current_area=None, # No specific area context for breadcrumbs
+            current_step=None, # No specific step context for breadcrumbs
+            current_usecase=None, # No specific usecase context for breadcrumbs
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
+        )
+    except Exception as e:
+        print(f"Error fetching all steps for overview: {e}")
+        flash("An error occurred while fetching process step overview.", "danger")
+        return redirect(url_for('index'))
+    finally:
+        SessionLocal.remove()
+
+
 @step_routes.route('/<int:step_id>')
 @login_required
 def view_step(step_id):

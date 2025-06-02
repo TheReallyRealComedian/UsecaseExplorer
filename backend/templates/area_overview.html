@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="area-overview-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        A comprehensive list of all defined Areas, along with their associated Process Steps and Use Cases.
+    </p>
+
+    <div class="data-section">
+        {% if areas %}
+            {% for area in areas | sort(attribute='name') %} {# Ensure sorting by name #}
+                <div class="area-card mb-xl"> {# Apply mb-xl for consistent spacing #}
+                    <h3>
+                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}">{{ area.name }}</a>
+                        <span class="step-details">(Area ID: {{ area.id }})</span>
+                    </h3>
+                    {% if area.description %}
+                        <p class="text-muted small mb-3">{{ area.description | markdown }}</p>
+                    {% endif %}
+
+                    {% if area.process_steps %}
+                        <h4>Process Steps in this Area:</h4>
+                        <ul class="list-unstyled item-list">
+                            {% for step in area.process_steps | sort(attribute='name') %}
+                                <li class="mb-2">
+                                    <div class="item-title">
+                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
+                                    </div>
+                                    <div class="item-meta">
+                                        <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
+                                    </div>
+                                    {% if step.use_cases %}
+                                        <ul class="usecase-list mt-1">
+                                            {% for uc in step.use_cases | sort(attribute='name') %}
+                                            <li>
+                                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                                <small class="uc-details text-muted">(UC BI_ID: {{ uc.bi_id }})</small>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="mb-0 ms-3"><em><small>No use cases directly under this step.</small></em></p>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p><em>No process steps found for this area.</em></p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted text-center"><em>No areas found in the database. You can add areas using the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.</em></p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %}

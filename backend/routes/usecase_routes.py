@@ -20,6 +20,53 @@ usecase_routes = Blueprint(
     url_prefix='/usecases'
 )
 
+# NEW: Overview page for all use cases
+@usecase_routes.route('/')
+@login_required
+def list_usecases():
+    session = SessionLocal()
+    usecases = []
+    
+    # NEW BREADCRUMB DATA FETCHING
+    all_areas_flat = []
+    all_steps_flat = []
+    all_usecases_flat = []
+    # END NEW BREADCRUMB DATA FETCHING
+
+    try:
+        # Load all use cases with their process step and area for the overview
+        usecases = session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        ).order_by(UseCase.name).all()
+
+        # NEW BREADCRUMB DATA FETCHING (for consistency across all routes)
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        # END NEW BREADCRUMB DATA FETCHING
+
+        return render_template(
+            'usecase_overview.html', # NEW TEMPLATE
+            title="All Use Cases",
+            usecases=usecases,
+            current_item=None, # No specific item highlighted
+            current_area=None, # No specific area context for breadcrumbs
+            current_step=None, # No specific step context for breadcrumbs
+            current_usecase=None, # No specific usecase context for breadcrumbs
+            # NEW BREADCRUMB DATA PASSING
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+            # END NEW BREADCRUMB DATA PASSING
+        )
+    except Exception as e:
+        print(f"Error fetching all use cases for overview: {e}")
+        flash("An error occurred while fetching use case overview.", "danger")
+        return redirect(url_for('index'))
+    finally:
+        SessionLocal.remove()
+
+
 @usecase_routes.route('/<int:usecase_id>')
 @login_required
 def view_usecase(usecase_id):

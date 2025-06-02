@@ -9,12 +9,14 @@ import markdown
 from flask_session import Session
 
 from .config import get_config
+# FIX 1: This line needs to be changed from '..' to '.'
 from .models import Base, User, Area, ProcessStep, UseCase, LLMSettings
-from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db
+from .db import SessionLocal, init_app_db, db as flask_sqlalchemy_db # This was already correctly fixed in previous steps
 
 from . import llm_service
 
 # NEW IMPORTS FOR BREADCRUMBS
+# FIX 2: This line also needs to be changed from '..' to '.'
 from .models import Area, ProcessStep, UseCase # Ensure these are imported if not already
 from flask import url_for # Ensure url_for is imported
 
@@ -77,6 +79,27 @@ def markdown_to_html_filter(value):
     # Using the python-markdown library with fenced_code and tables extensions
     return markupsafe.Markup(markdown.markdown(value, extensions=['fenced_code', 'tables']))
 
+def truncate_filter(s, length=255, killwords=False, end='...'):
+    """Truncates a string."""
+    if s is None:
+        return ''
+    if len(s) <= length:
+        return s
+    if killwords:
+        return s[:length] + end
+    else:
+        words = s.split(' ')
+        out = []
+        l = 0
+        for word in words:
+            if (l + len(word)) <= length:
+                out.append(word)
+                l += len(word)
+            else:
+                break
+        return ' '.join(out) + end
+
+
 def create_app():
     """
     Flask application factory function.
@@ -97,6 +120,7 @@ def create_app():
 
     app.jinja_env.filters['nl2br'] = nl2br
     app.jinja_env.filters['markdown'] = markdown_to_html_filter # Register the new markdown filter
+    app.jinja_env.filters['truncate'] = truncate_filter # Register the new truncate filter
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
     print(f"DEBUG: Initializing database with URL: {db_url}") # New print
@@ -267,8 +291,9 @@ def create_app():
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
                 add_area_rel_url = url_for('relevance.add_area_relevance')
                 results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
+                # Changed to check list_areas instead of view_area (as view_area requires ID)
                 try:
-                    list_areas_url = url_for('areas.view_area', area_id=1) 
+                    list_areas_url = url_for('areas.list_areas') 
                     results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
                 except Exception as area_url_err:
                     results["checks"]["url_for_areas_list"] = f"FAILED ({area_url_err})"

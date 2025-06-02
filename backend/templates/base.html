@@ -27,17 +27,17 @@
                     <li class="{% if request.endpoint == 'index' %}active{% endif %}">
                         <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
                     </li>
-                    <li class="{% if request.blueprint == 'areas' or current_area %}active{% endif %}">
-                        {# Link to a general area list, or the first area if no list exists #}
-                        <a href="{{ url_for('areas.view_area', area_id=1) }}"><i class="fas fa-sitemap"></i> Areas</a>
+                    {# UPDATED: Link to area overview #}
+                    <li class="{% if request.blueprint == 'areas' and request.endpoint != 'areas.view_area' and request.endpoint != 'areas.edit_area' %}active{% elif current_area %}active{% endif %}">
+                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-sitemap"></i> Areas</a>
                     </li>
-                    <li class="{% if request.blueprint == 'steps' or current_step %}active{% endif %}">
-                        {# Link to a general step list, or the first step if no list exists #}
-                        <a href="{{ url_for('steps.view_step', step_id=1) }}"><i class="fas fa-shoe-prints"></i> Steps</a>
+                    {# UPDATED: Link to step overview #}
+                    <li class="{% if request.blueprint == 'steps' and request.endpoint != 'steps.view_step' and request.endpoint != 'steps.edit_step' %}active{% elif current_step %}active{% endif %}">
+                        <a href="{{ url_for('steps.list_steps') }}"><i class="fas fa-shoe-prints"></i> Steps</a>
                     </li>
-                    <li class="{% if request.blueprint == 'usecases' or current_usecase %}active{% endif %}">
-                        {# Link to a general use case list, or the first use case if no list exists #}
-                        <a href="{{ url_for('usecases.view_usecase', usecase_id=1) }}"><i class="fas fa-lightbulb"></i> Use Cases</a>
+                    {# UPDATED: Link to use case overview #}
+                    <li class="{% if request.blueprint == 'usecases' and request.endpoint != 'usecases.view_usecase' and request.endpoint != 'usecases.edit_usecase' %}active{% elif current_usecase %}active{% endif %}">
+                        <a href="{{ url_for('usecases.list_usecases') }}"><i class="fas fa-lightbulb"></i> Use Cases</a>
                     </li>
                     <li class="{% if request.blueprint == 'relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
@@ -85,7 +85,7 @@
             </header>
 
             <div class="breadcrumbs-fixed"> {# NEW: A separate div for breadcrumbs, not part of the flexible header #}
-                <a href="{{ url_for('index') }}" class="breadcrumb-item {% if current_item is none and request.endpoint == 'index' %}active{% endif %}">Home</a>
+                <a href="{{ url_for('index') }}" class="breadcrumb-item {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
 
                 {# Area Breadcrumb #}
                 {% if current_area %}
@@ -95,6 +95,17 @@
                             {{ current_area.name }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="area-breadcrumb-container">
+                            <!-- Dynamic content filled by JS -->
+                        </ul>
+                    </div>
+                {# MODIFIED BLOCK: For Area overview page - now includes a dropdown container #}
+                {% elif request.blueprint == 'areas' and request.endpoint == 'areas.list_areas' %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-areas-breadcrumb-container" data-item-type="areas_overview"> {# New ID for JS #}
+                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            All Areas
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="all-areas-breadcrumb-container">
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
@@ -111,6 +122,17 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
+                {# MODIFIED BLOCK: For Step overview page - now includes a dropdown container #}
+                {% elif request.blueprint == 'steps' and request.endpoint == 'steps.list_steps' %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-steps-breadcrumb-container" data-item-type="steps_overview"> {# New ID for JS #}
+                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            All Process Steps
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="all-steps-breadcrumb-container">
+                            <!-- Dynamic content filled by JS -->
+                        </ul>
+                    </div>
                 {% endif %}
 
                 {# Use Case Breadcrumb #}
@@ -124,10 +146,23 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
+                {# MODIFIED BLOCK: For Use Case overview page - now includes a dropdown container #}
+                {% elif request.blueprint == 'usecases' and request.endpoint == 'usecases.list_usecases' %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-usecases-breadcrumb-container" data-item-type="usecases_overview"> {# New ID for JS #}
+                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            All Use Cases
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="all-usecases-breadcrumb-container">
+                            <!-- Dynamic content filled by JS -->
+                        </ul>
+                    </div>
                 {% endif %}
 
                 {# Handling for other top-level pages not directly tied to Area/Step/Usecase objects #}
-                {% if current_item is none and request.endpoint != 'index' %}
+                {# This condition ensures it only applies if none of the above specific page types are matched #}
+                {# Removed `current_item is none` from this condition, as it was redundant. #}
+                {% if request.endpoint != 'index' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <span class="breadcrumb-item active">{{ title }}</span> {# Use the page's title directly #}
                 {% endif %}

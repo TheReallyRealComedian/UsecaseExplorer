@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="usecase-overview-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        A comprehensive list of all defined Use Cases, along with their associated Process Step and Area.
+    </p>
+
+    <div class="data-section">
+        {% if usecases %}
+            {% for uc in usecases | sort(attribute='name') %}
+                <div class="card mb-3"> {# Standard card for individual use cases #}
+                    <div class="card-body">
+                        <div class="item-title mb-2">
+                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                            <small class="text-muted ms-2">(BI_ID: {{ uc.bi_id }})</small>
+                            {% if uc.priority %}
+                                <span class="badge bg-info ms-2">Priority: {{ uc.priority }}</span>
+                            {% endif %}
+                            {% if uc.status %}
+                                <span class="badge bg-secondary ms-1">Status: {{ uc.status }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="item-meta mb-2">
+                            {% if uc.process_step %}
+                                <span>Part of Step: <a href="{{ url_for('steps.view_step', step_id=uc.process_step.id) }}">{{ uc.process_step.name }}</a></span>
+                                {% if uc.process_step.area %}
+                                    <span class="ms-2">in Area: <a href="{{ url_for('areas.view_area', area_id=uc.process_step.area.id) }}">{{ uc.process_step.area.name }}</a></span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">No associated Process Step.</span>
+                            {% endif %}
+                        </div>
+                        {% if uc.summary %}
+                            <p class="small text-muted mb-0">{{ uc.summary | truncate(200, true) }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted text-center"><em>No use cases found in the database. You can add use cases using the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.</em></p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+</div>
+{% endblock %} 
