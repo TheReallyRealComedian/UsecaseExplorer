@@ -628,16 +628,6 @@ textarea.form-control {
     position: relative;
 }
 
-/* .btn-gradient was used for primary buttons, now handled by btn-primary with solid color */
-/* .btn-gradient {
-    box-shadow: var(--shadow-sm);
-}
-
-.btn-gradient:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-} */
-
 form button[type="submit"],
 .btn {
     border-radius: var(--border-radius-sm);
@@ -763,7 +753,7 @@ form button[type="submit"].btn-primary:hover,
 .alert-info {
     color: var(--color-alert-info-text);
     background: var(--color-alert-info-bg);
-    border-left-color: var(--color-alert-info-border); /* This was alert-info-border, should be alert-info-text for consistency or specific border color if intended */
+    border-left-color: var(--color-alert-info-border);
 }
 
 /* 3.7 Collapse Button Styling (e.g., for Card Headers) */
@@ -1240,6 +1230,33 @@ form button[type="submit"].btn-primary:hover,
     background-color: var(--element-bg-light);
     font-weight: bold;
 }
+
+/* --- NEW CSS RULES FOR HEADINGS WITHIN MARKDOWN --- */
+.markdown-content h1 {
+    font-size: 1.75rem; /* Significantly smaller than global H1 */
+    font-weight: 600;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary); /* Or var(--color-primary) if you want them colored */
+    border-bottom: 1px solid var(--border-color); /* Optional: subtle separator */
+    padding-bottom: var(--spacing-xs);
+}
+
+.markdown-content h2 {
+    font-size: 1.5rem; /* Smaller than global H2 */
+    font-weight: 600;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+.markdown-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    /* Keep other h3 styles or adjust as needed */
+}
+/* Add for h4, h5, h6 if necessary */
+/* --- END NEW CSS RULES --- */
 
 /* 4.8 LLM Data Preparation Page (Modern & Clean) */
 .llm-data-prep-page {

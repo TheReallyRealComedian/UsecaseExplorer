@@ -3,14 +3,12 @@
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
-<div class="container"> {# This container div applies the standalone's max-width/margin/padding from the new CSS #}
+<div class="container">
     <div class="header">
         <h1>{{ title }}</h1>
         <p>A comprehensive digital transformation roadmap</p>
     </div>
 
-    {# Define a mapping for area names to CSS class names for styling.
-       These names should align with the classes defined in style.css for color variations. #}
     {% set area_style_map = {
         "Bio Excellence": "bio-excellence",
         "Logistics": "logistics",
@@ -22,21 +20,20 @@
         "Strategic Partner Management": "strategic-partner",
         "Supply Chain Management": "supply-chain"
     } %}
-    {# Comments for area_style_map associations #}
-    {# "Performance Management" in template maps to "performance" class (matches "Performance Mgmt" in standalone) #}
-    {# "Strategic Partner Management" in template maps to "strategic-partner" class (matches "Strategic Partner" in standalone) #}
 
-    {# Macro to sanitize area names for use as valid HTML IDs and CSS classes #}
+    {# Macro to sanitize area names for use as valid HTML IDs and CSS classes.
+       Note the {{- ... -}} to strip whitespace from the macro's output block itself. #}
     {% macro get_sanitized_id(area_name) %}
-        {{ area_name | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") }}
+        {{- area_name | replace('\n', '') | replace('\r', '') | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") | replace('"', "") -}}
     {% endmacro %}
 
     <!-- Tab Navigation -->
     <div class="tab-navigation">
         {% if areas %}
             {% for area in areas | sort(attribute='name') %}
-                {% set area_id = get_sanitized_id(area.name) %}
-                <button class="tab-button {% if loop.first %}active{% endif %}" onclick="showTab({{ area_id|tojson }}, this)">
+                {% set area_id_str = get_sanitized_id(area.name) %}
+                {# Use {{- ... -}} to strip whitespace around the variable inside the attribute value #}
+                <button class="tab-button {% if loop.first %}active{% endif %}" onclick="showTab('{{- area_id_str -}}', this)">
                     {{ area.name }} <span class="tab-badge">{{ area.process_steps | length }}</span>
                 </button>
             {% endfor %}
@@ -49,9 +46,12 @@
     {% if areas %}
         {% for area in areas | sort(attribute='name') %}
             {% set area_id = get_sanitized_id(area.name) %}
-            {# Apply area-specific style class from the map, fallback to 'default-color' if not found #}
-            <div class="tab-content {% if loop.first %}active{% endif %} {{ area_style_map.get(area.name, 'default-color') }}" id="{{ area_id }}">
-                {% if area.process_steps %}
+            {# Use {{- ... -}} to strip whitespace around the variable inside the attribute value #}
+                <div class="tab-content {% if loop.first %}active{% endif %} {{ area_style_map.get(area.name, 'default-color') }}" id="{{- area_id -}}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3>Steps in {{ area.name }}</h3>
+                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}" class="btn btn-sm btn-info">View Full Area Details</a>
+                    </div>                {% if area.process_steps %}
                     <div class="cards-grid">
                         {% for step in area.process_steps | sort(attribute='name') %}
                             <div class="process-card" onclick="toggleCard(this)">
@@ -59,7 +59,11 @@
                                     {# card-number: Use loop.index for sequential numbering within the tab #}
                                     <div class="card-number">{{ loop.index | string | zfill(2) }}</div>
                                     <div class="step-badge">
-                                        Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}
+                                        {# --- MODIFIED LINE --- #}
+                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="text-decoration-none" style="color: inherit;">
+                                            Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}
+                                        </a>
+                                        {# --- END MODIFICATION --- #}
                                     </div>
                                     <div class="card-title">{{ step.name }}</div>
                                     <div class="card-subtitle">{{ step.step_description | truncate(80, true) | default('No description.', true) }}</div>

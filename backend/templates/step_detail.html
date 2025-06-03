@@ -38,54 +38,54 @@
 
                 {% if step.step_description %}
                 <dt>Short Description:</dt>
-                <dd class="markdown-content">{{ step.step_description | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.step_description | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {# START ADDITION: Displaying more ProcessStep fields #}
 
                 {% if step.vision_statement %}
                 <dt>Vision Statement:</dt>
-                <dd class="markdown-content">{{ step.vision_statement | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.vision_statement | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.what_is_actually_done %}
                 <dt>What is Actually Done:</dt>
-                <dd class="markdown-content">{{ step.what_is_actually_done | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.what_is_actually_done | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.in_scope %}
                 <dt>In Scope:</dt>
-                <dd class="markdown-content">{{ step.in_scope | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.in_scope | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.out_of_scope %}
                 <dt>Out of Scope:</dt>
-                <dd class="markdown-content">{{ step.out_of_scope | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.out_of_scope | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.interfaces_text %}
                 <dt>Interfaces:</dt>
-                <dd class="markdown-content">{{ step.interfaces_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.interfaces_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.pain_points %}
                 <dt>Pain Points:</dt>
-                <dd class="markdown-content">{{ step.pain_points | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.pain_points | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if step.targets_text %}
                 <dt>Targets:</dt>
-                <dd class="markdown-content">{{ step.targets_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.targets_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
                 
                 {% if step.summary %}
                 <dt>Generic Summary:</dt>
-                <dd class="markdown-content">{{ step.summary | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.summary | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
                 
                 {% if step.raw_content %}
                 <dt>Raw Content:</dt>
-                <dd class="markdown-content">{{ step.raw_content | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ step.raw_content | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 <dt>LLM Comment 1:</dt> <dd>{{ step.llm_comment_1 | default('N/A', true) }}</dd>

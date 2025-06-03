@@ -1,8 +1,9 @@
 # backend/app.py
 import os
-from flask import Flask, render_template, redirect, url_for, flash, jsonify # Added jsonify for debug_check to return JSON
-import json # Added to explicitly import the standard json module
+from flask import Flask, render_template, redirect, url_for, flash, jsonify
+import json
 
+from sqlalchemy import func # For count
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
 import markupsafe
@@ -22,7 +23,7 @@ def serialize_for_js(obj_list, item_type):
     for obj in obj_list:
         item_dict = {
             'id': obj.id,
-            'name': str(obj.name) if obj.name is not None else '', # MODIFIED: Ensure name is always a string
+            'name': str(obj.name) if obj.name is not None else '',
         }
         # Add URLs dynamically based on type
         try:
@@ -36,10 +37,9 @@ def serialize_for_js(obj_list, item_type):
                 item_dict['url'] = url_for('usecases.view_usecase', usecase_id=obj.id)
             data.append(item_dict)
         except Exception as url_error:
-            # Fallback for error in URL generation, print for debug
             print(f"DEBUG: url_for failed for item {obj.id} ({obj.name}) of type {item_type}: {url_error}")
-            item_dict['url'] = '#' # Provide a safe fallback URL
-            data.append(item_dict) # Still append, but with fallback URL
+            item_dict['url'] = '#'
+            data.append(item_dict)
     return data
 
 login_manager = LoginManager()
@@ -77,7 +77,6 @@ def markdown_to_html_filter(value):
     """Converts markdown text to HTML."""
     if value is None:
         return ''
-    # Using the python-markdown library with fenced_code and tables extensions
     return markupsafe.Markup(markdown.markdown(value, extensions=['fenced_code', 'tables']))
 
 def truncate_filter(s, length=255, killwords=False, end='...'):
@@ -140,8 +139,6 @@ def create_app():
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
     print(f"DEBUG: Initializing database with URL: {db_url}")
-    # Assuming init_app_db is defined elsewhere, e.g., in .db or a similar module
-    # and correctly initializes and returns the SQLAlchemy db instance.
     db_instance = init_app_db(app)
 
     app.config['SESSION_TYPE'] = 'sqlalchemy'
@@ -208,28 +205,35 @@ def create_app():
     def index():
         if current_user.is_authenticated:
             session_db = flask_sqlalchemy_db.session
-            areas = []
             
-            all_areas_flat = []
-            all_steps_flat = []
-            all_usecases_flat = []
+            # Data for breadcrumbs (still needed for base.html)
+            all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+            all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+            all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+
+            # Dashboard specific data
+            total_areas = session_db.query(func.count(Area.id)).scalar()
+            total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
+            total_usecases = session_db.query(func.count(UseCase.id)).scalar()
+
+            usecases_by_priority = session_db.query(
+                UseCase.priority, func.count(UseCase.id)
+            ).group_by(UseCase.priority).all()
+            # Example: Process usecases_by_priority into a more usable dict for the template
+            # priority_counts = {p[0]: p[1] for p in usecases_by_priority}
             
-            try:
-                areas = session_db.query(Area).options(
-                    joinedload(Area.process_steps).joinedload(ProcessStep.use_cases)
-                ).order_by(Area.name).all()
+            # recently_updated_usecases = session_db.query(UseCase).order_by(UseCase.updated_at.desc()).limit(5).all()
 
-                all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
-                all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-                all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
-            except Exception as e:
-                print(f"Error querying areas with steps and use cases: {e}")
-                flash("Could not load necessary data from the database.", "danger")
             return render_template(
                 'index.html', 
-                title='Home', 
-                areas=areas, 
+                title='Dashboard', # New title
+                # Pass dashboard data
+                total_areas=total_areas,
+                total_steps=total_steps,
+                total_usecases=total_usecases,
+                # usecases_by_priority=priority_counts, # Pass processed data
+                # recently_updated_usecases=recently_updated_usecases,
+                # Breadcrumb data
                 current_item=None,
                 current_area=None,
                 current_step=None,
@@ -317,11 +321,11 @@ def create_app():
             results["message"] = f"Debug check failed: {e}"
             results["error_type"] = type(e).__name__
             print(f"Error in /debug-check: {e}")
-            return jsonify(results), 500 # Return JSON for API-like endpoint
+            return jsonify(results), 500
         finally:
-            pass # session_for_debug is request-scoped, will be closed by teardown
+            pass
         
-        return jsonify(results) # Return JSON for API-like endpoint
+        return jsonify(results)
 
     print("DEBUG: create_app function about to return app object.")
     return app

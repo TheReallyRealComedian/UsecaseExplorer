@@ -59,22 +59,22 @@
                 <dt>Process Step Description:</dt>
                 <dd>
                     {% if usecase.process_step and usecase.process_step.step_description %}
-                        {{ usecase.process_step.step_description | markdown | default('N/A', true) }}
+                        <div class="markdown-content">{{ usecase.process_step.step_description | markdown | default('N/A', true) }}</div>
                     {% else %}
                         N/A
                     {% endif %}
                 </dd>
 
                 <dt>Summary:</dt>
-                <dd>{{ usecase.summary | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.summary | markdown | default('N/A', true) }}</div></dd>
 
                 <dt>Inspiration:</dt>
-                <dd>{{ usecase.inspiration | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.inspiration | markdown | default('N/A', true) }}</div></dd>
 
                 <dt>Raw Content:</dt>
                 <dd>
                     {% if usecase.raw_content %}
-                        {{ usecase.raw_content | markdown | default('N/A', true) }}
+                        <div class="markdown-content">{{ usecase.raw_content | markdown | default('N/A', true) }}</div>
                     {% else %}
                         N/A
                     {% endif %}
@@ -98,7 +98,7 @@
 
                 {% if usecase.relevants_text %}
                 <dt>Relevants (Tags):</dt>
-                <dd>{{ usecase.relevants_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.relevants_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.reduction_time_transfer %}
@@ -124,57 +124,57 @@
                 {# Text/Preformatted Fields #}
                 {% if usecase.business_problem_solved %}
                 <dt>Business Problem Solved:</dt>
-                <dd>{{ usecase.business_problem_solved | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.business_problem_solved | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                  {% if usecase.target_solution_description %}
                 <dt>Target / Solution:</dt>
-                <dd>{{ usecase.target_solution_description | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.target_solution_description | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.technologies_text %}
                 <dt>Technologies:</dt>
-                <dd>{{ usecase.technologies_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.technologies_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.requirements %}
                 <dt>Requirements:</dt>
-                <dd>{{ usecase.requirements | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.requirements | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.ideation_notes %}
                 <dt>Ideation Notes:</dt>
-                <dd>{{ usecase.ideation_notes | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.ideation_notes | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.further_ideas %}
                 <dt>Further Ideas:</dt>
-                <dd>{{ usecase.further_ideas | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.further_ideas | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.effort_quantification %}
                 <dt>Effort Quantification:</dt>
-                <dd>{{ usecase.effort_quantification | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.effort_quantification | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.potential_quantification %}
                 <dt>Potential Quantification:</dt>
-                <dd>{{ usecase.potential_quantification | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.potential_quantification | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.dependencies_text %}
                 <dt>Dependencies:</dt>
-                <dd>{{ usecase.dependencies_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.dependencies_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.contact_persons_text %}
                 <dt>Contacts:</dt>
-                <dd>{{ usecase.contact_persons_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.contact_persons_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
 
                 {% if usecase.related_projects_text %}
                 <dt>Related Projects:</dt>
-                <dd>{{ usecase.related_projects_text | markdown | default('N/A', true) }}</dd>
+                <dd><div class="markdown-content">{{ usecase.related_projects_text | markdown | default('N/A', true) }}</div></dd>
                 {% endif %}
                 {# End of New Fields #}
 

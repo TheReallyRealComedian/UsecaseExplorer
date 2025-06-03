@@ -1,60 +1,92 @@
+{# backend/templates/index.html - Example Dashboard Structure #}
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
-    <div class="welcome-message">
-        <h1>{% if current_user.is_authenticated %}Welcome, {{ current_user.username }}!{% else %}Usecase Explorer{% endif %}</h1>
-        <p>Explore and manage your business areas, process steps, and use cases.</p>
-    </div>
+    <div class="dashboard-page">
+        <h1>{{ title }}</h1>
+        <p class="text-color-light mb-4">Welcome, {{ current_user.username }}! Here's a quick overview of your Usecase Explorer data.</p>
 
-    {# Flash Messages are handled in base.html #}
-
-    <div class="data-section">
-        <h2>Areas & Process Steps Overview</h2>
-        {% if areas %}
-            {% for area in areas %}
-                <div class="area-card">
-                    <h3><a href="{{ url_for('areas.view_area', area_id=area.id) }}">{{ area.name }}</a> <span class="step-details">(Area ID: {{ area.id }})</span></h3>
-                    {% if area.process_steps %}
-                        <ul>
-                            {% for step in area.process_steps | sort(attribute='name') %}
-                                <li>
-                                    <strong><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></strong>
-                                    <span class="step-details">(Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }})</span>
-                                    {% if step.use_cases %}
-                                        <ul class="usecase-list">
-                                            {% for uc in step.use_cases | sort(attribute='name') %}
-                                            <li>
-                                                <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
-                                                <span class="uc-details">(UC ID: {{ uc.id }}, BI_ID: {{ uc.bi_id }})</span>
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <p style="margin-left: 20px; margin-top: 5px;"><em>No use cases found for this step.</em></p>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p><em>No process steps found for this area.</em></p>
-                    {% endif %}
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Areas</h5>
+                        <p class="card-text fs-2 fw-bold">{{ total_areas }}</p>
+                        <a href="{{ url_for('areas.list_areas') }}" class="btn btn-primary btn-sm">View All Areas</a>
+                    </div>
                 </div>
-            {% else %} {# This 'else' corresponds to the 'for area in areas' #}
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Process Steps</h5>
+                        <p class="card-text fs-2 fw-bold">{{ total_steps }}</p>
+                        {# Link to the new overview page (area tabs) and perhaps a specific section if possible #}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Use Cases</h5>
+                        <p class="card-text fs-2 fw-bold">{{ total_usecases }}</p>
+                        {# Link to the new overview page (area tabs) and perhaps a specific section if possible #}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Example: Use Cases by Priority (requires processing in route) #}
+        {# <div class="row mt-4">
+            <div class="col-12">
                 <div class="card">
-                     <p>No areas found in the database.</p>
-                     {% if current_user.is_authenticated %}
-                     {# Link to Data Injection might be in the main navigation now, but keeping this conditional info #}
-                     <p>You can add areas using the <a href="{{ url_for('injection.handle_injection') }}">Data Injection</a> page.</p>
-                     {% endif %}
+                    <div class="card-header">
+                        <h2 class="card-title">Use Cases by Priority</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if usecases_by_priority %}
+                            <ul class="list-group list-group-flush">
+                                {% for priority_val, count in usecases_by_priority.items() %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Priority {{ priority_val if priority_val else 'N/A' }}
+                                        <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No use case priority data available.</p>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endfor %}
-        {% else %}
-             <div class="card">
-                 <p>No areas loaded or an error occurred while retrieving data.</p>
-             </div>
-        {% endif %}
-    </div>
+            </div>
+        </div> #}
 
+        {# Example: Recently Updated Use Cases #}
+        {# <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recently Updated Use Cases</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if recently_updated_usecases %}
+                            <ul class="list-group list-group-flush">
+                                {% for uc in recently_updated_usecases %}
+                                    <li class="list-group-item">
+                                        <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                        <small class="text-muted ms-2">(Updated: {{ uc.updated_at.strftime('%Y-%m-%d %H:%M') if uc.updated_at else 'N/A' }})</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>No recently updated use cases.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div> #}
+
+    </div>
 {% endblock %}

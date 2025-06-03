@@ -27,18 +27,8 @@
                 <ul>
                     <li class="{% if request.endpoint == 'index' %}active{% endif %}">
                         <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-                    </li>
-                    {# UPDATED: Link to area overview #}
-                    <li class="{% if request.blueprint == 'areas' and request.endpoint != 'areas.view_area' and request.endpoint != 'areas.edit_area' %}active{% elif current_area %}active{% endif %}">
-                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-sitemap"></i> Areas</a>
-                    </li>
-                    {# UPDATED: Link to step overview #}
-                    <li class="{% if request.blueprint == 'steps' and request.endpoint != 'steps.view_step' and request.endpoint != 'steps.edit_step' %}active{% elif current_step %}active{% endif %}">
-                        <a href="{{ url_for('steps.list_steps') }}"><i class="fas fa-shoe-prints"></i> Steps</a>
-                    </li>
-                    {# UPDATED: Link to use case overview #}
-                    <li class="{% if request.blueprint == 'usecases' and request.endpoint != 'usecases.view_usecase' and request.endpoint != 'usecases.edit_usecase' %}active{% elif current_usecase %}active{% endif %}">
-                        <a href="{{ url_for('usecases.list_usecases') }}"><i class="fas fa-lightbulb"></i> Use Cases</a>
+                    <li class="{% if request.endpoint == 'areas.list_areas' %}active{% endif %}"> {# Simpler active check now #}
+                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-th-large"></i> Overview</a> {# Changed icon and text #}
                     </li>
                     <li class="{% if request.blueprint == 'relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
@@ -194,17 +184,13 @@
     
     {# Pass data to JS for breadcrumb dropdowns #}
     <script type="text/javascript">
-        // Data for dynamic dropdown content
-        // Add default filter to ensure variable is always an iterable before tojson
-        const allAreasFlat = {{ all_areas_flat | default([], true) | htmlsafe_json }};
-        const allStepsFlat = {{ all_steps_flat | default([], true) | htmlsafe_json }};
-        const allUsecasesFlat = {{ all_usecases_flat | default([], true) | htmlsafe_json }};
+        const allAreasFlat = {{ all_areas_flat | default([], true) | tojson | safe }};
+        const allStepsFlat = {{ all_steps_flat | default([], true) | tojson | safe }};
+        const allUsecasesFlat = {{ all_usecases_flat | default([], true) | tojson | safe }};
 
-        // Current item context for filtering dropdowns
-        // These are already handled with 'if ... else null' which is sufficient
-        const currentAreaId = {{ current_area.id if current_area else 'null' }};
-        const currentStepId = {{ current_step.id if current_step else 'null' }};
-        const currentUsecaseId = {{ current_usecase.id if current_usecase else 'null' }};
+        const currentAreaId = {{ current_area.id | tojson | safe if current_area and current_area.id is not none else 'null' }};
+        const currentStepId = {{ current_step.id | tojson | safe if current_step and current_step.id is not none else 'null' }};
+        const currentUsecaseId = {{ current_usecase.id | tojson | safe if current_usecase and current_usecase.id is not none else 'null' }};
     </script>
     
     <!-- Custom JS for breadcrumb dropdowns -->
