@@ -27,27 +27,30 @@
                 <ul>
                     <li class="{% if request.endpoint == 'index' %}active{% endif %}">
                         <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
-                    <li class="{% if request.endpoint == 'areas.list_areas' %}active{% endif %}"> {# Simpler active check now #}
-                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-th-large"></i> Overview</a> {# Changed icon and text #}
+                    </li>
+                    <li class="{% if request.endpoint == 'areas.list_areas' %}active{% endif %}">
+                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-th-large"></i> Overview</a>
                     </li>
                     <li class="{% if request.blueprint == 'relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
                     </li>
-                    {# ADDED LLM Chat Menu Item #}
                     <li class="{% if request.endpoint == 'llm.llm_chat_page' %}active{% endif %}">
                         <a href="{{ url_for('llm.llm_chat_page') }}"><i class="fas fa-comments"></i> LLM Chat</a>
                     </li>
-                    {# Adjusted 'active' condition for Data Mining #}
                     <li class="{% if request.blueprint == 'llm' and request.endpoint != 'llm.llm_chat_page' %}active{% endif %}">
                         <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> Data Mining</a>
                     </li>
                     <li class="{% if request.blueprint == 'injection' %}active{% endif %}">
                         <a href="{{ url_for('injection.data_update_page') }}"><i class="fas fa-upload"></i> Data Update</a>
                     </li>
-                     <li class="{% if request.blueprint == 'data_alignment' %}active{% endif %}">
+                    <li class="{% if request.blueprint == 'data_alignment' %}active{% endif %}">
                         <a href="{{ url_for('data_alignment.data_alignment_page') }}"><i class="fas fa-link"></i> Data Alignment</a>
                     </li>
-                </ul>
+                    {# NEW REVIEW LINK #}
+                    <li class="{% if request.blueprint == 'review' %}active{% endif %}">
+                        <a href="{{ url_for('review.review_dashboard') }}"><i class="fas fa-search-plus"></i> Review</a>
+                    </li>
+                 </ul>
             </nav>
             <div class="sidebar-footer-menu">
                 <ul>
@@ -63,10 +66,10 @@
         <!-- Main Content Area -->
         <main class="main-content">
             <!-- Header -->
-            <header class="main-header" style="min-height: 60px;"> {# Adjust min-height directly here for lean look #}
+            <header class="main-header" style="min-height: 60px;">
                 <div class="header-actions">
                     <button class="icon-button"><i class="fas fa-bell"></i></button>
-                    <a href="{{ url_for('settings.manage_settings') }}" class="icon-button" title="Settings"><i class="fas fa-cog"></i></a> {# NEW: Settings button #}
+                    <a href="{{ url_for('settings.manage_settings') }}" class="icon-button" title="Settings"><i class="fas fa-cog"></i></a>
                     {% if current_user.is_authenticated %}
                     <button class="icon-button"><i class="fas fa-user-circle"></i></button>
                     {% else %}
@@ -75,10 +78,9 @@
                 </div>
             </header>
 
-            <div class="breadcrumbs-fixed"> {# NEW: A separate div for breadcrumbs, not part of the flexible header #}
+            <div class="breadcrumbs-fixed">
                 <a href="{{ url_for('index') }}" class="breadcrumb-item {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
 
-                {# Area Breadcrumb #}
                 {% if current_area %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <div class="breadcrumb-dropdown-container dropdown" id="area-breadcrumb-container" data-item-id="{{ current_area.id }}" data-item-type="area">
@@ -89,10 +91,9 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
-                {# MODIFIED BLOCK: For Area overview page - now includes a dropdown container #}
                 {% elif request.blueprint == 'areas' and request.endpoint == 'areas.list_areas' %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-areas-breadcrumb-container" data-item-type="areas_overview"> {# New ID for JS #}
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-areas-breadcrumb-container" data-item-type="areas_overview">
                         <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             All Areas
                         </a>
@@ -102,7 +103,6 @@
                     </div>
                 {% endif %}
 
-                {# Step Breadcrumb #}
                 {% if current_step %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <div class="breadcrumb-dropdown-container dropdown" id="step-breadcrumb-container" data-item-id="{{ current_step.id }}" data-item-type="step" data-parent-area-id="{{ current_step.area.id if current_step.area else '' }}">
@@ -113,10 +113,9 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
-                {# MODIFIED BLOCK: For Step overview page - now includes a dropdown container #}
                 {% elif request.blueprint == 'steps' and request.endpoint == 'steps.list_steps' %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-steps-breadcrumb-container" data-item-type="steps_overview"> {# New ID for JS #}
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-steps-breadcrumb-container" data-item-type="steps_overview">
                         <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             All Process Steps
                         </a>
@@ -126,7 +125,6 @@
                     </div>
                 {% endif %}
 
-                {# Use Case Breadcrumb #}
                 {% if current_usecase %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <div class="breadcrumb-dropdown-container dropdown" id="usecase-breadcrumb-container" data-item-id="{{ current_usecase.id }}" data-item-type="usecase" data-parent-step-id="{{ current_usecase.process_step.id if current_usecase.process_step else '' }}">
@@ -137,10 +135,9 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
-                {# MODIFIED BLOCK: For Use Case overview page - now includes a dropdown container #}
                 {% elif request.blueprint == 'usecases' and request.endpoint == 'usecases.list_usecases' %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-usecases-breadcrumb-container" data-item-type="usecases_overview"> {# New ID for JS #}
+                    <div class="breadcrumb-dropdown-container dropdown" id="all-usecases-breadcrumb-container" data-item-type="usecases_overview">
                         <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             All Use Cases
                         </a>
@@ -150,12 +147,9 @@
                     </div>
                 {% endif %}
 
-                {# Handling for other top-level pages not directly tied to Area/Step/Usecase objects #}
-                {# This condition ensures it only applies if none of the above specific page types are matched #}
-                {# Removed `current_item is none` from this condition, as it was redundant. #}
                 {% if request.endpoint != 'index' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <span class="breadcrumb-item active">{{ title }}</span> {# Use the page's title directly #}
+                    <span class="breadcrumb-item active">{{ title }}</span>
                 {% endif %}
             </div>
 
@@ -182,7 +176,6 @@
     <!-- Bootstrap JS for collapses, tooltips, etc. -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     
-    {# Pass data to JS for breadcrumb dropdowns #}
     <script type="text/javascript">
         const allAreasFlat = {{ all_areas_flat | default([], true) | tojson | safe }};
         const allStepsFlat = {{ all_steps_flat | default([], true) | tojson | safe }};
@@ -198,65 +191,47 @@
 
     <script>
         window.showTab = function(tabId, clickedButton) {
-            /**
-             * Shows the content of the selected tab and updates active states of buttons.
-             * @param {string} tabId The ID of the tab content div to show.
-             * @param {HTMLElement} clickedButton The tab button element that was clicked.
-             */
-            // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
 
-            // Remove active class from all tab buttons
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
             });
 
-            // Show selected tab content
             const tabElement = document.getElementById(tabId);
             if (tabElement) {
                 tabElement.classList.add('active');
             }
 
-            // Add active class to the clicked button
             clickedButton.classList.add('active');
         };
 
         window.toggleCard = function(card) {
-            /**
-             * Toggles the expansion of a process card to show/hide its use cases.
-             * Collapses other open cards within the same tab.
-             * @param {HTMLElement} card The process card element that was clicked.
-             */
             const content = card.querySelector('.card-content');
             const isExpanded = card.classList.contains('expanded');
-
-            // Find the current tab (tab-content) this card belongs to
             const currentTab = card.closest('.tab-content');
 
-            // Close all other cards in the same tab, unless they are the clicked card
-            if (currentTab) { // Ensure currentTab is not null before using it
+            if (currentTab) { 
                 currentTab.querySelectorAll('.process-card').forEach(c => {
-                    if (c !== card) { // Only collapse other cards
+                    if (c !== card) { 
                         c.classList.remove('expanded');
                         const otherContent = c.querySelector('.card-content');
-                        if (otherContent) { // Ensure otherContent is not null
+                        if (otherContent) { 
                            otherContent.classList.remove('expanded');
                         }
                     }
                 });
             }
 
-            // Toggle the clicked card's expanded state
             if (isExpanded) {
                 card.classList.remove('expanded');
-                if (content) { // Ensure content is not null
+                if (content) { 
                     content.classList.remove('expanded');
                 }
             } else {
                 card.classList.add('expanded');
-                if (content) { // Ensure content is not null
+                if (content) { 
                     content.classList.add('expanded');
                 }
             }

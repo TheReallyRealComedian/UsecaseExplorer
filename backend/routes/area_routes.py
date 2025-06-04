@@ -8,7 +8,7 @@ from ..db import SessionLocal
 # Ensure all necessary models are imported
 from ..models import Area, ProcessStep, UseCase, UsecaseAreaRelevance
 # NEW IMPORT FOR BREADCRUMBS DATA
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 # END NEW IMPORT
 
 # Define the blueprint IN THIS FILE
@@ -190,7 +190,6 @@ def edit_area(area_id):
         all_usecases_flat=all_usecases_flat
         # END NEW BREADCRUMB DATA PASSING
     )
-    # REMOVED: The entire 'finally' block that was unindented here.
 
 
 @area_routes.route('/<int:area_id>/delete', methods=['POST'])
@@ -212,4 +211,3 @@ def delete_area(area_id):
             print(f"Error deleting area {area_id}: {e}")
     
     return redirect(url_for('index'))
-    # REMOVED: The entire 'finally' block that was unindented here.

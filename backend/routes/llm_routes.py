@@ -23,7 +23,7 @@ from ..llm_service import (
 from ..db import SessionLocal
 from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
 # NEW IMPORT FOR BREADCRUMBS DATA
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 # END NEW IMPORT
 
 # Helper function to count tokens

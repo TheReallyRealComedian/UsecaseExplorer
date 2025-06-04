@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from ..db import SessionLocal # Import the new model
 from ..models import User, LLMSettings, Area, ProcessStep, UseCase # Import the new model
 # NEW IMPORT FOR BREADCRUMBS DATA
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 # END NEW IMPORT
 
 settings_routes = Blueprint('settings', __name__,

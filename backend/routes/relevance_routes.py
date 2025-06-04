@@ -11,7 +11,7 @@ from ..models import (
 from sqlalchemy.exc import IntegrityError
 import markdown # Add this import at the top of the file
 # NEW IMPORT FOR BREADCRUMBS DATA
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 # END NEW IMPORT
 
 relevance_routes = Blueprint('relevance', __name__, url_prefix='/relevance')

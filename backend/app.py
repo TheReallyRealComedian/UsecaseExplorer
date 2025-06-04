@@ -14,33 +14,23 @@ from flask_session import Session
 from .config import get_config
 from .models import Base, User, Area, ProcessStep, UseCase, LLMSettings
 from .db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
+from .utils import serialize_for_js # <<< NEW IMPORT
 
 from . import llm_service
 
-# Helper to convert query results to flat dicts for JavaScript
-def serialize_for_js(obj_list, item_type):
-    data = []
-    for obj in obj_list:
-        item_dict = {
-            'id': obj.id,
-            'name': str(obj.name) if obj.name is not None else '',
-        }
-        # Add URLs dynamically based on type
-        try:
-            if item_type == 'area':
-                item_dict['url'] = url_for('areas.view_area', area_id=obj.id)
-            elif item_type == 'step':
-                item_dict['area_id'] = obj.area_id
-                item_dict['url'] = url_for('steps.view_step', step_id=obj.id)
-            elif item_type == 'usecase':
-                item_dict['step_id'] = obj.process_step_id
-                item_dict['url'] = url_for('usecases.view_usecase', usecase_id=obj.id)
-            data.append(item_dict)
-        except Exception as url_error:
-            print(f"DEBUG: url_for failed for item {obj.id} ({obj.name}) of type {item_type}: {url_error}")
-            item_dict['url'] = '#'
-            data.append(item_dict)
-    return data
+# --- Blueprint Imports ---
+from .routes.auth_routes import auth_routes
+from .routes.injection_routes import injection_routes
+from .routes.usecase_routes import usecase_routes
+from .routes.relevance_routes import relevance_routes
+from .routes.llm_routes import llm_routes
+from .routes.area_routes import area_routes
+from .routes.step_routes import step_routes
+from .routes.export_routes import export_routes
+from .routes.data_alignment_routes import data_alignment_routes
+from .routes.settings_routes import settings_routes
+from .routes.review_routes import review_routes
+
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -169,36 +159,40 @@ def create_app():
         SessionLocal.remove()
 
     print("DEBUG: About to import and register blueprints.")
-    from .routes.auth_routes import auth_routes
+    
     print("DEBUG: Registering auth_routes.")
     app.register_blueprint(auth_routes)
-    from .routes.injection_routes import injection_routes
+    
     print("DEBUG: Registering injection_routes.")
     app.register_blueprint(injection_routes)
-    from .routes.usecase_routes import usecase_routes
+    
     print("DEBUG: Registering usecase_routes.")
     app.register_blueprint(usecase_routes)
-    from .routes.relevance_routes import relevance_routes
+    
     print("DEBUG: Registering relevance_routes.")
     app.register_blueprint(relevance_routes)
-    from .routes.llm_routes import llm_routes
+    
     print("DEBUG: Registering llm_routes.")
     app.register_blueprint(llm_routes)
-    from .routes.area_routes import area_routes
+    
     print("DEBUG: Registering area_routes.")
     app.register_blueprint(area_routes)
-    from .routes.step_routes import step_routes
+    
     print("DEBUG: Registering step_routes.")
     app.register_blueprint(step_routes)
-    from .routes.export_routes import export_routes 
+    
     print("DEBUG: Registering export_routes.")
     app.register_blueprint(export_routes)
-    from .routes.data_alignment_routes import data_alignment_routes
+    
     print("DEBUG: Registering data_alignment_routes.")
     app.register_blueprint(data_alignment_routes)
-    from .routes.settings_routes import settings_routes
+    
     print("DEBUG: Registering settings_routes.")
     app.register_blueprint(settings_routes)
+    
+    print("DEBUG: Registering review_routes.")
+    app.register_blueprint(review_routes) 
+    
     print("Blueprint registration complete.")
 
     @app.route('/')
@@ -206,12 +200,10 @@ def create_app():
         if current_user.is_authenticated:
             session_db = flask_sqlalchemy_db.session
             
-            # Data for breadcrumbs (still needed for base.html)
             all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
             all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
             all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
-            # Dashboard specific data
             total_areas = session_db.query(func.count(Area.id)).scalar()
             total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
             total_usecases = session_db.query(func.count(UseCase.id)).scalar()
@@ -219,21 +211,13 @@ def create_app():
             usecases_by_priority = session_db.query(
                 UseCase.priority, func.count(UseCase.id)
             ).group_by(UseCase.priority).all()
-            # Example: Process usecases_by_priority into a more usable dict for the template
-            # priority_counts = {p[0]: p[1] for p in usecases_by_priority}
             
-            # recently_updated_usecases = session_db.query(UseCase).order_by(UseCase.updated_at.desc()).limit(5).all()
-
             return render_template(
                 'index.html', 
-                title='Dashboard', # New title
-                # Pass dashboard data
+                title='Dashboard', 
                 total_areas=total_areas,
                 total_steps=total_steps,
                 total_usecases=total_usecases,
-                # usecases_by_priority=priority_counts, # Pass processed data
-                # recently_updated_usecases=recently_updated_usecases,
-                # Breadcrumb data
                 current_item=None,
                 current_area=None,
                 current_step=None,
@@ -275,6 +259,8 @@ def create_app():
             results["checks"]["injection_blueprint_registered"] = injection_bp_registered
             settings_bp_registered = app.blueprints.get('settings') is not None
             results["checks"]["settings_blueprint_registered"] = settings_bp_registered
+            review_bp_registered = app.blueprints.get('review') is not None
+            results["checks"]["review_blueprint_registered"] = review_bp_registered
 
 
             secret_key_present = bool(app.config.get('SECRET_KEY'))
@@ -305,6 +291,13 @@ def create_app():
                 results["checks"]["url_for_data_alignment"] = f"OK ({data_alignment_url})"
                 settings_url = url_for('settings.manage_settings')
                 results["checks"]["url_for_settings"] = f"OK ({settings_url})"
+                
+                try:
+                    review_dashboard_url = url_for('review.review_dashboard')
+                    results["checks"]["url_for_review_dashboard"] = f"OK ({review_dashboard_url})"
+                except Exception as review_url_err:
+                    results["checks"]["url_for_review_dashboard"] = f"FAILED ({review_url_err})"
+
 
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"

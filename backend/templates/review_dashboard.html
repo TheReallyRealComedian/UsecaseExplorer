@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="review-dashboard-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">Select an item below to start reviewing.</p>
+
+    <div class="list-group">
+        <a href="{{ url_for('review.review_process_links_page') }}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">Review Process Step Links</h5>
+                <small><i class="fas fa-arrow-right"></i></small>
+            </div>
+            <p class="mb-1">Visualize and manage connections between process steps across different areas using a Sankey diagram.</p>
+        </a>
+        <!-- Add more review items here in the future -->
+        <!-- 
+        <a href="#" class="list-group-item list-group-item-action disabled" aria-disabled="true">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">Review Use Case Alignments (Coming Soon)</h5>
+            </div>
+            <p class="mb-1">Check how use cases are aligned with process steps.</p>
+        </a>
+         -->
+    </div>
+</div>
+{% endblock %}

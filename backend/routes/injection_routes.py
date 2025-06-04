@@ -19,7 +19,7 @@ from ..injection_service import (
     finalize_step_import # Import the new finalize service function
 )
 from ..db import SessionLocal
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',

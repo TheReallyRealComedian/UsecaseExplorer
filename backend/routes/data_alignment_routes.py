@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from ..db import SessionLocal
 from ..models import Area, ProcessStep, UseCase
 # NEW IMPORT FOR BREADCRUMBS DATA
-from ..app import serialize_for_js
+from ..utils import serialize_for_js
 # END NEW IMPORT
 
 data_alignment_routes = Blueprint('data_alignment', __name__,

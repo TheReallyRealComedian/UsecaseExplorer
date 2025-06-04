@@ -2238,10 +2238,14 @@ form button[type="submit"].btn-primary:hover,
 .tab-navigation {
     background: var(--color-white);
     border-radius: var(--border-radius-xs); /* 4px */
-    margin-bottom: 0;
+    /* margin-bottom: 0; /* Original */
+    margin-bottom: var(--spacing-md); /* Added space below if tabs wrap */
     display: flex;
-    overflow-x: auto;
+    flex-wrap: wrap; /* Allow wrapping */
+    /* overflow-x: auto; /* REMOVED */
     box-shadow: var(--shadow-sm);
+    padding: var(--spacing-sm); /* Optional: Add some padding inside the container */
+    gap: var(--spacing-sm); /* Add gap between tab buttons */
 }
 
 .tab-button {
