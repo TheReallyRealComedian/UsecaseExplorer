@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Sankey Rendering ---
     function renderSankey(data) {
         currentChartData = data;
-        console.log("Data received by renderSankey:", JSON.stringify(data, null, 2));
+        // console.log("Data received by renderSankey:", JSON.stringify(data, null, 2)); // Already logging this
 
         if (sankeyPlaceholder) {
             sankeyPlaceholder.style.display = 'none';
@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (!data.links || data.links.length === 0) {
             console.warn("No links to render in Sankey. Displaying nodes only.");
+            // Even without links, nodes should render according to depth if provided.
         }
 
         const option = {
@@ -125,7 +126,10 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             series: [{
                 type: 'sankey',
-                layout: 'justify', // MODIFIED: Let ECharts handle layout based on depth
+                orient: 'horizontal', // Explicitly set the orientation (default)
+                // Removed 'layout' and 'nodeAlign' to let ECharts use 'depth' for layout
+                nodeWidth: 30,        // Width of the node rectangles
+                nodeGap: 10,          // Gap between nodes in the same column
                 emphasis: {
                     focus: 'adjacency'
                 },
@@ -133,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     name: node.name,
                     id: node.id,
                     itemStyle: node.itemStyle,
-                    depth: node.depth // ECharts uses this for layout when not 'none'
+                    depth: node.depth // This is the key for automatic layout
                 })),
                 links: data.links.map(link => ({
                     source: link.source,
@@ -142,28 +146,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     lineStyle: link.lineStyle,
                     data: link.data
                 })),
-                lineStyle: { // This is default style for all links, can be overridden per link
-                    color: 'gradient', // ECharts will handle gradient based on source/target colors
+                lineStyle: {
+                    color: 'gradient',
                     curveness: 0.5,
                     opacity: 0.6
                 },
                 label: {
                     show: true,
                     formatter: '{b}',
-                    overflow: 'truncate', // Good for long names
-                    width: 150,          // Max width before truncation
+                    overflow: 'truncate',
+                    width: 150,      // Adjust if labels are too long or getting cut
                     ellipsis: '...'
                 },
-                nodeAlign: 'justify', // Aligns nodes within each level; 'left' or 'right' also possible
                 draggable: true,
                 animationDuration: 1000,
-                layoutIterations: 32 // Number of iterations for layout algorithm
+                layoutIterations: 32 // Default is 32, should be fine for most cases
             }]
         };
 
-        console.log("ECharts option object (after layout change):", JSON.stringify(option, null, 2));
+        console.log("ECharts option object (using default layout with depth, explicit orient):", JSON.stringify(option, null, 2));
         try {
-            sankeyChart.setOption(option, true); // true to clear previous options
+            sankeyChart.setOption(option, true);
         } catch (e) {
             console.error("Error setting ECharts option:", e);
             showFlashMessage(`Error rendering diagram: ${e.message}`, 'danger');
