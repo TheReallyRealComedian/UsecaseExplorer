@@ -6,7 +6,6 @@ from sqlalchemy import or_, and_
 
 from ..db import SessionLocal
 from ..utils import serialize_for_js
-from ..utils import serialize_for_js
 from ..models import Area, ProcessStep, ProcessStepProcessStepRelevance, UseCase
 
 review_routes = Blueprint('review', __name__,
@@ -74,50 +73,50 @@ def get_process_links_data():
             try:
                 comparison_area_ids = [int(id_str) for id_str in comparison_area_ids_str if id_str.isdigit()]
             except ValueError:
+                session.close()
                 return jsonify(error="Invalid comparison_area_ids format."), 400
 
         if not focus_area_id:
+            session.close()
             return jsonify(error="Focus area ID is required."), 400
 
-        nodes_dict = {} # Use a dict to ensure unique nodes by step_id
+        nodes_dict = {}
         links = []
         
-        # Use a simple color list for areas for now
-        area_colors_list = ['#5470C6', '#91CC75', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC']
+        area_colors_list = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC']
         area_color_map = {}
         
-        all_db_areas = session.query(Area).all()
+        all_db_areas = session.query(Area).order_by(Area.id).all() # Order for consistent color assignment
         for i, area in enumerate(all_db_areas):
             area_color_map[area.id] = area_colors_list[i % len(area_colors_list)]
 
-        def get_node_name(step, area_name_override=None):
-            # Use area_name_override if provided, otherwise fetch from step's area
-            area_name = area_name_override
-            if not area_name and step.area:
-                 area_name = step.area.name
-            elif not area_name: # Fallback if step.area is None for some reason
-                area_obj = session.query(Area).get(step.area_id)
-                area_name = area_obj.name if area_obj else "Unknown Area"
+        def get_node_name(step): # Area should be loaded with step
+            area_name = step.area.name if step.area else "Unknown Area"
             return f"{step.name} ({area_name})"
 
         # Collect all steps from selected areas to build nodes
-        all_selected_area_ids_for_nodes = [focus_area_id] + comparison_area_ids
+        all_selected_area_ids_for_nodes = list(set([focus_area_id] + comparison_area_ids))
+        
         steps_for_nodes = session.query(ProcessStep).options(joinedload(ProcessStep.area)).filter(
             ProcessStep.area_id.in_(all_selected_area_ids_for_nodes)
         ).all()
 
         for step in steps_for_nodes:
-            if step.id not in nodes_dict: # Ensure unique nodes by step.id
+            if step.id not in nodes_dict:
+                node_depth = 0 if step.area_id == focus_area_id else 1
+                # If a step is in focus AND comparison (e.g. focus is SCM, comparison includes SCM)
+                # it should still primarily be considered depth 0 (focus).
+                if focus_area_id in comparison_area_ids and step.area_id == focus_area_id :
+                     node_depth = 0
+
                 nodes_dict[step.id] = {
-                    "name": get_node_name(step), # ECharts Sankey uses 'name' for linking
-                    "id": step.id, # Our internal step ID
-                    "itemStyle": {"color": area_color_map.get(step.area_id, '#CCCCCC')}
+                    "name": get_node_name(step),
+                    "id": step.id, 
+                    "itemStyle": {"color": area_color_map.get(step.area_id, '#CCCCCC')},
+                    "depth": node_depth # Assign depth
                 }
         
-        # Build query for links based on selected areas
-        # Source Step Alias
         SourceStep = aliased(ProcessStep, name='source_step')
-        # Target Step Alias
         TargetStep = aliased(ProcessStep, name='target_step')
 
         query = session.query(ProcessStepProcessStepRelevance).join(
@@ -135,23 +134,30 @@ def get_process_links_data():
             link_filters.append(and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids)))
             # Comparison(s) to Focus
             link_filters.append(and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id == focus_area_id))
-            # Within Comparison Area(s) - if more than one comparison area or if a comparison area is linked to itself
-            if len(comparison_area_ids) > 0:
-                 link_filters.append(and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id.in_(comparison_area_ids)))
+            # Links between any two comparison areas (if multiple comparison areas selected)
+            if len(comparison_area_ids) > 1:
+                 link_filters.append(and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id.in_(comparison_area_ids), SourceStep.area_id != TargetStep.area_id))
+            # Links within a single comparison area if it's the only one selected (and not the focus)
+            elif len(comparison_area_ids) == 1 and comparison_area_ids[0] != focus_area_id:
+                 link_filters.append(and_(SourceStep.area_id == comparison_area_ids[0], TargetStep.area_id == comparison_area_ids[0]))
         
         if link_filters:
             query = query.filter(or_(*link_filters))
+        
+        # Final filter: ensure both ends of a link are part of the nodes we intend to display
+        query = query.filter(SourceStep.id.in_(nodes_dict.keys()))
+        query = query.filter(TargetStep.id.in_(nodes_dict.keys()))
 
         db_links = query.all()
 
         for link in db_links:
-            # Ensure both source and target steps are in our collected nodes_dict
+            # Source and target must be in nodes_dict (which means their areas were selected)
             if link.source_process_step_id in nodes_dict and link.target_process_step_id in nodes_dict:
                 links.append({
                     "source": nodes_dict[link.source_process_step_id]["name"],
                     "target": nodes_dict[link.target_process_step_id]["name"],
-                    "value": link.relevance_score if link.relevance_score > 0 else 1, # Sankey value must be > 0
-                    "lineStyle": {"opacity": 0.7, "curveness": 0.15},
+                    "value": link.relevance_score if link.relevance_score > 0 else 1, 
+                    "lineStyle": {"opacity": 0.7, "curveness": 0.5}, # Increased curveness for visibility
                     "data": {
                         "link_id": link.id,
                         "content_snippet": (link.relevance_content[:50] + '...' if link.relevance_content and len(link.relevance_content) > 50 else link.relevance_content) or "No content."
@@ -159,15 +165,14 @@ def get_process_links_data():
                 })
         
         final_nodes_list = list(nodes_dict.values())
-
+        session.close()
         return jsonify(nodes=final_nodes_list, links=links)
     except Exception as e:
+        session.close()
         print(f"Error fetching Sankey data: {e}")
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
-    finally:
-        session.close()
 
 # API endpoint to get a single link's details (for pre-filling edit modal)
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['GET'])
