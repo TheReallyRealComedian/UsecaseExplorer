@@ -26,15 +26,17 @@ document.addEventListener('DOMContentLoaded', function () {
     let sankeyChart = null;
     let linkModal = null; // Will be initialized on first use
     let currentChartData = { nodes: [], links: [] };
+    let resizeHandler = null; // Store reference for cleanup
 
     // ECharts initialization
     if (sankeyDiagramContainer && typeof echarts !== 'undefined') {
         sankeyChart = echarts.init(sankeyDiagramContainer);
-        window.addEventListener('resize', function() {
+        resizeHandler = function() {
             if (sankeyChart) {
                 sankeyChart.resize();
             }
-        });
+        };
+        window.addEventListener('resize', resizeHandler);
     } else {
         console.error("ECharts library or Sankey container #sankeyDiagramContainer not found.");
         if (sankeyPlaceholder) {
@@ -71,6 +73,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 alertDiv.remove();
             }
         }, 7000);
+    }
+
+    // Helper function to sanitize text content
+    function sanitizeText(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // --- Sankey Rendering ---
@@ -232,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 modalSourceStepIdInput.value = linkData.source_step_id;
                 modalTargetStepIdInput.value = linkData.target_step_id;
                 modalSourceStepDisplay.textContent = `${linkData.source_step_name} (Area: ${linkData.source_area_name})`;
-                modalTargetStepDisplay.innerHTML = `<span>${linkData.target_step_name} (Area: ${linkData.target_area_name})</span>`;
+                modalTargetStepDisplay.innerHTML = `<span>${sanitizeText(linkData.target_step_name)} (Area: ${sanitizeText(linkData.target_area_name)})</span>`;
                 modalRelevanceScoreInput.value = linkData.relevance_score;
                 modalRelevanceContentInput.value = linkData.relevance_content || '';
                 if (typeof marked !== 'undefined' && marked.parse) {
@@ -252,15 +261,24 @@ document.addEventListener('DOMContentLoaded', function () {
             let targetStepOptionsHtml = '<option value="">-- Select Target Step --</option>';
             if (currentChartData.nodes && currentChartData.nodes.length > 0) {
                 const sortedTargetNodes = currentChartData.nodes
-                    .filter(node => String(node.id) !== String(sourceStepId))
+                    .filter(node => parseInt(node.id) !== parseInt(sourceStepId)) // Fixed: consistent integer comparison
                     .sort((a, b) => a.name.localeCompare(b.name));
                 sortedTargetNodes.forEach(node => {
-                    targetStepOptionsHtml += `<option value="${node.id}">${node.name}</option>`;
+                    targetStepOptionsHtml += `<option value="${node.id}">${sanitizeText(node.name)}</option>`;
                 });
             } else {
                 targetStepOptionsHtml = '<option value="">-- No target steps available in current view --</option>';
             }
             modalTargetStepDisplay.innerHTML = `<select id="modalTargetStepSelect" class="form-select">${targetStepOptionsHtml}</select>`;
+            
+            // Fixed: Add event listener to the dynamically created select
+            const targetSelect = document.getElementById('modalTargetStepSelect');
+            if (targetSelect) {
+                targetSelect.addEventListener('change', function() {
+                    modalTargetStepIdInput.value = this.value;
+                });
+            }
+            
             if (typeof marked !== 'undefined' && marked.parse) {
                 modalRelevanceContentPreview.innerHTML = marked.parse('<em>No content provided.</em>');
             } else {
@@ -377,20 +395,35 @@ document.addEventListener('DOMContentLoaded', function () {
             modalSaveLinkBtn.disabled = true;
             modalSaveLinkBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
             const linkId = modalLinkIdInput.value;
-            const score = modalRelevanceScoreInput.value;
+            const score = parseInt(modalRelevanceScoreInput.value);
             const content = modalRelevanceContentInput.value;
-            const sourceStepId = modalSourceStepIdInput.value;
+            const sourceStepId = parseInt(modalSourceStepIdInput.value);
             let targetStepId;
+            
+            // Added: Basic validation for relevance score
+            if (isNaN(score) || score < 0 || score > 100) {
+                showFlashMessage('Relevance score must be a number between 0 and 100.', 'warning');
+                modalSaveLinkBtn.disabled = false;
+                modalSaveLinkBtn.innerHTML = linkId ? 'Save Changes' : 'Save Link';
+                return;
+            }
+            
             const payload = {
-                relevance_score: parseInt(score),
+                relevance_score: score,
                 relevance_content: content.trim() === '' ? null : content.trim()
             };
             let url, method;
             if (linkId) {
                 url = `/review/api/process-links/link/${linkId}`;
                 method = 'PUT';
-                targetStepId = modalTargetStepIdInput.value;
-                if (!targetStepId) { console.error("TargetStepID missing for an existing link PUT operation."); }
+                targetStepId = parseInt(modalTargetStepIdInput.value);
+                if (!targetStepId || isNaN(targetStepId)) { 
+                    console.error("TargetStepID missing or invalid for an existing link PUT operation."); 
+                    showFlashMessage('Invalid target step ID.', 'danger');
+                    modalSaveLinkBtn.disabled = false;
+                    modalSaveLinkBtn.innerHTML = 'Save Changes';
+                    return;
+                }
             } else {
                 url = `/review/api/process-links/link`;
                 method = 'POST';
@@ -399,9 +432,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     showFlashMessage('Please select a target step.', 'warning');
                     modalSaveLinkBtn.disabled = false; modalSaveLinkBtn.innerHTML = 'Save Link'; return;
                 }
-                targetStepId = targetSelect.value;
-                payload.source_step_id = parseInt(sourceStepId);
-                payload.target_step_id = parseInt(targetStepId);
+                targetStepId = parseInt(targetSelect.value);
+                if (isNaN(targetStepId)) {
+                    showFlashMessage('Invalid target step selected.', 'warning');
+                    modalSaveLinkBtn.disabled = false; modalSaveLinkBtn.innerHTML = 'Save Link'; return;
+                }
+                payload.source_step_id = sourceStepId;
+                payload.target_step_id = targetStepId;
                 if (payload.source_step_id === payload.target_step_id) {
                     showFlashMessage('Cannot link a step to itself.', 'warning');
                     modalSaveLinkBtn.disabled = false; modalSaveLinkBtn.innerHTML = 'Save Link'; return;
@@ -462,4 +499,20 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.error("focusAreaSelect or comparisonAreaSelect not found");
     }
+
+    // Cleanup function (optional - call this if you need to destroy the component)
+    window.cleanupReviewProcessLinksUI = function() {
+        if (resizeHandler) {
+            window.removeEventListener('resize', resizeHandler);
+            resizeHandler = null;
+        }
+        if (sankeyChart) {
+            sankeyChart.dispose();
+            sankeyChart = null;
+        }
+        if (linkModal) {
+            linkModal.dispose();
+            linkModal = null;
+        }
+    };
 });
