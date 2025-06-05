@@ -18,7 +18,7 @@ class User(UserMixin, Base):
     system_prompt = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # NEW: One-to-one relationship with LLMSettings
+    # One-to-one relationship with LLMSettings
     llm_settings = relationship("LLMSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     def set_password(self, password):
@@ -289,7 +289,7 @@ class ProcessStepProcessStepRelevance(Base):
     def __repr__(self):
         return f"<PSPSRelevance(source_ps_id={self.source_process_step_id}, target_ps_id={self.target_process_step_id}, score={self.relevance_score})>"
 
-# NEW: LLMSettings Model
+# LLMSettings Model
 class LLMSettings(Base):
     __tablename__ = 'llm_settings'
 
@@ -300,6 +300,10 @@ class LLMSettings(Base):
     anthropic_api_key = Column(String(255), nullable=True)
     google_api_key = Column(String(255), nullable=True)
     ollama_base_url = Column(String(255), nullable=True)
+
+    # Apollo credentials
+    apollo_client_id = Column(String(255), nullable=True)
+    apollo_client_secret = Column(String(255), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

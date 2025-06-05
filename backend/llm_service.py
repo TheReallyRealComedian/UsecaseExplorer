@@ -3,6 +3,7 @@
 import requests
 import json
 import os
+import time # Import time for token expiry management
 from flask import session as flask_session, current_app
 from collections import deque
 import logging
@@ -11,17 +12,22 @@ from .db import SessionLocal
 from .models import User, LLMSettings
 from sqlalchemy.orm import joinedload
 
-# NEW IMPORTS FOR OTHER LLM PROVIDERS
 import openai
 from anthropic import Anthropic
-import base64 # Import base64 for image decoding
+import base64
 import google.generativeai as genai
-# END NEW IMPORTS
 
-# Configure basic logging for debugging (if not already done globally)
+# NEW: Import for Apollo integration (LiteLLM compatibility)
+from langchain_openai import ChatOpenAI
+
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- API Key & URL Retrieval Functions (Already present, ensuring they use LLMSettings) ---
+# --- Global Apollo Token Cache ---
+_apollo_access_token = None
+_apollo_token_expiry = 0
+
+# --- API Key & URL Retrieval Functions ---
+
 def get_ollama_base_url():
     """
     Retrieves Ollama base URL, prioritizing user-specific settings from the database,
@@ -32,12 +38,12 @@ def get_ollama_base_url():
         try:
             user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
             if user and user.llm_settings and user.llm_settings.ollama_base_url:
-                logging.info(f"Using user-specific Ollama Base URL.")
+                logging.info("Using user-specific Ollama Base URL.")
                 return user.llm_settings.ollama_base_url
         except Exception as e:
             logging.error(f"Error fetching user Ollama URL from DB: {e}")
         finally:
-            SessionLocal.remove() # Ensure session is closed
+            SessionLocal.remove()
     env_url = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
     logging.info(f"Using environment variable Ollama Base URL: {env_url} (or default if not set).")
     return env_url
@@ -52,14 +58,14 @@ def get_openai_api_key():
         try:
             user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
             if user and user.llm_settings and user.llm_settings.openai_api_key:
-                logging.info(f"Using user-specific OpenAI API Key.")
+                logging.info("Using user-specific OpenAI API Key.")
                 return user.llm_settings.openai_api_key
         except Exception as e:
             logging.error(f"Error fetching user OpenAI API Key from DB: {e}")
         finally:
             SessionLocal.remove()
     env_key = os.environ.get('OPENAI_API_KEY')
-    logging.info(f"Using environment variable OpenAI API Key.")
+    logging.info("Using environment variable OpenAI API Key.")
     return env_key
 
 def get_anthropic_api_key():
@@ -72,14 +78,14 @@ def get_anthropic_api_key():
         try:
             user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
             if user and user.llm_settings and user.llm_settings.anthropic_api_key:
-                logging.info(f"Using user-specific Anthropic API Key.")
+                logging.info("Using user-specific Anthropic API Key.")
                 return user.llm_settings.anthropic_api_key
         except Exception as e:
             logging.error(f"Error fetching user Anthropic API Key from DB: {e}")
         finally:
             SessionLocal.remove()
     env_key = os.environ.get('ANTHROPIC_API_KEY')
-    logging.info(f"Using environment variable Anthropic API Key.")
+    logging.info("Using environment variable Anthropic API Key.")
     return env_key
 
 def get_google_api_key():
@@ -92,18 +98,91 @@ def get_google_api_key():
         try:
             user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
             if user and user.llm_settings and user.llm_settings.google_api_key:
-                logging.info(f"Using user-specific Google API Key.")
+                logging.info("Using user-specific Google API Key.")
                 return user.llm_settings.google_api_key
         except Exception as e:
             logging.error(f"Error fetching user Google API Key from DB: {e}")
         finally:
             SessionLocal.remove()
     env_key = os.environ.get('GOOGLE_API_KEY')
-    logging.info(f"Using environment variable Google API Key.")
+    logging.info("Using environment variable Google API Key.")
     return env_key
 
+def get_apollo_client_credentials():
+    """
+    Retrieves Apollo Client ID and Client Secret, prioritizing user-specific settings,
+    then falling back to environment variables.
+    Returns: (client_id, client_secret)
+    """
+    if current_user.is_authenticated:
+        session = SessionLocal()
+        try:
+            user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
+            if user and user.llm_settings and user.llm_settings.apollo_client_id and user.llm_settings.apollo_client_secret:
+                logging.info("Using user-specific Apollo Client Credentials.")
+                return user.llm_settings.apollo_client_id, user.llm_settings.apollo_client_secret
+        except Exception as e:
+            logging.error(f"Error fetching user Apollo credentials from DB: {e}")
+        finally:
+            SessionLocal.remove()
+    
+    env_client_id = current_app.config.get('APOLLO_CLIENT_ID')
+    env_client_secret = current_app.config.get('APOLLO_CLIENT_SECRET')
+    logging.info("Using environment variable Apollo Client Credentials.")
+    return env_client_id, env_client_secret
 
-# --- Chat History Management (No changes needed here) ---
+def get_apollo_access_token():
+    """
+    Obtains and manages an access token for the Apollo API using client credentials flow.
+    Caches the token and refreshes it if expired.
+    """
+    global _apollo_access_token, _apollo_token_expiry
+    
+    if _apollo_access_token and time.time() < _apollo_token_expiry:
+        logging.debug("Using cached Apollo access token.")
+        return _apollo_access_token
+
+    client_id, client_secret = get_apollo_client_credentials()
+    token_url = current_app.config.get('APOLLO_TOKEN_URL')
+
+    if not client_id or not client_secret:
+        raise ValueError("Apollo CLIENT_ID and CLIENT_SECRET must be configured in settings or .env.")
+    if not token_url:
+        raise ValueError("Apollo TOKEN_URL is not configured.")
+
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+    
+    logging.info(f"Apollo: Attempting to get new access token from: {token_url}")
+    try:
+        response = requests.post(token_url, data=token_data, timeout=10)
+        response.raise_for_status()
+        json_response = response.json()
+        
+        access_token = json_response.get('access_token')
+        expires_in = json_response.get('expires_in', 3500) 
+        
+        if not access_token:
+            raise ValueError("Access token not found in the response from Apollo.")
+            
+        _apollo_access_token = access_token
+        _apollo_token_expiry = time.time() + expires_in
+        logging.info("Apollo: Access token acquired successfully.")
+        return _apollo_access_token
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f"Apollo Token Error: HTTP error occurred: {http_err}. Response content: {http_err.response.text}")
+        raise ValueError(f"Apollo Token Error: {http_err.response.text}") from http_err
+    except requests.exceptions.RequestException as req_err:
+        logging.error(f"Apollo Token Error: Request error occurred: {req_err}")
+        raise ValueError(f"Apollo Token Error: Network request failed: {req_err}") from req_err
+    except Exception as e:
+        logging.exception(f"Apollo Token Error: An unexpected error occurred while getting token: {e}")
+        raise ValueError(f"Apollo Token Error: An unexpected error occurred: {e}") from e
+
+# --- Chat History Management ---
 def _get_history_deque():
     """
     Internal helper to retrieve the chat history from Flask session
@@ -141,7 +220,7 @@ def clear_chat_history():
     flask_session.pop('llm_chat_history', None)
 
 
-# --- Provider-Specific Chat Generation Functions (Modified Ollama, New OpenAI, Anthropic, Google) ---
+# --- Provider-Specific Chat Generation Functions ---
 
 def generate_ollama_chat_response(model_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
     """
@@ -154,7 +233,6 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
     if system_prompt:
         messages_for_api.append({'role': 'system', 'content': system_prompt})
 
-    # Add historical messages (already text-only)
     if chat_history:
         messages_for_api.extend(chat_history)
 
@@ -184,7 +262,6 @@ def generate_ollama_chat_response(model_name, user_message, system_prompt=None, 
         headers = {"Content-Type": "application/json"}
         logging.info(f"Ollama: Sending payload for model '{model_name}'. Message count: {len(payload['messages'])}. Has images: {len(current_user_message_images) > 0}.")
         logging.debug(f"Ollama: Full API PAYLOAD (truncated for images): {json.dumps(payload, indent=2)[:500]}...")
-
 
         response = requests.post(f"{ollama_url}/api/chat", json=payload, headers=headers, timeout=300)
         logging.debug(f"Ollama: raw response status code: {response.status_code}")
@@ -234,7 +311,6 @@ def generate_openai_chat_response(model_name, user_message, system_prompt=None, 
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
 
-    # Add historical messages (already text-only)
     if chat_history:
         messages.extend(chat_history)
 
@@ -243,10 +319,9 @@ def generate_openai_chat_response(model_name, user_message, system_prompt=None, 
         current_user_content_blocks.append({"type": "text", "text": user_message})
 
     if image_base64 and image_mime_type:
-        # OpenAI expects the full data URL for images
         image_url = f"data:{image_mime_type};base64,{image_base64}"
         current_user_content_blocks.append({"type": "image_url", "image_url": {"url": image_url}})
-        if not user_message: # If only image, add a default prompt
+        if not user_message:
             current_user_content_blocks.append({"type": "text", "text": "Analyze this image."})
 
     if not current_user_content_blocks:
@@ -261,8 +336,8 @@ def generate_openai_chat_response(model_name, user_message, system_prompt=None, 
         response = client.chat.completions.create(
             model=model_name,
             messages=messages,
-            temperature=0.7, # You can adjust this
-            max_tokens=1024, # You can adjust this
+            temperature=0.7,
+            max_tokens=1024,
         )
         assistant_message = response.choices[0].message.content
         return {"success": True, "message": assistant_message}
@@ -300,16 +375,8 @@ def generate_anthropic_chat_response(model_name, user_message, system_prompt=Non
         else:
             raise
 
-    messages = []
-    # Anthropic's API takes system prompt as a separate argument, not in messages list
-    # The `messages` list should only contain 'user' and 'assistant' roles.
-    
-    # Reconstruct messages list for Anthropic format, which doesn't directly take system_prompt
-    # and has a specific structure for content blocks.
     anthropic_messages = []
     
-    # Process history: Anthropic expects alternating user/assistant messages.
-    # The history deque stores simple content strings. We need to convert them to Anthropic's text block format.
     if chat_history:
         for msg in chat_history:
             anthropic_messages.append({"role": msg['role'], "content": [{"type": "text", "text": msg['content']}]})
@@ -319,7 +386,6 @@ def generate_anthropic_chat_response(model_name, user_message, system_prompt=Non
         current_user_content_blocks.append({"type": "text", "text": user_message})
 
     if image_base64 and image_mime_type:
-        # Anthropic expects image as a media_type and base64 data
         anthropic_image_data = {
             "type": "image",
             "source": {
@@ -329,7 +395,7 @@ def generate_anthropic_chat_response(model_name, user_message, system_prompt=Non
             },
         }
         current_user_content_blocks.append(anthropic_image_data)
-        if not user_message: # If only image, add a default prompt
+        if not user_message:
             current_user_content_blocks.append({"type": "text", "text": "Analyze this image."})
 
     if not current_user_content_blocks:
@@ -343,11 +409,11 @@ def generate_anthropic_chat_response(model_name, user_message, system_prompt=Non
 
         response = client.messages.create(
             model=model_name,
-            max_tokens=1024, # You can adjust this
-            system=system_prompt, # System prompt handled separately
+            max_tokens=1024,
+            system=system_prompt,
             messages=anthropic_messages,
         )
-        assistant_message = response.content[0].text # Response content is a list of text blocks
+        assistant_message = response.content[0].text
         return {"success": True, "message": assistant_message}
 
     except Anthropic.APIConnectionError as e:
@@ -377,65 +443,128 @@ def generate_google_chat_response(model_name, user_message, system_prompt=None, 
 
     genai.configure(api_key=api_key)
 
-    # Prepare chat history for Google's API, which expects a list of content blocks
-    # Each content block can be a string or a list of parts (e.g., text and image)
     google_history = []
     if chat_history:
         for msg in chat_history:
-            # Google's API expects content as a list of parts, even for pure text
             google_history.append({"role": msg['role'], "parts": [msg['content']]})
 
-    # Prepare current user message content
     parts = []
     if user_message:
         parts.append(user_message)
 
     if image_base64 and image_mime_type:
-        # Convert base64 image to Google's Image.from_bytes format
         try:
-            # Correct way to convert base64 string to bytes for PIL Image.from_bytes
-            # (base64 module is already imported at the top)
             image_bytes = base64.b64decode(image_base64)
-            
             from PIL import Image
             from io import BytesIO
             img_part = Image.open(BytesIO(image_bytes))
-            parts.append(img_part) # Pass PIL Image object directly
+            parts.append(img_part)
         except Exception as e:
             logging.error(f"Google Gemini: Error processing image for API: {e}")
             return {"success": False, "message": "Failed to process image for Google Gemini."}
 
-        if not user_message: # If only image, add a default prompt
+        if not user_message:
             parts.append("Analyze this image.")
 
     if not parts:
         return {"success": False, "message": "No message or image provided for LLM."}
 
     try:
-        model = genai.GenerativeModel(model_name=model_name, system_instruction=system_prompt)
+        model_config = {}
+        if system_prompt:
+             model_config['system_instruction'] = system_prompt
+
+        model = genai.GenerativeModel(model_name=model_name, **model_config)
         
-        # Start a chat session with history
         chat = model.start_chat(history=google_history)
 
         logging.info(f"Google: Sending payload for model '{model_name}'. Message count: {len(google_history) + 1}. Has images: {bool(image_base64)}.")
         logging.debug(f"Google: Current message parts: {parts}. History: {google_history}")
 
         response = chat.send_message(parts)
-        response.resolve() # Ensure response is resolved if it's a stream object
+        response.resolve()
         
         assistant_message = response.text
         return {"success": True, "message": assistant_message}
 
-    except genai.APIError as e:
+    except genai.APIError as e: # Updated to use genai exceptions
         error_msg = f"Google Gemini: API error: {e}"
         logging.error(error_msg)
         return {"success": False, "message": error_msg}
-    except genai.ClientError as e:
+    except genai.client.ClientError as e: # Updated to use genai exceptions
         error_msg = f"Google Gemini: Client error: {e}"
         logging.error(error_msg)
         return {"success": False, "message": error_msg}
     except Exception as e:
         error_msg = f"An unexpected error occurred during Google Gemini chat: {e}"
+        logging.exception(error_msg)
+        return {"success": False, "message": error_msg}
+
+def generate_apollo_chat_response(model_group_name, user_message, system_prompt=None, image_base64=None, image_mime_type=None, chat_history=None):
+    """
+    Sends a chat message to Apollo LLM API using LiteLLM/langchain-openai compatibility.
+    Handles multimodal input if the model supports it.
+    """
+    try:
+        access_token = get_apollo_access_token()
+    except ValueError as e:
+        logging.error(f"Apollo: Failed to get access token: {e}")
+        return {"success": False, "message": f"Apollo Authentication Error: {e}"}
+
+    apollo_llm_api_base_url = current_app.config.get('APOLLO_LLM_API_BASE_URL')
+    if not apollo_llm_api_base_url:
+        return {"success": False, "message": "Apollo LLM API base URL is not configured."}
+
+    try:
+        llm_model = ChatOpenAI(
+            model=model_group_name,
+            base_url=apollo_llm_api_base_url,
+            api_key=access_token,
+            temperature=0.01,
+            timeout=300
+        )
+
+        messages_for_api = []
+        if system_prompt:
+            messages_for_api.append({"role": "system", "content": system_prompt})
+
+        if chat_history:
+            for msg in chat_history:
+                messages_for_api.append({"role": msg['role'], "content": msg['content']})
+
+        current_user_content_blocks = []
+        if user_message:
+            current_user_content_blocks.append({"type": "text", "text": user_message})
+
+        if image_base64 and image_mime_type:
+            image_url = f"data:{image_mime_type};base64,{image_base64}"
+            current_user_content_blocks.append({"type": "image_url", "image_url": {"url": image_url}})
+            if not user_message:
+                current_user_content_blocks.append({"type": "text", "text": "Analyze this image."})
+
+        if not current_user_content_blocks:
+            return {"success": False, "message": "No message or image provided for LLM."}
+
+        messages_for_api.append({"role": "user", "content": current_user_content_blocks})
+
+        logging.info(f"Apollo: Sending payload for model '{model_group_name}'. Message count: {len(messages_for_api)}. Has images: {bool(image_base64)}.")
+        logging.debug(f"Apollo: Full API PAYLOAD (truncated for images): {json.dumps(messages_for_api, indent=2)[:500]}...")
+
+        response = llm_model.invoke(messages_for_api)
+
+        assistant_message = response.content
+        return {"success": True, "message": assistant_message}
+
+    except openai.APICallError as e:
+        error_msg = f"Apollo API Call Error: {e.status_code} - {e.response.text if e.response else 'No response text'}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Apollo Network Error: {e}"
+        logging.error(error_msg)
+        return {"success": False, "message": error_msg}
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during Apollo chat: {e}"
         logging.exception(error_msg)
         return {"success": False, "message": error_msg}
 
@@ -449,7 +578,7 @@ def get_available_ollama_models():
         response = requests.get(f"{ollama_url}/api/tags", timeout=5)
         response.raise_for_status()
         models_data = response.json()
-        return [f"ollama-{model['name']}" for model in models_data.get('models', [])] # Prefix with "ollama-"
+        return [f"ollama-{model['name']}" for model in models_data.get('models', [])]
     except requests.exceptions.ConnectionError:
         logging.error(f"Ollama: Connection error to {ollama_url}. Is Ollama running?")
         return ["ollama-Error: Not reachable"]
@@ -467,10 +596,8 @@ def get_available_openai_models():
     """Returns a list of common OpenAI chat models."""
     api_key = get_openai_api_key()
     if not api_key:
-        return [] # Return empty if no key
+        return []
     
-    # In a production app, you might use client.models.list() and filter for chat models.
-    # For simplicity and to avoid excessive API calls on page load:
     models = [
         "gpt-4o",
         "gpt-4o-mini",
@@ -500,26 +627,75 @@ def get_available_google_models():
 
     models = [
         "gemini-pro",
-        "gemini-pro-vision", # Supports images
+        "gemini-pro-vision",
         "gemini-1.5-pro-latest",
         "gemini-1.5-flash-latest",
     ]
     return [f"google-{model}" for model in models]
 
+def get_available_apollo_models():
+    """
+    Fetches available LLM models from the Apollo API's model_group/info endpoint.
+    Filters for 'chat' mode models.
+    """
+    apollo_llm_api_base_url = current_app.config.get('APOLLO_LLM_API_BASE_URL')
+    if not apollo_llm_api_base_url:
+        logging.warning("Apollo LLM API base URL not configured. Cannot fetch Apollo models.")
+        return []
+
+    try:
+        access_token = get_apollo_access_token()
+    except ValueError as e:
+        logging.warning(f"Apollo: Skipping model discovery due to authentication error: {e}")
+        return [f"apollo-Error: Auth failed ({e})"]
+
+    model_info_endpoint = f"{apollo_llm_api_base_url}/model_group/info"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+
+    try:
+        response = requests.get(model_info_endpoint, headers=headers, timeout=10)
+        response.raise_for_status()
+        models_info = response.json()
+
+        apollo_models = []
+        if models_info and isinstance(models_info, dict) and 'data' in models_info:
+            for model in models_info['data']:
+                if model.get('mode') == 'chat':
+                    apollo_models.append(f"apollo-{model.get('model_group')}")
+        return apollo_models
+    except requests.exceptions.ConnectionError:
+        error_msg = f"Apollo: Connection error to {apollo_llm_api_base_url}. Is Apollo API accessible?"
+        logging.error(error_msg)
+        return ["apollo-Error: Not reachable"]
+    except requests.exceptions.Timeout:
+        error_msg = f"Apollo: Timeout connecting to {apollo_llm_api_base_url} for model info."
+        logging.warning(error_msg)
+        return ["apollo-Error: Timeout"]
+    except requests.exceptions.RequestException as e:
+        status_code = e.response.status_code if e.response is not None else 'N/A'
+        response_text = e.response.text if e.response is not None else 'N/A'
+        error_msg = (f"Apollo: API request failed for model info: {e}. Status Code: {status_code}. Response: {response_text}")
+        logging.error(error_msg)
+        return [f"apollo-Error: {e}"]
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during Apollo model discovery: {e}"
+        logging.exception(error_msg)
+        return [f"apollo-Error: {e}"]
+
 def get_all_available_llm_models():
     """Aggregates models from all configured LLM providers."""
     all_models = []
     
-    # Prioritize non-Ollama models first in the list
     all_models.extend(get_available_openai_models())
     all_models.extend(get_available_anthropic_models())
     all_models.extend(get_available_google_models())
     
-    # Then add Ollama models (which might include errors if not reachable)
+    all_models.extend(get_available_apollo_models())
     all_models.extend(get_available_ollama_models())
 
-    # Filter out empty strings or duplicate error messages
-    all_models = [m for m in all_models if m] # Remove empty strings
-    all_models = list(dict.fromkeys(all_models)) # Remove duplicates while preserving order (Python 3.7+)
-
+    all_models = [m for m in all_models if m]
+    all_models = list(dict.fromkeys(all_models))
     return all_models

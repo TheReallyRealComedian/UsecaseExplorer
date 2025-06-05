@@ -41,6 +41,10 @@ def manage_settings():
             user_settings.anthropic_api_key = request.form.get('anthropic_api_key', '').strip() or None
             user_settings.google_api_key = request.form.get('google_api_key', '').strip() or None
             user_settings.ollama_base_url = request.form.get('ollama_base_url', '').strip() or None
+            
+            # NEW: Apollo API keys
+            user_settings.apollo_client_id = request.form.get('apollo_client_id', '').strip() or None
+            user_settings.apollo_client_secret = request.form.get('apollo_client_secret', '').strip() or None
 
             session.commit()
             flash("LLM settings updated successfully!", "success")

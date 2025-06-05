@@ -11,9 +11,6 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data/
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    # Optional: Map port for local db tools
-    # ports:
-    #   - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-usecase_explorer_db}"]
       interval: 10s
@@ -31,6 +28,11 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
       FLASK_ENV: development
+      # Add the Apollo environment variables here:
+      APOLLO_CLIENT_ID: ${APOLLO_CLIENT_ID}
+      APOLLO_CLIENT_SECRET: ${APOLLO_CLIENT_SECRET}
+      APOLLO_TOKEN_URL: ${APOLLO_TOKEN_URL}
+      APOLLO_LLM_API_BASE_URL: ${APOLLO_LLM_API_BASE_URL}
 
       PYTHONPATH: /app
     volumes:
