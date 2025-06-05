@@ -3,212 +3,238 @@
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
+{% block head_extra %}
+    {{ super() }}
+    <style>
+        .table th.checkbox-column, .table td.checkbox-column {
+            width: 30px;
+            text-align: center;
+        }
+        .action-buttons-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        /* Styles for Area Filter Tabs */
+        .area-filter-tabs {
+            display: flex;
+            flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+            gap: 0.5rem; /* Space between tab buttons */
+            margin-bottom: 1rem; /* Space below the tabs */
+            padding-bottom: 0.5rem; /* Optional: padding at the bottom of the tab container */
+            border-bottom: 1px solid var(--border-color); /* Optional: visual separator */
+        }
+        .area-filter-tabs .btn { /* Style for individual tab buttons */
+            font-size: 0.85rem;
+            padding: 0.3rem 0.75rem; /* Adjust padding for a "leaner" look */
+            /* Using Bootstrap's btn-outline-secondary for default state */
+        }
+        .area-filter-tabs .btn.active { /* Style for the active tab button */
+            background-color: var(--color-primary); /* Use your primary color */
+            color: var(--bi-white); /* Text color for active tab */
+            font-weight: bold;
+            border-color: var(--color-primary); /* Match border to background */
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 
+{% macro map_priority_to_benefit(priority_val) %}
+    {% if priority_val == 1 %}High
+    {% elif priority_val == 2 %}Medium
+    {% elif priority_val == 3 %}Low
+    {% else %}N/A{% endif %}
+{% endmacro %}
+
 <h1>{{ title }}</h1>
-<p class="mb-3">
-    Manage your data by importing new records, updating existing ones in bulk, or exporting a full database backup.
+<p class="mb-4 text-color-light">
+    Manage your data by importing/exporting the full database, or updating Process Steps and Use Cases.
 </p>
 
-{# Flash messages are now in base.html #}
-
-{# Section 1: Import/Export Full Database - Moved to Top #}
+{# ... (Full Database Management section - no changes here) ... #}
 <div class="mb-xl">
     <div class="card-header">
         <h2 class="card-title">Full Database Management</h2>
     </div>
     <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
                 <h3>Export Database</h3>
                 <p>Download a complete backup of your database as a JSON file.</p>
                 <a href="{{ url_for('export.export_db_json') }}" class="btn btn-info">
                     <i class="fas fa-download me-1"></i> Export Full Database (JSON)
                 </a>
-    </div>
-</div>
-
-{# Section 2: Update/Inject Areas #}
-<div class="mb-xl">
-    <div class="card-header">
-        <h2 class="card-title">Areas</h2>
-    </div>
-    <div class="card-body">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h3>Update Existing Areas</h3>
-                <p class="text-muted">
-                    Select one or more existing areas to modify their details directly.
-                    (Bulk editing functionality for Areas is coming soon!)
-                </p>
-                <div class="mb-3">
-                    <label for="selected_update_areas" class="form-label">Select Areas:</label>
-                    <select class="form-select" id="selected_update_areas" name="selected_update_areas" multiple size="{{ default_select_size }}">
-                        {% for area in all_areas %}
-                            <option value="{{ area.id }}">{{ area.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" disabled>
-                    <i class="fas fa-edit me-1"></i> Update Selected Areas (Coming Soon)
-                </button>
             </div>
             <div class="col-md-6">
-                <h3>Upload New / Update Existing Areas via JSON</h3>
-                <p>
-                    Upload a JSON file containing a list of area objects, each with a <code>"name"</code> key.<br>
-                    Optional key: <code>"description"</code> (string).<br>
-                    Example: <code>[{"name": "Area One", "description": "Desc of Area One"}, {"name": "Area Two"}]</code>
-                </p>
-                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="areaForm">
+                <h3>Import Full Database</h3>
+                <p>Upload a previously exported JSON file to restore the database. <strong>Warning:</strong> This can overwrite existing data.</p>
+                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="databaseImportForm">
                     <div class="mb-3">
-                        <label for="area_file" class="form-label">Area JSON File:</label>
-                        <input type="file" id="area_file" name="area_file" accept=".json" required class="form-control">
+                        <label for="database_file" class="form-label">Database JSON File:</label>
+                        <input type="file" id="database_file" name="database_file" accept=".json" required class="form-control">
                     </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Upload Areas</button>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="clear_existing_data" id="clear_existing_data">
+                        <label class="form-check-label" for="clear_existing_data">
+                            Clear all existing data before import (Recommended for full restore)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-1"></i> Import Full Database (JSON)
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-{# Section 3: Update/Inject Process Steps #}
+
+{# Section 2: Process Steps #}
 <div class="mb-xl">
     <div class="card-header">
         <h2 class="card-title">Process Steps</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h3>Update Existing Process Steps</h3>
-                <p class="text-muted">
-                    Select one or more existing process steps to modify their details.
-                </p>
-                <form action="{{ url_for('injection.prepare_steps_for_edit') }}" method="post">
-                    {# NEW: Filter inputs for Process Steps #}
-                    <div class="mb-3">
-                        <label for="stepFilterArea" class="form-label">Filter by Area Name:</label>
-                        <input type="text" id="stepFilterArea" class="form-control form-control-sm mb-2" placeholder="Start typing area name..." list="areaNamesDatalist">
-                        <datalist id="areaNamesDatalist">
-                            {% for name in all_area_names %}
-                                <option value="{{ name }}">
-                            {% endfor %}
-                        </datalist>
-
-                        <label for="stepFilterStep" class="form-label">Filter by Step Name:</label>
-                        <input type="text" id="stepFilterStep" class="form-control form-control-sm" placeholder="Start typing step name..." list="stepNamesDatalist">
-                        <datalist id="stepNamesDatalist">
-                            {% for name in all_step_names %}
-                                <option value="{{ name }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                    <div class="mb-3">
-                        <label for="selected_update_steps" class="form-label">Select Process Steps:</label>
-                        <select class="form-select" id="selected_update_steps" name="selected_update_steps" multiple size="{{ default_select_size }}">
-                            {% for step in all_steps %}
-                                <option value="{{ step.id }}" 
-                                        data-area-id="{{ step.area.id if step.area else '' }}" 
-                                        data-area-name="{{ step.area.name if step.area else '' }}" 
-                                        data-step-name="{{ step.name }}">
-                                    ({{ step.id }}) {{ step.name }} ({{ step.area.name if step.area else 'No Area' }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-edit me-1"></i> Prepare Steps for Update
+        <div class="action-buttons-header">
+            <form action="{{ url_for('injection.prepare_steps_for_edit') }}" method="post" id="prepareStepsForm" class="me-2">
+                <input type="hidden" name="selected_update_steps_ids" id="selected_update_steps_ids_hidden">
+                <button type="button" class="btn btn-primary" id="prepareStepsBtn">
+                    <i class="fas fa-edit me-1"></i> Prepare Selected Steps for Update
+                </button>
+            </form>
+            <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="stepUploadForm">
+                <div class="input-group">
+                    <input type="file" id="step_file" name="step_file" accept=".json" required class="form-control form-control-sm">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-upload me-1"></i> Upload Steps JSON
                     </button>
-                </form>
-            </div>
-            <div class="col-md-6">
-                <h3>Upload New / Update Existing Process Steps via JSON</h3>
-                <p>
-                    Upload a JSON file containing a list of process step objects.<br>
-                    Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"area_name"</code> (string, must match existing Area).<br>
-                    Optional keys: <code>"step_description"</code> (string), <code>"raw_content"</code> (string), <code>"summary"</code> (string).<br>
-                    Example: <code>[{"bi_id": "PS-001", "name": "Step One", "area_name": "Area One", "step_description": "Detailed step desc.", "summary": "Summary one"}, ...]</code>
-                </p>
-                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="stepForm">
-                    <div class="mb-3">
-                        <label for="step_file" class="form-label">Process Step JSON File:</label>
-                        <input type="file" id="step_file" name="step_file" accept=".json" required class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Upload Process Steps</button>
-                </form>
-            </div>
+                </div>
+            </form>
+        </div>
+
+        {# ***** CORRECTED: Area Filter Tabs for Process Steps ***** #}
+        <div class="area-filter-tabs" id="stepAreaFilterTabs">
+            <button class="btn btn-outline-secondary active" data-area-id="all">All Areas</button>
+            {% if all_areas_for_filters %} {# Ensure the variable exists #}
+                {% for area in all_areas_for_filters %}
+                    <button class="btn btn-outline-secondary" data-area-id="{{ area.id }}">{{ area.name }}</button>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted small">No areas available for filtering.</p>
+            {% endif %}
+        </div>
+        {# ***** END CORRECTED: Area Filter Tabs ***** #}
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="processStepsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="checkbox-column"><input type="checkbox" id="selectAllStepsCheckbox"></th>
+                        <th>Area</th>
+                        <th>BI_ID</th>
+                        <th>Name</th>
+                        <th>Use Cases</th>
+                        <th>Description Snippet</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for step in all_steps %}
+                    <tr data-step-id="{{ step.id }}" data-step-area-id="{{ step.area.id if step.area else '' }}">
+                        <td class="checkbox-column"><input type="checkbox" name="selected_step_ids_table" value="{{ step.id }}" class="step-checkbox"></td>
+                        <td>{{ step.area.name if step.area else 'N/A' }}</td>
+                        <td>{{ step.bi_id }}</td>
+                        <td><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></td>
+                        <td>{{ step.use_cases | length }}</td>
+                        <td>{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
+                        <td>
+                            <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
+                            <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No process steps found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-{# Section 4: Update/Inject Use Cases #}
+{# ... (Use Cases section - no changes here for now) ... #}
 <div class="mb-xl">
     <div class="card-header">
         <h2 class="card-title">Use Cases</h2>
     </div>
     <div class="card-body">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h3>Update Existing Use Cases</h3>
-                <p class="text-muted">
-                    Select one or more existing use cases to modify their details.
-                </p>
-                <form action="{{ url_for('injection.prepare_usecases_for_edit') }}" method="post">
-                    {# NEW: Filter inputs for Use Cases #}
-                    <div class="mb-3">
-                        <label for="usecaseFilterArea" class="form-label">Filter by Parent Area Name:</label>
-                        <input type="text" id="usecaseFilterArea" class="form-control form-control-sm mb-2" placeholder="Start typing area name..." list="areaNamesDatalist">
-                        
-                        <label for="usecaseFilterStep" class="form-label">Filter by Parent Step Name:</label>
-                        <input type="text" id="usecaseFilterStep" class="form-control form-control-sm mb-2" placeholder="Start typing step name..." list="stepNamesDatalist">
-
-                        <label for="usecaseFilterUsecase" class="form-label">Filter by Use Case Name:</label>
-                        <input type="text" id="usecaseFilterUsecase" class="form-control form-control-sm" placeholder="Start typing use case name..." list="usecaseNamesDatalist">
-                        <datalist id="usecaseNamesDatalist">
-                            {% for name in all_usecase_names %}
-                                <option value="{{ name }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                    <div class="mb-3">
-                        <label for="selected_update_usecases" class="form-label">Select Use Cases:</label>
-                        <select class="form-select" id="selected_update_usecases" name="selected_update_usecases" multiple size="{{ default_select_size }}">
-                            {% for uc in all_usecases %}
-                                <option value="{{ uc.id }}"
-                                        data-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}"
-                                        data-area-name="{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else '' }}"
-                                        data-step-id="{{ uc.process_step.id if uc.process_step else '' }}"
-                                        data-step-name="{{ uc.process_step.name if uc.process_step else '' }}"
-                                        data-uc-name="{{ uc.name }}">
-                                    ({{ uc.id }}) {{ uc.name }} ({{ uc.process_step.name if uc.process_step else 'No Step' }} - BI_ID: {{ uc.bi_id }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-edit me-1"></i> Prepare Use Cases for Update
+        <div class="action-buttons-header">
+            <form action="{{ url_for('injection.prepare_usecases_for_edit') }}" method="post" id="prepareUsecasesForm" class="me-2">
+                <input type="hidden" name="selected_update_usecases_ids" id="selected_update_usecases_ids_hidden">
+                <button type="button" class="btn btn-primary" id="prepareUsecasesBtn">
+                    <i class="fas fa-edit me-1"></i> Prepare Selected Use Cases for Update
+                </button>
+            </form>
+             <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseUploadForm">
+                <div class="input-group">
+                    <input type="file" id="usecase_file" name="usecase_file" accept=".json" required class="form-control form-control-sm">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-upload me-1"></i> Upload Use Cases JSON
                     </button>
-                </form>
-            </div>
-            <div class="col-md-6">
-                <h3>Upload New / Update Existing Use Cases via JSON</h3>
-                <p>
-                    Upload a JSON file containing a list of use case objects.<br>
-                    Required keys: <code>"bi_id"</code> (string, unique), <code>"name"</code> (string), <code>"process_step_bi_id"</code> (string, must match existing Step BI_ID).<br>
-                    Optional keys: <code>"priority"</code> (integer 1-4), <code>"raw_content"</code>, <code>"summary"</code>, <code>"inspiration"</code> (all strings).<br>
-                    Example: <code>[{"bi_id": "UC-001", "name": "Use Case One", "process_step_bi_id": "PS-001", "priority": 1, "summary": "Summary one"}, ...]</code>
-                </p>
-                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseForm">
-                    <div class="mb-3">
-                        <label for="usecase_file" class="form-label">JSON File:</label>
-                        <input type="file" id="usecase_file" name="usecase_file" accept=".json" required class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Upload Use Cases</button>
-                </form>
-            </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="useCasesTable"> {# Added ID for JS #}
+                <thead class="table-light">
+                    <tr>
+                        <th class="checkbox-column"><input type="checkbox" id="selectAllUsecasesCheckbox"></th>
+                        <th>Area</th>
+                        <th>Process Step</th>
+                        <th>UC BI_ID</th>
+                        <th>Use Case Name</th>
+                        <th>Benefit</th>
+                        <th>Effort</th>
+                        <th>Wave</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uc in all_usecases %}
+                    <tr data-uc-id="{{ uc.id }}" data-uc-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}" data-uc-step-id="{{ uc.process_step.id if uc.process_step else '' }}">
+                        <td class="checkbox-column"><input type="checkbox" name="selected_uc_ids_table" value="{{ uc.id }}" class="usecase-checkbox"></td>
+                        <td>{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}</td>
+                        <td>{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
+                        <td>{{ uc.bi_id }}</td>
+                        <td><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
+                        <td>{{ uc.quality_improvement_quant | default(map_priority_to_benefit(uc.priority), true) }}</td>
+                        <td>{{ uc.effort_level | default('N/A', true) }}</td>
+                        <td>{{ uc.wave | default('N/A', true) }}</td>
+                        <td>
+                            <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
+                             <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">No use cases found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-{# Section 5: Update/Inject Relevance Links #}
+{# ... (Relevance Links section remains unchanged) ... #}
 <div class="mb-xl">
     <div class="card-header">
         <h2 class="card-title">Relevance Links</h2>
@@ -216,144 +242,186 @@
     <div class="card-body">
         <div class="row g-4">
             <div class="col-md-6">
-                <h3>Update Existing Relevance Links</h3>
-                <p class="text-muted">
-                    Select existing relevance links to modify their score or content.
-                    (Bulk editing functionality for Relevance Links is coming soon!)
+                <h4>Process Step to Process Step</h4>
+                <p class="small text-muted">
+                    Required: <code>"source_process_step_bi_id"</code>, <code>"target_process_step_bi_id"</code>, <code>"relevance_score"</code>. Optional: <code>"relevance_content"</code>.
                 </p>
-                <div class="mb-3">
-                    <label for="selected_update_relevance" class="form-label">Select Relevance Links:</label>
-                    <select class="form-select" id="selected_update_relevance" name="selected_update_relevance" multiple size="{{ default_select_size }}">
-                        {# Populate with existing relevance links (e.g., PS-PS, UC-Area, etc.) #}
-                        <option value="1">Example: PS-001 to PS-002 (Score 80)</option>
-                        <option value="2">Example: UC-005 to Area A (Score 90)</option>
-                        <option value="3">Example: UC-010 to PS-003 (Score 75)</option>
-                        <option value="4">Example: UC-012 to UC-015 (Score 60)</option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" disabled>
-                    <i class="fas fa-edit me-1"></i> Update Selected Links (Coming Soon)
-                </button>
+                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="psPsRelevanceForm">
+                    <div class="input-group input-group-sm mb-3">
+                        <input type="file" id="ps_ps_relevance_file" name="ps_ps_relevance_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-upload me-1"></i> Upload PS-PS</button>
+                    </div>
+                </form>
             </div>
             <div class="col-md-6">
-                <h3>Upload New / Update Existing Relevance Links via JSON</h3>
-                {# Process Step Relevance #}
-                <div class="mb-4">
-                    <h4>Process Step to Process Step</h4>
-                    <p>
-                        Required: <code>"source_process_step_bi_id"</code>, <code>"target_process_step_bi_id"</code>, <code>"relevance_score"</code> (0-100). Optional: <code>"relevance_content"</code>.<br>
-                        Example: <code>[{"source_process_step_bi_id": "PS-001", "target_process_step_bi_id": "PS-002", "relevance_score": 85, "relevance_content": "Shared dependency"}, ...]</code>
-                    </p>
-                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="psPsRelevanceForm">
-                        <div class="mb-3">
-                            <label for="ps_ps_relevance_file" class="form-label">JSON File:</label>
-                            <input type="file" id="ps_ps_relevance_file" name="ps_ps_relevance_file" accept=".json" required class="form-control">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload me-1"></i> Upload PS-PS Relevance</button>
-                    </form>
-                </div>
-
-                {# Use Case-Area Relevance #}
-                <div class="mb-4">
-                    <h4>Use Case to Area</h4>
-                    <p>
-                        Required: <code>"source_usecase_bi_id"</code>, <code>"target_area_name"</code>, <code>"relevance_score"</code> (0-100). Optional: <code>"relevance_content"</code>.<br>
-                        Example: <code>[{"source_usecase_bi_id": "UC-001", "target_area_name": "Area One", "relevance_score": 90, "relevance_content": "Strongly impacts this area"}, ...]</code>
-                    </p>
-                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseAreaRelevanceForm">
-                        <div class="mb-3">
-                            <label for="usecase_area_relevance_file" class="form-label">JSON File:</label>
-                            <input type="file" id="usecase_area_relevance_file" name="usecase_area_relevance_file" accept=".json" required class="form-control">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload me-1"></i> Upload UC-Area Relevance</button>
-                    </form>
-                </div>
-
-                {# Use Case-Step Relevance #}
-                <div class="mb-4">
-                    <h4>Use Case to Process Step</h4>
-                    <p>
-                        Required: <code>"source_usecase_bi_id"</code>, <code>"target_process_step_bi_id"</code>, <code>"relevance_score"</code> (0-100). Optional: <code>"relevance_content"</code>.<br>
-                        Example: <code>[{"source_usecase_bi_id": "UC-002", "target_process_step_bi_id": "PS-003", "relevance_score": 75, "relevance_content": "Supports this step's goals"}, ...]</code>
-                    </p>
-                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseStepRelevanceForm">
-                        <div class="mb-3">
-                            <label for="usecase_step_relevance_file" class="form-label">JSON File:</label>
-                            <input type="file" id="usecase_step_relevance_file" name="usecase_step_relevance_file" accept=".json" required class="form-control">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload me-1"></i> Upload UC-Step Relevance</button>
-                    </form>
-                </div>
-
-                {# Use Case-Use Case Relevance #}
-                <div class="mb-4">
-                    <h4>Use Case to Use Case</h4>
-                    <p>
-                        Required: <code>"source_usecase_bi_id"</code>, <code>"target_usecase_bi_id"</code>, <code>"relevance_score"</code> (0-100). Optional: <code>"relevance_content"</code>.<br>
-                        Example: <code>[{"source_usecase_bi_id": "UC-001", "target_usecase_bi_id": "UC-002", "relevance_score": 60, "relevance_content": "Shared technology dependency"}, ...]</code>
-                    </p>
-                    <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseUsecaseRelevanceForm">
-                        <div class="mb-3">
-                            <label for="usecase_usecase_relevance_file" class="form-label">JSON File:</label>
-                            <input type="file" id="usecase_usecase_relevance_file" name="usecase_usecase_relevance_file" accept=".json" required class="form-control">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload me-1"></i> Upload UC-UC Relevance</button>
-                    </form>
-                </div>
+                <h4>Use Case to Area</h4>
+                 <p class="small text-muted">
+                    Required: <code>"source_usecase_bi_id"</code>, <code>"target_area_name"</code>, <code>"relevance_score"</code>. Optional: <code>"relevance_content"</code>.
+                </p>
+                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseAreaRelevanceForm">
+                     <div class="input-group input-group-sm mb-3">
+                        <input type="file" id="usecase_area_relevance_file" name="usecase_area_relevance_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-upload me-1"></i> Upload UC-Area</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h4>Use Case to Process Step</h4>
+                 <p class="small text-muted">
+                    Required: <code>"source_usecase_bi_id"</code>, <code>"target_process_step_bi_id"</code>, <code>"relevance_score"</code>. Optional: <code>"relevance_content"</code>.
+                </p>
+                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseStepRelevanceForm">
+                    <div class="input-group input-group-sm mb-3">
+                        <input type="file" id="usecase_step_relevance_file" name="usecase_step_relevance_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-upload me-1"></i> Upload UC-Step</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h4>Use Case to Use Case</h4>
+                <p class="small text-muted">
+                    Required: <code>"source_usecase_bi_id"</code>, <code>"target_usecase_bi_id"</code>, <code>"relevance_score"</code>. Optional: <code>"relevance_content"</code>.
+                </p>
+                <form action="{{ url_for('injection.data_update_page') }}" method="post" enctype="multipart/form-data" id="usecaseUsecaseRelevanceForm">
+                    <div class="input-group input-group-sm mb-3">
+                        <input type="file" id="usecase_usecase_relevance_file" name="usecase_usecase_relevance_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-upload me-1"></i> Upload UC-UC</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
-// Keep existing form submission logs as before
-document.getElementById('areaForm').onsubmit = function() {
-    console.log('Area upload form submitted');
-    return true;
-};
+    // Macro definition is now at the top of the content block
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... (Keep existing form submission logs) ...
+        const databaseImportForm = document.getElementById('databaseImportForm');
+        if (databaseImportForm) {
+            databaseImportForm.onsubmit = function() { console.log('Database import form submitted'); return true; };
+        }
+        const stepUploadForm = document.getElementById('stepUploadForm');
+        if (stepUploadForm) {
+             stepUploadForm.onsubmit = function() { console.log('Step upload form submitted'); return true; };
+        }
+        const usecaseUploadForm = document.getElementById('usecaseUploadForm');
+        if(usecaseUploadForm) {
+            usecaseUploadForm.onsubmit = function() { console.log('Use Case upload form submitted'); return true; };
+        }
+        const psPsRelevanceForm = document.getElementById('psPsRelevanceForm');
+        if (psPsRelevanceForm) {
+            psPsRelevanceForm.onsubmit = function() { console.log('PS-PS Relevance upload form submitted'); return true; };
+        }
+        const usecaseAreaRelevanceForm = document.getElementById('usecaseAreaRelevanceForm');
+        if (usecaseAreaRelevanceForm) {
+            usecaseAreaRelevanceForm.onsubmit = function() { console.log('UC-Area Relevance upload form submitted'); return true; };
+        }
+        const usecaseStepRelevanceForm = document.getElementById('usecaseStepRelevanceForm');
+        if (usecaseStepRelevanceForm) {
+            usecaseStepRelevanceForm.onsubmit = function() { console.log('UC-Step Relevance form submitted'); return true; };
+        }
+        const usecaseUsecaseRelevanceForm = document.getElementById('usecaseUsecaseRelevanceForm');
+        if (usecaseUsecaseRelevanceForm) {
+            usecaseUsecaseRelevanceForm.onsubmit = function() { console.log('UC-UC Relevance form submitted'); return true; };
+        }
 
-document.getElementById('usecaseForm').onsubmit = function() {
-    console.log('Use Case upload form submitted');
-    return true;
-};
+        // --- Logic for "Prepare Steps for Update" (remains the same) ---
+        const prepareStepsBtn = document.getElementById('prepareStepsBtn');
+        const prepareStepsForm = document.getElementById('prepareStepsForm');
+        const selectedStepsHiddenInput = document.getElementById('selected_update_steps_ids_hidden');
+        const selectAllStepsCheckbox = document.getElementById('selectAllStepsCheckbox');
+        const stepCheckboxes = document.querySelectorAll('.step-checkbox');
 
-document.getElementById('psPsRelevanceForm').onsubmit = function() {
-    console.log('Process Step Relevance upload form submitted');
-    return true;
-};
+        if (prepareStepsBtn && prepareStepsForm && selectedStepsHiddenInput) {
+            prepareStepsBtn.addEventListener('click', function() {
+                const selectedIds = Array.from(document.querySelectorAll('.step-checkbox:checked'))
+                                    .map(cb => cb.value);
+                if (selectedIds.length === 0) {
+                    alert('Please select at least one process step to update.');
+                    return;
+                }
+                selectedStepsHiddenInput.value = selectedIds.join(',');
+                console.log('Preparing steps for update. IDs:', selectedStepsHiddenInput.value);
+                prepareStepsForm.submit();
+            });
+        }
+        if (selectAllStepsCheckbox && stepCheckboxes.length > 0) {
+            selectAllStepsCheckbox.addEventListener('change', function() {
+                stepCheckboxes.forEach(cb => {
+                    if (cb.closest('tr').style.display !== 'none') { // Only (un)check visible rows
+                        cb.checked = this.checked;
+                    }
+                });
+            });
+        }
 
-document.getElementById('usecaseAreaRelevanceForm').onsubmit = function() {
-    console.log('Use Case-Area Relevance upload form submitted');
-    return true;
-};
+        // --- Logic for "Prepare Use Cases for Update" (remains the same) ---
+        const prepareUsecasesBtn = document.getElementById('prepareUsecasesBtn');
+        const prepareUsecasesForm = document.getElementById('prepareUsecasesForm');
+        const selectedUsecasesHiddenInput = document.getElementById('selected_update_usecases_ids_hidden');
+        const selectAllUsecasesCheckbox = document.getElementById('selectAllUsecasesCheckbox');
+        const usecaseCheckboxes = document.querySelectorAll('.usecase-checkbox');
 
-document.getElementById('usecaseStepRelevanceForm').onsubmit = function() {
-    console.log('Use Case-Process Step Relevance form submitted');
-    return true;
-};
+        if (prepareUsecasesBtn && prepareUsecasesForm && selectedUsecasesHiddenInput) {
+            prepareUsecasesBtn.addEventListener('click', function() {
+                const selectedIds = Array.from(document.querySelectorAll('.usecase-checkbox:checked'))
+                                    .map(cb => cb.value);
+                if (selectedIds.length === 0) {
+                    alert('Please select at least one use case to update.');
+                    return;
+                }
+                selectedUsecasesHiddenInput.value = selectedIds.join(',');
+                console.log('Preparing use cases for update. IDs:', selectedUsecasesHiddenInput.value);
+                prepareUsecasesForm.submit();
+            });
+        }
+         if (selectAllUsecasesCheckbox && usecaseCheckboxes.length > 0) {
+            selectAllUsecasesCheckbox.addEventListener('change', function() {
+                usecaseCheckboxes.forEach(cb => {
+                    if (cb.closest('tr').style.display !== 'none') { // Only (un)check visible rows
+                        cb.checked = this.checked;
+                    }
+                });
+            });
+        }
 
-document.getElementById('usecaseUsecaseRelevanceForm').onsubmit = function() {
-    console.log('Use Case-Use Case Relevance form submitted');
-    return true;
-};
+        // --- Logic for Area Filter Tabs (Process Steps table) ---
+        const stepAreaFilterTabsContainer = document.getElementById('stepAreaFilterTabs');
+        const processStepsTable = document.getElementById('processStepsTable');
+        
+        if (stepAreaFilterTabsContainer && processStepsTable) {
+            const stepTableRows = processStepsTable.querySelectorAll('tbody tr');
 
-// NEW: JS log for Step preparation form
-document.querySelector('#selected_update_steps').closest('form').onsubmit = function() {
-    console.log('Prepare Steps for Update form submitted');
-    return true;
-};
+            stepAreaFilterTabsContainer.addEventListener('click', function(event) {
+                const clickedButton = event.target.closest('button.btn'); // Ensure we're targeting a button
+                if (!clickedButton || !clickedButton.dataset.areaId) return; // Exit if not a filter button
 
-// NEW: JS log for Use Case preparation form
-document.querySelector('#selected_update_usecases').closest('form').onsubmit = function() {
-    console.log('Prepare Use Cases for Update form submitted');
-    return true;
-};
+                stepAreaFilterTabsContainer.querySelectorAll('button.btn').forEach(btn => btn.classList.remove('active'));
+                clickedButton.classList.add('active');
 
+                const selectedAreaId = clickedButton.dataset.areaId;
+
+                stepTableRows.forEach(row => {
+                    const rowAreaId = row.dataset.stepAreaId;
+                    if (selectedAreaId === 'all' || rowAreaId === selectedAreaId) {
+                        row.style.display = ''; 
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                if (selectAllStepsCheckbox) selectAllStepsCheckbox.checked = false; // Uncheck "Select All"
+            });
+        }
+        
+        // You can add similar tab filtering for the Use Cases table if needed.
+        // Get references to the Use Case table and create a new tab container for it.
+        // The logic would be very similar, filtering on `data-uc-area-id`.
+
+    });
 </script>
-{# NEW: Include the page-specific UI script #}
-<script src="{{ url_for('static', filename='js/data_update_page_ui.js') }}"></script>
 {% endblock %}

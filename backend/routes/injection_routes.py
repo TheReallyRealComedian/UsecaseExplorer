@@ -16,7 +16,7 @@ from ..injection_service import (
     process_usecase_step_relevance_file,
     process_usecase_usecase_relevance_file,
     import_database_from_json,
-    finalize_step_import # Import the new finalize service function
+    finalize_step_import
 )
 from ..db import SessionLocal
 from ..utils import serialize_for_js
@@ -95,38 +95,35 @@ def data_update_page():
     print("---------------------------------------------------------")
 
     session_db = SessionLocal()
-    all_areas = []
-    all_steps = []
-    all_usecases = []
-
-    all_area_names = []
-    all_step_names = []
-    all_usecase_names = []
+    all_steps_for_table = []
+    all_usecases_for_table = []
+    all_areas_for_filters_list = [] # For the new tabs
 
     all_areas_flat = []
     all_steps_flat = []
     all_usecases_flat = []
 
     try:
-        all_areas = session_db.query(Area).order_by(Area.name).all()
-        all_steps = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.id).all()
-        all_usecases = session_db.query(UseCase).options(
+        all_steps_for_table = session_db.query(ProcessStep).options(
+            joinedload(ProcessStep.area),
+            joinedload(ProcessStep.use_cases)
+        ).order_by(ProcessStep.area_id, ProcessStep.name).all()
+
+        all_usecases_for_table = session_db.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
-        ).order_by(UseCase.id).all()
+        ).order_by(UseCase.process_step_id, UseCase.name).all()
+        
+        # Fetch areas specifically for the filter tabs
+        all_areas_for_filters_list = session_db.query(Area).order_by(Area.name).all()
 
-        all_area_names = sorted(list(set([area.name for area in all_areas])))
-        all_step_names = sorted(list(set([step.name for step in all_steps])))
-        all_usecase_names = sorted(list(set([uc.name for uc in all_usecases])))
-
-        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_areas_flat = serialize_for_js(all_areas_for_filters_list, 'area') # Use the same query
         all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
     except Exception as e:
         print(f"Error loading initial data for data_update_page: {e}")
-        flash("Error loading data for selection. Please try again.", "danger")
+        flash("Error loading data. Please try again.", "danger")
     finally:
-        # SessionLocal.remove() # Handled by app.teardown_request
         pass
 
     if request.method == 'POST':
@@ -139,12 +136,10 @@ def data_update_page():
                 if file and '.' in file.filename and \
                    file.filename.rsplit('.', 1)[1].lower() == 'json':
                     result = process_area_file(file.stream)
-                    # Flash main message
                     flash(result['message'], 'success' if result['success'] else 'danger')
-                    # Flash detailed messages for skipped items if any
                     if result.get('skipped_errors_details'):
                         for i, detail in enumerate(result['skipped_errors_details']):
-                            if i < 5: # Limit to first 5 for brevity in flash, prompt to check logs
+                            if i < 5:
                                 flash(f"Skipped Area: {detail}", "warning")
                             else:
                                 flash(f"And {len(result['skipped_errors_details']) - i} more. Check server logs for full details on skipped areas.", "warning")
@@ -164,7 +159,7 @@ def data_update_page():
                     file_content_str = file.read().decode('utf-8')
                     try:
                         parsed_json_data = json.loads(file_content_str)
-                    except json.JSONDecodeError as e: # Catch JSONDecodeError specifically here
+                    except json.JSONDecodeError as e:
                         flash(f'Invalid JSON format in the uploaded file: {e}.', 'danger')
                         return redirect(request.url)
                     
@@ -193,15 +188,13 @@ def data_update_page():
                 if file and '.' in file.filename and \
                    file.filename.rsplit('.', 1)[1].lower() == 'json':
                     result = process_usecase_file(file.stream)
-                    # Flash main message based on overall outcome
                     flash_category = 'success'
                     if not result['success']:
                         flash_category = 'danger'
-                    elif result['skipped_count'] > 0: # If there are any skips, it's at least a warning
+                    elif result['skipped_count'] > 0:
                         flash_category = 'warning'
                     flash(result['message'], flash_category)
                     
-                    # Flash detailed skipped messages
                     if result.get('skipped_invalid_format') > 0:
                         flash(f"Invalid format or missing required fields: {result['skipped_invalid_format']} items skipped.", "warning")
                     if result.get('skipped_missing_step') > 0:
@@ -213,7 +206,7 @@ def data_update_page():
                     if result.get('skipped_errors_details'):
                         for i, detail in enumerate(result['skipped_errors_details']):
                             if i < 5:
-                                flash(f"Skipped Use Case detail: {detail}", "info") # Use 'info' for less critical per-item details
+                                flash(f"Skipped Use Case detail: {detail}", "info")
                             else:
                                 flash(f"And {len(result['skipped_errors_details']) - i} more. Check server logs for full details on skipped use cases.", "info")
                                 break
@@ -372,7 +365,7 @@ def data_update_page():
                 return redirect(request.url)
 
             else:
-                flash('No file submitted or unknown form field.', 'warning')
+                flash('No file submitted or unknown action.', 'warning')
                 return redirect(request.url)
 
         except Exception as e:
@@ -382,14 +375,10 @@ def data_update_page():
 
     return render_template(
         'data_update.html',
-        title='Data Update',
-        all_areas=all_areas,
-        all_steps=all_steps,
-        all_usecases=all_usecases,
-        default_select_size=DEFAULT_SELECT_SIZE,
-        all_area_names=all_area_names,
-        all_step_names=all_step_names,
-        all_usecase_names=all_usecase_names,
+        title='Data Update & Management',
+        all_steps=all_steps_for_table,
+        all_usecases=all_usecases_for_table,
+        all_areas_for_filters=all_areas_for_filters_list,
         current_item=None,
         current_area=None,
         current_step=None,
@@ -399,14 +388,19 @@ def data_update_page():
         all_usecases_flat=all_usecases_flat
     )
 
-# --- NEW ROUTES FOR BULK EDITING STEPS ---
+# --- ROUTES FOR BULK EDITING STEPS ---
 
 @injection_routes.route('/steps/prepare-for-edit', methods=['POST'])
 @login_required
 def prepare_steps_for_edit():
-    selected_step_ids = request.form.getlist('selected_update_steps')
-    if not selected_step_ids:
+    selected_step_ids_str = request.form.get('selected_update_steps_ids')
+    if not selected_step_ids_str:
         flash("No process steps selected for update.", "warning")
+        return redirect(url_for('injection.data_update_page'))
+
+    selected_step_ids = [int(id_val) for id_val in selected_step_ids_str.split(',') if id_val.isdigit()]
+    if not selected_step_ids:
+        flash("Invalid selection of process steps.", "warning")
         return redirect(url_for('injection.data_update_page'))
 
     session_db = SessionLocal()
@@ -419,7 +413,6 @@ def prepare_steps_for_edit():
             flash("Selected process steps not found.", "warning")
             return redirect(url_for('injection.data_update_page'))
 
-        # Prepare data structure for the frontend
         prepared_data_for_edit = []
         for step in steps_to_edit:
             item_data = {
@@ -428,23 +421,20 @@ def prepare_steps_for_edit():
                 'bi_id': step.bi_id,
                 'current_area_id': step.area_id,
                 'current_area_name': step.area.name if step.area else 'N/A',
-                # Initialize current values for all editable fields
                 **{f'current_{key}': getattr(step, key) for key in PROCESS_STEP_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'area_id']},
                 'new_values': {
-                    'name': step.name, # Default new value to current value
+                    'name': step.name,
                     'bi_id': step.bi_id,
                     'area_id': step.area_id,
                     **{key: getattr(step, key) for key in PROCESS_STEP_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'area_id']}
                 }
             }
-            # Clean up new_values: replace empty strings with None, and strip whitespace from strings
             for key, value in item_data['new_values'].items():
                 if isinstance(value, str):
                     item_data['new_values'][key] = value.strip() or None
-                if value == "": # Handle explicit empty string becoming None
+                if value == "":
                      item_data['new_values'][key] = None
             
-            # Clean up current_ values similarly for consistent comparison in JS
             for key, value in item_data.items():
                 if key.startswith('current_') and isinstance(value, str):
                     item_data[key] = value.strip() or None
@@ -473,11 +463,9 @@ def edit_multiple_steps():
     session_db = SessionLocal()
     try:
         all_areas = session_db.query(Area).order_by(Area.name).all()
-        # NEW BREADCRUMB DATA FETCHING (for consistency across all routes)
         all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
         
         return render_template(
             'edit_multiple_steps.html',
@@ -522,18 +510,13 @@ def save_all_steps_changes():
                 failed_updates.append({"id": step_id, "error": "Step not found."})
                 continue
             
-            # Keep track of original values for comparison in flash messages
-            # original_values = {field: getattr(step, field) for field in updated_fields.keys()} # Not used in final response
-
             for field, new_value in updated_fields.items():
                 if field == 'area_id':
-                    # Ensure area exists before assigning
                     area_exists = session_db.query(Area).filter_by(id=new_value).first()
                     if not area_exists:
                         failed_updates.append({"id": step_id, "field": field, "value": new_value, "error": f"Area ID {new_value} not found."})
                         continue
                 elif field == 'bi_id':
-                     # Ensure BI_ID uniqueness if changed
                     existing_bi_id_step = session_db.query(ProcessStep).filter(
                         ProcessStep.bi_id == new_value,
                         ProcessStep.id != step_id
@@ -544,7 +527,7 @@ def save_all_steps_changes():
 
                 setattr(step, field, new_value)
             
-            session_db.add(step) # Add to session if not already tracked or to mark as dirty
+            session_db.add(step)
             successful_updates += 1
         
         session_db.commit()
@@ -570,14 +553,19 @@ def save_all_steps_changes():
         SessionLocal.remove()
 
 
-# --- NEW ROUTES FOR BULK EDITING USE CASES ---
+# --- ROUTES FOR BULK EDITING USE CASES ---
 
 @injection_routes.route('/usecases/prepare-for-edit', methods=['POST'])
 @login_required
 def prepare_usecases_for_edit():
-    selected_usecase_ids = request.form.getlist('selected_update_usecases')
-    if not selected_usecase_ids:
+    selected_usecase_ids_str = request.form.get('selected_update_usecases_ids')
+    if not selected_usecase_ids_str:
         flash("No use cases selected for update.", "warning")
+        return redirect(url_for('injection.data_update_page'))
+    
+    selected_usecase_ids = [int(id_val) for id_val in selected_usecase_ids_str.split(',') if id_val.isdigit()]
+    if not selected_usecase_ids:
+        flash("Invalid selection of use cases.", "warning")
         return redirect(url_for('injection.data_update_page'))
 
     session_db = SessionLocal()
@@ -599,7 +587,6 @@ def prepare_usecases_for_edit():
                 'current_process_step_id': uc.process_step_id,
                 'current_process_step_name': uc.process_step.name if uc.process_step else 'N/A',
                 'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A',
-                # Initialize current values for all editable fields
                 **{f'current_{key}': getattr(uc, key) for key in PROCESS_USECASE_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'process_step_id']},
                 'new_values': {
                     'name': uc.name,
@@ -608,7 +595,6 @@ def prepare_usecases_for_edit():
                     **{key: getattr(uc, key) for key in PROCESS_USECASE_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'process_step_id']}
                 }
             }
-            # Clean up new_values and current_ values
             for key, value in item_data['new_values'].items():
                 if isinstance(value, str):
                     item_data['new_values'][key] = value.strip() or None
@@ -643,11 +629,9 @@ def edit_multiple_usecases():
     session_db = SessionLocal()
     try:
         all_steps = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
-        # NEW BREADCRUMB DATA FETCHING (for consistency)
         all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
         
         return render_template(
             'edit_multiple_usecases.html',
@@ -694,13 +678,11 @@ def save_all_usecases_changes():
             
             for field, new_value in updated_fields.items():
                 if field == 'process_step_id':
-                    # Ensure process step exists before assigning
                     step_exists = session_db.query(ProcessStep).filter_by(id=new_value).first()
                     if not step_exists:
                         failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": f"Process Step ID {new_value} not found."})
                         continue
                 elif field == 'bi_id':
-                     # Ensure BI_ID uniqueness if changed
                     existing_bi_id_uc = session_db.query(UseCase).filter(
                         UseCase.bi_id == new_value,
                         UseCase.id != uc_id
@@ -720,8 +702,8 @@ def save_all_usecases_changes():
                             failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": "Invalid priority format (not an integer)."})
                             continue
                     else:
-                        setattr(uc, field, None) # Allow setting to null/None
-                    continue # Skip general setattr below for priority
+                        setattr(uc, field, None)
+                    continue
 
                 setattr(uc, field, new_value)
             
@@ -741,7 +723,6 @@ def save_all_usecases_changes():
 
     except IntegrityError as e:
         session_db.rollback()
-        # Check specific constraints for more user-friendly messages
         if 'priority_range_check' in str(e):
             return jsonify(success=False, message="Database error: Priority must be between 1 and 4, or empty.", failed_updates=failed_updates), 500
         return jsonify(success=False, message=f"Database integrity error: {e}. Changes rolled back.", failed_updates=failed_updates), 500
@@ -754,9 +735,8 @@ def save_all_usecases_changes():
         SessionLocal.remove()
 
 
-# --- NEW ROUTES FOR STEP INJECTION PREVIEW AND FINALIZATION ---
+# --- ROUTES FOR STEP INJECTION PREVIEW AND FINALIZATION ---
 
-# Route to display the preview of step injections
 @injection_routes.route('/steps/injection-preview')
 @login_required
 def preview_steps_injection():
@@ -768,18 +748,16 @@ def preview_steps_injection():
     session_db = SessionLocal()
     try:
         all_areas = session_db.query(Area).order_by(Area.name).all()
-        # NEW BREADCRUMB DATA FETCHING (for consistency)
         all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
 
         return render_template(
             'step_injection_preview.html',
             title='Process Step Import Preview',
             preview_data=preview_data,
             all_areas=all_areas,
-            step_detail_fields=STEP_DETAIL_FIELDS, # For the modal
+            step_detail_fields=STEP_DETAIL_FIELDS,
             current_item=None,
             current_area=None,
             current_step=None,
@@ -795,7 +773,6 @@ def preview_steps_injection():
     finally:
         SessionLocal.remove()
 
-# API endpoint to finalize the step import (called by JS from preview page)
 @injection_routes.route('/steps/finalize', methods=['POST'])
 @login_required
 def finalize_steps_import():
@@ -805,12 +782,9 @@ def finalize_steps_import():
 
     result = finalize_step_import(resolved_steps_data)
     if result['success']:
-        # Clear the session data after successful finalization
         session.pop('step_import_preview_data', None)
         flash(f"Process Step import complete: Added {result.get('added_count', 0)}, Updated {result.get('updated_count', 0)}, Skipped {result.get('skipped_count', 0)}, Failed {result.get('failed_count', 0)}.", "success")
         return jsonify(result), 200
     else:
-        # If there was an overall failure in the service, keep data in session
-        # And flash specific message for the user.
         flash(f"Finalizing import failed: {result['message']}", "danger")
         return jsonify(result), 500

@@ -92,7 +92,7 @@
 <script>
     // Pass initial data to JavaScript for client-side processing
     const INITIAL_STEPS_DATA = {{ steps_data | tojson | safe }};
-    const ALL_AREAS_DATA_FOR_DROPDOWN = {{ all_areas | tojson | safe }};
+    const ALL_AREAS_DATA_FOR_DROPDOWN = {{ all_areas_flat | tojson | safe }};
     const EDITABLE_FIELDS_CONFIG = {{ editable_fields | tojson | safe }};
 </script>
 <script>
