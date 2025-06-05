@@ -3,10 +3,95 @@
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
 {% block content %}
+<style>
+    .table th.sortable {
+        cursor: pointer;
+    }
+    .table th.sortable:hover {
+        background-color: #f0f0f0;
+    }
+    .table th.sorted-asc::after {
+        content: " ▲";
+        font-size: 0.8em;
+    }
+    .table th.sorted-desc::after {
+        content: " ▼";
+        font-size: 0.8em;
+    }
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+    .filter-controls {
+        gap: 0.5rem; /* Spacing between filter dropdowns */
+    }
+    .filter-dropdown-container {
+        position: relative;
+    }
+    .filter-dropdown-toggle .filter-indicator {
+        font-size: 0.8em;
+        color: #007bff;
+    }
+    .filter-dropdown-menu {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border: 1px solid #ddd;
+        z-index: 1000;
+        min-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-bottom: 0.5rem;
+    }
+    .filter-dropdown-menu.show {
+        display: block;
+    }
+    .filter-options-list label {
+        display: block;
+        padding: 0.25rem 0.75rem;
+        font-weight: normal;
+        white-space: nowrap;
+    }
+    .filter-options-list label:hover {
+        background-color: #f0f0f0;
+    }
+    .filter-options-list input[type="checkbox"] {
+        margin-right: 0.5em;
+    }
+    .filter-actions {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #eee;
+    }
+    .filter-actions .btn-link {
+        text-decoration: none;
+    }
+</style>
+
 <div class="container">
     <div class="header">
         <h1>{{ title }}</h1>
         <p>A comprehensive digital transformation roadmap</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        {% if areas %}
+            {% for area in areas | sort(attribute='name') %}
+                {% set area_id_str = area.name | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") | replace('"', "") %}
+                <button class="tab-button {% if loop.first %}active{% endif %}" onclick="showTab('{{ area_id_str }}', this)">
+                    {{ area.name }} 
+                    <span class="tab-badge">
+                        {% set uc_count = namespace(value=0) %}
+                        {% for step in area.process_steps %}
+                            {% set uc_count.value = uc_count.value + (step.use_cases | length) %}
+                        {% endfor %}
+                        {{ uc_count.value }}
+                    </span>
+                </button>
+            {% endfor %}
+        {% else %}
+             <p class="text-muted text-center p-3">No areas found.</p>
+        {% endif %}
     </div>
 
     {% set area_style_map = {
@@ -21,74 +106,95 @@
         "Supply Chain Management": "supply-chain"
     } %}
 
-    {# Macro to sanitize area names for use as valid HTML IDs and CSS classes.
-       Note the {{- ... -}} to strip whitespace from the macro's output block itself. #}
-    {% macro get_sanitized_id(area_name) %}
-        {{- area_name | replace('\n', '') | replace('\r', '') | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") | replace('"', "") -}}
+    {% macro map_priority_to_benefit(priority_val) %}
+        {% if priority_val == 1 %}High
+        {% elif priority_val == 2 %}Medium
+        {% elif priority_val == 3 %}Low
+        {% else %}N/A{% endif %}
     {% endmacro %}
 
-    <!-- Tab Navigation -->
-    <div class="tab-navigation">
-        {% if areas %}
-            {% for area in areas | sort(attribute='name') %}
-                {% set area_id_str = get_sanitized_id(area.name) %}
-                {# Use {{- ... -}} to strip whitespace around the variable inside the attribute value #}
-                <button class="tab-button {% if loop.first %}active{% endif %}" onclick="showTab('{{- area_id_str -}}', this)">
-                    {{ area.name }} <span class="tab-badge">{{ area.process_steps | length }}</span>
-                </button>
-            {% endfor %}
-        {% else %}
-             <p class="text-muted text-center p-3">No areas found.</p>
-        {% endif %}
+    <!-- Global Filter Controls -->
+    <div class="filter-controls d-flex flex-wrap align-items-center mb-3 mt-3">
+        {% set filter_columns = [
+            ("Step BI_ID", 0), ("Step Name", 1), ("UC BI_ID", 2), 
+            ("Use Case", 3), ("Benefit", 4), ("Effort", 5), ("Wave", 6)
+        ] %}
+        {% for col_name, col_idx in filter_columns %}
+        <div class="filter-dropdown-container" data-column-index="{{ col_idx }}">
+            <button class="btn btn-sm btn-outline-secondary filter-dropdown-toggle" type="button">
+                {{ col_name }} <span class="filter-indicator"></span> <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="filter-dropdown-menu shadow-sm">
+                <div class="filter-actions">
+                    <button type="button" class="btn btn-sm btn-link p-0 select-all-action">Select All</button> |
+                    <button type="button" class="btn btn-sm btn-link p-0 clear-selection-action">Clear</button>
+                </div>
+                <div class="filter-options-list">
+                    <!-- Checkboxes dynamically populated -->
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="ms-auto"><button class="btn btn-sm btn-danger" id="clear-all-filters-btn">Clear All Filters</button></div>
     </div>
+
 
     <!-- Tab Content -->
     {% if areas %}
         {% for area in areas | sort(attribute='name') %}
-            {% set area_id = get_sanitized_id(area.name) %}
-            {# Use {{- ... -}} to strip whitespace around the variable inside the attribute value #}
-                <div class="tab-content {% if loop.first %}active{% endif %} {{ area_style_map.get(area.name, 'default-color') }}" id="{{- area_id -}}">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h3>Steps in {{ area.name }}</h3>
-                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}" class="btn btn-sm btn-info">View Full Area Details</a>
-                    </div>                {% if area.process_steps %}
-                    <div class="cards-grid">
-                        {% for step in area.process_steps | sort(attribute='name') %}
-                            <div class="process-card" onclick="toggleCard(this)">
-                                <div class="card-header">
-                                    {# card-number: Use loop.index for sequential numbering within the tab #}
-                                    <div class="card-number">{{ loop.index | string | zfill(2) }}</div>
-                                    <div class="step-badge">
-                                        {# --- MODIFIED LINE --- #}
-                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="text-decoration-none" style="color: inherit;">
-                                            Step ID: {{ step.id }}, BI_ID: {{ step.bi_id }}
-                                        </a>
-                                        {# --- END MODIFICATION --- #}
-                                    </div>
-                                    <div class="card-title">{{ step.name }}</div>
-                                    <div class="card-subtitle">{{ step.step_description | truncate(80, true) | default('No description.', true) }}</div>
-                                    <div class="expand-indicator">▼</div>
-                                </div>
-                                <div class="card-content">
-                                    {% if step.use_cases %}
-                                        {% for use_case in step.use_cases | sort(attribute='name') %}
-                                            <a href="{{ url_for('usecases.view_usecase', usecase_id=use_case.id) }}" class="sub-process">
-                                                <div class="sub-process-title">{{ use_case.name }}</div>
-                                                <div class="sub-process-id">UC ID: {{ use_case.id }}, BI_ID: {{ use_case.bi_id }}</div>
-                                            </a>
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="no-use-cases">No use cases found for this process step.</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
+            {% set area_id = area.name | lower | replace(' ', '-') | replace('&', 'and') | replace('/', '-') | replace('(', '') | replace(')', '') | replace('.', '') | replace(',', '') | replace(':', '') | replace(';', '') | replace("'", "") | replace('"', "") %}
+            <div class="tab-content {% if loop.first %}active{% endif %} {{ area_style_map.get(area.name, 'default-color') }}" id="{{- area_id -}}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Use Cases and Steps in {{ area.name }}</h3>
+                    <a href="{{ url_for('areas.view_area', area_id=area.id) }}" class="btn btn-sm btn-info">View Full Area Details</a>
+                </div>
+                {% set has_content = namespace(value=false) %}
+                {% for step in area.process_steps %}{% if step.use_cases %}{% set has_content.value = true %}{% endif %}{% endfor %}
+
+                {% if has_content.value %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover sortable-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="sortable" data-sort-key="step_bi_id">Process Step BI_ID</th>
+                                <th class="sortable" data-sort-key="step_name">Step Name</th>
+                                <th class="sortable" data-sort-key="uc_bi_id">UC BI_ID</th>
+                                <th class="sortable" data-sort-key="uc_name">Use Case</th>
+                                <th class="sortable" data-sort-key="benefit">Benefit</th>
+                                <th class="sortable" data-sort-key="effort">Effort</th>
+                                <th class="sortable" data-sort-key="wave">Wave</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in area.process_steps | sort(attribute='name') %}
+                                {% for uc in step.use_cases | sort(attribute='name') %}
+                                    <tr>
+                                        <td>{{ step.bi_id }}</td>
+                                        <td><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></td>
+                                        <td>{{ uc.bi_id }}</td>
+                                        <td><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
+                                        <td data-sort-value="{{ uc.priority | default(99) }}">{{ uc.quality_improvement_quant | default(map_priority_to_benefit(uc.priority), true) }}</td>
+                                        <td>{{ uc.effort_level | default('N/A', true) }}</td>
+                                        <td>{{ uc.wave | default('N/A', true) }}</td>
+                                        <td>
+                                            <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
+                                            <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this use case?');">
+                                                <input type="hidden" name="redirect_to_area_overview" value="{{ area.id }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
                 {% else %}
-                    <div class="empty-state">
-                        <h3>{{ area.name }}</h3>
-                        <p>No process steps found for this area.</p>
-                    </div>
+                <div class="empty-state">
+                    <h3>{{ area.name }}</h3>
+                    <p>No process steps or use cases found for this area.</p>
+                </div>
                 {% endif %}
             </div>
         {% endfor %}
@@ -99,4 +205,272 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterDropdownContainers = document.querySelectorAll('.filter-dropdown-container');
+    const clearAllFiltersButton = document.getElementById('clear-all-filters-btn');
+    let activeFiltersState = {}; // To store selected options for each column
+
+    function getActiveTable() {
+        return document.querySelector('.tab-content.active .sortable-table');
+    }
+
+    function populateFilterDropdown(container, table) {
+        const columnIndex = parseInt(container.dataset.columnIndex);
+        const optionsList = container.querySelector('.filter-options-list');
+        optionsList.innerHTML = ''; // Clear existing options
+
+        if (!table || !table.tBodies[0]) return;
+
+        const uniqueValues = new Set();
+        Array.from(table.tBodies[0].rows).forEach(row => {
+            if (row.cells[columnIndex]) {
+                // Use data-sort-value if present for filtering, otherwise textContent
+                const cellValue = (row.cells[columnIndex].dataset.sortValue || row.cells[columnIndex].textContent || "").trim();
+                if (cellValue) {
+                    uniqueValues.add(cellValue);
+                }
+            }
+        });
+
+        const sortedValues = Array.from(uniqueValues).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        
+        // Restore selections if they exist for this column
+        const currentSelections = activeFiltersState[columnIndex] || new Set();
+
+        sortedValues.forEach(value => {
+            const checkboxId = `filter-${columnIndex}-${value.replace(/\s+/g, '-')}`;
+            const listItem = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = value;
+            checkbox.id = checkboxId;
+            checkbox.checked = currentSelections.has(value); // Restore checked state
+            
+            checkbox.addEventListener('change', () => {
+                updateActiveFilterState(columnIndex, value, checkbox.checked);
+                applyFiltersToActiveTable();
+                updateFilterIndicator(container);
+            });
+
+            listItem.appendChild(checkbox);
+            listItem.appendChild(document.createTextNode(" " + value));
+            optionsList.appendChild(listItem);
+        });
+        updateFilterIndicator(container); // Update indicator after populating
+    }
+    
+    function updateActiveFilterState(columnIndex, value, isSelected) {
+        if (!activeFiltersState[columnIndex]) {
+            activeFiltersState[columnIndex] = new Set();
+        }
+        if (isSelected) {
+            activeFiltersState[columnIndex].add(value);
+        } else {
+            activeFiltersState[columnIndex].delete(value);
+        }
+    }
+
+    function updateAllFilterDropdowns() {
+        const activeTable = getActiveTable();
+        if (!activeTable) return;
+        filterDropdownContainers.forEach(container => {
+            populateFilterDropdown(container, activeTable);
+        });
+    }
+
+    function updateFilterIndicator(container) {
+        const columnIndex = parseInt(container.dataset.columnIndex);
+        const indicator = container.querySelector('.filter-indicator');
+        const selections = activeFiltersState[columnIndex];
+        if (selections && selections.size > 0) {
+            indicator.textContent = `(${selections.size})`;
+        } else {
+            indicator.textContent = '';
+        }
+    }
+
+    function applyFiltersToActiveTable() {
+        const table = getActiveTable();
+        if (!table || !table.tBodies[0]) return;
+
+        const rows = Array.from(table.tBodies[0].rows);
+
+        rows.forEach(row => {
+            let isVisible = true;
+            for (const colIdxStr in activeFiltersState) {
+                const columnIndex = parseInt(colIdxStr);
+                const selectedValues = activeFiltersState[columnIndex];
+                
+                if (selectedValues && selectedValues.size > 0) { // Only filter if specific items are selected
+                    if (row.cells[columnIndex]) {
+                        const cellValue = (row.cells[columnIndex].dataset.sortValue || row.cells[columnIndex].textContent || "").trim();
+                        if (!selectedValues.has(cellValue)) {
+                            isVisible = false;
+                            break; 
+                        }
+                    } else { // Row doesn't have this cell, so it can't match
+                        isVisible = false;
+                        break;
+                    }
+                }
+            }
+            row.style.display = isVisible ? '' : 'none';
+        });
+    }
+
+    filterDropdownContainers.forEach(container => {
+        const toggleButton = container.querySelector('.filter-dropdown-toggle');
+        const dropdownMenu = container.querySelector('.filter-dropdown-menu');
+        const selectAllButton = container.querySelector('.select-all-action');
+        const clearSelectionButton = container.querySelector('.clear-selection-action');
+        const columnIndex = parseInt(container.dataset.columnIndex);
+
+        toggleButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            // Close other open dropdowns
+            filterDropdownContainers.forEach(otherContainer => {
+                if (otherContainer !== container) {
+                    otherContainer.querySelector('.filter-dropdown-menu').classList.remove('show');
+                }
+            });
+            dropdownMenu.classList.toggle('show');
+        });
+
+        selectAllButton.addEventListener('click', () => {
+            const checkboxes = container.querySelectorAll('.filter-options-list input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+                updateActiveFilterState(columnIndex, cb.value, true);
+            });
+            applyFiltersToActiveTable();
+            updateFilterIndicator(container);
+        });
+
+        clearSelectionButton.addEventListener('click', () => {
+            const checkboxes = container.querySelectorAll('.filter-options-list input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                updateActiveFilterState(columnIndex, cb.value, false);
+            });
+            applyFiltersToActiveTable();
+            updateFilterIndicator(container);
+        });
+    });
+
+    // Close dropdowns if clicking outside
+    document.addEventListener('click', (event) => {
+        filterDropdownContainers.forEach(container => {
+            if (!container.contains(event.target)) {
+                container.querySelector('.filter-dropdown-menu').classList.remove('show');
+            }
+        });
+    });
+
+    if (clearAllFiltersButton) {
+        clearAllFiltersButton.addEventListener('click', () => {
+            activeFiltersState = {}; // Clear all stored selections
+            filterDropdownContainers.forEach(container => {
+                const checkboxes = container.querySelectorAll('.filter-options-list input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = false);
+                updateFilterIndicator(container);
+            });
+            applyFiltersToActiveTable();
+        });
+    }
+
+    function makeTableSortable(table) {
+        const headers = table.querySelectorAll('th.sortable');
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                // ... (sorting logic from previous version) ...
+                const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : null);
+                let sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+                
+                table.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const colIndex = Array.from(header.parentNode.children).indexOf(header);
+
+                rows.sort((a, b) => {
+                    let valA = a.cells[colIndex].dataset.sortValue || a.cells[colIndex].textContent.trim();
+                    let valB = b.cells[colIndex].dataset.sortValue || b.cells[colIndex].textContent.trim();
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        valA = numA; valB = numB;
+                    } else {
+                        valA = valA.toLowerCase(); valB = valB.toLowerCase();
+                    }
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                rows.forEach(row => tbody.appendChild(row));
+                applyFiltersToActiveTable(); // Re-apply filters after sorting
+            });
+        });
+    }
+
+    document.querySelectorAll('.sortable-table').forEach(makeTableSortable);
+
+    const originalShowTab = window.showTab;
+    window.showTab = function(tabId, clickedButton) {
+        if (originalShowTab) {
+            originalShowTab(tabId, clickedButton); // Call original function if it exists
+        } else { // Basic implementation if not defined in base.html
+             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+             document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+             const tabElement = document.getElementById(tabId);
+             if (tabElement) tabElement.classList.add('active');
+             if (clickedButton) clickedButton.classList.add('active');
+        }
+        updateAllFilterDropdowns(); // Populate dropdowns for the new active table
+        applyFiltersToActiveTable(); // Apply current filter state to the new table
+    };
+    
+    // Initial setup for the default active tab
+    updateAllFilterDropdowns();
+    applyFiltersToActiveTable();
+
+     // Ensure first tab is properly initialized if no server-side active class
+    const activeTabButton = document.querySelector('.tab-button.active');
+    if (!activeTabButton && document.querySelector('.tab-button')) {
+        const firstTabButton = document.querySelector('.tab-button');
+        if (firstTabButton) { // Check if firstTabButton is not null
+            const firstTabIdMatch = firstTabButton.getAttribute('onclick').match(/'([^']+)'/);
+            if (firstTabIdMatch && firstTabIdMatch[1]) {
+                const firstTabId = firstTabIdMatch[1];
+                 // Call the new showTab, which handles filter updates
+                window.showTab(firstTabId, firstTabButton);
+            }
+        }
+    }
+
+
+    // Toggle card content (not used by table view, but kept for other potential uses if any)
+    window.toggleCard = function(cardElement) {
+        // ... (toggleCard logic from previous version) ...
+        cardElement.classList.toggle('expanded');
+        const content = cardElement.querySelector('.card-content');
+        const indicator = cardElement.querySelector('.expand-indicator');
+        if (content && indicator) { 
+            if (cardElement.classList.contains('expanded')) {
+                content.style.maxHeight = content.scrollHeight + "px";
+                indicator.textContent = '▲';
+            } else {
+                content.style.maxHeight = null;
+                indicator.textContent = '▼';
+            }
+        }
+    };
+});
+</script>
 {% endblock %}

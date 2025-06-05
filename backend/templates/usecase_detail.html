@@ -80,20 +80,35 @@
                     {% endif %}
                 </dd>
 
-                {# New Fields inserted from CHANGE block #}
-                {% if usecase.wave %}
-                <dt>Wave:</dt>
-                <dd>{{ usecase.wave }}</dd>
-                {% endif %}
+                {# --- START: Benefit, Effort, Wave Grouping --- #}
+                {% set primary_benefit = usecase.quality_improvement_quant %}
+                {% set benefit_from_priority %}
+                    {% if usecase.priority == 1 %}High
+                    {% elif usecase.priority == 2 %}Medium
+                    {% elif usecase.priority == 3 %}Low
+                    {% else %}N/A
+                    {% endif %}
+                {% endset %}
+                {% set final_benefit = primary_benefit | default(benefit_from_priority | trim, true) %}
 
-                {% if usecase.status %}
-                <dt>Status:</dt>
-                <dd>{{ usecase.status }}</dd>
-                {% endif %}
+                <dt>Benefit:</dt>
+                <dd>{{ final_benefit }}</dd>
 
                 {% if usecase.effort_level %}
                 <dt>Effort:</dt>
                 <dd>{{ usecase.effort_level }}</dd>
+                {% endif %}
+
+
+                {% if usecase.wave %}
+                <dt>Wave:</dt>
+                <dd>{{ usecase.wave }}</dd>
+                {% endif %}
+                {# --- END: Benefit, Effort, Wave Grouping --- #}
+
+                {% if usecase.status %}
+                <dt>Status:</dt>
+                <dd>{{ usecase.status }}</dd>
                 {% endif %}
 
                 {% if usecase.relevants_text %}
@@ -114,11 +129,6 @@
                 {% if usecase.reduction_costs_supply %}
                 <dt>Cost Reduction (Supply):</dt>
                 <dd>{{ usecase.reduction_costs_supply }}</dd>
-                {% endif %}
-
-                 {% if usecase.quality_improvement_quant %}
-                <dt>Quality Improvement:</dt>
-                <dd>{{ usecase.quality_improvement_quant }}</dd>
                 {% endif %}
 
                 {# Text/Preformatted Fields #}

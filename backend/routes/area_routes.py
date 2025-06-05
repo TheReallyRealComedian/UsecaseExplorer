@@ -50,6 +50,10 @@ def list_areas():
             current_step=None, # No specific step context for breadcrumbs
             current_usecase=None, # No specific usecase context for breadcrumbs
             # NEW BREADCRUMB DATA PASSING
+            # Pass area_style_map for consistent card styling if needed, or remove if not used in new table
+            area_style_map = { # Example, adjust as needed or remove if table doesn't use it
+                "Bio Excellence": "bio-excellence"
+            },
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
@@ -68,7 +72,7 @@ def list_areas():
 @login_required
 def view_area(area_id):
     session = SessionLocal()
-    
+
     # NEW BREADCRUMB DATA FETCHING
     all_areas_flat = []
     all_steps_flat = []
@@ -147,10 +151,10 @@ def edit_area(area_id):
                     area.name = new_name # To show the problematic name in the form
                     area.description = new_description
                     return render_template(
-                        'edit_area.html', 
-                        title=f"Edit Area: {area.name}", 
-                        area=area, 
-                        current_area=area, 
+                        'edit_area.html',
+                        title=f"Edit Area: {area.name}",
+                        area=area,
+                        current_area=area,
                         current_item=area, # ADDED current_item
                         current_step=None, # Ensure consistency
                         current_usecase=None, # Ensure consistency
@@ -160,7 +164,7 @@ def edit_area(area_id):
                         all_usecases_flat=all_usecases_flat
                         # END NEW BREADCRUMB DATA PASSING
                     )
-            
+
             area.name = new_name
             area.description = new_description if new_description else None
             try:
@@ -174,13 +178,13 @@ def edit_area(area_id):
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating area {area_id}: {e}")
-    
+
     # For GET request or if POST had errors and needs to re-render
     return render_template(
-        'edit_area.html', 
-        title=f"Edit Area: {area.name}", 
-        area=area, 
-        current_area=area, 
+        'edit_area.html',
+        title=f"Edit Area: {area.name}",
+        area=area,
+        current_area=area,
         current_item=area, # ADDED current_item
         current_step=None, # Ensure consistency
         current_usecase=None, # Ensure consistency
@@ -209,5 +213,5 @@ def delete_area(area_id):
             session.rollback()
             flash(f"Error deleting area: {e}", "danger")
             print(f"Error deleting area {area_id}: {e}")
-    
+
     return redirect(url_for('index'))

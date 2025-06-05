@@ -49,11 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const sortedItems = [...items].sort((a, b) => a.name.localeCompare(b.name));
 
         sortedItems.forEach(item => {
-            // Skip the current item to avoid self-linking in the dropdown
-            // This is useful for detail pages, but if currentItemId is null, all items are added.
-            if (currentItemId !== null && item.id === currentItemId) {
-                return; // Don't add the current item itself to the list
-            }
             const li = document.createElement('li');
             li.innerHTML = `<a class="dropdown-item" href="${item.url}">${item.name}</a>`;
             dropdownMenuElement.appendChild(li);
@@ -90,16 +85,15 @@ document.addEventListener('DOMContentLoaded', function() {
         areaBreadcrumbContainer.addEventListener('show.bs.dropdown', function () {
             const dropdownMenu = this.querySelector('.dropdown-menu');
             const currentAreaId = parseInt(this.dataset.itemId);
-
-            let allOtherAreas = allAreas.filter(a => a.id !== currentAreaId);
-
+    
+            // Pass all areas to the dropdown. The currentAreaId is now for context if needed, not filtering.
             let stepsInCurrentArea = [];
             if (currentAreaId) {
                 stepsInCurrentArea = allSteps.filter(step => step.area_id === currentAreaId);
             }
-
-            // Populate with other areas, then steps in this area
-            populateDropdown(dropdownMenu, allOtherAreas, currentAreaId, 'Steps in this Area:', true, stepsInCurrentArea);
+    
+            // Populate with ALL areas, then steps in this area
+            populateDropdown(dropdownMenu, allAreas, currentAreaId, 'Steps in this Area:', true, stepsInCurrentArea);
         });
     }
 
@@ -109,19 +103,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const dropdownMenu = this.querySelector('.dropdown-menu');
             const currentStepId = parseInt(this.dataset.itemId);
             const parentAreaId = parseInt(this.dataset.parentAreaId);
-
-            let otherStepsInSameArea = allSteps.filter(step =>
-                step.id !== currentStepId &&
-                step.area_id === parentAreaId // Only steps within the same logical parent area
+    
+            // Get all steps in the same parent area
+            let allStepsInSameArea = allSteps.filter(step =>
+                step.area_id === parentAreaId
             );
-
+    
             let usecasesInCurrentStep = [];
             if (currentStepId) {
                 usecasesInCurrentStep = allUsecases.filter(uc => uc.step_id === currentStepId);
             }
             
-            // Populate with other steps in same area, then use cases in this step
-            populateDropdown(dropdownMenu, otherStepsInSameArea, currentStepId, 'Use Cases in this Step:', true, usecasesInCurrentStep);
+            // Populate with all steps in the same area, then use cases in the current step
+            populateDropdown(dropdownMenu, allStepsInSameArea, currentStepId, 'Use Cases in this Step:', true, usecasesInCurrentStep);
         });
     }
 
@@ -131,14 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const dropdownMenu = this.querySelector('.dropdown-menu');
             const currentUsecaseId = parseInt(this.dataset.itemId);
             const parentStepId = parseInt(this.dataset.parentStepId);
-
-            let otherUsecasesInSameStep = allUsecases.filter(uc =>
-                uc.id !== currentUsecaseId &&
-                uc.step_id === parentStepId // Only use cases within the same logical parent step
+    
+            // Get all use cases in the same parent step
+            let allUsecasesInSameStep = allUsecases.filter(uc =>
+                uc.step_id === parentStepId
             );
-
-            // Populate with other use cases in same step
-            populateDropdown(dropdownMenu, otherUsecasesInSameStep, currentUsecaseId);
+    
+            // Populate with all use cases in the same step
+            populateDropdown(dropdownMenu, allUsecasesInSameStep, currentUsecaseId);
         });
     }
 

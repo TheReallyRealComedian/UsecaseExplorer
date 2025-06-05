@@ -43,21 +43,30 @@
                 <h3>Additional Details</h3> {# Optional grouping #}
 
                 <div class="row">
+                    {# Benefit (Quality Improvement) #}
                     <div class="col-md-4 mb-3">
-                        <label for="wave" class="form-label">Wave:</label>
-                        <input type="text" class="form-control" id="wave" name="wave" value="{{ usecase.wave | default('', true) }}">
+                        <label for="quality_improvement_quant" class="form-label">Benefit:</label>
+                        <input type="text" class="form-control" id="quality_improvement_quant" name="quality_improvement_quant" value="{{ usecase.quality_improvement_quant | default('', true) }}">
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="status" class="form-label">Status:</label>
-                        <input type="text" class="form-control" id="status" name="status" value="{{ usecase.status | default('', true) }}">
-                    </div>
+                    {# Effort Level #}
                     <div class="col-md-4 mb-3">
                         <label for="effort_level" class="form-label">Effort Level:</label>
                         <input type="text" class="form-control" id="effort_level" name="effort_level" value="{{ usecase.effort_level | default('', true) }}">
                     </div>
+                    {# Wave #}
+                    <div class="col-md-4 mb-3">
+                        <label for="wave" class="form-label">Wave:</label>
+                        <input type="text" class="form-control" id="wave" name="wave" value="{{ usecase.wave | default('', true) }}">
+                    </div>
                 </div>
-
+                
                 <div class="row">
+                    {# Status - moved to its own row or grouped differently if preferred #}
+                    <div class="col-md-4 mb-3">
+                        <label for="status" class="form-label">Status:</label>
+                        <input type="text" class="form-control" id="status" name="status" value="{{ usecase.status | default('', true) }}">
+                    </div>
+                    {# Time Reduction Fields - can stay in their own row or be grouped further #}
                     <div class="col-md-3 mb-3">
                         <label for="reduction_time_transfer" class="form-label">Time Reduction (Transfer):</label>
                         <input type="text" class="form-control" id="reduction_time_transfer" name="reduction_time_transfer" value="{{ usecase.reduction_time_transfer | default('', true) }}">
@@ -66,19 +75,16 @@
                         <label for="reduction_time_launches" class="form-label">Time Reduction (Launches):</label>
                         <input type="text" class="form-control" id="reduction_time_launches" name="reduction_time_launches" value="{{ usecase.reduction_time_launches | default('', true) }}">
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label for="reduction_costs_supply" class="form-label">Cost Reduction (Supply):</label>
-                        <input type="text" class="form-control" id="reduction_costs_supply" name="reduction_costs_supply" value="{{ usecase.reduction_costs_supply | default('', true) }}">
-                    </div>
-                     <div class="col-md-3 mb-3">
-                        <label for="quality_improvement_quant" class="form-label">Quality Improvement:</label>
-                        <input type="text" class="form-control" id="quality_improvement_quant" name="quality_improvement_quant" value="{{ usecase.quality_improvement_quant | default('', true) }}">
-                    </div>
                 </div>
 
                 <div class="mb-3">
                     <label for="business_problem_solved" class="form-label">Business Problem Solved:</label>
                     <textarea class="form-control" id="business_problem_solved" name="business_problem_solved" rows="5">{{ usecase.business_problem_solved | default('', true) }}</textarea>
+                </div>
+
+                <div class="mb-3"> {# Cost Reduction (Supply) - was with Quality Improvement, now separate for clarity or can be grouped with other reductions #}
+                    <label for="reduction_costs_supply" class="form-label">Cost Reduction (Supply):</label>
+                    <input type="text" class="form-control" id="reduction_costs_supply" name="reduction_costs_supply" value="{{ usecase.reduction_costs_supply | default('', true) }}">
                 </div>
 
                 <div class="mb-3">

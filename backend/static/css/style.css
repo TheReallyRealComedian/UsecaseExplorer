@@ -11,98 +11,143 @@
 /* --- 0. CSS Variables (Design Tokens) --- */
 /* ========================================================================== */
 :root {
-    /* --- Boehringer Ingelheim Color Palette --- */
-    /* Primary Colors */
-    --color-signature-green: #00e47c; /* Bright green accent */
-    --color-deep-teal: #08312a;     /* Brand secondary, used as primary in UI */
-    --color-light-purple: #c5c3ee;  /* Soft accent */
+    /* --- Boehringer Ingelheim Color Palette (per Brand Style Guide) --- */
+    /* Primary Brand Colors */
+    --bi-dark-green-900: #051D19;
+    --bi-dark-green-800: #08312A;
+    --bi-dark-green-600: #6B8375;
+    --bi-dark-green-200: #B6CDBF;
 
-    /* Neutral Foundation */
-    --color-white: #ffffff;
-    --color-black: #000000;
-    --color-dark-gray-1: #2d3232; /* Dark gray */
-    --color-dark-gray-2: #1a1c1c; /* Even darker gray, used for sidebar */
-    --color-dark-gray-3: #424747; /* Medium-dark gray */
-    --color-medium-gray: #717780; /* Medium gray for secondary text */
-    --color-muted-green-gray: #6b8375; /* Muted green-gray for subtle accents */
+    --bi-accent-green-600: #00B663;
+    --bi-accent-green-500: #00E47C;
+    --bi-accent-green-200: #66EFB0;
+    --bi-accent-green-100: #CCFAE5;
 
-    /* --- Semantic Color Assignments (using BI palette) --- */
-    --body-bg-color: var(--color-white);
-    --main-content-bg: var(--color-white);
-    --card-bg: var(--color-white);
-    --header-bg: var(--color-white);
-    --element-bg-light: #f5f5f5; /* A very light grey for subtle backgrounds */
+    /* Functional Colors */
+    --bi-white: #FFFFFF;
+    --bi-black: #191919; /* Adjusted from #000000 per style guide */
 
-    /* Core UI Colors */
-    --color-primary: var(--color-deep-teal);       /* Main brand dark green */
-    --color-primary-light: var(--color-muted-green-gray); /* Greenish-gray as a softer primary tone */
-    --color-primary-dark: #031815;                  /* Derived darker deep teal */
-    --color-accent: var(--color-signature-green);   /* Main brand bright green */
-    --color-secondary: var(--color-light-purple);   /* Soft accent purple */
+    /* Neutral Color Scale */
+    --bi-neutral-050: #FAF9F8;
+    --bi-neutral-100: #F6F5F3;
+    --bi-neutral-200: #EFEEEB;
+    --bi-neutral-300: #E5E3DE;
+    --bi-neutral-500: #B7B6B2;
+    --bi-neutral-600: #898885;
+    --bi-neutral-700: #5C5B59;
+    --bi-neutral-800: #2E2D2C;
 
-    /* Text Colors */
-    --text-primary: var(--color-black);             /* High contrast for main text */
-    --text-secondary: var(--color-medium-gray);     /* For secondary information */
-    --text-muted: var(--color-medium-gray);         /* Same as secondary for muted */
-    --text-color-sidebar-active: var(--color-white);
-    --text-color-on-primary: var(--color-white);
-    --text-color-on-dark: var(--color-white);       /* For text on dark backgrounds */
+    /* Secondary Colors - Violet Spectrum (closest to original light-purple) */
+    --bi-violet-100: #E0E1F6;
+    --bi-violet-400: #C5C3EE; /* Original light-purple mapped here */
+    --bi-violet-500: #928BDE;
+    --bi-violet-700: #5D4495;
+
+    /* Semantic Color System */
+    /* Positive/Success States (Light Backgrounds) */
+    --bi-positive-100: #CDEDCC;
+    --bi-positive-500: #168215;
+    --bi-positive-800: #0C490C;
+    /* Warning States (Universal) */
+    --bi-warning-100: #FEEDD2;
+    --bi-warning-500: #FF8413;
+    --bi-warning-800: #994100;
+    /* Negative/Error States (Light Backgrounds) */
+    --bi-negative-100: #FDD3D3;
+    --bi-negative-500: #F62B2B;
+    --bi-negative-800: #6D1313;
+    /* Information States (Light Backgrounds) */
+    --bi-info-100: #C6E0FF;
+    --bi-info-500: #0069E5;
+    --bi-info-800: #003471;
+
+    /* --- Semantic Color Assignments (using BI palette, for general UI elements) --- */
+    --body-bg-color: var(--bi-white);
+    --main-content-bg: var(--bi-white);
+    --card-bg: var(--bi-white);
+    --header-bg: var(--bi-white);
+    --element-bg-light: var(--bi-neutral-100); /* Light Gray */
+
+    /* Core UI Colors - Mapped from original usage to BI brand palette */
+    --color-primary: var(--bi-dark-green-800);       /* Main brand dark green */
+    --color-primary-light: var(--bi-dark-green-600); /* Greenish-gray as a softer primary tone */
+    --color-primary-dark: var(--bi-dark-green-900);  /* Derived darker deep teal */
+    --color-accent: var(--bi-accent-green-500);      /* Main brand bright green */
+    --color-secondary: var(--bi-violet-400);         /* Soft accent purple */
+
+    /* Text Colors - Mapped based on style guide recommendations for contrast */
+    --text-primary: var(--bi-black);                 /* High contrast for main text on light backgrounds */
+    --text-secondary: var(--bi-neutral-700);         /* For secondary information (Darkest neutral shade) */
+    --text-muted: var(--bi-neutral-600);             /* For muted text (Medium neutral shade) */
+    --text-color-sidebar-active: var(--bi-white);
+    --text-color-on-primary: var(--bi-white);        /* For text on primary (dark green) backgrounds */
+    --text-color-on-dark: var(--bi-white);           /* For text on dark backgrounds */
 
     /* Panel Specific Colors (e.g., sidebar) */
-    --color-panel-bg: var(--color-dark-gray-2);     /* Dark gray for sidebar background */
-    --color-panel-text: var(--color-white);
-    --color-panel-border-subtle: rgba(255, 255, 255, 0.1);
+    --color-panel-bg: var(--bi-dark-green-900);     /* Darkest green for sidebar background */
+    --color-panel-text: var(--bi-white);
+    --color-panel-border-subtle: rgba(255, 255, 255, 0.1); /* Subtle border for dark panel */
 
     /* Borders */
-    --border-color: #e0e0e0; /* General light grey border */
+    --border-color: var(--bi-neutral-200); /* General light grey border */
 
     /* --- General Styling Variables --- */
-    /* Shadows (aligned with modern, clean principle) */
+    /* Shadows (aligned with style guide for subtle depth) */
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.08); /* Adjusted for more subtle depth */
-    --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.15);
-    --shadow-xl: 0 25px 50px rgba(0, 0, 0, 0.2);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1); /* Adjusted per guide's card example */
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15); /* Adjusted for more subtle depth */
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.18);
+    --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.2);
 
-    /* Radii (aligned with modern, clean principle) */
-    --border-radius: 16px;  /* Much more rounded for cards */
-    --border-radius-lg: 24px;
-    --border-radius-md: 12px;
-    --border-radius-sm: 8px;
-    --border-radius-xs: 4px;
+    /* Radii (aligned with style guide) */
+    --border-radius: 16px;      /* Much more rounded for cards */
+    --border-radius-lg: 24px;   /* Per style guide */
+    --border-radius-md: 12px;   /* Per style guide */
+    --border-radius-sm: 8px;    /* Kept for consistency */
+    --border-radius-xs: 4px;    /* Kept for consistency */
 
     /* Typography Hierarchy (from Brand Style Guide) */
-    --font-family-primary: 'BoehringerForwardHead', sans-serif;
-    --font-family-secondary: 'Space Grotesk Frontify', sans-serif;
-    --font-family-fallback: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-    --font-family: var(--font-family-primary), var(--font-family-secondary), var(--font-family-fallback);
+    --font-family-primary: "BoehringerForwardHead", sans-serif;
+    --font-family-secondary: "BoehringerForwardText", sans-serif;
+    --font-family-fallback: "Space Grotesk Frontify", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 
-    --font-size-h1: 60px;
-    --font-size-h2: 66px; /* Note: H2 is larger than H1 as per guide, for specific uses */
-    --font-size-h3: 16px;
-    --font-size-body: 16px;
-    --line-height-body: 1.5; /* 24px for 16px font-size */
+    /* Global font-family should be secondary for body text, headings override */
+    --font-family: var(--font-family-secondary), var(--font-family-fallback);
+
+    /* Headline sizes (aligned with Typography Scale System in guide) */
+    --font-size-h1: 60px; /* text-headline-large */
+    --font-size-h2: 48px; /* text-headline-medium */
+    --font-size-h3: 24px; /* text-subheadline */
+    --font-size-h4: 20px; /* Slightly smaller than h3 for hierarchy */
+    --font-size-h5: 18px; /* text-body-large equivalent for headings */
+    --font-size-h6: 16px; /* text-body equivalent for headings */
+
+    --font-size-body: 16px; /* text-body */
+    --line-height-body: 1.5; /* 24px for 16px font-size, as per guide (140% for 16px is 22.4px, 1.5 is generous) */
 
     /* Solid Color Replacements for Gradients (Vibrant Accents) */
-    --solid-primary-bg: var(--color-deep-teal);
-    --solid-accent-bg: var(--color-signature-green);
-    --solid-sidebar-active-bg: var(--color-signature-green); /* Primary to Accent for sidebar active */
-    --solid-accent-text-color: var(--color-signature-green); /* For text that was gradient-clipped */
+    --solid-primary-bg: var(--bi-dark-green-800);
+    --solid-accent-bg: var(--bi-accent-green-500);
+    --solid-sidebar-active-bg: var(--bi-accent-green-500); /* Accent Green on Dark Green is allowed */
+    /* --solid-accent-text-color will be handled contextually based on background */
 
 
-    /* Alert Colors (Accessible Design) */
-    --color-alert-success-text: var(--color-signature-green);
-    --color-alert-success-bg: rgba(0, 228, 124, 0.1); /* Light background using signature green */
-    --color-alert-success-border: rgba(0, 228, 124, 0.3);
-    --color-alert-danger-text: #dc2626; /* Standard red for danger */
-    --color-alert-danger-bg: #fef2f2;
-    --color-alert-danger-border: #fecaca;
-    --color-alert-warning-text: #d97706; /* Standard orange for warning */
-    --color-alert-warning-bg: #fffbeb;
-    --color-alert-warning-border: #fed7aa;
-    --color-alert-info-text: #0284c7; /* Standard blue for info */
-    --color-alert-info-bg: #f0f9ff;
-    --color-alert-info-border: #bae6fd;
+    /* Alert Colors (Accessible Design) - Mapped to BI semantic colors */
+    --color-alert-success-text: var(--bi-positive-800);
+    --color-alert-success-bg: var(--bi-positive-100);
+    --color-alert-success-border: var(--bi-positive-500);
+
+    --color-alert-danger-text: var(--bi-negative-800);
+    --color-alert-danger-bg: var(--bi-negative-100);
+    --color-alert-danger-border: var(--bi-negative-500);
+
+    --color-alert-warning-text: var(--bi-warning-800);
+    --color-alert-warning-bg: var(--bi-warning-100);
+    --color-alert-warning-border: var(--bi-warning-500);
+
+    --color-alert-info-text: var(--bi-info-800);
+    --color-alert-info-bg: var(--bi-info-100);
+    --color-alert-info-border: var(--bi-info-500);
 
     /* Spacing variables (based on 8px grid for consistency, Modern & Clean) */
     --spacing-0: 0;
@@ -134,7 +179,7 @@
 html,
 body {
     height: 100%;
-    font-family: var(--font-family);
+    font-family: var(--font-family); /* Default to secondary font for body */
     background-color: var(--body-bg-color);
     color: var(--text-primary);
     font-size: var(--font-size-body); /* Body: 16px */
@@ -144,37 +189,41 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography Hierarchy - Global Headings */
+/* Typography Hierarchy - Global Headings (BoehringerForwardHead) */
 h1 {
-    font-size: var(--font-size-h1);
+    font-family: var(--font-family-primary), var(--font-family-fallback);
+    font-size: var(--font-size-h1); /* 60px */
     line-height: 1.1;
     font-weight: 700;
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-md);
-    color: var(--text-primary); /* Default solid color for general H1s */
+    color: var(--text-primary);
 }
 
 h2 {
-    font-size: var(--font-size-h2);
+    font-family: var(--font-family-primary), var(--font-family-fallback);
+    font-size: var(--font-size-h2); /* 48px */
     line-height: 1.1;
     font-weight: 700;
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-md);
-    color: var(--text-primary); /* Default solid color for general H2s */
+    color: var(--text-primary);
 }
 
 h3 {
-    font-size: var(--font-size-h3); /* Header 3: 16px */
-    line-height: 1.4;
-    font-weight: 600;
+    font-family: var(--font-family-primary), var(--font-family-fallback);
+    font-size: var(--font-size-h3); /* 24px */
+    line-height: 1.2;
+    font-weight: 500;
     margin-top: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
     color: var(--text-primary);
 }
 
 h4 {
-    font-size: 1.25rem; /* ~20px */
-    line-height: 1.4;
+    font-family: var(--font-family-primary), var(--font-family-fallback);
+    font-size: var(--font-size-h4); /* 20px */
+    line-height: 1.3;
     font-weight: 600;
     margin-top: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
@@ -182,7 +231,8 @@ h4 {
 }
 
 h5 {
-    font-size: 1.1rem; /* ~17.6px */
+    font-family: var(--font-family-secondary), var(--font-family-fallback); /* Switch to Text font for smaller headings */
+    font-size: var(--font-size-h5); /* 18px */
     line-height: 1.4;
     font-weight: 500;
     margin-top: var(--spacing-sm);
@@ -191,14 +241,14 @@ h5 {
 }
 
 h6 {
-    font-size: 1rem; /* ~16px */
+    font-family: var(--font-family-secondary), var(--font-family-fallback);
+    font-size: var(--font-size-h6); /* 16px */
     line-height: 1.4;
     font-weight: 500;
     margin-top: var(--spacing-sm);
     margin-bottom: var(--spacing-xs);
     color: var(--text-primary);
 }
-
 
 a {
     text-decoration: none;
@@ -256,7 +306,8 @@ p:last-child {
 .sidebar-header .logo {
     font-size: 1.5rem; /* Keep a reasonable size for the logo */
     font-weight: 800;
-    color: var(--solid-accent-text-color); /* Vibrant Accent */
+    /* On Dark Green Background: Accent Green is allowed for highlights */
+    color: var(--bi-accent-green-500); /* Use Accent Green for logo on dark sidebar */
 }
 
 .sidebar-menu {
@@ -286,6 +337,7 @@ p:last-child {
     top: 0;
     left: 0;
     height: 100%;
+    /* On Dark Green Background: Accent Green is allowed for highlights */
     background-color: var(--solid-sidebar-active-bg); /* Vibrant Accent */
     transition: width 0.3s ease;
     z-index: -1;
@@ -510,7 +562,8 @@ p:last-child {
 .card-title {
     font-size: 1.4rem; /* Adjusted for card titles */
     font-weight: 700;
-    color: var(--solid-accent-text-color); /* Vibrant Accent */
+    /* On Light Background: Dark Green is allowed */
+    color: var(--bi-dark-green-800); /* Adjusted per style guide - Accent Green not on light backgrounds */
     margin-bottom: 0;
 }
 
@@ -571,7 +624,7 @@ textarea {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     font-size: 0.95rem;
-    background-color: var(--color-white);
+    background-color: var(--bi-white);
     color: var(--text-primary);
     transition: all 0.3s ease;
     font-weight: 500;
@@ -587,7 +640,7 @@ textarea:focus {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1); /* Primary color shadow */
     outline: none;
-    background-color: #fefefe;
+    background-color: var(--bi-neutral-050); /* Lightest neutral */
 }
 
 .form-control::placeholder,
@@ -644,8 +697,8 @@ form button[type="submit"],
 
 form button[type="submit"].btn-primary,
 .btn-primary {
-    background-color: var(--solid-primary-bg); /* Vibrant Accent replaced by solid primary */
-    color: var(--color-white);
+    background-color: var(--solid-primary-bg); /* Use Dark Green 800 */
+    color: var(--bi-white);
     border: 1px solid var(--color-primary);
     box-shadow: var(--shadow-sm);
 }
@@ -653,31 +706,31 @@ form button[type="submit"].btn-primary:hover,
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    background-color: var(--color-primary-dark); /* Darker solid color for hover */
+    background-color: var(--color-primary-dark); /* Darker solid color for hover (Dark Green 900) */
 }
 
 .btn-secondary {
-    background: var(--color-dark-gray-3); /* Using medium-dark gray from BI palette */
-    color: var(--color-white);
-    border: 1px solid var(--color-dark-gray-3);
+    background: var(--bi-neutral-700); /* Using neutral-700 from BI palette */
+    color: var(--bi-white);
+    border: 1px solid var(--bi-neutral-700);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-    background: var(--color-dark-gray-1); /* Darker gray on hover */
+    background: var(--bi-neutral-800); /* Darker gray on hover */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
 
 .btn-info {
-    background: var(--color-alert-info-text);
-    color: var(--color-white);
-    border: 1px solid var(--color-alert-info-text);
+    background: var(--bi-info-500); /* Info 500 */
+    color: var(--bi-white);
+    border: 1px solid var(--bi-info-500);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-info:hover {
-    background: #0369a1; /* Slightly darker info blue */
+    background: var(--bi-info-800); /* Info 800 for darker hover */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -690,14 +743,15 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .btn.btn-success {
-    background: var(--solid-accent-bg); /* Vibrant Accent */
+    background: var(--solid-accent-bg); /* Accent Green 500 */
     border: none;
-    color: var(--color-white); /* Ensure text is white on signature green for contrast */
+    /* On Accent Green Background: Dark Green 800 text is allowed for CTAs */
+    color: var(--bi-dark-green-800); /* Ensure text is Dark Green on Accent Green for contrast per guide */
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
 .btn.btn-success:hover {
-    background: #00b062; /* Slightly darker signature green */
+    background: var(--bi-accent-green-600); /* Slightly darker signature green (Accent Green 600) */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -705,14 +759,14 @@ form button[type="submit"].btn-primary:hover,
 .btn.btn-danger {
     padding: var(--spacing-sm) var(--spacing-md); /* 8px 16px */
     border-radius: var(--border-radius-xs);
-    background: var(--color-alert-danger-text);
+    background: var(--bi-negative-500); /* Negative 500 */
     border: none;
-    color: var(--color-white);
+    color: var(--bi-white);
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
 }
 .btn.btn-danger:hover {
-    background: #be123c; /* Slightly darker danger red */
+    background: var(--bi-negative-800); /* Slightly darker danger red (Negative 800) */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -735,19 +789,19 @@ form button[type="submit"].btn-primary:hover,
 .alert-success {
     color: var(--color-alert-success-text);
     background: var(--color-alert-success-bg);
-    border-left-color: var(--color-alert-success-text);
+    border-left-color: var(--color-alert-success-border);
 }
 
 .alert-danger {
     color: var(--color-alert-danger-text);
     background: var(--color-alert-danger-bg);
-    border-left-color: var(--color-alert-danger-text);
+    border-left-color: var(--color-alert-danger-border);
 }
 
 .alert-warning {
     color: var(--color-alert-warning-text);
     background: var(--color-alert-warning-bg);
-    border-left-color: var(--color-alert-warning-text);
+    border-left-color: var(--color-alert-warning-border);
 }
 
 .alert-info {
@@ -778,7 +832,7 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: none;
     text-decoration: none;
     background: none;
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-primary); /* Primary color for focus */
     outline-offset: 2px;
 }
 
@@ -914,16 +968,20 @@ form button[type="submit"].btn-primary:hover,
 .me-1 { margin-inline-end: var(--spacing-xs) !important; }
 .me-2 { margin-inline-end: var(--spacing-sm) !important; }
 
-.solid-bg-primary { /* Renamed from gradient-bg-primary */
+.solid-bg-primary {
     background-color: var(--solid-primary-bg);
 }
 
-.solid-bg-accent { /* Renamed from gradient-bg-accent */
+.solid-bg-accent {
     background-color: var(--solid-accent-bg);
 }
 
-.solid-text-accent { /* Renamed from gradient-text-primary */
-    color: var(--solid-accent-text-color);
+/* This is handled contextually based on background. If on dark, can be accent. If on light, should be dark green. */
+.solid-text-accent {
+    /* This generic class's usage should be reviewed to ensure it's only on dark backgrounds,
+       or replaced with a context-specific class that adheres to color rules.
+       Defaulting to accent green as per its name, assuming dark background context. */
+    color: var(--bi-accent-green-500);
 }
 
 .glass-effect {
@@ -956,7 +1014,8 @@ form button[type="submit"].btn-primary:hover,
     font-size: var(--font-size-h1); /* Explicitly using H1 size for main page title */
     font-weight: 800;
     margin-bottom: var(--spacing-sm); /* 8px */
-    color: var(--solid-accent-text-color); /* Vibrant Accent */
+    /* On Light Background: Dark Green is allowed */
+    color: var(--bi-dark-green-800); /* Adjusted per style guide - Accent Green not on light backgrounds */
     line-height: 1.1;
 }
 
@@ -977,8 +1036,9 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .area-card {
-    background-color: var(--card-bg); /* Replaced gradient with solid color */
-    border-left: 5px solid var(--solid-accent-bg); /* Replaced border-image with solid border */
+    background-color: var(--card-bg);
+    /* On Light Background: Accent Green border is a violation, use Dark Green instead */
+    border-left: 5px solid var(--bi-dark-green-800); /* Adjusted per style guide */
     padding: var(--spacing-lg); /* 24px */
 }
 
@@ -1062,7 +1122,7 @@ form button[type="submit"].btn-primary:hover,
     border-bottom: 1px solid var(--border-color);
 }
 .relevance-section .card-title {
-    color: var(--text-primary); /* Changed from gradient text */
+    color: var(--text-primary); /* Adjusted per style guide - Text on light background */
     font-size: 1.1rem;
     background: none; /* Removed gradient properties */
     -webkit-background-clip: unset;
@@ -1074,7 +1134,7 @@ form button[type="submit"].btn-primary:hover,
     padding-inline-start: 0;
 }
 .relevance-section li.relevance-item {
-    background-color: var(--color-white);
+    background-color: var(--bi-white);
     padding: var(--spacing-lg); /* 24px */
     margin-bottom: var(--spacing-md); /* 16px */
     border-radius: var(--border-radius);
@@ -1233,16 +1293,18 @@ form button[type="submit"].btn-primary:hover,
 
 /* --- NEW CSS RULES FOR HEADINGS WITHIN MARKDOWN --- */
 .markdown-content h1 {
+    font-family: var(--font-family-primary), var(--font-family-fallback);
     font-size: 1.75rem; /* Significantly smaller than global H1 */
     font-weight: 600;
     margin-top: var(--spacing-md);
     margin-bottom: var(--spacing-sm);
-    color: var(--text-primary); /* Or var(--color-primary) if you want them colored */
+    color: var(--text-primary);
     border-bottom: 1px solid var(--border-color); /* Optional: subtle separator */
     padding-bottom: var(--spacing-xs);
 }
 
 .markdown-content h2 {
+    font-family: var(--font-family-primary), var(--font-family-fallback);
     font-size: 1.5rem; /* Smaller than global H2 */
     font-weight: 600;
     margin-top: var(--spacing-md);
@@ -1251,6 +1313,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .markdown-content h3 {
+    font-family: var(--font-family-primary), var(--font-family-fallback);
     font-size: 1.25rem;
     font-weight: 600;
     /* Keep other h3 styles or adjust as needed */
@@ -1303,7 +1366,8 @@ form button[type="submit"].btn-primary:hover,
 .llm-data-prep-page .card-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--solid-accent-text-color); /* Vibrant Accent */
+    /* On Light Background: Dark Green is allowed */
+    color: var(--bi-dark-green-800); /* Adjusted per style guide - Accent Green not on light backgrounds */
     margin: 0;
 }
 
@@ -1337,7 +1401,7 @@ form button[type="submit"].btn-primary:hover,
 
 .llm-data-prep-page .count-badge {
     background: var(--color-primary);
-    color: var(--color-white);
+    color: var(--bi-white);
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
     border-radius: 10px;
@@ -1382,7 +1446,7 @@ form button[type="submit"].btn-primary:hover,
     min-height: 120px;
     max-height: 200px;
     overflow-y: auto;
-    background: var(--color-white);
+    background: var(--bi-white);
 }
 
 .llm-data-prep-page .select-option {
@@ -1402,7 +1466,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .select-option.selected {
-    background: var(--color-alert-info-bg);
+    background: var(--bi-info-100); /* Info 100 */
     border-left: 3px solid var(--color-primary);
     font-weight: 500;
 }
@@ -1444,7 +1508,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .field-group-header:hover {
-    background: var(--color-dark-gray-3); /* Darker gray on hover */
+    background: var(--bi-neutral-300); /* Darker gray on hover, from Neutral Scale */
 }
 
 .llm-data-prep-page .field-group-title {
@@ -1476,7 +1540,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .checkbox-item:hover {
-    background: var(--color-white);
+    background: var(--bi-white);
 }
 
 .llm-data-prep-page .checkbox-item input[type="checkbox"] {
@@ -1556,9 +1620,9 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .btn-primary {
-    background-color: var(--solid-primary-bg); /* Vibrant Accent */
+    background-color: var(--solid-primary-bg); /* Dark Green 800 */
     border: none;
-    color: var(--color-white);
+    color: var(--bi-white);
     font-weight: 600;
     padding: var(--spacing-md) var(--spacing-xl); /* 16px 32px */
     border-radius: var(--border-radius-sm);
@@ -1567,7 +1631,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .llm-data-prep-page .btn-primary:hover {
-    background-color: var(--color-primary-dark); /* Darker solid color for hover */
+    background-color: var(--color-primary-dark); /* Darker solid color for hover (Dark Green 900) */
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }
@@ -1731,7 +1795,7 @@ form button[type="submit"].btn-primary:hover,
 
 #copyJsonButton, #toggleJsonPreview {
     border: 1px solid var(--border-color);
-    background-color: var(--color-white);
+    background-color: var(--bi-white);
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
@@ -1759,14 +1823,14 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .chat-bubble-user {
-    background-color: var(--solid-primary-bg); /* Replaced gradient with solid primary */
+    background-color: var(--solid-primary-bg); /* Dark Green 800 */
     color: var(--text-color-on-primary);
     margin-inline-start: auto;
     border-bottom-right-radius: var(--border-radius-xs); /* 4px */
 }
 
 .chat-bubble-assistant {
-    background-color: var(--element-bg-light); /* Replaced gradient with solid color */
+    background-color: var(--element-bg-light); /* Neutral 100 */
     color: var(--text-primary);
     margin-inline-end: auto;
     border: 1px solid var(--border-color);
@@ -1774,9 +1838,9 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .chat-bubble-error {
-    background-color: var(--color-alert-danger-bg);
-    color: var(--color-alert-danger-text);
-    border: 1px solid var(--color-alert-danger-border);
+    background-color: var(--bi-negative-100);
+    color: var(--bi-negative-800);
+    border: 1px solid var(--bi-negative-500);
     font-weight: 600;
 }
 
@@ -1814,7 +1878,7 @@ form button[type="submit"].btn-primary:hover,
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    background: var(--color-white);
+    background: var(--bi-white);
     border-bottom-left-radius: var(--border-radius);
     border-bottom-right-radius: var(--border-radius);
 }
@@ -1871,7 +1935,7 @@ form button[type="submit"].btn-primary:hover,
     box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1);
 }
 .chat-input-area textarea.has-image {
-    background-color: var(--color-alert-info-bg);
+    background-color: var(--bi-info-100);
     border-color: var(--color-primary-light);
     font-weight: 500;
 }
@@ -1995,12 +2059,12 @@ form button[type="submit"].btn-primary:hover,
     height: auto;
 }
 .unsaved-field-change {
-    background-color: var(--color-alert-warning-bg);
-    border-color: var(--color-alert-warning-border) !important;
+    background-color: var(--bi-warning-100);
+    border-color: var(--bi-warning-500) !important;
 }
 .unsaved-field-change .new-value-input,
 .unsaved-field-change .new-value-select {
-    border-color: var(--color-alert-warning-text) !important;
+    border-color: var(--bi-warning-800) !important;
 }
 .action-buttons-group {
     display: flex;
@@ -2152,7 +2216,7 @@ form button[type="submit"].btn-primary:hover,
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
-    box-sizing: border-box;
+    box-sizing: border-sizing;
 }
 
 .echarts-tooltip-content pre,
@@ -2165,13 +2229,13 @@ form button[type="submit"].btn-primary:hover,
 
 /* Data Alignment Page - For unsaved changes (Accessible Design) */
 .unsaved-change {
-    background-color: var(--color-alert-warning-bg);
-    border-color: var(--color-alert-warning-border) !important;
+    background-color: var(--bi-warning-100);
+    border-color: var(--bi-warning-500) !important;
     transition: background-color 0.3s ease;
 }
 
 .unsaved-change select {
-    border-color: var(--color-alert-warning-text) !important;
+    border-color: var(--bi-warning-800) !important;
 }
 
 /* LLM Data Prep Page - Enhance System Prompt Textarea to fix rendering issues */
@@ -2236,13 +2300,11 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .tab-navigation {
-    background: var(--color-white);
+    background: var(--bi-white);
     border-radius: var(--border-radius-xs); /* 4px */
-    /* margin-bottom: 0; /* Original */
     margin-bottom: var(--spacing-md); /* Added space below if tabs wrap */
     display: flex;
     flex-wrap: wrap; /* Allow wrapping */
-    /* overflow-x: auto; /* REMOVED */
     box-shadow: var(--shadow-sm);
     padding: var(--spacing-sm); /* Optional: Add some padding inside the container */
     gap: var(--spacing-sm); /* Add gap between tab buttons */
@@ -2288,12 +2350,12 @@ form button[type="submit"].btn-primary:hover,
 
 .tab-button.active .tab-badge {
     background: var(--color-primary);
-    color: var(--color-white);
+    color: var(--bi-white);
 }
 
 .tab-content {
     display: none;
-    background: var(--color-white);
+    background: var(--bi-white);
     padding: var(--spacing-lg); /* 24px */
     margin-bottom: var(--spacing-md); /* 16px */
     box-shadow: var(--shadow-sm);
@@ -2327,7 +2389,7 @@ form button[type="submit"].btn-primary:hover,
 }
 
 .process-card {
-    background: var(--color-white);
+    background: var(--bi-white);
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -2363,7 +2425,7 @@ form button[type="submit"].btn-primary:hover,
     border-radius: var(--border-radius-xs); /* 4px */
     font-size: 0.75rem;
     margin-bottom: var(--spacing-sm); /* 8px */
-    font-family: 'Roboto Mono', monospace;
+    font-family: 'Roboto Mono', monospace; /* Keep for specific badge look */
     font-weight: 500;
 }
 
@@ -2371,7 +2433,8 @@ form button[type="submit"].btn-primary:hover,
     font-size: 1.125rem;
     font-weight: 500;
     margin-bottom: var(--spacing-xs); /* 4px */
-    color: var(--text-primary); /* Changed from gradient text */
+    /* On Light Background: Dark Green is allowed */
+    color: var(--bi-dark-green-800); /* Adjusted per style guide - Text on light background */
     line-height: 1.4;
     background: none; /* Removed gradient properties */
     -webkit-background-clip: unset;
@@ -2445,12 +2508,12 @@ form button[type="submit"].btn-primary:hover,
 }
 
 /* Color variations for different areas (BI Branding) */
-.bio-excellence .step-badge { background: var(--color-signature-green); color: var(--color-deep-teal); } /* Adjusted for better contrast based on brand guidelines (green accent on neutral/dark) */
-.logistics .step-badge { background: var(--color-light-purple); color: var(--color-deep-teal); }
-.maintenance .step-badge { background: var(--color-dark-gray-3); color: var(--color-white); }
-.manufacturing .step-badge { background: var(--color-deep-teal); color: var(--color-white); }
-.performance .step-badge { background: var(--color-dark-gray-1); color: var(--color-white); }
-.quality-assurance .step-badge { background: var(--color-signature-green); color: var(--color-deep-teal); } /* Adjusted for better contrast */
-.quality-control .step-badge { background: var(--color-light-purple); color: var(--color-deep-teal); }
-.strategic-partner .step-badge { background: var(--color-dark-gray-3); color: var(--color-white); }
-.supply-chain .step-badge { background: var(--color-dark-gray-2); color: var(--color-white); }
+.bio-excellence .step-badge { background: var(--bi-accent-green-500); color: var(--bi-dark-green-800); } /* Accent Green on Dark Green is allowed */
+.logistics .step-badge { background: var(--bi-violet-400); color: var(--bi-dark-green-800); } /* Secondary on Dark Green text (as per guide) */
+.maintenance .step-badge { background: var(--bi-neutral-700); color: var(--bi-white); } /* Neutral on White text (as per existing aesthetic) */
+.manufacturing .step-badge { background: var(--bi-dark-green-800); color: var(--bi-white); } /* Primary on White text */
+.performance .step-badge { background: var(--bi-neutral-800); color: var(--bi-white); } /* Neutral on White text */
+.quality-assurance .step-badge { background: var(--bi-accent-green-500); color: var(--bi-dark-green-800); } /* Accent Green on Dark Green is allowed */
+.quality-control .step-badge { background: var(--bi-violet-400); color: var(--bi-dark-green-800); } /* Secondary on Dark Green text */
+.strategic-partner .step-badge { background: var(--bi-neutral-700); color: var(--bi-white); } /* Neutral on White text */
+.supply-chain .step-badge { background: var(--bi-dark-green-900); color: var(--bi-white); } /* Darkest green on White text */
