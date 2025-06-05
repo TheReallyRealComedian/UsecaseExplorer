@@ -59,7 +59,7 @@ def review_process_links_page():
     finally:
         session.close()
 
-# API endpoint to fetch data for the Sankey diagram
+# API endpoint to fetch data for the process links table
 @review_routes.route('/api/process-links/data', methods=['GET'])
 @login_required
 def get_process_links_data():
@@ -67,7 +67,7 @@ def get_process_links_data():
     try:
         focus_area_id = request.args.get('focus_area_id', type=int)
         comparison_area_ids_str = request.args.getlist('comparison_area_ids[]')
-        
+
         comparison_area_ids = []
         if comparison_area_ids_str:
             try:
@@ -80,96 +80,101 @@ def get_process_links_data():
             session.close()
             return jsonify(error="Focus area ID is required."), 400
 
-        nodes_dict = {}
-        links = []
-        
-        area_colors_list = ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC']
-        area_color_map = {}
-        
-        all_db_areas = session.query(Area).order_by(Area.id).all() # Order for consistent color assignment
-        for i, area in enumerate(all_db_areas):
-            area_color_map[area.id] = area_colors_list[i % len(area_colors_list)]
-
-        def get_node_name(step): # Area should be loaded with step
-            area_name = step.area.name if step.area else "Unknown Area"
-            return f"{step.name} ({area_name})"
-
-        # Collect all steps from selected areas to build nodes
-        all_selected_area_ids_for_nodes = list(set([focus_area_id] + comparison_area_ids))
-        
-        steps_for_nodes = session.query(ProcessStep).options(joinedload(ProcessStep.area)).filter(
-            ProcessStep.area_id.in_(all_selected_area_ids_for_nodes)
-        ).all()
-
-        for step in steps_for_nodes:
-            if step.id not in nodes_dict:
-                node_depth = 0 if step.area_id == focus_area_id else 1
-                # If a step is in focus AND comparison (e.g. focus is SCM, comparison includes SCM)
-                # it should still primarily be considered depth 0 (focus).
-                if focus_area_id in comparison_area_ids and step.area_id == focus_area_id :
-                     node_depth = 0
-
-                nodes_dict[step.id] = {
-                    "name": get_node_name(step),
-                    "id": step.id, 
-                    "itemStyle": {"color": area_color_map.get(step.area_id, '#CCCCCC')},
-                    "depth": node_depth # Assign depth
-                }
-        
         SourceStep = aliased(ProcessStep, name='source_step')
         TargetStep = aliased(ProcessStep, name='target_step')
+        SourceArea = aliased(Area, name='source_area')
+        TargetArea = aliased(Area, name='target_area')
 
-        query = session.query(ProcessStepProcessStepRelevance).join(
+        query = session.query(
+            ProcessStepProcessStepRelevance,
+            SourceStep.name.label('source_step_name'),
+            SourceStep.bi_id.label('source_step_bi_id'),
+            TargetStep.name.label('target_step_name'),
+            TargetStep.bi_id.label('target_step_bi_id'),
+            SourceArea.name.label('source_area_name'),
+            TargetArea.name.label('target_area_name'),
+        ).join(
             SourceStep, ProcessStepProcessStepRelevance.source_process_step_id == SourceStep.id
         ).join(
             TargetStep, ProcessStepProcessStepRelevance.target_process_step_id == TargetStep.id
+        ).join(
+            SourceArea, SourceStep.area_id == SourceArea.id
+        ).join(
+            TargetArea, TargetStep.area_id == TargetArea.id
         )
 
         link_filters = []
         if not comparison_area_ids:
             # Only focus area selected: links within the focus area
-            link_filters.append(and_(SourceStep.area_id == focus_area_id, TargetStep.area_id == focus_area_id))
+            link_filters.append(
+                and_(SourceStep.area_id == focus_area_id, TargetStep.area_id == focus_area_id)
+            )
         else:
             # Focus to Comparison(s)
-            link_filters.append(and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids)))
+            link_filters.append(
+                and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids))
+            )
             # Comparison(s) to Focus
-            link_filters.append(and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id == focus_area_id))
-            # Links between any two comparison areas (if multiple comparison areas selected)
+            link_filters.append(
+                and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id == focus_area_id)
+            )
+            # Links between different comparison areas
             if len(comparison_area_ids) > 1:
-                 link_filters.append(and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id.in_(comparison_area_ids), SourceStep.area_id != TargetStep.area_id))
-            # Links within a single comparison area if it's the only one selected (and not the focus)
+                 link_filters.append(
+                     and_(
+                         SourceStep.area_id.in_(comparison_area_ids),
+                         TargetStep.area_id.in_(comparison_area_ids),
+                         SourceStep.area_id != TargetStep.area_id # Compare area_ids of steps
+                     )
+                 )
+            # Links within a single comparison area IF it's the only comparison AND NOT the focus area
             elif len(comparison_area_ids) == 1 and comparison_area_ids[0] != focus_area_id:
-                 link_filters.append(and_(SourceStep.area_id == comparison_area_ids[0], TargetStep.area_id == comparison_area_ids[0]))
-        
+                 link_filters.append(
+                     and_(
+                         SourceStep.area_id == comparison_area_ids[0],
+                         TargetStep.area_id == comparison_area_ids[0]
+                     )
+                 )
+
         if link_filters:
-            query = query.filter(or_(*link_filters))
-        
-        # Final filter: ensure both ends of a link are part of the nodes we intend to display
-        query = query.filter(SourceStep.id.in_(nodes_dict.keys()))
-        query = query.filter(TargetStep.id.in_(nodes_dict.keys()))
+             query = query.filter(or_(*link_filters))
+        else:
+             query = query.filter(False) 
 
-        db_links = query.all()
+        query = query.order_by(SourceStep.name, TargetStep.name)
+        db_results = query.all()
 
-        for link in db_links:
-            # Source and target must be in nodes_dict (which means their areas were selected)
-            if link.source_process_step_id in nodes_dict and link.target_process_step_id in nodes_dict:
-                links.append({
-                    "source": nodes_dict[link.source_process_step_id]["name"],
-                    "target": nodes_dict[link.target_process_step_id]["name"],
-                    "value": link.relevance_score if link.relevance_score > 0 else 1, 
-                    "lineStyle": {"opacity": 0.7, "curveness": 0.5}, # Increased curveness for visibility
-                    "data": {
-                        "link_id": link.id,
-                        "content_snippet": (link.relevance_content[:50] + '...' if link.relevance_content and len(link.relevance_content) > 50 else link.relevance_content) or "No content."
-                    }
-                })
-        
-        final_nodes_list = list(nodes_dict.values())
+        links_data = []
+        for result_row in db_results:
+            (relevance_obj, source_step_name, source_step_bi_id, 
+             target_step_name, target_step_bi_id, 
+             source_area_name, target_area_name) = result_row
+            
+            links_data.append({
+                "id": relevance_obj.id,
+                "source_step_id": relevance_obj.source_process_step_id,
+                "target_step_id": relevance_obj.target_process_step_id,
+                "source_step_name": source_step_name,
+                "source_step_bi_id": source_step_bi_id,
+                "target_step_name": target_step_name,
+                "target_step_bi_id": target_step_bi_id,
+                "source_area_name": source_area_name,
+                "target_area_name": target_area_name,
+                "relevance_score": relevance_obj.relevance_score,
+                "relevance_content_snippet": (relevance_obj.relevance_content[:100] + '...' 
+                                              if relevance_obj.relevance_content and len(relevance_obj.relevance_content) > 100 
+                                              else relevance_obj.relevance_content) or "",
+                "relevance_content": relevance_obj.relevance_content or "",
+                "created_at": relevance_obj.created_at.isoformat() if relevance_obj.created_at else None,
+                "updated_at": relevance_obj.updated_at.isoformat() if relevance_obj.updated_at else None,
+            })
+
         session.close()
-        return jsonify(nodes=final_nodes_list, links=links)
+        return jsonify(links=links_data)
+
     except Exception as e:
         session.close()
-        print(f"Error fetching Sankey data: {e}")
+        print(f"Error fetching process links data for table: {e}")
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
