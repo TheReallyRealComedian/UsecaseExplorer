@@ -1,5 +1,5 @@
 # backend/routes/usecase_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_required
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
@@ -9,9 +9,7 @@ from ..models import (
     UseCase, ProcessStep, Area,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
 )
-# NEW IMPORT FOR BREADCRUMBS DATA
 from ..utils import serialize_for_js
-# END NEW IMPORT
 
 usecase_routes = Blueprint(
     'usecases',
@@ -20,44 +18,31 @@ usecase_routes = Blueprint(
     url_prefix='/usecases'
 )
 
-# NEW: Overview page for all use cases
+
 @usecase_routes.route('/')
 @login_required
 def list_usecases():
     session = SessionLocal()
-    usecases = []
-    
-    # NEW BREADCRUMB DATA FETCHING
-    all_areas_flat = []
-    all_steps_flat = []
-    all_usecases_flat = []
-    # END NEW BREADCRUMB DATA FETCHING
-
     try:
-        # Load all use cases with their process step and area for the overview
         usecases = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
 
-        # NEW BREADCRUMB DATA FETCHING (for consistency across all routes)
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
-
+        
         return render_template(
-            'usecase_overview.html', # NEW TEMPLATE
+            'usecase_overview.html', 
             title="All Use Cases",
             usecases=usecases,
-            current_item=None, # No specific item highlighted
-            current_area=None, # No specific area context for breadcrumbs
-            current_step=None, # No specific step context for breadcrumbs
-            current_usecase=None, # No specific usecase context for breadcrumbs
-            # NEW BREADCRUMB DATA PASSING
+            current_item=None, 
+            current_area=None, 
+            current_step=None, 
+            current_usecase=None, 
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
-            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching all use cases for overview: {e}")
@@ -71,13 +56,6 @@ def list_usecases():
 @login_required
 def view_usecase(usecase_id):
     session = SessionLocal()
-    
-    # NEW BREADCRUMB DATA FETCHING
-    all_areas_flat = []
-    all_steps_flat = []
-    all_usecases_flat = []
-    # END NEW BREADCRUMB DATA FETCHING
-
     try:
         usecase = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area),
@@ -95,8 +73,8 @@ def view_usecase(usecase_id):
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
             return redirect(url_for('index'))
 
-        all_areas = session.query(Area).order_by(Area.name).all()
-        all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+        all_areas_db = session.query(Area).order_by(Area.name).all()
+        all_steps_db = session.query(ProcessStep).order_by(ProcessStep.name).all()
         other_usecases = session.query(UseCase)\
             .filter(UseCase.id != usecase_id)\
             .order_by(UseCase.name)\
@@ -104,264 +82,259 @@ def view_usecase(usecase_id):
 
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
-        current_item_for_bc = usecase # The specific item for "active" breadcrumb logic
+        current_item_for_bc = usecase 
 
-        # NEW BREADCRUMB DATA FETCHING
-        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
+        all_areas_flat = serialize_for_js(all_areas_db, 'area')
+        all_steps_flat = serialize_for_js(all_steps_db, 'step')
+        all_usecases_list = session.query(UseCase).order_by(UseCase.name).all()
+        all_usecases_flat = serialize_for_js(all_usecases_list, 'usecase')
 
         return render_template(
             'usecase_detail.html',
             title=f"Use Case: {usecase.name}",
             usecase=usecase,
-            all_areas=all_areas,
-            all_steps=all_steps,
-            other_usecases=other_usecases, # For the 'add relevance' forms
-            current_usecase=usecase, # For breadcrumbs (the usecase itself)
-            current_step=current_step_for_bc, # For breadcrumbs (the parent step)
-            current_area=current_area_for_bc, # For breadcrumbs (the parent area)
+            all_areas=all_areas_db,
+            all_steps=all_steps_db,
+            other_usecases=other_usecases, 
+            current_usecase=usecase, 
+            current_step=current_step_for_bc, 
+            current_area=current_area_for_bc, 
             current_item=current_item_for_bc,
-            # NEW BREADCRUMB DATA PASSING
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
-            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching usecase {usecase_id}: {e}")
         flash("An error occurred while fetching usecase details.", "danger")
         return redirect(url_for('index'))
     finally:
-        pass
+        SessionLocal.remove()
 
 
 @usecase_routes.route('/<int:usecase_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_usecase(usecase_id):
     session = SessionLocal()
-    usecase = session.query(UseCase).options(
-        joinedload(UseCase.process_step).joinedload(ProcessStep.area)
-    ).get(usecase_id)
-    all_steps = session.query(ProcessStep).order_by(ProcessStep.name).all()
+    try:
+        usecase = session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        ).get(usecase_id)
+        
+        if usecase is None:
+            flash(f"Use Case with ID {usecase_id} not found.", "warning")
+            return redirect(url_for('index'))
 
-    # NEW BREADCRUMB DATA FETCHING
-    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-    # END NEW BREADCRUMB DATA FETCHING
+        all_steps_db = session.query(ProcessStep).order_by(ProcessStep.name).all()
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(all_steps_db, 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
-    if usecase is None:
-        flash(f"Use Case with ID {usecase_id} not found.", "warning")
-        return redirect(url_for('index'))
+        current_step_for_bc = usecase.process_step
+        current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+        current_item_for_bc = usecase 
 
-    current_step_for_bc = usecase.process_step
-    current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
-    current_item_for_bc = usecase # For "active" breadcrumb logic
+        if request.method == 'POST':
+            original_bi_id = usecase.bi_id
+            usecase.name = request.form.get('name', '').strip()
+            usecase.bi_id = request.form.get('bi_id', '').strip()
+            usecase.process_step_id = request.form.get('process_step_id', type=int)
 
-    if request.method == 'POST':
-        original_bi_id = usecase.bi_id
-        usecase.name = request.form.get('name', '').strip()
-        usecase.bi_id = request.form.get('bi_id', '').strip()
-        usecase.process_step_id = request.form.get('process_step_id', type=int)
-
-        priority_str = request.form.get('priority')
-        if priority_str:
-            if priority_str.isdigit():
-                priority_val = int(priority_str)
-                if 1 <= priority_val <= 4:
-                    usecase.priority = priority_val
+            priority_str = request.form.get('priority')
+            if priority_str:
+                if priority_str.isdigit():
+                    priority_val = int(priority_str)
+                    if 1 <= priority_val <= 4:
+                        usecase.priority = priority_val
+                    else:
+                        flash("Invalid priority value. Must be a number between 1 and 4, or empty.", "danger")
                 else:
-                    flash("Invalid priority value. Must be a number between 1 and 4, or empty.", "danger")
-                    return render_template(
-                        'edit_usecase.html',
-                        title=f"Edit Use Case: {usecase.name}",
-                        usecase=usecase, # For the page's data
-                        all_steps=all_steps, # For the dropdown
-                        current_usecase=usecase, # For breadcrumbs
-                        current_step=current_step_for_bc, # For breadcrumbs
-                        current_area=current_area_for_bc, # For breadcrumbs
-                        current_item=current_item_for_bc, # For "active" breadcrumb logic
-                        # NEW BREADCRUMB DATA PASSING
-                        all_areas_flat=all_areas_flat,
-                        all_steps_flat=all_steps_flat,
-                        all_usecases_flat=all_usecases_flat
-                        # END NEW BREADCRUMB DATA PASSING
-                    )
+                     flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
             else:
-                 flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
-                 return render_template(
-                     'edit_usecase.html',
-                     title=f"Edit Use Case: {usecase.name}",
-                     usecase=usecase, # For the page's data
-                     all_steps=all_steps, # For the dropdown
-                     current_usecase=usecase, # For breadcrumbs
-                     current_step=current_step_for_bc, # For breadcrumbs
-                     current_area=current_area_for_bc, # For breadcrumbs
-                     current_item=current_item_for_bc, # For "active" breadcrumb logic
-                     # NEW BREADCRUMB DATA PASSING
-                     all_areas_flat=all_areas_flat,
-                     all_steps_flat=all_steps_flat,
-                     all_usecases_flat=all_usecases_flat
-                     # END NEW BREADCRUMB DATA PASSING
-                 )
-        else:
-            usecase.priority = None
+                usecase.priority = None
 
-        usecase.raw_content = request.form.get('raw_content', '').strip() or None
-        usecase.summary = request.form.get('summary', '').strip() or None
-        usecase.inspiration = request.form.get('inspiration', '').strip() or None
-        usecase.wave = request.form.get('wave', '').strip() or None
-        usecase.effort_level = request.form.get('effort_level', '').strip() or None
-        usecase.status = request.form.get('status', '').strip() or None
-        usecase.business_problem_solved = request.form.get('business_problem_solved', '').strip() or None
-        usecase.target_solution_description = request.form.get('target_solution_description', '').strip() or None
-        usecase.technologies_text = request.form.get('technologies_text', '').strip() or None
-        usecase.requirements = request.form.get('requirements', '').strip() or None
-        usecase.relevants_text = request.form.get('relevants_text', '').strip() or None
-        usecase.reduction_time_transfer = request.form.get('reduction_time_transfer', '').strip() or None
-        usecase.reduction_time_launches = request.form.get('reduction_time_launches', '').strip() or None
-        usecase.reduction_costs_supply = request.form.get('reduction_costs_supply', '').strip() or None
-        usecase.quality_improvement_quant = request.form.get('quality_improvement_quant', '').strip() or None
-        usecase.ideation_notes = request.form.get('ideation_notes', '').strip() or None
-        usecase.further_ideas = request.form.get('further_ideas', '').strip() or None
-        usecase.effort_quantification = request.form.get('effort_quantification', '').strip() or None
-        usecase.potential_quantification = request.form.get('potential_quantification', '').strip() or None
-        usecase.dependencies_text = request.form.get('dependencies_text', '').strip() or None
-        usecase.contact_persons_text = request.form.get('contact_persons_text', '').strip() or None
-        usecase.related_projects_text = request.form.get('related_projects_text', '').strip() or None
+            usecase.raw_content = request.form.get('raw_content', '').strip() or None
+            usecase.summary = request.form.get('summary', '').strip() or None
+            usecase.inspiration = request.form.get('inspiration', '').strip() or None
+            usecase.wave = request.form.get('wave', '').strip() or None
+            usecase.effort_level = request.form.get('effort_level', '').strip() or None
+            usecase.status = request.form.get('status', '').strip() or None
+            usecase.business_problem_solved = request.form.get('business_problem_solved', '').strip() or None
+            usecase.target_solution_description = request.form.get('target_solution_description', '').strip() or None
+            usecase.technologies_text = request.form.get('technologies_text', '').strip() or None
+            usecase.requirements = request.form.get('requirements', '').strip() or None
+            usecase.relevants_text = request.form.get('relevants_text', '').strip() or None
+            usecase.reduction_time_transfer = request.form.get('reduction_time_transfer', '').strip() or None
+            usecase.reduction_time_launches = request.form.get('reduction_time_launches', '').strip() or None
+            usecase.reduction_costs_supply = request.form.get('reduction_costs_supply', '').strip() or None
+            usecase.quality_improvement_quant = request.form.get('quality_improvement_quant', '').strip() or None
+            usecase.ideation_notes = request.form.get('ideation_notes', '').strip() or None
+            usecase.further_ideas = request.form.get('further_ideas', '').strip() or None
+            usecase.effort_quantification = request.form.get('effort_quantification', '').strip() or None
+            usecase.potential_quantification = request.form.get('potential_quantification', '').strip() or None
+            usecase.dependencies_text = request.form.get('dependencies_text', '').strip() or None
+            usecase.contact_persons_text = request.form.get('contact_persons_text', '').strip() or None
+            usecase.related_projects_text = request.form.get('related_projects_text', '').strip() or None
 
-        if not usecase.name or not usecase.bi_id or not usecase.process_step_id:
-            flash("Use Case Name, BI_ID, and Process Step are required.", "danger")
-            return render_template(
-                'edit_usecase.html',
-                title=f"Edit Use Case: {usecase.name}",
-                usecase=usecase, # For the page's data
-                all_steps=all_steps, # For the dropdown
-                current_usecase=usecase, # For breadcrumbs
-                current_step=current_step_for_bc, # For breadcrumbs
-                current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc, # For "active" breadcrumb logic
-                # NEW BREADCRUMB DATA PASSING
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-                # END NEW BREADCRUMB DATA PASSING
-            )
-
-        if usecase.bi_id != original_bi_id:
-            existing_uc = session.query(UseCase)\
-                .filter(UseCase.bi_id == usecase.bi_id, UseCase.id != usecase_id)\
-                .first()
-            if existing_uc:
+            if not usecase.name or not usecase.bi_id or not usecase.process_step_id:
+                flash("Use Case Name, BI_ID, and Process Step are required.", "danger")
+            elif usecase.bi_id != original_bi_id and session.query(UseCase).filter(UseCase.bi_id == usecase.bi_id, UseCase.id != usecase_id).first():
                 flash(f"Another use case with BI_ID '{usecase.bi_id}' already exists.", "danger")
-                return render_template(
-                    'edit_usecase.html',
-                    title=f"Edit Use Case: {usecase.name}",
-                    usecase=usecase, # For the page's data
-                    all_steps=all_steps, # For the dropdown
-                    current_usecase=usecase, # For breadcrumbs
-                    current_step=current_step_for_bc, # For breadcrumbs
-                    current_area=current_area_for_bc, # For breadcrumbs
-                    current_item=current_item_for_bc, # For "active" breadcrumb logic
-                    # NEW BREADCRUMB DATA PASSING
-                    all_areas_flat=all_areas_flat,
-                    all_steps_flat=all_steps_flat,
-                    all_usecases_flat=all_usecases_flat
-                    # END NEW BREADCRUMB DATA PASSING
-                )
-
-        try:
-            session.commit()
-            flash("Use Case updated successfully!", "success")
-            return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
-        except IntegrityError as e:
-            session.rollback()
-            if 'priority_range_check' in str(e):
-                 flash("Database error: Priority must be between 1 and 4, or empty.", "danger")
             else:
-                flash("Database error: Could not update use case. BI_ID might already exist or step is invalid.", "danger")
-                print(f"Integrity Error updating use case {usecase_id}: {e}")
-            return render_template(
-                'edit_usecase.html',
-                title=f"Edit Use Case: {usecase.name}",
-                usecase=usecase, # For the page's data
-                all_steps=all_steps, # For the dropdown
-                current_usecase=usecase, # For breadcrumbs
-                current_step=current_step_for_bc, # For breadcrumbs
-                current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc, # For "active" breadcrumb logic
-                # NEW BREADCRUMB DATA PASSING
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-                # END NEW BREADCRUMB DATA PASSING
-            )
-        except Exception as e:
-            session.rollback()
-            flash(f"An unexpected error occurred: {e}", "danger")
-            print(f"Error updating use case {usecase_id}: {e}")
-            return render_template(
-                'edit_usecase.html',
-                title=f"Edit Use Case: {usecase.name}", # Page title
-                usecase=usecase, # For the page's data
-                all_steps=all_steps, # For the dropdown
-                current_usecase=usecase, # For breadcrumbs
-                current_step=current_step_for_bc, # For breadcrumbs
-                current_area=current_area_for_bc, # For breadcrumbs
-                current_item=current_item_for_bc, # For "active" breadcrumb logic
-                # NEW BREADCRUMB DATA PASSING
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-                # END NEW BREADCRUMB DATA PASSING
-            )
-
-    # For GET or re-render on error (if not handled by POST's error returns)
-    return render_template(
-        'edit_usecase.html',
-        title=f"Edit Use Case: {usecase.name}",
-        usecase=usecase,
-        all_steps=all_steps,
-        current_usecase=usecase,
-        current_step=current_step_for_bc,
-        current_area=current_area_for_bc,
-        current_item=current_item_for_bc,
-        # NEW BREADCRUMB DATA PASSING
-        all_areas_flat=all_areas_flat,
-        all_steps_flat=all_steps_flat,
-        all_usecases_flat=all_usecases_flat
-        # END NEW BREADCRUMB DATA PASSING
-    )
+                try:
+                    session.commit()
+                    flash("Use Case updated successfully!", "success")
+                    return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
+                except IntegrityError as e: 
+                    session.rollback()
+                    if 'priority_range_check' in str(e).lower():
+                         flash("Database error: Priority must be between 1 and 4, or empty.", "danger")
+                    elif 'use_cases_bi_id_key' in str(e).lower() or \
+                       ('unique constraint' in str(e).lower() and 'bi_id' in str(e).lower()):
+                        flash(f"Database error: BI_ID '{usecase.bi_id}' might already exist.", "danger")
+                    elif 'use_cases_process_step_id_fkey' in str(e).lower() or \
+                         ('foreign key constraint' in str(e).lower() and 'process_step_id' in str(e).lower()):
+                        flash("Database error: Invalid Process Step selected.", "danger")
+                    else:
+                        flash("Database error: Could not update use case. Please check your input.", "danger")
+                    print(f"Integrity Error updating use case {usecase_id}: {e}")
+                except Exception as e: 
+                    session.rollback()
+                    flash(f"An unexpected error occurred during save: {e}", "danger")
+                    print(f"Error updating use case {usecase_id}: {e}")
+        
+        return render_template(
+            'edit_usecase.html',
+            title=f"Edit Use Case: {usecase.name}",
+            usecase=usecase,
+            all_steps=all_steps_db,
+            current_usecase=usecase,
+            current_step=current_step_for_bc,
+            current_area=current_area_for_bc,
+            current_item=current_item_for_bc,
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+        )
+    finally:
+        SessionLocal.remove() 
 
 
 @usecase_routes.route('/<int:usecase_id>/delete', methods=['POST'])
 @login_required
 def delete_usecase(usecase_id):
     session = SessionLocal()
-    usecase = session.query(UseCase).options(joinedload(UseCase.process_step)).get(usecase_id)
-    # Check if the deletion request came from a step detail page and store the step ID for redirect
-    step_id_for_redirect = request.form.get('process_step_id_for_redirect', type=int)
-    redirect_url = url_for('index')
+    redirect_url = url_for('index') 
+    try:
+        usecase = session.query(UseCase).options(joinedload(UseCase.process_step)).get(usecase_id)
+        step_id_for_redirect = request.form.get('process_step_id_for_redirect', type=int)
+        redirect_to_area_overview_id = request.form.get('redirect_to_area_overview', type=int)
 
-    if usecase is None:
-        flash(f"Use Case with ID {usecase_id} not found.", "warning")
-    else:
-        step_id_for_redirect = usecase.process_step_id
-        uc_name = usecase.name
-        try:
-            session.delete(usecase)
-            session.commit()
-            flash(f"Use Case '{uc_name}' deleted successfully.", "success")
-            if step_id_for_redirect is not None: # Prioritize redirecting back to the step page
-                redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-        except Exception as e:
-            session.rollback()
-            flash(f"Error deleting use case: {e}", "danger")
-            print(f"Error deleting use case {usecase_id}: {e}")
-            # If deletion failed, try to redirect back to where we came from, if possible
-            if step_id_for_redirect is not None:
-                 redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
+        if usecase is None:
+            flash(f"Use Case with ID {usecase_id} not found.", "warning")
+        else:
+            original_step_id = usecase.process_step_id 
+            uc_name = usecase.name
+            try:
+                session.delete(usecase)
+                session.commit()
+                flash(f"Use Case '{uc_name}' deleted successfully.", "success")
+                if redirect_to_area_overview_id is not None:
+                     redirect_url = url_for('areas.list_areas') 
+                elif step_id_for_redirect is not None: 
+                    redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
+                elif original_step_id: 
+                     redirect_url = url_for('steps.view_step', step_id=original_step_id)
+            except Exception as e:
+                session.rollback()
+                flash(f"Error deleting use case: {e}", "danger")
+                print(f"Error deleting use case {usecase_id}: {e}")
+                # Determine redirect URL even on error, based on available info
+                if redirect_to_area_overview_id is not None:
+                     redirect_url = url_for('areas.list_areas')
+                elif step_id_for_redirect is not None:
+                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
+                elif usecase and usecase.process_step_id: # Check if usecase object still has data
+                     redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
+                else: # Fallback if usecase object is gone or step_id is null
+                    redirect_url = url_for('usecases.list_usecases')
 
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}", "danger")
+        print(f"Outer error in delete_usecase for {usecase_id}: {e}")
+        # redirect_url remains url_for('index') or as set before this outer exception
+    finally:
+        SessionLocal.remove()
+    
     return redirect(redirect_url)
+
+
+@usecase_routes.route('/api/usecases/<int:usecase_id>/inline-update', methods=['PUT'])
+@login_required
+def inline_update_usecase(usecase_id):
+    session_db = SessionLocal()
+    new_value_stripped_for_error = None 
+    try:
+        usecase = session_db.query(UseCase).get(usecase_id)
+
+        if not usecase:
+            return jsonify(success=False, message="Use Case not found"), 404
+
+        data = request.json
+        if not data or len(data) != 1:
+            return jsonify(success=False, message="Invalid update data. Expecting a single field to update."), 400
+
+        field_to_update = list(data.keys())[0]
+        new_value = data[field_to_update]
+
+        allowed_fields = ['name', 'bi_id', 'quality_improvement_quant', 'effort_level', 'wave']
+        if field_to_update not in allowed_fields:
+            return jsonify(success=False, message=f"Field '{field_to_update}' cannot be updated inline."), 400
+
+        if field_to_update == 'name':
+            new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
+            if not new_value_stripped:
+                return jsonify(success=False, message="Use Case Name cannot be empty."), 400
+            new_value = new_value_stripped
+        
+        if field_to_update == 'bi_id':
+            new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
+            new_value_stripped_for_error = new_value_stripped 
+            if not new_value_stripped:
+                return jsonify(success=False, message="UC BI_ID cannot be empty."), 400
+            existing_uc = session_db.query(UseCase).filter(UseCase.bi_id == new_value_stripped, UseCase.id != usecase_id).first()
+            if existing_uc:
+                return jsonify(success=False, message=f"UC BI_ID '{new_value_stripped}' already exists."), 409
+            new_value = new_value_stripped
+
+        if field_to_update in ['quality_improvement_quant', 'effort_level', 'wave'] and isinstance(new_value, str) and new_value.strip().upper() == "N/A":
+            new_value = None
+            
+        setattr(usecase, field_to_update, new_value)
+        session_db.commit()
+        
+        updated_data_for_js = {
+            'id': usecase.id,
+            'name': usecase.name,
+            'bi_id': usecase.bi_id,
+            'quality_improvement_quant': usecase.quality_improvement_quant,
+            'priority': usecase.priority,
+            'effort_level': usecase.effort_level,
+            'wave': usecase.wave,
+        }
+        return jsonify(success=True, message="Use Case updated.", updated_field=field_to_update, new_value=new_value, usecase=updated_data_for_js)
+    except IntegrityError as e:
+        session_db.rollback()
+        err_msg = str(e.orig) if hasattr(e, 'orig') and e.orig else str(e)
+        
+        bi_id_value_for_msg = new_value_stripped_for_error if field_to_update == 'bi_id' and new_value_stripped_for_error is not None else new_value
+
+        if 'use_cases_bi_id_key' in err_msg.lower() or \
+           ('unique constraint' in err_msg.lower() and 'bi_id' in err_msg.lower()):
+             return jsonify(success=False, message=f"Error: BI_ID '{bi_id_value_for_msg}' likely already exists."), 409
+        return jsonify(success=False, message=f"Database error during update: {err_msg}"), 500
+    except Exception as e:
+        session_db.rollback()
+        return jsonify(success=False, message=f"An unexpected error occurred: {str(e)}"), 500
+    finally:
+        SessionLocal.remove()

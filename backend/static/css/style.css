@@ -2507,6 +2507,113 @@ form button[type="submit"].btn-primary:hover,
     font-style: italic;
 }
 
+/* Styles for Inline Editing in Tables */
+.editable-cell {
+    cursor: pointer;
+    position: relative;
+}
+.editable-cell:hover::after { /* Simple hover indicator */
+    content: "✎";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8em;
+    color: var(--bi-accent-green-500); /* Use BI Accent Green */
+}
+
+.editable-cell.is-editing:hover::after {
+    content: ""; /* Remove pencil when editing */
+}
+
+.editable-cell input, .editable-cell select {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.875rem;
+    padding: 0.2rem 0.4rem; /* More compact padding */
+    border: 1px solid var(--bi-accent-green-500); /* Accent green focus indicator */
+    border-radius: var(--border-radius-xs);
+    background-color: var(--bi-white); /* Ensure input background is white */
+    color: var(--text-primary); /* Ensure text color is standard */
+}
+
+.table td.is-editing { /* Reduce padding when input is active */
+    padding: 2px !important;
+}
+
+.table th.editable-header::after { /* Indicate editable columns in header */
+    content: " ✎";
+    font-size: 0.7em;
+    color: var(--text-muted);
+}
+
+/* Style for the container of all filter dropdowns */
+.filter-controls {
+    gap: 0.5rem; /* Spacing between filter dropdowns */
+    /* d-flex flex-wrap align-items-center mb-3 mt-3 are applied via HTML classes */
+}
+
+/* Style for each individual filter dropdown's parent container */
+.filter-dropdown-container {
+    position: relative; /* Anchor for the absolutely positioned menu */
+}
+
+/* Style for the toggle button itself */
+.filter-dropdown-toggle .filter-indicator {
+    font-size: 0.8em;
+    color: #007bff; /* Example color, adjust as needed */
+}
+/* No explicit style for .dropdown-arrow, assuming it's text or FontAwesome */
+
+/* Style for the dropdown menu itself */
+.filter-dropdown-container .filter-dropdown-menu { /* MODIFIED: Increased specificity */
+    display: none; /* Hidden by default */
+    position: absolute; /* Positioned relative to .filter-dropdown-container */
+    background-color: white;
+    border: 1px solid #ddd;
+    z-index: 1000; /* Ensures it's above other content */
+    min-width: 200px; /* Minimum width of the dropdown */
+    max-height: 300px; /* Maximum height before scrolling */
+    overflow-y: auto; /* Enable scrolling for many options */
+    padding-bottom: 0.5rem; /* Some padding at the bottom */
+    /* shadow-sm is applied via HTML class */
+}
+
+/* Style for showing the dropdown menu */
+.filter-dropdown-container .filter-dropdown-menu.show { /* MODIFIED: Increased specificity */
+    display: block;
+}
+
+/* Style for the list of filter options (checkboxes) */
+.filter-options-list label {
+    display: block;
+    padding: 0.25rem 0.75rem;
+    font-weight: normal;
+    white-space: nowrap; /* Prevent options from wrapping */
+    cursor: pointer;
+}
+.filter-options-list label:hover {
+    background-color: #f0f0f0; /* Hover effect for options */
+}
+.filter-options-list input[type="checkbox"] {
+    margin-right: 0.5em;
+    vertical-align: middle;
+}
+
+/* Style for the "Select All" / "Clear" action bar */
+.filter-actions {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #eee; /* Separator line */
+    display: flex;
+    justify-content: space-between;
+}
+.filter-actions .btn-link {
+    text-decoration: none;
+    font-size: 0.85em;
+    padding: 0.1rem 0.2rem;
+}
+
+
 /* Color variations for different areas (BI Branding) */
 .bio-excellence .step-badge { background: var(--bi-accent-green-500); color: var(--bi-dark-green-800); } /* Accent Green on Dark Green is allowed */
 .logistics .step-badge { background: var(--bi-violet-400); color: var(--bi-dark-green-800); } /* Secondary on Dark Green text (as per guide) */
