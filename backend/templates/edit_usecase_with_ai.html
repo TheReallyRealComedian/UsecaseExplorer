@@ -112,8 +112,6 @@
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('usecases.edit_usecase', usecase_id=usecase.id) }}" id="mainUsecaseEditForm">
-                {# --- Standard Use Case Fields (similar to edit_usecase.html) --- #}
-                {# These fields will be pre-filled with current usecase data and can be updated by "Apply AI" button #}
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -173,11 +171,6 @@
                     <textarea class="form-control" id="further_ideas" name="further_ideas" rows="5">{{ usecase.further_ideas | default('', true) }}</textarea>
                 </div>
 
-                {# Add other use case fields here as needed, mirroring edit_usecase.html structure for:
-                   raw_content, wave, effort_level, status, requirements, relevants_text, reduction_*, quality_improvement,
-                   ideation_notes, effort_quantification, potential_quantification, dependencies_text,
-                   contact_persons_text, related_projects_text
-                #}
                 <div class="mb-3">
                     <label for="raw_content" class="form-label">Raw Content:</label>
                     <textarea class="form-control" id="raw_content" name="raw_content" rows="5">{{ usecase.raw_content | default('', true) }}</textarea>
@@ -260,13 +253,14 @@
 {% block scripts %}
 {{ super() }}
 <script type="text/javascript">
-    // Pass initial usecase data to JS
-    const currentUsecaseData = {{ usecase | tojson | safe }};
+    // Pass initial usecase data to JS using the new serializable dictionary
+    const currentUsecaseData = {{ usecase_data_for_js | tojson | safe }};
     // Define which fields the AI is expected to suggest updates for.
     // This should align with the fields mentioned in your AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE.
     const aiSuggestibleFields = [
         "name", "summary", "inspiration", "business_problem_solved", 
         "target_solution_description", "technologies_text", "further_ideas"
+        // Add more fields here if your prompt asks the AI to update them
     ];
 </script>
 <script type="module" src="{{ url_for('static', filename='js/edit_usecase_with_ai_ui.js') }}"></script>

@@ -10,7 +10,7 @@ from ..models import (
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
 )
 from ..utils import serialize_for_js
-from ..llm_service import get_all_available_llm_models # Moved import
+from ..llm_service import get_all_available_llm_models
 
 usecase_routes = Blueprint(
     'usecases',
@@ -250,20 +250,18 @@ def delete_usecase(usecase_id):
                 session.rollback()
                 flash(f"Error deleting use case: {e}", "danger")
                 print(f"Error deleting use case {usecase_id}: {e}")
-                # Determine redirect URL even on error, based on available info
                 if redirect_to_area_overview_id is not None:
                      redirect_url = url_for('areas.list_areas')
                 elif step_id_for_redirect is not None:
                      redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-                elif usecase and usecase.process_step_id: # Check if usecase object still has data
+                elif usecase and usecase.process_step_id: 
                      redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
-                else: # Fallback if usecase object is gone or step_id is null
+                else: 
                     redirect_url = url_for('usecases.list_usecases')
 
     except Exception as e:
         flash(f"An unexpected error occurred: {e}", "danger")
         print(f"Outer error in delete_usecase for {usecase_id}: {e}")
-        # redirect_url remains url_for('index') or as set before this outer exception
     finally:
         SessionLocal.remove()
     
@@ -357,16 +355,50 @@ def edit_usecase_with_ai(usecase_id):
         all_steps_db = session.query(ProcessStep).order_by(ProcessStep.name).all()
 
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(all_steps_db, 'step') 
-        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        all_steps_flat = serialize_for_js(all_steps_db, 'step')
+        all_usecases_list_for_js = session.query(UseCase).order_by(UseCase.name).all()
+        all_usecases_flat = serialize_for_js(all_usecases_list_for_js, 'usecase')
         
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
 
+        usecase_data_for_js = {
+            "id": usecase.id,
+            "name": usecase.name,
+            "bi_id": usecase.bi_id,
+            "process_step_id": usecase.process_step_id,
+            "priority": usecase.priority,
+            "raw_content": usecase.raw_content,
+            "summary": usecase.summary,
+            "inspiration": usecase.inspiration,
+            "wave": usecase.wave,
+            "effort_level": usecase.effort_level,
+            "status": usecase.status,
+            "business_problem_solved": usecase.business_problem_solved,
+            "target_solution_description": usecase.target_solution_description,
+            "technologies_text": usecase.technologies_text,
+            "requirements": usecase.requirements,
+            "relevants_text": usecase.relevants_text,
+            "reduction_time_transfer": usecase.reduction_time_transfer,
+            "reduction_time_launches": usecase.reduction_time_launches,
+            "reduction_costs_supply": usecase.reduction_costs_supply,
+            "quality_improvement_quant": usecase.quality_improvement_quant,
+            "ideation_notes": usecase.ideation_notes,
+            "further_ideas": usecase.further_ideas,
+            "effort_quantification": usecase.effort_quantification,
+            "potential_quantification": usecase.potential_quantification,
+            "dependencies_text": usecase.dependencies_text,
+            "contact_persons_text": usecase.contact_persons_text,
+            "related_projects_text": usecase.related_projects_text,
+            "process_step_name": usecase.process_step.name if usecase.process_step else "N/A",
+            "area_name": usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else "N/A",
+        }
+
         return render_template(
-            'edit_usecase_with_ai.html', 
+            'edit_usecase_with_ai.html',
             title=f"AI Edit: {usecase.name}",
-            usecase=usecase,
+            usecase=usecase, 
+            usecase_data_for_js=usecase_data_for_js,
             all_steps=all_steps_db,
             current_usecase=usecase,
             current_step=current_step_for_bc,
