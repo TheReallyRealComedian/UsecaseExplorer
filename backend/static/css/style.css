@@ -2548,10 +2548,15 @@ form button[type="submit"].btn-primary:hover,
 }
 
 /* Style for the container of all filter dropdowns */
-.filter-controls {
-    gap: 0.5rem; /* Spacing between filter dropdowns */
-    /* d-flex flex-wrap align-items-center mb-3 mt-3 are applied via HTML classes */
+.filter-controls .area-filter-tabs {
+    border-bottom: none; /* Remove bottom border when inline */
+    padding-bottom: 0;
+    margin-bottom: 0; /* Remove margin when inline */
 }
+.filter-controls > * { /* Add some bottom margin to all direct children for wrapping */
+    margin-bottom: 0.5rem; 
+}
+
 
 /* Style for each individual filter dropdown's parent container */
 .filter-dropdown-container {
