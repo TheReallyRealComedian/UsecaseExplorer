@@ -21,7 +21,7 @@ from ..llm_service import (
     add_message_to_history
 )
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
+from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance # Ensure UseCase and ProcessStep are imported
 from ..utils import serialize_for_js
 
 
@@ -88,6 +88,48 @@ SELECTABLE_USECASE_FIELDS = {
     'related_projects_text': "Related Projects",
 }
 
+# Specialized system prompt for image-to-field update
+# Important: The fields listed here MUST match the keys you expect in the JSON output from the LLM
+# and also match the attribute names in your UseCase model.
+AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE = """
+You are an expert business analyst tasked with updating use case documentation based on an inspirational image.
+The user will provide an image and the current textual data for a use case.
+Your goal is to analyze the image and suggest updates to the use case fields.
+
+Current Use Case Data:
+---
+Name: {usecase_name}
+Summary: {usecase_summary}
+Inspiration: {usecase_inspiration}
+Business Problem Solved: {usecase_business_problem_solved}
+Target / Solution Description: {usecase_target_solution_description}
+Technologies: {usecase_technologies_text}
+Further Ideas: {usecase_further_ideas}
+---
+
+Based on the provided image, propose updates ONLY for the fields you are confident about.
+If the image does not provide clear information for a field, do not suggest an update for that field.
+Focus on how the image might inspire changes to:
+- name
+- summary
+- inspiration
+- business_problem_solved
+- target_solution_description
+- technologies_text
+- further_ideas
+
+Return your suggestions strictly as a JSON object, where keys are the field names (e.g., "summary", "inspiration") and values are your proposed new text.
+Example JSON output:
+{{
+  "summary": "A new summary based on the image...",
+  "inspiration": "The image inspires...",
+  "technologies_text": "Visually, the image suggests technologies like X, Y, Z."
+}}
+If you have no suggestion for a field, omit it from the JSON object. Do not include fields with unchanged values.
+Output ONLY the JSON object and nothing else.
+"""
+
+
 @llm_routes.route('/chat-dedicated')
 @login_required
 def llm_chat_page():
@@ -99,10 +141,6 @@ def llm_chat_page():
     all_usecases_flat = []
 
     try:
-        # These are fetched by JS now, but kept for consistency in parameters if needed
-        # ollama_models = get_available_ollama_models()
-        # chat_history = list(get_chat_history())
-
         all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -139,6 +177,7 @@ def llm_chat_page():
     finally:
         SessionLocal.remove()
 
+
 @llm_routes.route('/data-prep', methods=['GET', 'POST'])
 @login_required
 def llm_data_prep_page():
@@ -161,13 +200,7 @@ def llm_data_prep_page():
 
         total_tokens = 0
 
-        print("--- LLM Data Prep Page Access ---")
-        print(f"Request Method: {request.method}")
-
         if request.method == 'POST':
-            print("--- Processing POST request for LLM data prep ---")
-            print(f"Full form data: {request.form}")
-
             selected_area_ids_str = request.form.getlist('area_ids')
             selected_step_ids_str = request.form.getlist('step_ids')
             selected_usecase_ids_str = request.form.getlist('usecase_ids')
@@ -179,11 +212,6 @@ def llm_data_prep_page():
             selected_area_ids_int = [int(id_str) for id_str in selected_area_ids_str if id_str.isdigit()]
             selected_step_ids_int = [int(id_str) for id_str in selected_step_ids_str if id_str.isdigit()]
             selected_usecase_ids_int = [int(id_str) for id_str in selected_usecase_ids_str if id_str.isdigit()]
-
-            print(f"Parsed area_ids (int): {selected_area_ids_int}")
-            print(f"Parsed step_ids (int): {selected_step_ids_int}")
-            print(f"Parsed usecase_ids (int): {selected_usecase_ids_int}")
-            print(f"Export UC-Step Relevance: {export_uc_step_relevance}")
 
             default_step_fields = ['bi_id', 'name', 'step_description']
             default_usecase_fields = ['bi_id', 'name', 'summary']
@@ -248,7 +276,6 @@ def llm_data_prep_page():
             prepared_data["usecase_step_relevance"] = []
 
             if export_uc_step_relevance:
-                print("Exporting Use Case to Step Relevance links...")
                 relevance_query = session.query(UsecaseStepRelevance).options(
                     joinedload(UsecaseStepRelevance.source_usecase),
                     joinedload(UsecaseStepRelevance.target_process_step)
@@ -285,16 +312,11 @@ def llm_data_prep_page():
                             "updated_at": rel.updated_at.isoformat() if rel.updated_at else None,
                         }
                         prepared_data["usecase_step_relevance"].append(rel_data)
-                print(f"Exported {len(prepared_data['usecase_step_relevance'])} UC-Step Relevance links.")
 
             json_string_for_tokens = json.dumps(prepared_data, indent=2)
             total_tokens = count_tokens(json_string_for_tokens)
 
         user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
-
-        # NOTE: ollama_models and chat_history are now fetched via API calls by common_llm_chat.js
-        #       These variables in the render_template are no longer strictly needed for the LLM chat window itself
-        #       but kept for existing template structure.
         ollama_models = get_all_available_llm_models()
         chat_history = list(get_chat_history())
 
@@ -371,12 +393,14 @@ def llm_data_prep_page():
     finally:
         SessionLocal.remove()
 
+
 @llm_routes.route('/analyze/<int:usecase_id>', methods=['POST', 'GET'])
 @login_required
 def analyze_usecase(usecase_id):
     """Handles triggering an LLM analysis for a specific Use Case."""
     flash(f"LLM analysis for Use Case ID {usecase_id} requested. Not implemented yet.", "info")
     return redirect(url_for('usecases.view_usecase', usecase_id=usecase_id))
+
 
 @llm_routes.route('/chat', methods=['POST'])
 @login_required
@@ -438,11 +462,9 @@ def llm_chat():
             user_message_for_history = "Image provided."
         add_message_to_history('user', user_message_for_history)
         add_message_to_history('assistant', response["message"])
-    else:
-        # The frontend common_llm_chat.js already handles displaying data.message for errors.
-        pass
 
     return jsonify(response)
+
 
 @llm_routes.route('/system-prompt', methods=['POST'])
 @login_required
@@ -468,6 +490,7 @@ def save_system_prompt():
     finally:
         SessionLocal.remove()
 
+
 @llm_routes.route('/chat/clear', methods=['POST'])
 @login_required
 def llm_chat_clear():
@@ -475,11 +498,105 @@ def llm_chat_clear():
     return jsonify({"success": True, "message": "Chat history cleared."})
 
 
+@llm_routes.route('/analyze-usecase-image', methods=['POST'])
+@login_required
+def analyze_usecase_image_with_llm():
+    session_db = SessionLocal()
+    try:
+        data = request.json
+        usecase_id = data.get('usecase_id')
+        image_base64 = data.get('image_base64')
+        image_mime_type = data.get('image_mime_type')
+        selected_model_name = data.get('model')
+
+        if not all([usecase_id, image_base64, image_mime_type, selected_model_name]):
+            return jsonify({"success": False, "message": "Missing required data: usecase_id, image, or model."}), 400
+
+        usecase = session_db.query(UseCase).get(usecase_id)
+        if not usecase:
+            return jsonify({"success": False, "message": "Use Case not found."}), 404
+
+        prompt_context = {
+            "usecase_name": usecase.name or "N/A",
+            "usecase_summary": usecase.summary or "N/A",
+            "usecase_inspiration": usecase.inspiration or "N/A",
+            "usecase_business_problem_solved": usecase.business_problem_solved or "N/A",
+            "usecase_target_solution_description": usecase.target_solution_description or "N/A",
+            "usecase_technologies_text": usecase.technologies_text or "N/A",
+            "usecase_further_ideas": usecase.further_ideas or "N/A",
+        }
+        
+        final_llm_prompt_text = AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE.format(**prompt_context)
+        
+        parts = selected_model_name.split('-', 1)
+        provider = parts[0].lower()
+        model_id = parts[1] if len(parts) > 1 else selected_model_name
+
+        llm_response_data = {"success": False, "message": "LLM provider not supported or error."}
+
+        # Note: system_prompt is passed as None because the task-specific instructions are
+        #       already in final_llm_prompt_text (which is passed as the user message).
+        #       Chat history is [] for single-turn image analysis.
+        if provider == "openai":
+            llm_response_data = generate_openai_chat_response(
+                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
+            )
+        elif provider == "anthropic":
+            llm_response_data = generate_anthropic_chat_response(
+                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
+            )
+        elif provider == "google":
+             llm_response_data = generate_google_chat_response(
+                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
+             )
+        elif provider == "ollama":
+            llm_response_data = generate_ollama_chat_response(
+                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
+            )
+        elif provider == "apollo":
+            llm_response_data = generate_apollo_chat_response(
+                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
+            )
+        else:
+            return jsonify({"success": False, "message": f"Unsupported LLM provider: {provider}"}), 400
+
+        if llm_response_data.get("success"):
+            try:
+                suggested_updates = json.loads(llm_response_data["message"])
+                if not isinstance(suggested_updates, dict):
+                    raise ValueError("LLM did not return a JSON object.")
+                return jsonify({"success": True, "suggestions": suggested_updates})
+            except json.JSONDecodeError:
+                print(f"LLM response was not valid JSON: {llm_response_data['message']}")
+                return jsonify({
+                    "success": False,
+                    "message": "LLM response was not valid JSON. Please try again or adjust the prompt.",
+                    "raw_response": llm_response_data["message"]
+                }), 500
+            except ValueError as ve:
+                 print(f"LLM JSON validation error: {ve}")
+                 return jsonify({
+                     "success": False,
+                     "message": str(ve),
+                     "raw_response": llm_response_data["message"]
+                 }), 500
+        else:
+            return jsonify(llm_response_data), 500
+
+    except Exception as e:
+        print(f"Error in /analyze-usecase-image: {e}")
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"An internal server error occurred: {str(e)}"}), 500
+    finally:
+        session_db.close()
+
+
 @llm_routes.route('/get_llm_models', methods=['GET'])
 @login_required
 def get_llm_models_api():
     models = get_all_available_llm_models()
     return jsonify({"success": True, "models": models})
+
 
 @llm_routes.route('/get_chat_history', methods=['GET'])
 @login_required

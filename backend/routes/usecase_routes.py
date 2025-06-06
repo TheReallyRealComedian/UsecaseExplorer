@@ -10,6 +10,7 @@ from ..models import (
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
 )
 from ..utils import serialize_for_js
+from ..llm_service import get_all_available_llm_models # Moved import
 
 usecase_routes = Blueprint(
     'usecases',
@@ -336,5 +337,48 @@ def inline_update_usecase(usecase_id):
     except Exception as e:
         session_db.rollback()
         return jsonify(success=False, message=f"An unexpected error occurred: {str(e)}"), 500
+    finally:
+        SessionLocal.remove()
+
+
+@usecase_routes.route('/<int:usecase_id>/edit-with-ai', methods=['GET'])
+@login_required
+def edit_usecase_with_ai(usecase_id):
+    session = SessionLocal()
+    try:
+        usecase = session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        ).get(usecase_id)
+
+        if usecase is None:
+            flash(f"Use Case with ID {usecase_id} not found.", "warning")
+            return redirect(url_for('injection.data_update_page'))
+
+        all_steps_db = session.query(ProcessStep).order_by(ProcessStep.name).all()
+
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(all_steps_db, 'step') 
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        
+        current_step_for_bc = usecase.process_step
+        current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
+
+        return render_template(
+            'edit_usecase_with_ai.html', 
+            title=f"AI Edit: {usecase.name}",
+            usecase=usecase,
+            all_steps=all_steps_db,
+            current_usecase=usecase,
+            current_step=current_step_for_bc,
+            current_area=current_area_for_bc,
+            current_item=usecase,
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+        )
+    except Exception as e:
+        print(f"Error loading AI edit page for usecase {usecase_id}: {e}")
+        flash("An error occurred while loading the AI-assisted editing page.", "danger")
+        return redirect(url_for('injection.data_update_page'))
     finally:
         SessionLocal.remove()

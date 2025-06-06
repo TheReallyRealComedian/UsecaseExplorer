@@ -1,4 +1,3 @@
-{# UsecaseExplorer/backend/templates/data_update.html #}
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
@@ -318,6 +317,9 @@
                         <td>{{ uc.effort_level | default('N/A', true) }}</td>
                         <td>{{ uc.wave | default('N/A', true) }}</td>
                         <td>
+                            <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info me-1" title="Edit with AI Assist">
+                                <i class="fas fa-magic"></i> AI
+                            </a>
                             <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
                              <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
