@@ -21,7 +21,7 @@ from ..llm_service import (
     add_message_to_history
 )
 from ..db import SessionLocal
-from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance # Ensure UseCase and ProcessStep are imported
+from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
 from ..utils import serialize_for_js
 
 
@@ -86,47 +86,71 @@ SELECTABLE_USECASE_FIELDS = {
     'dependencies_text': "Dependencies",
     'contact_persons_text': "Contact Persons",
     'related_projects_text': "Related Projects",
+    # ADDED NEW FIELDS HERE
+    'pilot_site_factory_text': "Pilot Site, Factory",
+    'usecase_type_category': "Use Case Type Category",
+    # END ADDED NEW FIELDS
 }
 
 # Specialized system prompt for image-to-field update
 # Important: The fields listed here MUST match the keys you expect in the JSON output from the LLM
 # and also match the attribute names in your UseCase model.
 AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE = """
-You are an expert business analyst tasked with updating use case documentation based on an inspirational image.
+You are an expert business analyst tasked with updating use case documentation based on the provided image.
+The image contains various details about a use case.
 The user will provide an image and the current textual data for a use case.
 Your goal is to analyze the image and suggest updates to the use case fields.
 
-Current Use Case Data:
+Current Use Case Data (for context, do not just copy existing values if image provides new info):
 ---
 Name: {usecase_name}
 Summary: {usecase_summary}
-Inspiration: {usecase_inspiration}
-Business Problem Solved: {usecase_business_problem_solved}
-Target / Solution Description: {usecase_target_solution_description}
-Technologies: {usecase_technologies_text}
-Further Ideas: {usecase_further_ideas}
+As-is situation and business need (mapped to business_problem_solved): {usecase_business_problem_solved}
+Target and solution (mapped to target_solution_description): {usecase_target_solution_description}
+Pilot Site, Factory: {usecase_pilot_site_factory_text}
+Effort Quantification: {usecase_effort_quantification}
+Potential Quantification (Benefits/Comments): {usecase_potential_quantification}
+Dependencies: {usecase_dependencies_text}
+Use Case Type: {usecase_usecase_type_category}
 ---
 
 Based on the provided image, propose updates ONLY for the fields you are confident about.
-If the image does not provide clear information for a field, do not suggest an update for that field.
-Focus on how the image might inspire changes to:
-- name
-- summary
-- inspiration
-- business_problem_solved
-- target_solution_description
-- technologies_text
-- further_ideas
+If the image does not provide clear information for a field, omit it from the JSON object.
+Do not suggest an update for fields if the image content is identical to the current value.
+DO NOT DEVIATE FROM THE CONTENT IN THE IMAGE; e.g. DO NOT INTERPRETE THAT WHAT THE POTENTIAL QUANTIFICATION OR EFFORT IS BASED ON ANY TEXT YOU HAVE - YOU MUST ONLY RETURN THE CONTENT FROM THE PICTURE.
 
-Return your suggestions strictly as a JSON object, where keys are the field names (e.g., "summary", "inspiration") and values are your proposed new text.
+Extract information from the image and map it to the following fields.
+
+1.  **name**: From "Use Case Summary: MXX 'Name'".
+2.  **summary**: From "Short Description" section.
+3.  **business_problem_solved**: From "As-is situation and business need" section.
+4.  **target_solution_description**: From "Target and solution" section.
+5.  **pilot_site_factory_text**: From "Pilot site, factory" section. **IMPORTANT: If the text is exactly "<Site, Factory>", DO NOT ENTER ANYTHING for this field.**
+6.  **usecase_type_category**: Identify the text next to the 'X' checkbox under "Use case type" (e.g., "Strategic", "Improvement", "Fundamental"). **IMPORTANT: Only return the category if a clear 'X' is visible next to it. If no 'X' is visible, DO NOT ENTER ANYTHING for this field.**
+7.  **effort_quantification**: Summarize the "Effort" section (Project cost, Run costs (p.a.), Time for implementation). This information is indicated by small dark dots on one of 3 segments. IMPORTANT: if the 3 dots are all in a perfect vertical line to the right of the indicator rectangles this means nothing has been selected - don't return anything in that case! You should challenge your result double if it is "Project cost: >€1.000k, Run costs: >€500k, Time for implementation: >3y" This rather happens rarely, so check if you might have the case of a non-selection.
+    *   **Project cost segments:** "<€500k", "€500k-€1.000k", ">€1.000k"
+    *   **Run costs (p.a.) segments:** "<€200k", "€200k-€500k", ">€500k"
+    *   **Time for implementation segments:** "<1y", "1-3y", ">3y"
+    **IMPORTANT: Return the segment value ONLY IF a dark dot is positioned DIRECTLY ON one of the gray rectangles for that segment.
+    Example: "Project cost: <€500k, Run costs: <€200k, Time for implementation: <1y."
+8.  **potential_quantification**: Summarize the "Benefits" and "Prerequisites and dependencies" sections.
+    *   **Benefits (checkmarked):** Identify benefits with a clear "x" next to them. The potential benefits are: "Time red. for product transfer/launch", "Batch cycle time red.", "Batch yield increase", "Total cost red.", "Inventory destruction red.", "Right-first-time increase", "Compliance".
+    *   **Comments:** Include any text in the "Comments" column next to the benefits.
+    **IMPORTANT: Only include a benefit in your summary if there is a clear "x" checkmark next to it. Do not list benefits that are not checked.** Format this as a single coherent text. Be careful with the first benefit ("Time red. for product transfer/launch" as it is two-lined, here be extra careful to check if there is a "x" in the respective box
+
+Return your suggestions strictly as a JSON object, where keys are the field names as listed above (e.g., "summary", "effort_quantification"). Values should be your proposed new text for these fields.
 Example JSON output:
 {{
-  "summary": "A new summary based on the image...",
-  "inspiration": "The image inspires...",
-  "technologies_text": "Visually, the image suggests technologies like X, Y, Z."
+  "name": "Updated Plant Modeling Tool",
+  "summary": "A refined description of plant optimization.",
+  "business_problem_solved": "Addressing inefficiencies in new building planning.",
+  "target_solution_description": "Implementing a digital twin for plant simulation and optimization.",
+  "pilot_site_factory_text": "Pilot site: XYZ Factory",
+  "usecase_type_category": "Improvement",
+  "effort_quantification": "Project cost: <€500k, Run costs: <€200k, Time for implementation: <1y.",
+  "potential_quantification": "Benefits include Time reduction for product transfer/launch, Batch cycle time reduction. Dependencies: Same Database as M01. Tools need to be interlinked."
 }}
-If you have no suggestion for a field, omit it from the JSON object. Do not include fields with unchanged values.
-Output ONLY the JSON object and nothing else.
+MOST IMPORTANT OF ALL: Output ONLY the JSON object and nothing else!!!!!
 """
 
 
@@ -508,25 +532,40 @@ def analyze_usecase_image_with_llm():
         image_base64 = data.get('image_base64')
         image_mime_type = data.get('image_mime_type')
         selected_model_name = data.get('model')
+        system_prompt_override = data.get('system_prompt_override')
 
         if not all([usecase_id, image_base64, image_mime_type, selected_model_name]):
-            return jsonify({"success": False, "message": "Missing required data: usecase_id, image, or model."}), 400
+            return jsonify({
+                "success": False, "message": "Missing required data: usecase_id, image_base64, image_mime_type, or model."
+            }), 400
 
         usecase = session_db.query(UseCase).get(usecase_id)
         if not usecase:
             return jsonify({"success": False, "message": "Use Case not found."}), 404
 
+        # Updated prompt context to include new fields and remove irrelevant ones
         prompt_context = {
             "usecase_name": usecase.name or "N/A",
             "usecase_summary": usecase.summary or "N/A",
-            "usecase_inspiration": usecase.inspiration or "N/A",
             "usecase_business_problem_solved": usecase.business_problem_solved or "N/A",
             "usecase_target_solution_description": usecase.target_solution_description or "N/A",
-            "usecase_technologies_text": usecase.technologies_text or "N/A",
-            "usecase_further_ideas": usecase.further_ideas or "N/A",
+            "usecase_pilot_site_factory_text": usecase.pilot_site_factory_text or "N/A", # NEW
+            "usecase_effort_quantification": usecase.effort_quantification or "N/A",
+            "usecase_potential_quantification": usecase.potential_quantification or "N/A",
+            "usecase_dependencies_text": usecase.dependencies_text or "N/A",
+            "usecase_usecase_type_category": usecase.usecase_type_category or "N/A", # NEW
         }
         
-        final_llm_prompt_text = AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE.format(**prompt_context)
+        active_system_prompt_template = system_prompt_override if system_prompt_override else AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE
+        
+        try:
+            final_llm_prompt_text = active_system_prompt_template.format(**prompt_context)
+        except KeyError as e:
+            print(f"KeyError formatting prompt template: {e}. Context: {prompt_context}. Template: {active_system_prompt_template}")
+            return jsonify({
+                "success": False,
+                "message": f"Error formatting the prompt template. A placeholder like '{{{e}}}' might be missing from the provided context or the template is malformed."
+            }), 500
         
         parts = selected_model_name.split('-', 1)
         provider = parts[0].lower()
@@ -562,7 +601,16 @@ def analyze_usecase_image_with_llm():
 
         if llm_response_data.get("success"):
             try:
-                suggested_updates = json.loads(llm_response_data["message"])
+                # Attempt to strip markdown code block fences if present
+                response_message = llm_response_data["message"]
+                if response_message.startswith("```json"):
+                    response_message = response_message[len("```json"):].strip()
+                if response_message.startswith("```"): # Generic fence
+                     response_message = response_message[len("```"):].strip()
+                if response_message.endswith("```"):
+                    response_message = response_message[:-len("```")].strip()
+
+                suggested_updates = json.loads(response_message)
                 if not isinstance(suggested_updates, dict):
                     raise ValueError("LLM did not return a JSON object.")
                 return jsonify({"success": True, "suggestions": suggested_updates})
@@ -570,7 +618,7 @@ def analyze_usecase_image_with_llm():
                 print(f"LLM response was not valid JSON: {llm_response_data['message']}")
                 return jsonify({
                     "success": False,
-                    "message": "LLM response was not valid JSON. Please try again or adjust the prompt.",
+                    "message": "LLM response was not valid JSON. Please check the LLM's output format. It might have included explanations or markdown.",
                     "raw_response": llm_response_data["message"]
                 }), 500
             except ValueError as ve:

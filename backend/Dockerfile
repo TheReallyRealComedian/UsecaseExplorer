@@ -6,6 +6,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/backend/
+# Force Docker cache invalidation for the COPY step
+# Schema update marker 2025-06-06 V3
 
 ENV PYTHONPATH=/app/backend
 

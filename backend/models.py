@@ -107,34 +107,34 @@ class UseCase(Base):
     bi_id = Column(String(255), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
     process_step_id = Column(Integer, ForeignKey('process_steps.id'), nullable=False)
-    priority = Column(Integer, nullable=True) # Existing field for 1-4 priority
-    raw_content = Column(Text, nullable=True) # Existing field
-    summary = Column(Text, nullable=True) # Existing field
-    inspiration = Column(Text, nullable=True) # Existing field
+    priority = Column(Integer, nullable=True)
+    raw_content = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True)
+    inspiration = Column(Text, nullable=True)
 
-    # --- New Fields Based on Documentation Structure ---
     wave = Column(String(255), nullable=True)
     effort_level = Column(String(255), nullable=True) # e.g., 'Low', 'Medium', 'High'
     status = Column(String(255), nullable=True) # e.g., 'Ideated', 'Waiting List', 'Ongoing', 'Completed'
     business_problem_solved = Column(Text, nullable=True)
     target_solution_description = Column(Text, nullable=True)
-    technologies_text = Column(Text, nullable=True) # Storing the block of text listing technologies
+    technologies_text = Column(Text, nullable=True)
     requirements = Column(Text, nullable=True)
-    relevants_text = Column(Text, nullable=True) # Storing the block of text listing relevants (Bio, Pharma, etc.)
+    relevants_text = Column(Text, nullable=True)
     reduction_time_transfer = Column(String(255), nullable=True) # e.g., 'Low (days)', 'Medium (weeks)', 'High (month)'
     reduction_time_launches = Column(String(255), nullable=True) # e.g., 'Low (weeks)', 'High (month)'
     reduction_costs_supply = Column(String(255), nullable=True) # e.g., 'Low', 'Medium', 'High'
     quality_improvement_quant = Column(String(255), nullable=True) # e.g., 'Low', 'Medium', 'High'
     ideation_notes = Column(Text, nullable=True)
     further_ideas = Column(Text, nullable=True)
-    effort_quantification = Column(Text, nullable=True) # Storing the block of text description
-    potential_quantification = Column(Text, nullable=True) # Storing the block of text description
-    dependencies_text = Column(Text, nullable=True) # Storing the block of text description
-    contact_persons_text = Column(Text, nullable=True) # Storing the block of text description
-    related_projects_text = Column(Text, nullable=True) # Storing the block of text description
-    # --- End New Fields ---
+    effort_quantification = Column(Text, nullable=True)
+    potential_quantification = Column(Text, nullable=True)
+    dependencies_text = Column(Text, nullable=True)
+    contact_persons_text = Column(Text, nullable=True)
+    related_projects_text = Column(Text, nullable=True)
 
-    # LLM comments (Existing)
+    pilot_site_factory_text = Column(Text, nullable=True)
+    usecase_type_category = Column(String(255), nullable=True) # (Strategic, Improvement, Fundamental)
+
     llm_comment_1 = Column(Text, nullable=True)
     llm_comment_2 = Column(Text, nullable=True)
     llm_comment_3 = Column(Text, nullable=True)

@@ -11,6 +11,7 @@ from ..models import (
 )
 from ..utils import serialize_for_js
 from ..llm_service import get_all_available_llm_models
+from ..routes.llm_routes import AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE # Import it
 
 usecase_routes = Blueprint(
     'usecases',
@@ -18,6 +19,19 @@ usecase_routes = Blueprint(
     template_folder='../templates',
     url_prefix='/usecases'
 )
+
+# UPDATED FIELDS FOR AI SUGGESTIONS
+PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS = [
+    "name",
+    "summary",
+    "business_problem_solved",
+    "target_solution_description",
+    "pilot_site_factory_text", # NEW FIELD
+    "usecase_type_category", # NEW FIELD
+    "effort_quantification",
+    "potential_quantification",
+    "dependencies_text", # Keeping dependencies_text as it's part of the 'Potential Quantification' summary extraction.
+]
 
 
 @usecase_routes.route('/')
@@ -32,15 +46,15 @@ def list_usecases():
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        
+
         return render_template(
-            'usecase_overview.html', 
+            'usecase_overview.html',
             title="All Use Cases",
             usecases=usecases,
-            current_item=None, 
-            current_area=None, 
-            current_step=None, 
-            current_usecase=None, 
+            current_item=None,
+            current_area=None,
+            current_step=None,
+            current_usecase=None,
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
@@ -83,7 +97,7 @@ def view_usecase(usecase_id):
 
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
-        current_item_for_bc = usecase 
+        current_item_for_bc = usecase
 
         all_areas_flat = serialize_for_js(all_areas_db, 'area')
         all_steps_flat = serialize_for_js(all_steps_db, 'step')
@@ -96,10 +110,10 @@ def view_usecase(usecase_id):
             usecase=usecase,
             all_areas=all_areas_db,
             all_steps=all_steps_db,
-            other_usecases=other_usecases, 
-            current_usecase=usecase, 
-            current_step=current_step_for_bc, 
-            current_area=current_area_for_bc, 
+            other_usecases=other_usecases,
+            current_usecase=usecase,
+            current_step=current_step_for_bc,
+            current_area=current_area_for_bc,
             current_item=current_item_for_bc,
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
@@ -121,7 +135,7 @@ def edit_usecase(usecase_id):
         usecase = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).get(usecase_id)
-        
+
         if usecase is None:
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
             return redirect(url_for('index'))
@@ -133,7 +147,7 @@ def edit_usecase(usecase_id):
 
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
-        current_item_for_bc = usecase 
+        current_item_for_bc = usecase
 
         if request.method == 'POST':
             original_bi_id = usecase.bi_id
@@ -176,6 +190,10 @@ def edit_usecase(usecase_id):
             usecase.dependencies_text = request.form.get('dependencies_text', '').strip() or None
             usecase.contact_persons_text = request.form.get('contact_persons_text', '').strip() or None
             usecase.related_projects_text = request.form.get('related_projects_text', '').strip() or None
+            # ADDED NEW FIELDS HERE
+            usecase.pilot_site_factory_text = request.form.get('pilot_site_factory_text', '').strip() or None
+            usecase.usecase_type_category = request.form.get('usecase_type_category', '').strip() or None
+            # END ADDED NEW FIELDS
 
             if not usecase.name or not usecase.bi_id or not usecase.process_step_id:
                 flash("Use Case Name, BI_ID, and Process Step are required.", "danger")
@@ -186,7 +204,7 @@ def edit_usecase(usecase_id):
                     session.commit()
                     flash("Use Case updated successfully!", "success")
                     return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
-                except IntegrityError as e: 
+                except IntegrityError as e:
                     session.rollback()
                     if 'priority_range_check' in str(e).lower():
                          flash("Database error: Priority must be between 1 and 4, or empty.", "danger")
@@ -199,11 +217,11 @@ def edit_usecase(usecase_id):
                     else:
                         flash("Database error: Could not update use case. Please check your input.", "danger")
                     print(f"Integrity Error updating use case {usecase_id}: {e}")
-                except Exception as e: 
+                except Exception as e:
                     session.rollback()
                     flash(f"An unexpected error occurred during save: {e}", "danger")
                     print(f"Error updating use case {usecase_id}: {e}")
-        
+
         return render_template(
             'edit_usecase.html',
             title=f"Edit Use Case: {usecase.name}",
@@ -218,14 +236,14 @@ def edit_usecase(usecase_id):
             all_usecases_flat=all_usecases_flat
         )
     finally:
-        SessionLocal.remove() 
+        SessionLocal.remove()
 
 
 @usecase_routes.route('/<int:usecase_id>/delete', methods=['POST'])
 @login_required
 def delete_usecase(usecase_id):
     session = SessionLocal()
-    redirect_url = url_for('index') 
+    redirect_url = url_for('index')
     try:
         usecase = session.query(UseCase).options(joinedload(UseCase.process_step)).get(usecase_id)
         step_id_for_redirect = request.form.get('process_step_id_for_redirect', type=int)
@@ -234,17 +252,17 @@ def delete_usecase(usecase_id):
         if usecase is None:
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
         else:
-            original_step_id = usecase.process_step_id 
+            original_step_id = usecase.process_step_id
             uc_name = usecase.name
             try:
                 session.delete(usecase)
                 session.commit()
                 flash(f"Use Case '{uc_name}' deleted successfully.", "success")
                 if redirect_to_area_overview_id is not None:
-                     redirect_url = url_for('areas.list_areas') 
-                elif step_id_for_redirect is not None: 
+                     redirect_url = url_for('areas.list_areas')
+                elif step_id_for_redirect is not None:
                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-                elif original_step_id: 
+                elif original_step_id:
                      redirect_url = url_for('steps.view_step', step_id=original_step_id)
             except Exception as e:
                 session.rollback()
@@ -254,9 +272,9 @@ def delete_usecase(usecase_id):
                      redirect_url = url_for('areas.list_areas')
                 elif step_id_for_redirect is not None:
                      redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-                elif usecase and usecase.process_step_id: 
+                elif usecase and usecase.process_step_id:
                      redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
-                else: 
+                else:
                     redirect_url = url_for('usecases.list_usecases')
 
     except Exception as e:
@@ -264,15 +282,13 @@ def delete_usecase(usecase_id):
         print(f"Outer error in delete_usecase for {usecase_id}: {e}")
     finally:
         SessionLocal.remove()
-    
-    return redirect(redirect_url)
 
 
 @usecase_routes.route('/api/usecases/<int:usecase_id>/inline-update', methods=['PUT'])
 @login_required
 def inline_update_usecase(usecase_id):
     session_db = SessionLocal()
-    new_value_stripped_for_error = None 
+    new_value_stripped_for_error = None
     try:
         usecase = session_db.query(UseCase).get(usecase_id)
 
@@ -295,10 +311,10 @@ def inline_update_usecase(usecase_id):
             if not new_value_stripped:
                 return jsonify(success=False, message="Use Case Name cannot be empty."), 400
             new_value = new_value_stripped
-        
+
         if field_to_update == 'bi_id':
             new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
-            new_value_stripped_for_error = new_value_stripped 
+            new_value_stripped_for_error = new_value_stripped
             if not new_value_stripped:
                 return jsonify(success=False, message="UC BI_ID cannot be empty."), 400
             existing_uc = session_db.query(UseCase).filter(UseCase.bi_id == new_value_stripped, UseCase.id != usecase_id).first()
@@ -308,10 +324,10 @@ def inline_update_usecase(usecase_id):
 
         if field_to_update in ['quality_improvement_quant', 'effort_level', 'wave'] and isinstance(new_value, str) and new_value.strip().upper() == "N/A":
             new_value = None
-            
+
         setattr(usecase, field_to_update, new_value)
         session_db.commit()
-        
+
         updated_data_for_js = {
             'id': usecase.id,
             'name': usecase.name,
@@ -325,7 +341,7 @@ def inline_update_usecase(usecase_id):
     except IntegrityError as e:
         session_db.rollback()
         err_msg = str(e.orig) if hasattr(e, 'orig') and e.orig else str(e)
-        
+
         bi_id_value_for_msg = new_value_stripped_for_error if field_to_update == 'bi_id' and new_value_stripped_for_error is not None else new_value
 
         if 'use_cases_bi_id_key' in err_msg.lower() or \
@@ -358,10 +374,11 @@ def edit_usecase_with_ai(usecase_id):
         all_steps_flat = serialize_for_js(all_steps_db, 'step')
         all_usecases_list_for_js = session.query(UseCase).order_by(UseCase.name).all()
         all_usecases_flat = serialize_for_js(all_usecases_list_for_js, 'usecase')
-        
+
         current_step_for_bc = usecase.process_step
         current_area_for_bc = current_step_for_bc.area if current_step_for_bc else None
 
+        # UPDATED usecase_data_for_js to include new fields for frontend display
         usecase_data_for_js = {
             "id": usecase.id,
             "name": usecase.name,
@@ -370,13 +387,13 @@ def edit_usecase_with_ai(usecase_id):
             "priority": usecase.priority,
             "raw_content": usecase.raw_content,
             "summary": usecase.summary,
-            "inspiration": usecase.inspiration,
+            "inspiration": usecase.inspiration, # Keep for main form
             "wave": usecase.wave,
             "effort_level": usecase.effort_level,
             "status": usecase.status,
             "business_problem_solved": usecase.business_problem_solved,
             "target_solution_description": usecase.target_solution_description,
-            "technologies_text": usecase.technologies_text,
+            "technologies_text": usecase.technologies_text, # Keep for main form
             "requirements": usecase.requirements,
             "relevants_text": usecase.relevants_text,
             "reduction_time_transfer": usecase.reduction_time_transfer,
@@ -384,7 +401,7 @@ def edit_usecase_with_ai(usecase_id):
             "reduction_costs_supply": usecase.reduction_costs_supply,
             "quality_improvement_quant": usecase.quality_improvement_quant,
             "ideation_notes": usecase.ideation_notes,
-            "further_ideas": usecase.further_ideas,
+            "further_ideas": usecase.further_ideas, # Keep for main form
             "effort_quantification": usecase.effort_quantification,
             "potential_quantification": usecase.potential_quantification,
             "dependencies_text": usecase.dependencies_text,
@@ -392,21 +409,28 @@ def edit_usecase_with_ai(usecase_id):
             "related_projects_text": usecase.related_projects_text,
             "process_step_name": usecase.process_step.name if usecase.process_step else "N/A",
             "area_name": usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else "N/A",
+            # ADDED NEW FIELDS HERE
+            "pilot_site_factory_text": usecase.pilot_site_factory_text,
+            "usecase_type_category": usecase.usecase_type_category,
+            # END ADDED NEW FIELDS
         }
 
         return render_template(
             'edit_usecase_with_ai.html',
             title=f"AI Edit: {usecase.name}",
-            usecase=usecase, 
+            usecase=usecase,
             usecase_data_for_js=usecase_data_for_js,
             all_steps=all_steps_db,
+            default_ai_system_prompt=AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE,
+            ai_suggestible_fields=PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS,
             current_usecase=usecase,
             current_step=current_step_for_bc,
             current_area=current_area_for_bc,
             current_item=usecase,
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
+            all_usecases_flat=all_usecases_flat,
+            available_llm_models=get_all_available_llm_models()
         )
     except Exception as e:
         print(f"Error loading AI edit page for usecase {usecase_id}: {e}")
