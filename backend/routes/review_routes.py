@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
 from flask_login import login_required
 from sqlalchemy.orm import joinedload, aliased
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, exc as sqlalchemy_exc # Import sqlalchemy_exc
 
 from ..db import SessionLocal
 from ..utils import serialize_for_js
@@ -117,7 +117,6 @@ def get_process_links_data():
         if main_filter_conditions:
             query = query.filter(or_(*main_filter_conditions))
         else:
-            # This case should ideally not be reached if focus_area_id is mandatory and logic is correct
             query = query.filter(False) 
 
         query = query.order_by(SourceStep.name, TargetStep.name)
@@ -202,6 +201,9 @@ def create_process_link():
         if not all([source_step_id, target_step_id, relevance_score is not None]):
             return jsonify(error="Missing required fields (source, target, score)."), 400
         
+        source_step_id = int(source_step_id)
+        target_step_id = int(target_step_id)
+
         if source_step_id == target_step_id:
             return jsonify(error="Cannot link a step to itself."), 400
 
@@ -211,6 +213,14 @@ def create_process_link():
                 return jsonify(error="Score must be between 0 and 100."), 400
         except ValueError:
             return jsonify(error="Invalid score format."), 400
+
+        # Check existence of steps
+        source_step_exists = session.query(ProcessStep).get(source_step_id)
+        target_step_exists = session.query(ProcessStep).get(target_step_id)
+        if not source_step_exists:
+            return jsonify(error=f"Source step with ID {source_step_id} not found."), 404
+        if not target_step_exists:
+            return jsonify(error=f"Target step with ID {target_step_id} not found."), 404
 
         existing = session.query(ProcessStepProcessStepRelevance).filter_by(
             source_process_step_id=source_step_id,
@@ -228,6 +238,13 @@ def create_process_link():
         session.add(new_link)
         session.commit()
         return jsonify(success=True, message="Link created successfully.", link_id=new_link.id), 201
+    except sqlalchemy_exc.IntegrityError as e: # Catch specific integrity errors
+        session.rollback()
+        if "no_self_step_relevance" in str(e.orig).lower():
+            return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
+        if "unique_process_step_process_step_relevance" in str(e.orig).lower():
+            return jsonify(error="Database constraint violation: This link already exists."), 409
+        return jsonify(error=f"Database integrity error: {e.orig}"), 500
     except Exception as e:
         session.rollback()
         return jsonify(error=str(e)), 500
@@ -246,8 +263,50 @@ def update_process_link(link_id):
             return jsonify(error="Link not found."), 404
 
         data = request.json
+        
+        # --- START: Handle potential linkage changes ---
+        new_source_step_id = data.get('source_step_id')
+        new_target_step_id = data.get('target_step_id')
+
+        source_changed = new_source_step_id is not None and int(new_source_step_id) != link.source_process_step_id
+        target_changed = new_target_step_id is not None and int(new_target_step_id) != link.target_process_step_id
+
+        final_source_id = int(new_source_step_id) if source_changed else link.source_process_step_id
+        final_target_id = int(new_target_step_id) if target_changed else link.target_process_step_id
+
+        if final_source_id == final_target_id:
+            return jsonify(error="Cannot link a step to itself."), 400
+
+        if source_changed or target_changed:
+            # Validate existence of new steps if they are being changed
+            if source_changed:
+                source_step_exists = session.query(ProcessStep).get(final_source_id)
+                if not source_step_exists:
+                    return jsonify(error=f"New source step with ID {final_source_id} not found."), 404
+            
+            if target_changed:
+                target_step_exists = session.query(ProcessStep).get(final_target_id)
+                if not target_step_exists:
+                    return jsonify(error=f"New target step with ID {final_target_id} not found."), 404
+            
+            # Check for duplicate link if source/target combination changes
+            existing_duplicate = session.query(ProcessStepProcessStepRelevance).filter(
+                ProcessStepProcessStepRelevance.id != link_id,
+                ProcessStepProcessStepRelevance.source_process_step_id == final_source_id,
+                ProcessStepProcessStepRelevance.target_process_step_id == final_target_id
+            ).first()
+            if existing_duplicate:
+                return jsonify(error="A link with the new source and target steps already exists."), 409
+            
+            # Update link IDs
+            link.source_process_step_id = final_source_id
+            link.target_process_step_id = final_target_id
+        # --- END: Handle potential linkage changes ---
+
+
+        # Update score and content (existing logic)
         relevance_score = data.get('relevance_score')
-        relevance_content = data.get('relevance_content', '').strip() # Ensure strip even if it's None initially
+        relevance_content = data.get('relevance_content', '').strip() 
 
         if relevance_score is not None:
             try:
@@ -263,6 +322,13 @@ def update_process_link(link_id):
         
         session.commit()
         return jsonify(success=True, message="Link updated successfully.")
+    except sqlalchemy_exc.IntegrityError as e: # Catch specific integrity errors
+        session.rollback()
+        if "no_self_step_relevance" in str(e.orig).lower():
+            return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
+        if "unique_process_step_process_step_relevance" in str(e.orig).lower():
+            return jsonify(error="Database constraint violation: This link (source/target combination) already exists."), 409
+        return jsonify(error=f"Database integrity error: {e.orig}"), 500
     except Exception as e:
         session.rollback()
         return jsonify(error=str(e)), 500
@@ -292,8 +358,6 @@ def delete_process_link(link_id):
 
 
 # General API Blueprint (for endpoints not strictly tied to a specific review section)
-# This blueprint would need to be registered in your main Flask application setup.
-# Example: app.register_blueprint(general_api_routes)
 general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
 
 @general_api_routes.route('/steps', methods=['GET'])
@@ -315,7 +379,7 @@ def get_all_steps_for_select():
                 "id": step.id,
                 "name": step.name,
                 "bi_id": step.bi_id,
-                "area": area_info 
+                "area_name": step.area.name if step.area else "N/A" 
             })
         return jsonify(steps_data)
     except Exception as e:

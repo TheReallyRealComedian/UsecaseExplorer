@@ -132,7 +132,7 @@
 </div>
 
 <!-- Create/Edit Link Modal -->
-<div class="modal fade" id="linkReviewModal" tabindex="-1" aria-labelledby="linkReviewModalLabel" aria-hidden="true"> {# Renamed modal ID to match JS #}
+<div class="modal fade" id="linkReviewModal" tabindex="-1" aria-labelledby="linkReviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -141,17 +141,26 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modalLinkId">
-                {# Keep Source/Target IDs hidden inputs for POST/PUT requests #}
-                <input type="hidden" id="modalSourceStepId">
-                <input type="hidden" id="modalTargetStepId">
+                {# Hidden inputs to store the *selected* IDs from the dropdowns #}
+                <input type="hidden" id="modalSourceStepIdHidden"> 
+                <input type="hidden" id="modalTargetStepIdHidden">
 
+                {# Source Process Step Selection #}
                 <div class="mb-3">
-                    <strong>From:</strong> <span id="modalSourceStepDisplay"></span>
+                    <label for="modalSourceStepSelect" class="form-label fw-bold">From Process Step:</label>
+                    <select class="form-select" id="modalSourceStepSelect" required>
+                        {# Options will be populated by JavaScript #}
+                        <option value="">-- Select Source Step --</option>
+                    </select>
                 </div>
+
+                {# Target Process Step Selection #}
                 <div class="mb-3">
-                    <strong>To:</strong>
-                    {# If creating a new link, this will be a select; if editing, just display text #}
-                    <span id="modalTargetStepDisplay"></span>
+                    <label for="modalTargetStepSelect" class="form-label fw-bold">To Process Step:</label>
+                    <select class="form-select" id="modalTargetStepSelect" required>
+                        {# Options will be populated by JavaScript #}
+                        <option value="">-- Select Target Step --</option>
+                    </select>
                 </div>
                 <hr>
                 <div class="mb-3">
@@ -179,8 +188,5 @@
 
 {% block scripts %}
 {{ super() }}
-{# Remove ECharts JS include #}
-{# Keep Marked.js #}
-{# Include the refactored UI JS #}
 <script src="{{ url_for('static', filename='js/review_process_links_ui.js') }}" type="module"></script>
 {% endblock %}
