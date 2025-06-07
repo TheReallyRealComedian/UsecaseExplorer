@@ -1,3 +1,5 @@
+# backend/routes/injection_routes.py
+
 import os
 import traceback
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
@@ -6,7 +8,7 @@ import json
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
-from ..models import Area, ProcessStep, UseCase # Keep this
+from ..models import Area, ProcessStep, UseCase # Make sure UseCase is imported
 from ..injection_service import (
     process_area_file,
     process_step_file,
@@ -19,7 +21,7 @@ from ..injection_service import (
     finalize_step_import
 )
 from ..db import SessionLocal
-from ..utils import serialize_for_js # Ensure this is imported
+from ..utils import serialize_for_js
 
 injection_routes = Blueprint('injection', __name__,
                              template_folder='../templates',
@@ -96,13 +98,14 @@ def data_update_page():
     print("---------------------------------------------------------")
 
     session_db = SessionLocal()
-    all_steps_for_table_objects = [] # Renamed to avoid confusion
+    all_steps_for_table_objects = []
     all_usecases_for_table = []
     all_areas_for_filters_list = []
 
     all_areas_flat = []
-    all_steps_flat_for_js = [] # Renamed for clarity
-    all_usecases_flat = []
+    all_steps_flat_for_js = []
+    detailed_usecases_for_js_filtering = []
+    all_usecases_flat_for_breadcrumbs = []
 
     try:
         all_steps_for_table_objects = session_db.query(ProcessStep).options(
@@ -116,16 +119,32 @@ def data_update_page():
         
         all_areas_for_filters_list = session_db.query(Area).order_by(Area.name).all()
 
+        detailed_usecases_for_js_filtering = [] # Initialize before loop
+        for uc in all_usecases_for_table:
+            detailed_usecases_for_js_filtering.append({
+                'id': uc.id,
+                'name': uc.name,
+                'bi_id': uc.bi_id,
+                'process_step_id': uc.process_step_id,
+                'area_id': uc.process_step.area_id if uc.process_step and uc.process_step.area else None,
+                'wave': uc.wave,
+                'effort_level': uc.effort_level,
+                'priority': uc.priority,
+                'quality_improvement_quant': uc.quality_improvement_quant
+            })
+
         all_areas_flat = serialize_for_js(all_areas_for_filters_list, 'area')
         all_steps_flat_for_js = serialize_for_js(all_steps_for_table_objects, 'step')
-        all_usecases_flat = serialize_for_js(all_usecases_for_table, 'usecase')
+        all_usecases_flat_for_breadcrumbs = serialize_for_js(all_usecases_for_table, 'usecase')
 
     except Exception as e:
         print(f"Error loading initial data for data_update_page: {e}")
         flash("Error loading data. Please try again.", "danger")
+        # Ensure lists are defined on error for render_template
+        detailed_usecases_for_js_filtering = []
+        all_usecases_flat_for_breadcrumbs = []
     finally:
-        # SessionLocal.remove() is handled by app teardown
-        pass
+        SessionLocal.remove()
 
     if request.method == 'POST':
         try:
@@ -388,7 +407,8 @@ def data_update_page():
         current_usecase=None,
         all_areas_flat=all_areas_flat,
         all_steps_flat=all_steps_flat_for_js,
-        all_usecases_flat=all_usecases_flat
+        all_usecases_for_js_filtering=detailed_usecases_for_js_filtering,
+        all_usecases_flat=all_usecases_flat_for_breadcrumbs
     )
 
 @injection_routes.route('/steps/prepare-for-edit', methods=['POST'])
@@ -463,24 +483,24 @@ def edit_multiple_steps():
 
     session_db = SessionLocal()
     try:
-        all_areas_objs = session_db.query(Area).order_by(Area.name).all() # For dropdown
-        all_areas_flat_js = serialize_for_js(all_areas_objs, 'area') # For breadcrumbs
-        all_steps_flat_js = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step') # For breadcrumbs
-        all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase') # For breadcrumbs
+        all_areas_objs = session_db.query(Area).order_by(Area.name).all()
+        all_areas_flat_js = serialize_for_js(all_areas_objs, 'area')
+        all_steps_flat_js = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
         
         return render_template(
             'edit_multiple_steps.html',
             title='Bulk Edit Process Steps',
             steps_data=steps_data,
-            all_areas=all_areas_objs, # Pass Area objects for the select dropdown
+            all_areas=all_areas_objs,
             editable_fields=PROCESS_STEP_EDITABLE_FIELDS,
             current_item=None,
             current_area=None,
             current_step=None,
             current_usecase=None,
-            all_areas_flat=all_areas_flat_js, # Pass serialized for JS breadcrumbs
-            all_steps_flat=all_steps_flat_js,   # Pass serialized for JS breadcrumbs
-            all_usecases_flat=all_usecases_flat_js # Pass serialized for JS breadcrumbs
+            all_areas_flat=all_areas_flat_js,
+            all_steps_flat=all_steps_flat_js,
+            all_usecases_flat=all_usecases_flat_js
         )
     except Exception as e:
         flash(f"Error loading bulk edit page: {e}", "danger")
@@ -629,16 +649,16 @@ def edit_multiple_usecases():
 
     session_db = SessionLocal()
     try:
-        all_steps_objs = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all() # For dropdown
-        all_areas_flat_js = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area') # For breadcrumbs
-        all_steps_flat_js = serialize_for_js(all_steps_objs, 'step') # For breadcrumbs, use already fetched & serialized
-        all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase') # For breadcrumbs
+        all_steps_objs = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        all_areas_flat_js = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat_js = serialize_for_js(all_steps_objs, 'step')
+        all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
         
         return render_template(
             'edit_multiple_usecases.html',
             title='Bulk Edit Use Cases',
             usecases_data=usecases_data,
-            all_steps=all_steps_objs, # Pass Step objects for the select dropdown
+            all_steps=all_steps_objs,
             editable_fields=PROCESS_USECASE_EDITABLE_FIELDS,
             current_item=None,
             current_area=None,
@@ -703,8 +723,8 @@ def save_all_usecases_changes():
                             failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": "Invalid priority format (not an integer)."})
                             continue
                     else:
-                        setattr(uc, field, None) # Set to None if priority is empty
-                    continue # Skip general setattr for priority as it's handled
+                        setattr(uc, field, None) 
+                    continue 
 
                 setattr(uc, field, new_value)
             
@@ -757,7 +777,7 @@ def preview_steps_injection():
             'step_injection_preview.html',
             title='Process Step Import Preview',
             preview_data=preview_data,
-            all_areas=all_areas_objs, # Pass Area objects for the select dropdown
+            all_areas=all_areas_objs,
             step_detail_fields=STEP_DETAIL_FIELDS,
             current_item=None,
             current_area=None,

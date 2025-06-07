@@ -1,35 +1,63 @@
 // backend/static/js/data_update_page_ui.js
 
+// Add this function if not already present
+function mapPriorityToBenefitText(priority) {
+    if (priority === 1 || priority === "1") return "High";
+    if (priority === 2 || priority === "2") return "Medium";
+    if (priority === 3 || priority === "3") return "Low";
+    return "N/A"; // Default or for priority 4 (Waiting List) or null/undefined
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // --- Form Submission Logs (Keep these) ---
-    // ... (existing form submission logs remain unchanged) ...
     const databaseImportForm = document.getElementById('databaseImportForm');
     if (databaseImportForm) {
-        databaseImportForm.onsubmit = function() { console.log('Database import form submitted'); return true; };
+        databaseImportForm.onsubmit = function() {
+            console.log('Database import form submitted');
+            return true;
+        };
     }
     const stepUploadForm = document.getElementById('stepUploadForm');
     if (stepUploadForm) {
-         stepUploadForm.onsubmit = function() { console.log('Step upload form submitted'); return true; };
+        stepUploadForm.onsubmit = function() {
+            console.log('Step upload form submitted');
+            return true;
+        };
     }
     const usecaseUploadForm = document.getElementById('usecaseUploadForm');
-    if(usecaseUploadForm) {
-        usecaseUploadForm.onsubmit = function() { console.log('Use Case upload form submitted'); return true; };
+    if (usecaseUploadForm) {
+        usecaseUploadForm.onsubmit = function() {
+            console.log('Use Case upload form submitted');
+            return true;
+        };
     }
     const psPsRelevanceForm = document.getElementById('psPsRelevanceForm');
     if (psPsRelevanceForm) {
-        psPsRelevanceForm.onsubmit = function() { console.log('PS-PS Relevance upload form submitted'); return true; };
+        psPsRelevanceForm.onsubmit = function() {
+            console.log('PS-PS Relevance upload form submitted');
+            return true;
+        };
     }
     const usecaseAreaRelevanceForm = document.getElementById('usecaseAreaRelevanceForm');
     if (usecaseAreaRelevanceForm) {
-        usecaseAreaRelevanceForm.onsubmit = function() { console.log('UC-Area Relevance upload form submitted'); return true; };
+        usecaseAreaRelevanceForm.onsubmit = function() {
+            console.log('UC-Area Relevance upload form submitted');
+            return true;
+        };
     }
     const usecaseStepRelevanceForm = document.getElementById('usecaseStepRelevanceForm');
     if (usecaseStepRelevanceForm) {
-        usecaseStepRelevanceForm.onsubmit = function() { console.log('UC-Step Relevance form submitted'); return true; };
+        usecaseStepRelevanceForm.onsubmit = function() {
+            console.log('UC-Step Relevance form submitted');
+            return true;
+        };
     }
     const usecaseUsecaseRelevanceForm = document.getElementById('usecaseUsecaseRelevanceForm');
     if (usecaseUsecaseRelevanceForm) {
-        usecaseUsecaseRelevanceForm.onsubmit = function() { console.log('UC-UC Relevance form submitted'); return true; };
+        usecaseUsecaseRelevanceForm.onsubmit = function() {
+            console.log('UC-UC Relevance form submitted');
+            return true;
+        };
     }
 
     // --- Logic for "Prepare Steps for Update" (Keep these) ---
@@ -42,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prepareStepsBtn && prepareStepsForm && selectedStepsHiddenInput) {
         prepareStepsBtn.addEventListener('click', function() {
             const selectedIds = Array.from(document.querySelectorAll('.step-checkbox:checked'))
-                                .map(cb => cb.value);
+                .map(cb => cb.value);
             if (selectedIds.length === 0) {
                 alert('Please select at least one process step to update.');
                 return;
@@ -63,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     // --- Logic for "Prepare Use Cases for Update" (Keep these) ---
     const prepareUsecasesBtn = document.getElementById('prepareUsecasesBtn');
     const prepareUsecasesForm = document.getElementById('prepareUsecasesForm');
@@ -74,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prepareUsecasesBtn && prepareUsecasesForm && selectedUsecasesHiddenInput) {
         prepareUsecasesBtn.addEventListener('click', function() {
             const selectedIds = Array.from(document.querySelectorAll('.usecase-checkbox:checked'))
-                                .map(cb => cb.value);
+                .map(cb => cb.value);
             if (selectedIds.length === 0) {
                 alert('Please select at least one use case to update.');
                 return;
@@ -84,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-     if (selectAllUsecasesCheckbox && usecaseCheckboxes.length > 0) {
+    if (selectAllUsecasesCheckbox && usecaseCheckboxes.length > 0) {
         selectAllUsecasesCheckbox.addEventListener('change', function() {
             usecaseCheckboxes.forEach(cb => {
                 if (cb.closest('tr') && cb.closest('tr').style.display !== 'none') {
@@ -99,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Logic for Area Filter Tabs (Process Steps table - Keep this) ---
     const stepAreaFilterTabsContainer = document.getElementById('stepAreaFilterTabs');
     const processStepsTable = document.getElementById('processStepsTable');
-    
+
     if (stepAreaFilterTabsContainer && processStepsTable) {
         const stepTableRows = processStepsTable.querySelectorAll('tbody tr');
 
@@ -115,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             stepTableRows.forEach(row => {
                 const rowAreaId = row.dataset.stepAreaId;
                 if (selectedAreaId === 'all' || rowAreaId === selectedAreaId) {
-                    row.style.display = ''; 
+                    row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
@@ -123,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectAllStepsCheckbox) selectAllStepsCheckbox.checked = false;
         });
     }
-    
+
     // --- NEW: Logic for Use Case Table Filtering ---
     const usecaseAreaFilterTabs = document.getElementById('usecaseAreaFilterTabs');
     const useCasesTable = document.getElementById('useCasesTable');
@@ -139,14 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
         effort: new Set()
     };
 
-    // Helper: Map priority to benefit text (from Jinja macro)
-    function mapPriorityToBenefitText(priority) {
-        if (priority === 1 || priority === "1") return "High";
-        if (priority === 2 || priority === "2") return "Medium";
-        if (priority === 3 || priority === "3") return "Low";
-        return "N/A";
-    }
-
     // Helper: Get unique values for a use case field
     function getUniqueUsecaseValues(fieldKey) {
         const values = new Set();
@@ -160,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Use quality_improvement_quant if available, else map from priority
                 value = uc.quality_improvement_quant ? uc.quality_improvement_quant : mapPriorityToBenefitText(uc.priority);
             }
-            
+
             if (value !== null && value !== undefined && String(value).trim() !== "") {
                 values.add(String(value).trim());
             } else {
@@ -169,13 +189,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         return Array.from(values).sort();
     }
-    
+
     // Populate a single filter dropdown for use cases
     function populateUsecaseFilterDropdown(container) {
         const filterType = container.dataset.filterType;
         const optionsList = container.querySelector('.filter-options-list');
         optionsList.innerHTML = ''; // Clear existing
-        
+
         let uniqueValues;
         if (filterType === 'stepName') {
             // Steps are populated based on selected area
@@ -184,10 +204,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedAreaId !== 'all') {
                 stepsForFilter = allStepsDataForJS.filter(step => step.area_id && step.area_id.toString() === selectedAreaId);
             }
-            uniqueValues = stepsForFilter.map(step => ({ id: step.id.toString(), name: `${step.name} (BI_ID: ${step.bi_id})` }))
-                                       .sort((a,b) => a.name.localeCompare(b.name));
+            uniqueValues = stepsForFilter.map(step => ({
+                    id: step.id.toString(),
+                    name: `${step.name} (BI_ID: ${step.bi_id})`
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
         } else {
-            uniqueValues = getUniqueUsecaseValues(filterType).map(val => ({ id: val, name: val }));
+            uniqueValues = getUniqueUsecaseValues(filterType).map(val => ({
+                id: val,
+                name: val
+            }));
         }
 
         const currentSelections = activeUsecaseFilters[filterType] || new Set();
@@ -196,14 +222,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const checkboxId = `uc-filter-${filterType}-${valObj.id.toString().replace(/\s+/g, '-')}`;
             const listItem = document.createElement('label');
             listItem.classList.add('filter-option-item', 'd-block', 'px-2', 'py-1'); // Bootstrap-like styling
-            
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.value = valObj.id; // Use ID for steps, value string for others
             checkbox.id = checkboxId;
             checkbox.classList.add('form-check-input', 'me-2');
             checkbox.checked = currentSelections.has(valObj.id.toString());
-            
+
             checkbox.addEventListener('change', () => {
                 if (checkbox.checked) {
                     activeUsecaseFilters[filterType].add(valObj.id.toString());
@@ -242,9 +268,9 @@ document.addEventListener('DOMContentLoaded', function() {
         usecaseTableRows.forEach(row => {
             const rowAreaId = row.dataset.ucAreaId;
             const rowStepId = row.dataset.ucStepId;
-            const rowWave = row.dataset.ucWave || "N/A";
-            const rowBenefit = row.dataset.ucBenefit || "N/A";
-            const rowEffort = row.dataset.ucEffort || "N/A";
+            const rowWave = (row.dataset.ucWave || "N/A").trim();
+            const rowBenefit = (row.dataset.ucBenefit || "N/A").trim();
+            const rowEffort = (row.dataset.ucEffort || "N/A").trim();
 
             let visible = true;
 
@@ -282,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             usecaseAreaFilterTabs.querySelectorAll('button.btn').forEach(btn => btn.classList.remove('active'));
             clickedButton.classList.add('active');
-            
+
             activeUsecaseFilters.areaId = clickedButton.dataset.areaId;
             // Repopulate Step Name filter based on new area selection
             const stepNameFilterContainer = document.querySelector('.filter-dropdown-container[data-filter-type="stepName"]');
@@ -340,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
+
     // Close dropdowns if clicking outside
     document.addEventListener('click', (event) => {
         usecaseFilterDropdownContainers.forEach(container => {
@@ -371,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
             applyUsecaseFilters();
         });
     }
-    
+
     // Initial population of step name filter (based on "All Areas")
     const stepNameFilterContainer = document.querySelector('.filter-dropdown-container[data-filter-type="stepName"]');
     if (stepNameFilterContainer) {
@@ -421,5 +447,67 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // --- Table Sorting Functionality ---
+    function makeTableSortable(tableElement) {
+        if (!tableElement) return;
+        const headers = tableElement.querySelectorAll('th.sortable');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : null);
+                let sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+
+                tableElement.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+                const tbody = tableElement.querySelector('tbody');
+                if (!tbody) return;
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                // const sortKey = header.dataset.sortKey; // Not directly used if colIndex is preferred
+                const colIndex = Array.from(header.parentNode.children).indexOf(header);
+
+                rows.sort((a, b) => {
+                    let valA = (a.cells[colIndex] && a.cells[colIndex].dataset.sortValue !== undefined) ?
+                        a.cells[colIndex].dataset.sortValue :
+                        (a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '');
+                    let valB = (b.cells[colIndex] && b.cells[colIndex].dataset.sortValue !== undefined) ?
+                        b.cells[colIndex].dataset.sortValue :
+                        (b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '');
+
+                    // Handle N/A consistently for sorting
+                    const isValANa = valA === 'N/A' || valA === '';
+                    const isValBNa = valB === 'N/A' || valB === '';
+
+                    if (isValANa && !isValBNa) return sortOrder === 'asc' ? 1 : -1; // N/A comes last when ascending
+                    if (isValBNa && !isValANa) return sortOrder === 'asc' ? -1 : 1;
+                    if (isValANa && isValBNa) return 0;
+
+                    const numA = parseFloat(valA);
+                    const numB = parseFloat(valB);
+
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        valA = numA;
+                        valB = numB;
+                    } else {
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    }
+
+    // Initialize sorting for the Use Cases table
+    const useCasesTableForSort = document.getElementById('useCasesTable');
+    if (useCasesTableForSort) {
+        makeTableSortable(useCasesTableForSort);
+    }
 
 }); // End of DOMContentLoaded

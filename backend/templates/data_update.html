@@ -289,13 +289,13 @@
                 <thead class="table-light">
                     <tr>
                         <th class="checkbox-column"><input type="checkbox" id="selectAllUsecasesCheckbox"></th>
-                        <th>Area</th>
-                        <th>Process Step</th>
-                        <th>UC BI_ID</th>
-                        <th>Use Case Name</th>
-                        <th>Benefit</th>
-                        <th>Effort</th>
-                        <th>Wave</th>
+                        <th class="sortable" data-sort-key="area_name">Area</th>
+                        <th class="sortable" data-sort-key="step_name">Process Step</th>
+                        <th class="sortable" data-sort-key="uc_bi_id">UC BI_ID</th>
+                        <th class="sortable" data-sort-key="uc_name">Use Case Name</th>
+                        <th class="sortable" data-sort-key="benefit_sort_value">Benefit</th> {# Sort key for numerical priority #}
+                        <th class="sortable" data-sort-key="effort_level">Effort</th>
+                        <th class="sortable" data-sort-key="wave">Wave</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -309,19 +309,20 @@
                         data-uc-effort="{{ uc.effort_level | default('N/A', true) }}"
                     >
                         <td class="checkbox-column"><input type="checkbox" name="selected_uc_ids_table" value="{{ uc.id }}" class="usecase-checkbox"></td>
-                        <td>{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}</td>
-                        <td>{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
+                        <td data-sort-value="{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}">{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}</td>
+                        <td data-sort-value="{{ uc.process_step.name if uc.process_step else 'N/A' }}">{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
                         <td>{{ uc.bi_id }}</td>
                         <td><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
-                        <td>{{ uc.quality_improvement_quant | default(map_priority_to_benefit(uc.priority), true) }}</td>
-                        <td>{{ uc.effort_level | default('N/A', true) }}</td>
-                        <td>{{ uc.wave | default('N/A', true) }}</td>
+                        {# Use priority for sorting benefit; 4 for N/A/empty to sort last or first depending on asc/desc #}
+                        <td data-sort-value="{{ uc.priority | default(4) }}">{{ uc.quality_improvement_quant | default(map_priority_to_benefit(uc.priority), true) }}</td>
+                        <td data-sort-value="{{ uc.effort_level | default('N/A') }}">{{ uc.effort_level | default('N/A', true) }}</td>
+                        <td data-sort-value="{{ uc.wave | default('N/A') }}">{{ uc.wave | default('N/A', true) }}</td>
                         <td>
                             <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info me-1" title="Edit with AI Assist">
                                 <i class="fas fa-magic"></i> AI
                             </a>
                             <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
-                             <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
+                                <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
                             </form>
                         </td>
@@ -403,7 +404,8 @@
 <script>
     const allStepsDataForJS = {{ all_steps_flat | tojson | safe }};
     const allAreasDataForJS = {{ all_areas_flat | tojson | safe }};
-    const allUsecasesDataForJS = {{ all_usecases_flat | tojson | safe }}; // Pass all use cases for filter population
+    const allUsecasesDataForJS = {{ all_usecases_for_js_filtering | tojson | safe }}; 
+
 </script>
 <script src="{{ url_for('static', filename='js/data_update_page_ui.js') }}"></script>
 {% endblock %}
