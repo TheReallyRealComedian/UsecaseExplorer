@@ -17,11 +17,12 @@ review_routes = Blueprint('review', __name__,
 @login_required
 def review_dashboard():
     session = SessionLocal()
-    # For breadcrumbs
-    all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-    all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-    all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-    session.close()
+    try:
+        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    finally:
+        session.close()
 
     return render_template('review_dashboard.html',
                            title="Review Center",
@@ -41,14 +42,13 @@ def review_process_links_page():
     try:
         areas = session.query(Area).order_by(Area.name).all()
         
-        # For breadcrumbs
-        all_areas_flat = serialize_for_js(areas, 'area') # Use already fetched areas
+        all_areas_flat = serialize_for_js(areas, 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
         return render_template('review_process_links.html',
                                title="Review Process Step Links",
-                               areas=areas, # For populating selectors
+                               areas=areas, 
                                current_item=None,
                                current_area=None,
                                current_step=None,
@@ -71,13 +71,11 @@ def get_process_links_data():
         comparison_area_ids = []
         if comparison_area_ids_str:
             try:
-                comparison_area_ids = [int(id_str) for id_str in comparison_area_ids_str if id_str.isdigit()]
+                comparison_area_ids = [int(id_str) for id_str in comparison_area_ids_str if id_str and id_str.isdigit()]
             except ValueError:
-                session.close()
                 return jsonify(error="Invalid comparison_area_ids format."), 400
 
         if not focus_area_id:
-            session.close()
             return jsonify(error="Focus area ID is required."), 400
 
         SourceStep = aliased(ProcessStep, name='source_step')
@@ -103,43 +101,24 @@ def get_process_links_data():
             TargetArea, TargetStep.area_id == TargetArea.id
         )
 
-        link_filters = []
-        if not comparison_area_ids:
-            # Only focus area selected: links within the focus area
-            link_filters.append(
+        main_filter_conditions = []
+        is_focus_only_scenario = not comparison_area_ids or \
+                                 (len(comparison_area_ids) == 1 and comparison_area_ids[0] == focus_area_id)
+
+        if is_focus_only_scenario:
+            main_filter_conditions.append(
                 and_(SourceStep.area_id == focus_area_id, TargetStep.area_id == focus_area_id)
             )
         else:
-            # Focus to Comparison(s)
-            link_filters.append(
-                and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids))
-            )
-            # Comparison(s) to Focus
-            link_filters.append(
-                and_(SourceStep.area_id.in_(comparison_area_ids), TargetStep.area_id == focus_area_id)
-            )
-            # Links between different comparison areas
-            if len(comparison_area_ids) > 1:
-                 link_filters.append(
-                     and_(
-                         SourceStep.area_id.in_(comparison_area_ids),
-                         TargetStep.area_id.in_(comparison_area_ids),
-                         SourceStep.area_id != TargetStep.area_id # Compare area_ids of steps
-                     )
-                 )
-            # Links within a single comparison area IF it's the only comparison AND NOT the focus area
-            elif len(comparison_area_ids) == 1 and comparison_area_ids[0] != focus_area_id:
-                 link_filters.append(
-                     and_(
-                         SourceStep.area_id == comparison_area_ids[0],
-                         TargetStep.area_id == comparison_area_ids[0]
-                     )
-                 )
+            cond1 = and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids))
+            cond2 = and_(TargetStep.area_id == focus_area_id, SourceStep.area_id.in_(comparison_area_ids))
+            main_filter_conditions.append(or_(cond1, cond2))
 
-        if link_filters:
-             query = query.filter(or_(*link_filters))
+        if main_filter_conditions:
+            query = query.filter(or_(*main_filter_conditions))
         else:
-             query = query.filter(False) 
+            # This case should ideally not be reached if focus_area_id is mandatory and logic is correct
+            query = query.filter(False) 
 
         query = query.order_by(SourceStep.name, TargetStep.name)
         db_results = query.all()
@@ -161,23 +140,22 @@ def get_process_links_data():
                 "source_area_name": source_area_name,
                 "target_area_name": target_area_name,
                 "relevance_score": relevance_obj.relevance_score,
-                "relevance_content_snippet": (relevance_obj.relevance_content[:100] + '...' 
-                                              if relevance_obj.relevance_content and len(relevance_obj.relevance_content) > 100 
-                                              else relevance_obj.relevance_content) or "",
+                "relevance_content_snippet": relevance_obj.relevance_content or "", 
                 "relevance_content": relevance_obj.relevance_content or "",
                 "created_at": relevance_obj.created_at.isoformat() if relevance_obj.created_at else None,
                 "updated_at": relevance_obj.updated_at.isoformat() if relevance_obj.updated_at else None,
             })
 
-        session.close()
         return jsonify(links=links_data)
 
     except Exception as e:
-        session.close()
         print(f"Error fetching process links data for table: {e}")
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
+    finally:
+        if session and session.is_active:
+            session.close()
 
 # API endpoint to get a single link's details (for pre-filling edit modal)
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['GET'])
@@ -197,15 +175,16 @@ def get_process_link_detail(link_id):
             "id": link.id,
             "source_step_id": link.source_process_step_id,
             "source_step_name": link.source_process_step.name,
-            "source_area_name": link.source_process_step.area.name,
+            "source_area_name": link.source_process_step.area.name if link.source_process_step.area else "N/A",
             "target_step_id": link.target_process_step_id,
             "target_step_name": link.target_process_step.name,
-            "target_area_name": link.target_process_step.area.name,
+            "target_area_name": link.target_process_step.area.name if link.target_process_step.area else "N/A",
             "relevance_score": link.relevance_score,
             "relevance_content": link.relevance_content or ""
         })
     finally:
-        session.close()
+        if session and session.is_active:
+            session.close()
 
 
 # API endpoint to create a new ProcessStep-ProcessStep relevance link
@@ -233,7 +212,6 @@ def create_process_link():
         except ValueError:
             return jsonify(error="Invalid score format."), 400
 
-        # Check if link already exists
         existing = session.query(ProcessStepProcessStepRelevance).filter_by(
             source_process_step_id=source_step_id,
             target_process_step_id=target_step_id
@@ -254,7 +232,8 @@ def create_process_link():
         session.rollback()
         return jsonify(error=str(e)), 500
     finally:
-        session.close()
+        if session and session.is_active:
+            session.close()
 
 # API endpoint to update an existing ProcessStep-ProcessStep relevance link
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['PUT'])
@@ -268,7 +247,7 @@ def update_process_link(link_id):
 
         data = request.json
         relevance_score = data.get('relevance_score')
-        relevance_content = data.get('relevance_content', '').strip()
+        relevance_content = data.get('relevance_content', '').strip() # Ensure strip even if it's None initially
 
         if relevance_score is not None:
             try:
@@ -279,7 +258,7 @@ def update_process_link(link_id):
             except ValueError:
                 return jsonify(error="Invalid score format."), 400
         
-        if 'relevance_content' in data: # Allow clearing content
+        if 'relevance_content' in data: 
             link.relevance_content = relevance_content or None
         
         session.commit()
@@ -288,7 +267,8 @@ def update_process_link(link_id):
         session.rollback()
         return jsonify(error=str(e)), 500
     finally:
-        session.close()
+        if session and session.is_active:
+            session.close()
 
 # API endpoint to delete an existing ProcessStep-ProcessStep relevance link
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['DELETE'])
@@ -307,4 +287,42 @@ def delete_process_link(link_id):
         session.rollback()
         return jsonify(error=str(e)), 500
     finally:
-        session.close()
+        if session and session.is_active:
+            session.close()
+
+
+# General API Blueprint (for endpoints not strictly tied to a specific review section)
+# This blueprint would need to be registered in your main Flask application setup.
+# Example: app.register_blueprint(general_api_routes)
+general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
+
+@general_api_routes.route('/steps', methods=['GET'])
+@login_required
+def get_all_steps_for_select():
+    session = SessionLocal()
+    try:
+        steps_query = session.query(ProcessStep).options(
+            joinedload(ProcessStep.area)  # Eager load area information
+        ).order_by(ProcessStep.name).all()
+
+        steps_data = []
+        for step in steps_query:
+            area_info = None
+            if step.area:
+                area_info = {"name": step.area.name}
+
+            steps_data.append({
+                "id": step.id,
+                "name": step.name,
+                "bi_id": step.bi_id,
+                "area": area_info 
+            })
+        return jsonify(steps_data)
+    except Exception as e:
+        print(f"Error fetching all steps for select: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify(error=str(e)), 500
+    finally:
+        if session and session.is_active:
+            session.close()

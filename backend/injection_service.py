@@ -7,7 +7,7 @@ from .db import SessionLocal, db as flask_sqlalchemy_db
 from .models import (
     Base, User, Area, ProcessStep, UseCase, LLMSettings,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
-    ProcessStepProcessStepRelevance
+    ProcessStepProcessStepRelevance # ProcessStep already here, but good to double check
 )
 from datetime import datetime
 
@@ -21,8 +21,8 @@ def process_area_file(file_stream):
     added_count = 0
     updated_count = 0
     skipped_count = 0
-    duplicates_not_updated = [] # Items that already existed but had no empty fields to fill
-    skipped_errors_details = [] # NEW: To store specific reasons for skipping
+    duplicates_not_updated = []
+    skipped_errors_details = []
 
     message = ""
     success = False
@@ -51,7 +51,7 @@ def process_area_file(file_stream):
             description_from_json = item.get('description')
             if description_from_json is not None:
                 if not isinstance(description_from_json, str):
-                    description_from_json = None # Treat non-string description as None
+                    description_from_json = None
                     skipped_errors_details.append(f"{item_identifier}: 'description' field was not a string, treated as empty.")
                 else:
                     description_from_json = description_from_json.strip()
@@ -62,7 +62,6 @@ def process_area_file(file_stream):
             item_updated = False
 
             if existing_area:
-                # Update logic: only fill if DB field is currently None or empty string
                 if description_from_json and \
                    (existing_area.description is None or existing_area.description == ''):
                     existing_area.description = description_from_json
@@ -71,12 +70,10 @@ def process_area_file(file_stream):
                 if item_updated:
                     updated_count += 1
                 else:
-                    # Item exists but no relevant fields were empty to update
                     if area_name not in duplicates_not_updated:
                         duplicates_not_updated.append(area_name)
-                    skipped_count += 1 # This counts as skipped for the purpose of the summary count
+                    skipped_count += 1
             else:
-                # New area
                 new_area = Area(
                     name=area_name,
                     description=description_from_json
@@ -127,21 +124,14 @@ def process_area_file(file_stream):
         "updated_count": updated_count,
         "skipped_count": skipped_count,
         "duplicates_not_updated": duplicates_not_updated,
-        "skipped_errors_details": skipped_errors_details # NEW: Return detailed errors
+        "skipped_errors_details": skipped_errors_details
     }
 
 
 def process_step_file(file_content_json):
-    """
-    Parses a JSON file of process steps, compares with existing data,
-    and returns a structured preview of changes for user review.
-    Handles JSON where steps are a top-level list OR nested under a 'process_steps' key.
-    Does NOT commit any changes to the database.
-    """
     session = SessionLocal()
     preview_data = []
     
-    # Helper to convert an SQLAlchemy model instance to a dict for comparison/JSON
     def model_to_dict(obj, fields_to_include, session):
         data = {}
         for field in fields_to_include:
@@ -151,7 +141,6 @@ def process_step_file(file_content_json):
             else:
                 data[field] = val
         
-        # Include area_name for display convenience in preview
         if obj.area_id:
             area = session.query(Area).get(obj.area_id)
             data['area_name'] = area.name if area else 'Unknown Area'
@@ -160,7 +149,6 @@ def process_step_file(file_content_json):
 
         return data
 
-    # Define all fields to be considered for updates/conflicts
     step_fields = [
         "name", "step_description", "raw_content", "summary", "vision_statement",
         "in_scope", "out_of_scope", "interfaces_text", "what_is_actually_done",
@@ -196,24 +184,22 @@ def process_step_file(file_content_json):
 
 
         for item_from_json in json_data_list:
-            # Print for server logs, useful for large files
             bi_id_log = item_from_json.get('bi_id', 'N/A')
             name_log = item_from_json.get('name', 'N/A')
             print(f"\nProcessing JSON item: BI_ID='{bi_id_log}' Name='{name_log}'")
             
             entry = {
-                'status': 'skipped', # Default status, will be updated
+                'status': 'skipped',
                 'bi_id': bi_id_log,
                 'name': name_log,
-                'area_name': item_from_json.get('area_name', 'N/A'), # Area name from JSON
-                'json_data': {}, # Raw data from JSON (cleaned)
-                'db_data': {},   # Current data from DB (cleaned)
-                'conflicts': {}, # Fields with differences (old_value, new_value)
-                'new_values': {}, # Proposed values based on conflict resolution logic (initial state)
-                'messages': []   # Messages specific to this item
+                'area_name': item_from_json.get('area_name', 'N/A'),
+                'json_data': {},
+                'db_data': {},
+                'conflicts': {},
+                'new_values': {},
+                'messages': []
             }
 
-            # Basic validation for required fields from JSON
             if not (isinstance(item_from_json, dict) and
                     all(k in item_from_json for k in ('bi_id', 'name', 'area_name')) and
                     isinstance(item_from_json['bi_id'], str) and item_from_json['bi_id'].strip() and
@@ -228,16 +214,15 @@ def process_step_file(file_content_json):
             name = item_from_json['name'].strip()
             area_name_json = item_from_json['area_name'].strip()
 
-            entry['bi_id'] = bi_id # Ensure stripped values are used
+            entry['bi_id'] = bi_id
             entry['name'] = name
             entry['area_name'] = area_name_json
 
             json_values_cleaned = {}
             for field in step_fields:
                 val = item_from_json.get(field)
-                # Use .strip() if string, otherwise keep original value or set to None
                 json_values_cleaned[field] = val.strip() if isinstance(val, str) and val.strip() else None
-            json_values_cleaned['name'] = name # Ensure name is also cleaned for comparison
+            json_values_cleaned['name'] = name
             json_values_cleaned['bi_id'] = bi_id
             json_values_cleaned['area_name'] = area_name_json
             
@@ -249,89 +234,66 @@ def process_step_file(file_content_json):
 
             if existing_step:
                 print(f"  Existing step found in DB: '{existing_step.name}' (BI_ID: '{existing_step.bi_id}')")
-                # Prepare existing DB data for comparison
                 entry['db_data'] = model_to_dict(existing_step, step_fields + ['bi_id', 'area_id', 'name'], session)
                 
-                # Initialize new_values with current DB data. This is the default resolution.
                 entry['new_values'] = {k: (v.strip() if isinstance(v, str) else v) for k, v in entry['db_data'].items()}
-                # Ensure area_id is numeric in new_values
                 if 'area_id' in entry['new_values']:
                     entry['new_values']['area_id'] = existing_step.area_id
                 
-                is_dirty = False # Flag if any field will cause an update or conflict
+                is_dirty = False
 
-                # Check for area_id change
-                # Priority: If JSON provides a valid area, and it's different, it's a conflict
                 if area_id_from_json is None:
-                    # If JSON's area_name doesn't resolve to an ID, keep DB's area_id and warn.
                     entry['messages'].append(f"Warning: Area '{area_name_json}' from JSON not found in database. Keeping existing area for '{name}'.")
                     print(f"  Warning: Area '{area_name_json}' not found for existing step. Keeping DB value.")
-                    # new_values['area_id'] remains existing_step.area_id (from db_data init)
                 elif existing_step.area_id != area_id_from_json:
-                    # If JSON area_id is different and valid, it's a conflict.
-                    # Default proposal is to take the JSON's new area.
                     entry['conflicts']['area_id'] = {
                         'old_value': area_id_to_name_map.get(existing_step.area_id, f'N/A (ID: {existing_step.area_id})'),
                         'new_value': area_name_json,
                         'db_id': existing_step.area_id,
                         'json_id': area_id_from_json
                     }
-                    entry['new_values']['area_id'] = area_id_from_json # Proposed default: take JSON's new area
+                    entry['new_values']['area_id'] = area_id_from_json
                     is_dirty = True
                     entry['messages'].append(f"Conflict: Area changed from '{entry['conflicts']['area_id']['old_value']}' to '{entry['conflicts']['area_id']['new_value']}'.")
                     print(f"  Conflict detected for area_id: DB '{existing_step.area_id}' vs JSON '{area_id_from_json}' (Proposing JSON)")
                 else:
-                    # Area matches, no change to new_values['area_id'] needed as it was initialized from db_data.
                     entry['messages'].append(f"Area '{area_name_json}' matches existing area.")
 
-                # Compare other fields for conflicts and set new_values based on desired "fill-in-empty-only" behavior
                 for field in step_fields:
-                    # Get DB value, normalized to None for empty strings
                     db_value_raw = getattr(existing_step, field)
                     normalized_db_value = db_value_raw.strip() if isinstance(db_value_raw, str) and db_value_raw.strip() else None
                     
-                    # Get JSON value, already normalized to None for empty strings by json_values_cleaned
                     normalized_json_value = json_values_cleaned.get(field)
 
-                    # Scenario 1: JSON has a non-empty value, and DB has a different (or empty) value.
                     if normalized_json_value is not None and normalized_json_value != normalized_db_value:
                         entry['conflicts'][field] = {
                             'old_value': normalized_db_value if normalized_db_value is not None else "N/A (Empty in DB)",
-                            'new_value': normalized_json_value # JSON has a non-None value, take it
+                            'new_value': normalized_json_value
                         }
-                        entry['new_values'][field] = normalized_json_value # Propose JSON value as default
+                        entry['new_values'][field] = normalized_json_value
                         is_dirty = True
                         entry['messages'].append(f"Conflict: Field '{field}' changed from '{normalized_db_value}' to '{normalized_json_value}'.")
                         print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON '{normalized_json_value}' (Proposing JSON)")
-                    # Scenario 2: JSON is None (or empty string), but DB has a value.
-                    # This is a conflict if JSON is trying to clear an existing value.
                     elif normalized_json_value is None and normalized_db_value is not None:
                         entry['conflicts'][field] = {
                             'old_value': normalized_db_value,
-                            'new_value': "N/A (Empty in JSON)" # Indicate JSON provided no value
+                            'new_value': "N/A (Empty in JSON)"
                         }
-                        # For this scenario, new_values[field] already contains normalized_db_value
-                        # because it was initialized from entry['db_data']. So, no change needed here.
-                        # This effectively makes the default resolution "keep existing DB value".
-                        is_dirty = True # Still mark as dirty because there's a conflict to review
+                        is_dirty = True
                         entry['messages'].append(f"Conflict: Field '{field}' exists in DB but is empty in JSON. Keeping DB value.")
                         print(f"  Conflict detected for field '{field}': DB '{normalized_db_value}' vs JSON 'None' (Proposing DB)")
-                    # Scenario 3: No actual difference (both are the same value, or both are None/empty)
                     else:
-                        # new_values[field] is already correct from initialization based on db_data.
                         pass 
 
-                # Determine overall status for the item
                 if is_dirty:
                     entry['status'] = 'update'
-                    entry['messages'].unshift("Existing step has changes or conflicts. Review details to finalize."); # Prepend
+                    entry['messages'].insert(0, "Existing step has changes or conflicts. Review details to finalize.")
                     print(f"  Status set to 'update' for {bi_id}.")
                 else:
                     entry['status'] = 'no_change'
-                    entry['messages'].unshift("Existing step found with no changes detected."); # Prepend
+                    entry['messages'].insert(0, "Existing step found with no changes detected.")
                     print(f"  Status set to 'no_change' for {bi_id}.")
             else:
-                # New step
                 print(f"  No existing step found for BI_ID: '{bi_id}'")
                 if area_id_from_json is None:
                     entry['status'] = 'skipped'
@@ -361,21 +323,18 @@ def process_step_file(file_content_json):
 
 
 def finalize_step_import(resolved_steps_data):
-    """
-    Receives resolved step data from the frontend and performs database updates.
-    """
     session = SessionLocal()
     add_count = 0
     update_count = 0
-    skip_count = 0 # Track skips from the action choices
+    skip_count = 0
     fail_count = 0
     messages = []
 
     try:
         for item in resolved_steps_data:
             bi_id = item['bi_id']
-            action = item['action'] # 'add', 'update', 'skip'
-            final_data = item['final_data'] # The dictionary with resolved values
+            action = item['action']
+            final_data = item['final_data']
 
             if action == 'add':
                 try:
@@ -395,16 +354,15 @@ def finalize_step_import(resolved_steps_data):
                         targets_text=final_data.get('targets_text')
                     )
                     session.add(new_step)
-                    session.flush() # Flush to detect integrity errors early
+                    session.flush()
                     add_count += 1
                     messages.append(f"Successfully added new step: {new_step.name} (BI_ID: {new_step.bi_id})")
                 except IntegrityError as ie:
-                    session.rollback() # Rollback the current transaction for this item
+                    session.rollback()
                     fail_count += 1
-                    # Attempt to re-establish session or simply log and continue (new session will be created next loop)
                     messages.append(f"Failed to add new step {bi_id}: BI_ID already exists or invalid area_id. Error: {ie}")
                     print(f"IntegrityError adding step {bi_id}: {ie}")
-                    session = SessionLocal() # Re-create a fresh session for the next item
+                    session = SessionLocal()
                 except Exception as e:
                     session.rollback()
                     fail_count += 1
@@ -418,17 +376,15 @@ def finalize_step_import(resolved_steps_data):
                     try:
                         changes = []
                         for field, value in final_data.items():
-                            # Normalize value: empty string to None, strip strings
                             normalized_value = value.strip() if isinstance(value, str) and value.strip() else None
                             
-                            # Special handling for integer fields
                             if field == 'area_id':
                                 current_value = existing_step.area_id
                                 new_value_int = int(normalized_value) if normalized_value is not None else None
                                 if current_value != new_value_int:
                                     existing_step.area_id = new_value_int
                                     changes.append('area_id')
-                            elif field not in ['bi_id', 'id']: # 'id' and 'bi_id' are primary/unique identifiers, not meant for update this way
+                            elif field not in ['bi_id', 'id']:
                                 current_value = getattr(existing_step, field)
                                 current_value_normalized = current_value.strip() if isinstance(current_value, str) and current_value.strip() else None
                                 if current_value_normalized != normalized_value:
@@ -436,12 +392,11 @@ def finalize_step_import(resolved_steps_data):
                                     changes.append(field)
                         
                         if changes:
-                            # session.flush() # Optional: flush to detect errors per item, then commit later
                             update_count += 1
                             messages.append(f"Successfully updated step: {existing_step.name} (BI_ID: {bi_id}). Fields changed: {', '.join(changes)}")
                         else:
                             messages.append(f"No changes applied to step {bi_id} (data matched existing values).")
-                            skip_count += 1 # Count as skipped if no actual changes
+                            skip_count += 1
                     except Exception as e:
                         session.rollback()
                         fail_count += 1
@@ -474,7 +429,7 @@ def finalize_step_import(resolved_steps_data):
             "added_count": 0,
             "updated_count": 0,
             "skipped_count": 0,
-            "failed_count": len(resolved_steps_data), # All data is considered failed if the global transaction rolls back
+            "failed_count": len(resolved_steps_data),
             "messages": messages
         }
     finally:
@@ -485,16 +440,15 @@ def process_usecase_file(file_stream):
     session = SessionLocal()
     added_count = 0
     updated_count = 0
-    skipped_count_total = 0 # NEW: Unified skipped count
-    # Specific skipped categories
+    skipped_count_total = 0
     skipped_invalid_format = 0
     skipped_existing_no_update_uc_bi_id_count = 0 
     skipped_missing_step = 0
-    skipped_invalid_priority = 0 # NEW: For invalid priority values
+    skipped_invalid_priority = 0
 
     uc_bi_ids_existing_no_update = [] 
     missing_step_bi_ids = []
-    skipped_errors_details = [] # NEW: General detailed error messages for individual items
+    skipped_errors_details = []
 
     message = ""
     success = False
@@ -506,7 +460,7 @@ def process_usecase_file(file_stream):
         'summary': 'summary',
         'inspiration': 'inspiration',
         'wave': 'wave',
-        'effort': 'effort_level', # Assuming 'effort' in JSON maps to 'effort_level'
+        'effort': 'effort_level',
         'status': 'status',
         'BUSINESS PROBLEM SOLVED': 'business_problem_solved',
         'TARGET / SOLUTION DESCRIPTION': 'target_solution_description',
@@ -560,7 +514,6 @@ def process_usecase_file(file_stream):
                 continue
 
             uc_bi_id = item['bi_id'].strip()
-            # Ensure process_step_bi_id_from_json is used from the current item
             process_step_bi_id = item['process_step_bi_id'].strip()
 
             existing_usecase = session.query(UseCase).filter_by(bi_id=uc_bi_id).first()
@@ -573,7 +526,6 @@ def process_usecase_file(file_stream):
                     priority_val = None
                     if json_value is not None:
                         try:
-                            # Convert to int, ensure it's in valid range, else set to None
                             priority_int = int(json_value)
                             if 1 <= priority_int <= 4:
                                 priority_val = priority_int
@@ -587,45 +539,37 @@ def process_usecase_file(file_stream):
                 elif isinstance(json_value, str):
                     stripped_value = json_value.strip()
                     uc_fields_from_json[model_attr] = stripped_value if stripped_value else None
-                else: # Handle non-string, non-none values (e.g., numbers that aren't priority) or just set to None if it's not a string
+                else:
                     uc_fields_from_json[model_attr] = None 
                     if json_value is not None:
                         skipped_errors_details.append(f"{item_log_string}: Field '{model_attr}' (from JSON key '{json_key}') was not a string, treated as empty.")
             
-            # Ensure 'name' is in uc_fields_from_json, taking priority from map or directly if not found
             if 'name' not in uc_fields_from_json or uc_fields_from_json['name'] is None:
                  name_val = item.get('name')
                  if isinstance(name_val, str) and name_val.strip():
                      uc_fields_from_json['name'] = name_val.strip()
                  else:
                      skipped_errors_details.append(f"{item_log_string}: 'name' field missing or empty after processing, will use N/A if added.")
-                     uc_fields_from_json['name'] = None # Ensure it's explicitly None if not set
+                     uc_fields_from_json['name'] = None
 
             if existing_usecase:
-                # Compare and update existing use case fields if current DB value is empty/None
                 current_process_step_id = existing_usecase.process_step_id
                 
-                # Check for process step change
                 new_process_step_id = step_lookup.get(process_step_bi_id)
                 if new_process_step_id is None:
-                    # If JSON's process_step_bi_id doesn't resolve to an ID, keep existing step and warn.
                     skipped_errors_details.append(f"{item_log_string}: Parent Process Step BI_ID '{process_step_bi_id}' from JSON not found. Keeping existing parent step.")
                 elif new_process_step_id != current_process_step_id:
-                    # If JSON provides a new valid parent step, update it.
                     existing_usecase.process_step_id = new_process_step_id
                     item_updated = True
                     skipped_errors_details.append(f"{item_log_string}: Parent Process Step changed from ID '{current_process_step_id}' to '{new_process_step_id}'.")
 
-                # Check other fields
                 for model_attr, json_val in uc_fields_from_json.items():
-                    # Skip if it's process_step_id as it was handled above
                     if model_attr == 'process_step_id':
                         continue
 
                     db_value = getattr(existing_usecase, model_attr)
                     db_value_normalized = db_value.strip() if isinstance(db_value, str) and db_value.strip() else None
 
-                    # Update logic: only fill if DB field is currently None or empty string, and JSON has a value
                     if json_val is not None and (db_value_normalized is None or db_value_normalized == ''):
                         setattr(existing_usecase, model_attr, json_val)
                         item_updated = True
@@ -639,7 +583,6 @@ def process_usecase_file(file_stream):
                         uc_bi_ids_existing_no_update.append(uc_bi_id)
                     skipped_errors_details.append(f"{item_log_string}: Already exists with no empty fields to fill or data matched. Skipped update.")
             else:
-                # New use case
                 if process_step_bi_id not in step_lookup:
                     skipped_missing_step += 1
                     skipped_count_total += 1
@@ -652,7 +595,6 @@ def process_usecase_file(file_stream):
                 new_uc_data = {
                     "bi_id": uc_bi_id,
                     "process_step_id": process_step_id,
-                    # Initialize LLM comments to None, or leave them out if they are not coming from JSON
                     "llm_comment_1": None, "llm_comment_2": None, "llm_comment_3": None,
                     "llm_comment_4": None, "llm_comment_5": None,
                 }
@@ -694,18 +636,17 @@ def process_usecase_file(file_stream):
         success = False
         message = f"An unexpected error occurred: {str(e)}"
     finally:
-        # Only set counts to zero if the entire transaction failed
         if not success:
             added_count = 0
             updated_count = 0
-            skipped_count_total = 0 # Ensure this is reset too if overall failure
+            skipped_count_total = 0
             skipped_invalid_format = 0
             skipped_existing_no_update_uc_bi_id_count = 0
             skipped_missing_step = 0
             skipped_invalid_priority = 0
             uc_bi_ids_existing_no_update = []
             missing_step_bi_ids = []
-            skipped_errors_details = [] # Reset this too
+            skipped_errors_details = []
 
         SessionLocal.remove()
 
@@ -714,30 +655,30 @@ def process_usecase_file(file_stream):
         "message": message,
         "added_count": added_count,
         "updated_count": updated_count,
-        "skipped_count": skipped_count_total, # Total skipped count
+        "skipped_count": skipped_count_total,
         "skipped_invalid_format": skipped_invalid_format,
         "skipped_existing_no_update_uc_bi_id_count": skipped_existing_no_update_uc_bi_id_count,
         "skipped_missing_step": skipped_missing_step,
-        "skipped_invalid_priority": skipped_invalid_priority, # NEW: Return invalid priority count
+        "skipped_invalid_priority": skipped_invalid_priority,
         "uc_bi_ids_existing_no_update": uc_bi_ids_existing_no_update, 
         "missing_step_bi_ids": missing_step_bi_ids,
-        "skipped_errors_details": skipped_errors_details # NEW: Return general detailed errors
+        "skipped_errors_details": skipped_errors_details
     }
 
 
 def process_ps_ps_relevance_file(file_stream):
     session = SessionLocal()
     added_count = 0
-    skipped_count_total = 0 # NEW: Unified skipped count
-    # Specific skipped categories
+    skipped_count_total = 0
     skipped_invalid_format = 0
     skipped_existing_link = 0
     skipped_missing_step = 0
     skipped_self_link = 0
-    skipped_errors_details = [] # Renamed from skipped_errors for consistency with other functions
-
+    skipped_errors_details = []
     message = ""
     success = False
+
+    processed_pairs_in_file = set()
 
     try:
         print("Processing process step relevance links file...")
@@ -774,7 +715,6 @@ def process_ps_ps_relevance_file(file_stream):
             relevance_score_raw = item['relevance_score']
             relevance_content = item.get('relevance_content')
 
-            # Convert content to string and handle empty
             if relevance_content is not None:
                 if not isinstance(relevance_content, str):
                     skipped_errors_details.append(f"{item_log_string}: Relevance content was not a string, treated as empty.")
@@ -782,16 +722,15 @@ def process_ps_ps_relevance_file(file_stream):
                 else:
                     stripped_content = relevance_content.strip()
                     relevance_content = stripped_content if stripped_content else None
-
-
-            if source_bi_id == target_bi_id:
-                skipped_self_link += 1
-                skipped_count_total += 1
-                skipped_errors_details.append(f"{item_log_string}: Cannot link a Process Step to itself.")
-                continue
-
+            
             source_id = step_lookup.get(source_bi_id)
             target_id = step_lookup.get(target_bi_id)
+
+            if source_id is not None and target_id is not None and source_id == target_id:
+                skipped_self_link += 1
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string}: Cannot link a Process Step (ID: {source_id}) to itself.")
+                continue
 
             if source_id is None:
                 skipped_missing_step += 1
@@ -817,15 +756,23 @@ def process_ps_ps_relevance_file(file_stream):
                 skipped_errors_details.append(f"{item_log_string}: Non-integer relevance score '{relevance_score_raw}'.")
                 continue
 
-            existing_link = session.query(ProcessStepProcessStepRelevance).filter_by(
+            current_pair = (source_id, target_id)
+            if current_pair in processed_pairs_in_file:
+                skipped_existing_link += 1
+                skipped_count_total += 1
+                skipped_errors_details.append(f"{item_log_string} (SourceID: {source_id}, TargetID: {target_id}): Link already processed from this file. Skipped duplicate entry.")
+                continue
+            
+            existing_link_in_db = session.query(ProcessStepProcessStepRelevance).filter_by(
                 source_process_step_id=source_id,
                 target_process_step_id=target_id
             ).first()
 
-            if existing_link:
+            if existing_link_in_db:
                 skipped_existing_link += 1
                 skipped_count_total += 1
-                skipped_errors_details.append(f"{item_log_string}: Link already exists. Skipped.")
+                skipped_errors_details.append(f"{item_log_string} (SourceID: {source_id}, TargetID: {target_id}): Link already exists in the database. Skipped.")
+                processed_pairs_in_file.add(current_pair) 
                 continue
             
             new_link = ProcessStepProcessStepRelevance(
@@ -835,6 +782,7 @@ def process_ps_ps_relevance_file(file_stream):
                 relevance_content=relevance_content
             )
             session.add(new_link)
+            processed_pairs_in_file.add(current_pair)
             added_count += 1
 
         session.commit()
@@ -879,10 +827,9 @@ def process_ps_ps_relevance_file(file_stream):
         "skipped_existing_link": skipped_existing_link,
         "skipped_missing_step": skipped_missing_step,
         "skipped_self_link": skipped_self_link,
-        "skipped_errors_details": skipped_errors_details # NEW: Return detailed errors
+        "skipped_errors_details": skipped_errors_details
     }
 
-# --- Replicating the pattern for other relevance injection files ---
 
 def process_usecase_area_relevance_file(file_stream):
     session = SessionLocal()
@@ -1325,7 +1272,6 @@ def process_usecase_usecase_relevance_file(file_stream):
 
 
 def import_database_from_json(json_string, clear_existing_data=False):
-    # Get a fresh session for the import process
     session_local = SessionLocal() 
 
     try:
@@ -1346,7 +1292,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
             print("Clearing existing data...")
             
             try:
-                # Add a smaller timeout to each TRUNCATE if it gets stuck
                 print("Executing TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE process_step_process_step_relevance RESTART IDENTITY CASCADE;").execution_options(timeout=30))
                 session_local.commit()
@@ -1386,18 +1331,17 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     traceback.print_exc()
                     return {"success": False, "message": f"Critical error during session table clear: {e}. Import rolled back."}
 
-                print("Executing TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;") # Ensure LLM Settings is truncated
+                print("Executing TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE llm_settings RESTART IDENTITY CASCADE;").execution_options(timeout=30))
                 session_local.commit()
 
-                # Truncate users last if applicable, it might have dependencies
                 print("Executing TRUNCATE TABLE users RESTART IDENTITY CASCADE;")
                 session_local.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;").execution_options(timeout=30))
                 session_local.commit()
                 
                 print("Data cleared.")
 
-            except OperationalError as oe: # Specifically catch database operational errors (like timeout)
+            except OperationalError as oe:
                 session_local.rollback()
                 print(f"ERROR: TRUNCATE operation timed out or failed with operational error: {oe}")
                 return {"success": False, "message": f"Clearing data failed: {oe}. Import rolled back."}
@@ -1635,4 +1579,4 @@ def import_database_from_json(json_string, clear_existing_data=False):
             "message": f"An error occurred: {e}. Import rolled back."
         }
     finally:
-        pass
+        SessionLocal.remove() # Ensure session is removed, even if not used (like if clear_existing_data is false)

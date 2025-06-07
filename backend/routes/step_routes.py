@@ -1,64 +1,83 @@
-#backend/routes/step_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request
+# backend/routes/step_routes.py
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify # Added jsonify
 from flask_login import login_required
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
-from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance # NEW Import
+from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance
 from ..utils import serialize_for_js
-# END NEW IMPORT
 
 step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
                         url_prefix='/steps')
 
-# NEW: Overview page for all steps
+# NEW API Endpoint to get all steps as JSON
+@step_routes.route('/api/all', methods=['GET']) # Changed route to /api/all to avoid conflict and be more specific
+@login_required
+def api_get_all_steps():
+    session = SessionLocal()
+    try:
+        steps = session.query(ProcessStep).options(
+            joinedload(ProcessStep.area) # Eager load area for area_name
+        ).order_by(ProcessStep.name).all()
+        
+        steps_data = []
+        for step in steps:
+            steps_data.append({
+                "id": step.id,
+                "name": step.name,
+                "bi_id": step.bi_id,
+                "area_id": step.area_id,
+                "area_name": step.area.name if step.area else "N/A"
+                # Add other fields if needed by the modal's select dropdown rendering
+            })
+        return jsonify(steps_data)
+    except Exception as e:
+        print(f"Error fetching all steps for API: {e}")
+        return jsonify(error=str(e)), 500
+    finally:
+        session.close()
+
+
 @step_routes.route('/')
 @login_required
 def list_steps():
     session = SessionLocal()
     steps = []
     
-    # NEW BREADCRUMB DATA FETCHING
     all_areas_flat = []
     all_steps_flat = []
     all_usecases_flat = []
-    # END NEW BREADCRUMB DATA FETCHING
 
     try:
-        # Load all steps with their area and use cases for the overview
         steps = session.query(ProcessStep).options(
             joinedload(ProcessStep.area),
             joinedload(ProcessStep.use_cases)
         ).order_by(ProcessStep.name).all()
 
-        # NEW BREADCRUMB DATA FETCHING (for consistency across all routes)
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
 
         return render_template(
-            'step_overview.html', # NEW TEMPLATE
+            'step_overview.html', 
             title="All Process Steps",
             steps=steps,
-            current_item=None, # No specific item highlighted
-            current_area=None, # No specific area context for breadcrumbs
-            current_step=None, # No specific step context for breadcrumbs
-            current_usecase=None, # No specific usecase context for breadcrumbs
-            # NEW BREADCRUMB DATA PASSING
+            current_item=None, 
+            current_area=None, 
+            current_step=None, 
+            current_usecase=None, 
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
-            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching all steps for overview: {e}")
         flash("An error occurred while fetching process step overview.", "danger")
         return redirect(url_for('index'))
     finally:
-        SessionLocal.remove()
+        SessionLocal.remove() # Correct, this is the main route handler
 
 
 @step_routes.route('/<int:step_id>')
@@ -66,11 +85,9 @@ def list_steps():
 def view_step(step_id):
     session = SessionLocal()
 
-    # NEW BREADCRUMB DATA FETCHING
     all_areas_flat = []
     all_steps_flat = []
     all_usecases_flat = []
-    # END NEW BREADCRUMB DATA FETCHING
 
     try:
         step = session.query(ProcessStep).options(
@@ -78,7 +95,6 @@ def view_step(step_id):
             selectinload(ProcessStep.use_cases),
             selectinload(ProcessStep.usecase_relevance)
                 .joinedload(UsecaseStepRelevance.source_usecase),
-            # NEW: Load ProcessStep-ProcessStep relevance links (as source and target)
             selectinload(ProcessStep.relevant_to_steps_as_source)
                 .joinedload(ProcessStepProcessStepRelevance.target_process_step),
             selectinload(ProcessStep.relevant_to_steps_as_target)
@@ -89,40 +105,34 @@ def view_step(step_id):
             flash(f"Process Step with ID {step_id} not found.", "warning")
             return redirect(url_for('index'))
 
-        # NEW: Fetch other steps for the "Add Relevance Link" form
         other_steps = session.query(ProcessStep)\
             .filter(ProcessStep.id != step_id)\
             .order_by(ProcessStep.name)\
             .all()
 
-        # NEW BREADCRUMB DATA FETCHING
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-        # END NEW BREADCRUMB DATA FETCHING
 
         return render_template(
             'step_detail.html',
             title=f"Process Step: {step.name}",
             step=step,
-            other_steps=other_steps, # Pass other steps to the template for the 'add relevance' form
-            current_step=step, # For breadcrumbs (the step itself)
-            current_area=step.area, # For breadcrumbs (the parent area)
-            current_usecase=None, # Ensure consistency
-            current_item=step, # The specific item for "active" breadcrumb logic
-            # NEW BREADCRUMB DATA PASSING
+            other_steps=other_steps, 
+            current_step=step, 
+            current_area=step.area, 
+            current_usecase=None, 
+            current_item=step, 
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
             all_usecases_flat=all_usecases_flat
-            # END NEW BREADCRUMB DATA PASSING
         )
     except Exception as e:
         print(f"Error fetching step {step_id}: {e}")
         flash("An error occurred while fetching step details. Please check server logs.", "danger")
         return redirect(url_for('index'))
     finally:
-        # REMOVE THIS LINE: SessionLocal.remove()
-        pass
+        SessionLocal.remove() # Correct
 
 
 @step_routes.route('/<int:step_id>/edit', methods=['GET', 'POST'])
@@ -132,15 +142,13 @@ def edit_step(step_id):
     step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
     all_areas = session.query(Area).order_by(Area.name).all()
 
-    # NEW BREADCRUMB DATA FETCHING
     all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
     all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
     all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-    # END NEW BREADCRUMB DATA FETCHING
 
     if step is None:
         flash(f"Process Step with ID {step_id} not found.", "warning")
-        # REMOVE THIS LINE: SessionLocal.remove()
+        SessionLocal.remove()
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -162,7 +170,6 @@ def edit_step(step_id):
 
         if not step.name or not step.bi_id or not step.area_id:
             flash("Step Name, BI_ID, and Area are required.", "danger")
-            # Fall through to render_template at the end of the function
         else:
             if step.bi_id != original_bi_id:
                 existing_step = session.query(ProcessStep).filter(
@@ -171,83 +178,47 @@ def edit_step(step_id):
                 ).first()
                 if existing_step:
                     flash(f"Another process step with BI_ID '{step.bi_id}' already exists.", "danger")
+                    SessionLocal.remove() # Close session before re-rendering template
                     return render_template(
                         'edit_step.html',
                         title=f"Edit Step: {step.name}",
-                        step=step, # The object for the page's data
-                        all_areas=all_areas, # For the dropdown
-                        current_step=step, # For breadcrumbs (the step itself)
-                        current_area=step.area, # For breadcrumbs (the parent area)
-                        current_usecase=None, # Ensure consistency
-                        current_item=step, # The specific item for "active" breadcrumb logic
-                        # NEW BREADCRUMB DATA PASSING
+                        step=step, 
+                        all_areas=all_areas, 
+                        current_step=step, 
+                        current_area=step.area, 
+                        current_usecase=None, 
+                        current_item=step, 
                         all_areas_flat=all_areas_flat,
                         all_steps_flat=all_steps_flat,
                         all_usecases_flat=all_usecases_flat
-                        # END NEW BREADCRUMB DATA PASSING
                     )
             
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
-                # REMOVE THIS LINE: SessionLocal.remove() # Close session before redirect
+                SessionLocal.remove() 
                 return redirect(url_for('steps.view_step', step_id=step.id))
             except IntegrityError:
                 session.rollback()
                 flash("Database error: Could not update step. BI_ID might already exist or area is invalid.", "danger")
-                # REMOVE THIS LINE: SessionLocal.remove() 
-                return render_template(
-                    'edit_step.html',
-                    title=f"Edit Step: {step.name}",
-                    step=step, # The object for the page's data
-                    all_areas=all_areas, # For the dropdown
-                    current_step=step, # For breadcrumbs (the step itself)
-                    current_area=step.area, # For breadcrumbs (the parent area)
-                    current_usecase=None, # Ensure consistency
-                    current_item=step, # The specific item for "active" breadcrumb logic
-                    # NEW BREADCRUMB DATA PASSING
-                    all_areas_flat=all_areas_flat,
-                    all_steps_flat=all_steps_flat,
-                    all_usecases_flat=all_usecases_flat
-                    # END NEW BREADCRUMB DATA PASSING
-                )
             except Exception as e:
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating step {step_id}: {e}")
-                # Fall through to render_template below
-                # REMOVE THIS LINE: SessionLocal.remove()
-                return render_template(
-                    'edit_step.html',
-                    title=f"Edit Step: {step.name}",
-                    step=step, # The object for the page's data
-                    all_areas=all_areas, # For the dropdown
-                    current_step=step, # For breadcrumbs (the step itself)
-                    current_area=step.area, # For breadcrumbs (the parent area)
-                    current_usecase=None, # Ensure consistency
-                    current_item=step, # The specific item for "active" breadcrumb logic
-                    # NEW BREADCRUMB DATA PASSING
-                    all_areas_flat=all_areas_flat,
-                    all_steps_flat=all_steps_flat,
-                    all_usecases_flat=all_usecases_flat
-                    # END NEW BREADCRUMB DATA PASSING
-                )
     
-    # REMOVE THIS LINE: SessionLocal.remove() 
+    SessionLocal.remove() 
     return render_template(
         'edit_step.html',
-        title=f"Edit Step: {step.name}", # Page title
-        step=step, # The object for the page's data
-        all_areas=all_areas, # For the dropdown
-        current_step=step, # For breadcrumbs (the step itself)
-        current_area=step.area, # For breadcrumbs (the parent area)
-        current_usecase=None, # Ensure consistency
-        current_item=step, # The specific item for "active" breadcrumb logic
-        # NEW BREADCRUMB DATA PASSING
+        title=f"Edit Step: {step.name}", 
+        step=step, 
+        all_areas=all_areas, 
+        current_step=step, 
+        current_area=step.area, 
+        current_usecase=None, 
+        current_item=step, 
         all_areas_flat=all_areas_flat,
         all_steps_flat=all_steps_flat,
         all_usecases_flat=all_usecases_flat
-        # END NEW BREADCRUMB DATA PASSING
     )
 
 
@@ -275,3 +246,6 @@ def delete_step(step_id):
             print(f"Error deleting step {step_id}: {e}")
             if step.area_id: 
                  redirect_url = url_for('areas.view_area', area_id=step.area_id)
+        finally:
+            SessionLocal.remove() # Ensure session is removed in all cases for this route
+    return redirect(redirect_url)
