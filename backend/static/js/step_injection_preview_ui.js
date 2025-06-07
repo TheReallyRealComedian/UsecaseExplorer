@@ -42,46 +42,49 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusBadge = rowElement.querySelector('.status-badge');
         if (statusBadge) {
             statusBadge.textContent = item.status.toUpperCase();
-            statusBadge.classList.remove('bg-success', 'bg-warning', 'text-dark', 'bg-secondary', 'bg-danger');
+            statusBadge.classList.remove('bg-success', 'bg-warning', 'text-dark', 'bg-secondary', 'bg-danger', 'bg-info'); // Added bg-info removal
             if (item.status === 'new') statusBadge.classList.add('bg-success');
             else if (item.status === 'update') statusBadge.classList.add('bg-warning', 'text-dark');
             else if (item.status === 'no_change') statusBadge.classList.add('bg-secondary');
             else if (item.status === 'skipped') statusBadge.classList.add('bg-danger');
+            else statusBadge.classList.add('bg-info'); // Default for any other status
         }
 
         // Update name input in main table
         const nameInput = rowElement.querySelector('.row-final-value-input[data-field="name"]');
         if (nameInput) {
             nameInput.value = item.new_values.name || '';
-            nameInput.disabled = (item.status === 'skipped' || (item.status === 'no_change' && !item.conflicts.name));
+            nameInput.disabled = (item.action === 'skip');
         }
 
         // Update area select in main table
         const areaSelect = rowElement.querySelector('.row-final-area-select[data-field="area_id"]');
         if (areaSelect) {
-            areaSelect.value = item.new_values.area_id;
-            areaSelect.disabled = (item.status === 'skipped' || (item.status === 'no_change' && !item.conflicts.area_id));
+            areaSelect.value = item.new_values.area_id || '';
+            areaSelect.disabled = (item.action === 'skip');
         }
 
         // Update row action radio buttons
         const actionRadios = rowElement.querySelectorAll(`.action-radio[name="action_${item.bi_id}"]`);
         actionRadios.forEach(radio => {
             radio.checked = (radio.value === item.action);
-            // Disable Add/Update buttons as per business logic:
-            if (item.status === 'new') { // This logic reflects initial state/business rules
-                if (radio.value === 'update') radio.disabled = true; else radio.disabled = false;
-            } else if (item.status === 'update' || item.status === 'no_change') {
-                if (radio.value === 'add') radio.disabled = true; else radio.disabled = false;
-            } else if (item.status === 'skipped') {
-                radio.disabled = true; // All action radios disabled if originally skipped
+            // Business logic for disabling radio buttons:
+            // If the original status was 'new', then 'update' action is not allowed.
+            // If the original status was 'update' or 'no_change', then 'add' action is not allowed.
+            // 'skipped' status is handled by the action directly.
+            if (item.original_status === 'new') {
+                radio.disabled = (radio.value === 'update');
+            } else if (item.original_status === 'update' || item.original_status === 'no_change') {
+                radio.disabled = (radio.value === 'add');
             } else {
-                radio.disabled = false;
+                radio.disabled = false; // Default to enabled if no specific original status rule applies
             }
         });
 
+
         // Add/remove unsaved-change class
-        if (item.status === 'update' || item.status === 'new') {
-            rowElement.classList.add('unsaved-change'); // Always highlight if it's new/update
+        if (item.action === 'update' || item.action === 'add') {
+            rowElement.classList.add('unsaved-change');
         } else {
             rowElement.classList.remove('unsaved-change');
         }
@@ -89,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update message area for the row
         const messageDisplay = rowElement.querySelector('.message-display');
         if (messageDisplay) {
-            messageDisplay.textContent = item.messages[0] || '';
+            messageDisplay.textContent = item.messages && item.messages.length > 0 ? item.messages[0] : '';
         }
     }
 
@@ -100,14 +103,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const item = previewData[rowIndex];
 
         // Set modal header
-        modalStepName.textContent = item.name;
+        modalStepName.textContent = item.name || item.new_values.name || 'N/A';
         modalStepBiId.textContent = item.bi_id;
 
         // Populate Area select in modal
-        modalAreaSelect.value = item.new_values.area_id;
+        modalAreaSelect.value = item.new_values.area_id || '';
         modalAreaDbValue.textContent = item.db_data.area_name || 'N/A';
-        modalAreaJsonValue.textContent = item.area_name || 'N/A';
-        modalAreaSelect.disabled = (item.action === 'skip' || (item.status === 'no_change' && !item.conflicts.area_id));
+        modalAreaJsonValue.textContent = item.area_name || item.new_values.area_name || 'N/A';
+        modalAreaSelect.disabled = (item.action === 'skip');
 
 
         // Populate other fields in modal
@@ -141,59 +144,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Handle content and radio selections based on item status and conflicts
             if (fieldKey in item.conflicts) {
-                // Conflict: Show both DB and JSON values, enable radios/manual input
                 fieldGroup.classList.add('is-conflict');
                 conflictMessage.style.display = 'block';
 
-                const dbValue = item.conflicts[fieldKey].old_value || '';
-                const jsonValue = item.conflicts[fieldKey].new_value || '';
+                const dbValue = item.conflicts[fieldKey].old_value;
+                const jsonValue = item.conflicts[fieldKey].new_value;
                 const preselectedFinalValue = item.new_values[fieldKey];
 
-                dbContentPre.textContent = (dbValue === "N/A (Empty)") ? 'N/A' : dbValue;
-                jsonContentPre.textContent = (jsonValue === "N/A (Empty)") ? 'N/A' : jsonValue;
+                dbContentPre.textContent = (dbValue === null || dbValue === undefined || dbValue === "N/A (Empty)") ? 'N/A' : dbValue;
+                jsonContentPre.textContent = (jsonValue === null || jsonValue === undefined || jsonValue === "N/A (Empty)") ? 'N/A' : jsonValue;
+                manualInput.value = preselectedFinalValue !== null && preselectedFinalValue !== undefined ? preselectedFinalValue : '';
 
-                // Set manual input to the current new_values (which might be a resolution or old/new value)
-                manualInput.value = preselectedFinalValue !== null ? preselectedFinalValue : '';
-
-                // Select the radio that matches the current 'new_values'
                 if (preselectedFinalValue === dbValue) {
                     if (radioDb) radioDb.checked = true;
                 } else if (preselectedFinalValue === jsonValue) {
                     if (radioJson) radioJson.checked = true;
                 } else {
-                    // It's a manual override, or a "null" that doesn't match an "N/A (Empty)" option
                     if (radioManual) radioManual.checked = true;
                 }
-            } else if (item.status === 'new') {
-                // New item: Only JSON value (which is also the db_value and new_value)
+                if (radioDb) radioDb.style.display = '';
+                if (radioJson) radioJson.style.display = '';
+                if (radioManual) radioManual.style.display = '';
+
+            } else if (item.status === 'new' || item.original_status === 'new') { // Check original_status as well
                 fieldGroup.classList.add('is-new-field');
                 dbContentPre.textContent = 'N/A (No existing DB value)';
                 jsonContentPre.textContent = item.json_data[fieldKey] || 'N/A';
-                manualInput.value = item.new_values[fieldKey] !== null ? item.new_values[fieldKey] : '';
-                
-                // No radios needed for new fields, as there's no conflict choice
-                if (radioDb) radioDb.style.display = 'none'; // Hide DB radio
-                if (radioJson) radioJson.style.display = 'none'; // Hide JSON radio
-                if (radioManual) radioManual.style.display = 'none'; // Hide Manual radio
+                manualInput.value = item.new_values[fieldKey] !== null && item.new_values[fieldKey] !== undefined ? item.new_values[fieldKey] : '';
+
+                if (radioDb) radioDb.style.display = 'none';
+                if (radioJson) radioJson.style.display = 'none';
+                if (radioManual) radioManual.style.display = 'none';
             } else if (item.status === 'no_change' && !item.conflicts[fieldKey]) {
-                // No change for this field: Show DB value, disable manual input
                 fieldGroup.classList.add('is-no-change');
                 dbContentPre.textContent = item.db_data[fieldKey] || 'N/A';
-                jsonContentPre.textContent = item.json_data[fieldKey] || 'N/A'; // Show JSON too for context
-                manualInput.value = item.db_data[fieldKey] !== null ? item.db_data[fieldKey] : '';
-                manualInput.disabled = true; // Cannot edit if no change
-                
-                if (radioDb) radioDb.style.display = 'none'; // Hide DB radio
-                if (radioJson) radioJson.style.display = 'none'; // Hide JSON radio
-                if (radioManual) radioManual.style.display = 'none'; // Hide Manual radio
-            } else { // Fallback for fields not explicitly conflicting, but present in new_values
+                jsonContentPre.textContent = item.json_data[fieldKey] || 'N/A';
+                manualInput.value = item.db_data[fieldKey] !== null && item.db_data[fieldKey] !== undefined ? item.db_data[fieldKey] : '';
+                manualInput.disabled = true;
+
+                if (radioDb) radioDb.style.display = 'none';
+                if (radioJson) radioJson.style.display = 'none';
+                if (radioManual) radioManual.style.display = 'none';
+            } else {
                 dbContentPre.textContent = item.db_data[fieldKey] || 'N/A';
                 jsonContentPre.textContent = item.json_data[fieldKey] || 'N/A';
-                manualInput.value = item.new_values[fieldKey] !== null ? item.new_values[fieldKey] : '';
+                manualInput.value = item.new_values[fieldKey] !== null && item.new_values[fieldKey] !== undefined ? item.new_values[fieldKey] : '';
 
-                if (radioDb) radioDb.style.display = 'none'; // Hide DB radio
-                if (radioJson) radioJson.style.display = 'none'; // Hide JSON radio
-                if (radioManual) radioManual.style.display = 'none'; // Hide Manual radio
+                if (radioDb) radioDb.style.display = 'none';
+                if (radioJson) radioJson.style.display = 'none';
+                if (radioManual) radioManual.style.display = 'none';
             }
         }
     }
@@ -209,11 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const manualInput = modalFieldsContainer.querySelector(`#modal_manual_input_${fieldKey}`);
 
             if (target.value === 'db') {
-                manualInput.value = item.conflicts[fieldKey].old_value || '';
+                manualInput.value = (item.conflicts[fieldKey] && item.conflicts[fieldKey].old_value !== undefined) ? item.conflicts[fieldKey].old_value : (item.db_data[fieldKey] || '');
             } else if (target.value === 'json') {
-                manualInput.value = item.conflicts[fieldKey].new_value || '';
-            } else if (target.value === 'manual') {
-                // Do nothing, user will type
+                manualInput.value = (item.conflicts[fieldKey] && item.conflicts[fieldKey].new_value !== undefined) ? item.conflicts[fieldKey].new_value : (item.json_data[fieldKey] || '');
             }
         }
     });
@@ -225,7 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const fieldKey = target.dataset.field;
             const radios = modalFieldsContainer.querySelectorAll(`input[name="modal_choice_${fieldKey}"]`);
             radios.forEach(radio => radio.checked = false);
-            // If user manually edits, default to manual choice if it exists
             const manualRadio = modalFieldsContainer.querySelector(`#modal_manual_choice_${fieldKey}`);
             if (manualRadio && !manualRadio.disabled) {
                 manualRadio.checked = true;
@@ -236,64 +232,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Save Modal Changes ---
     saveModalChangesBtn.addEventListener('click', function() {
         const item = previewData[currentModalRowIndex];
+        let changesMadeInModal = false;
 
-        // Update name in new_values (from main table, but also for consistency in modal data)
         const rowElement = getRowElement(currentModalRowIndex);
         const nameInput = rowElement.querySelector('.row-final-value-input[data-field="name"]');
         if (nameInput) {
-            item.new_values.name = nameInput.value.trim() === '' ? null : nameInput.value.trim();
+            const newName = nameInput.value.trim() === '' ? null : nameInput.value.trim();
+            if (item.new_values.name !== newName) {
+                item.new_values.name = newName;
+                changesMadeInModal = true;
+            }
         }
 
-        // Update Area ID from modal select
         const newAreaId = parseInt(modalAreaSelect.value);
         if (item.new_values.area_id !== newAreaId) {
             item.new_values.area_id = newAreaId;
-            // Update area name in item.new_values for display consistency
             const selectedArea = allAreasData.find(area => area.id === newAreaId);
             item.new_values.area_name = selectedArea ? selectedArea.name : 'N/A';
-            // Mark as update if action was no_change (since area changed)
-            if (item.action === 'no_change') item.action = 'update';
+            changesMadeInModal = true;
         }
 
-        // Collect values for other fields from modal
         for (const fieldKey in stepDetailFieldsConfig) {
             const manualInput = modalFieldsContainer.querySelector(`#modal_manual_input_${fieldKey}`);
-            if (manualInput && !manualInput.disabled) { // Only read from enabled inputs
+            if (manualInput && !manualInput.disabled) {
                 const newValue = manualInput.value.trim() === '' ? null : manualInput.value.trim();
                 if (item.new_values[fieldKey] !== newValue) {
                     item.new_values[fieldKey] = newValue;
-                     // If an action was 'no_change' but a field was manually updated, switch to 'update'
-                    if (item.action === 'no_change') item.action = 'update';
+                    changesMadeInModal = true;
                 }
             }
         }
 
-        // If the item was originally 'no_change' but now has actual changes in `new_values`
-        // compared to `db_data` (excluding timestamp fields, etc.), promote its status to 'update'.
-        // This is a more robust check for 'no_change' items.
-        if (item.status === 'no_change' && item.action === 'no_change') { // Check if it's still 'no_change' in action
-            let actuallyChanged = false;
-            for (const fieldKey in stepDetailFieldsConfig) {
-                const newValue = item.new_values[fieldKey];
-                const dbValue = item.db_data[fieldKey] || null; // Treat empty string as null from DB
-                if (newValue !== dbValue) {
-                    actuallyChanged = true;
-                    break;
-                }
-            }
-            if (item.new_values.name !== (item.db_data.name || null)) actuallyChanged = true;
-            if (item.new_values.area_id !== (item.db_data.area_id || null)) actuallyChanged = true;
+        if (changesMadeInModal && (item.action === 'skip' || item.action === 'no_change')) {
+            item.action = 'update';
+        }
 
-            if (actuallyChanged) {
-                item.action = 'update'; // Promote to update
-            }
+        if (item.action === 'update') {
+            item.status = 'update';
+        } else if (item.action === 'add') {
+            item.status = 'new';
+        } else if (item.action === 'skip') {
+            item.status = 'skipped';
         }
 
 
-        // Update main table row visuals
         updateRowVisuals(currentModalRowIndex);
-
-        // Close modal
         bootstrap.Modal.getInstance(stepDetailModal).hide();
     });
 
@@ -318,17 +301,26 @@ document.addEventListener('DOMContentLoaded', function() {
             let newValue = target.value.trim() === '' ? null : target.value.trim();
 
             if (field === 'area_id') {
-                newValue = parseInt(newValue);
+                newValue = parseInt(newValue) || null; // Ensure it's an int or null
             }
 
             if (item.new_values[field] !== newValue) {
                 item.new_values[field] = newValue;
-                // If the item was originally 'no_change' but now a field has changed,
-                // we should promote its action to 'update'.
-                if (item.action === 'no_change') {
-                    item.action = 'update';
+                if (field === 'area_id') {
+                    const selectedArea = allAreasData.find(area => area.id === newValue);
+                    item.new_values.area_name = selectedArea ? selectedArea.name : 'N/A';
                 }
-                updateRowVisuals(rowIndex); // Update visuals immediately
+
+                if (item.action === 'skip' || item.action === 'no_change') {
+                    // If original status allows update, then promote to update
+                    if (item.original_status === 'update' || item.original_status === 'no_change' || item.original_status === 'skipped') {
+                        item.action = 'update';
+                        item.status = 'update';
+                    }
+                    // If original status was 'new', it should stay 'add' or 'skip'
+                    // This direct edit shouldn't change an 'add' to 'update'.
+                }
+                updateRowVisuals(rowIndex);
             }
         }
     });
@@ -338,17 +330,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const target = event.target;
         if (target.classList.contains('action-radio')) {
             const rowIndex = parseInt(target.dataset.rowIndex);
+            if (isNaN(rowIndex) || rowIndex < 0 || rowIndex >= previewData.length) {
+                console.error("Invalid rowIndex from action-radio:", target.dataset.rowIndex);
+                return;
+            }
             const item = previewData[rowIndex];
             item.action = target.value;
-            updateRowVisuals(rowIndex); // Update visuals immediately
+
+            if (item.action === 'add') {
+                item.status = 'new';
+            } else if (item.action === 'update') {
+                item.status = 'update';
+            } else if (item.action === 'skip') {
+                item.status = 'skipped';
+            }
+            updateRowVisuals(rowIndex);
         }
     });
 
     // --- Global Action Buttons (Confirm/Cancel Import) ---
 
     confirmImportBtn.addEventListener('click', async function(event) {
-        event.preventDefault(); // <--- ADDED THIS LINE
-        
+        event.preventDefault();
+
         if (!confirm('Are you sure you want to finalize the import with the displayed changes?')) {
             return;
         }
@@ -358,33 +362,48 @@ document.addEventListener('DOMContentLoaded', function() {
         let firstInvalidRow = null;
 
         previewData.forEach((item, index) => {
+            if (!['add', 'update', 'skip'].includes(item.action)) {
+                console.error(`Item at index ${index} has invalid action: ${item.action}`, item);
+                item.action = 'skip'; // Default to skip if action is invalid
+            }
+
             if (item.action === 'add' || item.action === 'update') {
-                // Re-validate critical fields before sending
                 const name = item.new_values.name;
                 const area_id = item.new_values.area_id;
 
                 if (!name) {
                     isValid = false;
-                    flashMessage(`Name is required for step ${item.bi_id}.`, 'danger');
+                    flashMessage(`Name is required for step ${item.bi_id} (row ${index + 1}). Action set to 'skip'.`, 'danger');
+                    item.action = 'skip';
+                    item.status = 'skipped';
+                    updateRowVisuals(index);
                     if (firstInvalidRow === null) firstInvalidRow = index;
                 }
                 if (!area_id) {
                     isValid = false;
-                    flashMessage(`Area is required for step ${item.bi_id}.`, 'danger');
+                    flashMessage(`Area is required for step ${item.bi_id} (row ${index + 1}). Action set to 'skip'.`, 'danger');
+                    item.action = 'skip';
+                    item.status = 'skipped';
+                    updateRowVisuals(index);
                     if (firstInvalidRow === null) firstInvalidRow = index;
                 }
             }
             resolvedData.push({
                 bi_id: item.bi_id,
                 action: item.action,
-                final_data: item.new_values // new_values holds the current resolved state
+                final_data: item.new_values
             });
         });
 
         if (!isValid) {
-            // Scroll to the first invalid row if detected
             if (firstInvalidRow !== null) {
-                getRowElement(firstInvalidRow).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const rowEl = getRowElement(firstInvalidRow);
+                if (rowEl) {
+                    rowEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
             }
             return;
         }
@@ -393,22 +412,27 @@ document.addEventListener('DOMContentLoaded', function() {
         cancelImportBtn.disabled = true;
 
         try {
-            const response = await fetch('/injection/steps/finalize', {
+            const response = await fetch('/data-update/steps/finalize', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(resolvedData),
             });
 
             const result = await response.json();
-            if (result.success) {
-                flashMessage(`Process Step import complete: Added ${result.added_count}, Updated ${result.updated_count}, Failed ${result.failed_count}. Redirecting...`, 'success');
-                setTimeout(() => { window.location.href = '/injection'; }, 1500);
+            if (response.ok && result.success) {
+                flashMessage(`Process Step import complete: Added ${result.added_count || 0}, Updated ${result.updated_count || 0}, Skipped ${result.skipped_count || 0}, Failed ${result.failed_count || 0}. Redirecting...`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/data-update';
+                }, 2000);
             } else {
-                flashMessage(`Import failed: ${result.message || JSON.stringify(result.messages)}`, 'danger');
-                console.error('Finalize import failed:', result.messages);
+                const errorMsg = result.message || (result.messages ? result.messages.join('; ') : `Server error ${response.status}.`);
+                flashMessage(`Import failed: ${errorMsg}`, 'danger');
+                console.error('Finalize import failed:', result);
             }
         } catch (error) {
-            flashMessage('Network error during import finalization.', 'danger');
+            flashMessage(`Network error during import finalization: ${error.message || 'Check console.'}`, 'danger');
             console.error('Fetch error:', error);
         } finally {
             confirmImportBtn.disabled = false;
@@ -418,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     cancelImportBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to cancel the import and discard all changes?')) {
-            window.location.href = '/injection'; // Redirect back to the main injection page
+            window.location.href = '/data-update';
         }
     });
 
@@ -427,6 +451,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial setup of main table rows
     previewData.forEach((item, index) => {
+        item.original_status = item.status; // Store original status
+
+        if (item.status === 'new') item.action = 'add';
+        else if (item.status === 'update') item.action = 'update';
+        else if (item.status === 'no_change') item.action = 'skip'; // Default 'no_change' to 'skip'
+        else if (item.status === 'skipped') item.action = 'skip';
+        else item.action = 'skip'; // Fallback
+
+        // Ensure new_values.area_name is populated if area_id exists
+        if (item.new_values.area_id && !item.new_values.area_name) {
+            const area = allAreasData.find(a => a.id === item.new_values.area_id);
+            if (area) {
+                item.new_values.area_name = area.name;
+            }
+        }
         updateRowVisuals(index);
     });
 
@@ -436,15 +475,20 @@ document.addEventListener('DOMContentLoaded', function() {
         areaIdToNameMap[area.id] = area.name;
     });
 
-    // Flash message helper (for JS-generated messages)
+    // Flash message helper
     function flashMessage(message, category) {
         let flashContainer = document.querySelector('.flash-messages');
         if (!flashContainer) {
             flashContainer = document.createElement('div');
             flashContainer.classList.add('flash-messages');
-            document.querySelector('.page-content').prepend(flashContainer);
+            const pageContentContainer = document.querySelector('.page-content .step-injection-preview-page') || document.querySelector('.page-content');
+            if (pageContentContainer) {
+                pageContentContainer.prepend(flashContainer);
+            } else {
+                document.body.prepend(flashContainer); // Fallback
+            }
         }
-        
+
         const alertDiv = document.createElement('div');
         alertDiv.classList.add('alert', `alert-${category}`);
         alertDiv.textContent = message;
@@ -452,7 +496,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setTimeout(() => {
             alertDiv.remove();
-        }, 5000);
+            if (flashContainer.children.length === 0 && flashContainer.parentElement) {
+                flashContainer.remove();
+            }
+        }, 7000);
     }
 
 });

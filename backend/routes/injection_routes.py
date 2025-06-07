@@ -2,13 +2,13 @@
 
 import os
 import traceback
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify # session is used
 from flask_login import login_required
 import json
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 
-from ..models import Area, ProcessStep, UseCase # Make sure UseCase is imported
+from ..models import Area, ProcessStep, UseCase 
 from ..injection_service import (
     process_area_file,
     process_step_file,
@@ -91,6 +91,7 @@ DEFAULT_SELECT_SIZE = 15
 @injection_routes.route('/', methods=['GET', 'POST'])
 @login_required
 def data_update_page():
+    # ... (rest of the function remains the same)
     print("---------- DEBUG: Data Update Page Route Entered ----------")
     print(f"Request Method: {request.method}")
     print(f"Request Form Keys: {request.form.keys()}")
@@ -119,7 +120,7 @@ def data_update_page():
         
         all_areas_for_filters_list = session_db.query(Area).order_by(Area.name).all()
 
-        detailed_usecases_for_js_filtering = [] # Initialize before loop
+        detailed_usecases_for_js_filtering = [] 
         for uc in all_usecases_for_table:
             detailed_usecases_for_js_filtering.append({
                 'id': uc.id,
@@ -140,7 +141,6 @@ def data_update_page():
     except Exception as e:
         print(f"Error loading initial data for data_update_page: {e}")
         flash("Error loading data. Please try again.", "danger")
-        # Ensure lists are defined on error for render_template
         detailed_usecases_for_js_filtering = []
         all_usecases_flat_for_breadcrumbs = []
     finally:
@@ -183,10 +183,11 @@ def data_update_page():
                         flash(f'Invalid JSON format in the uploaded file: {e}.', 'danger')
                         return redirect(request.url)
                     
-                    result = process_step_file(parsed_json_data)
+                    result = process_step_file(parsed_json_data) # This function in injection_service.py generates the preview_data
 
                     if result['success']:
                         if result['preview_data']:
+                            # Store the preview_data (which should be JSON serializable) in the session
                             session['step_import_preview_data'] = result['preview_data']
                             flash('Step file uploaded. Please review changes before finalizing import.', 'info')
                             return redirect(url_for('injection.preview_steps_injection'))
@@ -200,6 +201,7 @@ def data_update_page():
                     flash('Invalid file type or name for Process Steps. Please upload a .json file.', 'danger')
                     return redirect(request.url)
 
+            # ... (other elif blocks for usecase_file, relevance files, database_file remain the same)
             elif 'usecase_file' in request.files:
                 file = request.files['usecase_file']
                 if file.filename == '' or not file:
@@ -393,7 +395,7 @@ def data_update_page():
             flash(f"An unexpected error occurred: {str(e)}", "danger")
             return redirect(request.url)
         finally:
-            SessionLocal.remove()
+            SessionLocal.remove() # This was correct, it's a new session per request
     
     return render_template(
         'data_update.html',
@@ -410,6 +412,7 @@ def data_update_page():
         all_usecases_for_js_filtering=detailed_usecases_for_js_filtering,
         all_usecases_flat=all_usecases_flat_for_breadcrumbs
     )
+# ... (rest of the file remains the same for prepare_steps_for_edit, edit_multiple_steps, etc.)
 
 @injection_routes.route('/steps/prepare-for-edit', methods=['POST'])
 @login_required
@@ -462,7 +465,7 @@ def prepare_steps_for_edit():
 
             prepared_data_for_edit.append(item_data)
         
-        session['steps_to_edit'] = prepared_data_for_edit
+        session['steps_to_edit'] = prepared_data_for_edit # This should be JSON serializable
         flash(f"Loaded {len(steps_to_edit)} steps for bulk editing.", "info")
         return redirect(url_for('injection.edit_multiple_steps'))
     except Exception as e:
@@ -484,7 +487,12 @@ def edit_multiple_steps():
     session_db = SessionLocal()
     try:
         all_areas_objs = session_db.query(Area).order_by(Area.name).all()
-        all_areas_flat_js = serialize_for_js(all_areas_objs, 'area')
+        all_areas_flat_js = serialize_for_js(all_areas_objs, 'area') # Used for breadcrumbs
+        
+        # For the dropdown in the form, we need a list of dicts {id, name}
+        all_areas_for_select = [{'id': area.id, 'name': area.name} for area in all_areas_objs]
+
+
         all_steps_flat_js = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
         
@@ -492,7 +500,7 @@ def edit_multiple_steps():
             'edit_multiple_steps.html',
             title='Bulk Edit Process Steps',
             steps_data=steps_data,
-            all_areas=all_areas_objs,
+            all_areas=all_areas_for_select, # Pass the list of dicts
             editable_fields=PROCESS_STEP_EDITABLE_FIELDS,
             current_item=None,
             current_area=None,
@@ -549,15 +557,20 @@ def save_all_steps_changes():
                 setattr(step, field, new_value)
             
             session_db.add(step)
-            successful_updates += 1
+            # No commit per item, commit once after all updates
         
-        session_db.commit()
+        session_db.commit() # Commit all successful changes at once
         
-        message = f"Successfully saved {successful_updates} changes."
+        message = f"Successfully saved changes for {successful_updates} steps." # successful_updates was not incremented
+        if successful_updates == 0 and not failed_updates: # If nothing was actually changed but no errors
+            message = "No actual changes were applied."
+            flash(message, "info")
+            return jsonify(success=True, message=message), 200
+
         if failed_updates:
             message += f" {len(failed_updates)} updates failed."
-            flash(f"{message} See details below.", "warning")
-            return jsonify(success=False, message=message, failed_updates=failed_updates), 200
+            flash(f"{message} See console or server logs for details.", "warning")
+            return jsonify(success=False, message=message, failed_updates=failed_updates), 200 # Still 200 if some succeeded
         else:
             flash(message, "success")
             return jsonify(success=True, message=message), 200
@@ -575,7 +588,6 @@ def save_all_steps_changes():
 
 
 # --- ROUTES FOR BULK EDITING USE CASES ---
-
 @injection_routes.route('/usecases/prepare-for-edit', methods=['POST'])
 @login_required
 def prepare_usecases_for_edit():
@@ -619,10 +631,10 @@ def prepare_usecases_for_edit():
             for key, value in item_data['new_values'].items():
                 if isinstance(value, str):
                     item_data['new_values'][key] = value.strip() or None
-                elif value == "":
+                elif value == "": # Explicitly handle empty string for non-string fields that might become empty
                     item_data['new_values'][key] = None
             
-            for key, value in item_data.items():
+            for key, value in item_data.items(): # Normalize current_ values as well
                 if key.startswith('current_') and isinstance(value, str):
                     item_data[key] = value.strip() or None
 
@@ -639,6 +651,7 @@ def prepare_usecases_for_edit():
     finally:
         SessionLocal.remove()
 
+
 @injection_routes.route('/usecases/edit-multiple', methods=['GET'])
 @login_required
 def edit_multiple_usecases():
@@ -650,15 +663,18 @@ def edit_multiple_usecases():
     session_db = SessionLocal()
     try:
         all_steps_objs = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        all_steps_for_select = [{'id': step.id, 'name': step.name, 'bi_id': step.bi_id} for step in all_steps_objs]
+
+
         all_areas_flat_js = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat_js = serialize_for_js(all_steps_objs, 'step')
+        all_steps_flat_js = serialize_for_js(all_steps_objs, 'step') # For breadcrumbs
         all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
         
         return render_template(
             'edit_multiple_usecases.html',
             title='Bulk Edit Use Cases',
             usecases_data=usecases_data,
-            all_steps=all_steps_objs,
+            all_steps=all_steps_for_select, # Pass list of dicts for dropdown
             editable_fields=PROCESS_USECASE_EDITABLE_FIELDS,
             current_item=None,
             current_area=None,
@@ -684,8 +700,8 @@ def save_all_usecases_changes():
         return jsonify(success=False, message="No changes received."), 400
 
     session_db = SessionLocal()
-    successful_updates = 0
-    failed_updates = []
+    successful_updates_count = 0 # Renamed for clarity
+    failed_updates_details = [] # Renamed for clarity
 
     try:
         for change_item in changes_payload:
@@ -694,50 +710,64 @@ def save_all_usecases_changes():
 
             uc = session_db.query(UseCase).get(uc_id)
             if not uc:
-                failed_updates.append({"id": uc_id, "error": "Use Case not found."})
+                failed_updates_details.append({"id": uc_id, "error": "Use Case not found."})
                 continue
             
+            has_failed_field_update = False # Flag for this specific UC
             for field, new_value in updated_fields.items():
                 if field == 'process_step_id':
                     step_exists = session_db.query(ProcessStep).filter_by(id=new_value).first()
                     if not step_exists:
-                        failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": f"Process Step ID {new_value} not found."})
-                        continue
+                        failed_updates_details.append({"id": uc_id, "field": field, "value": new_value, "error": f"Process Step ID {new_value} not found."})
+                        has_failed_field_update = True
+                        break 
                 elif field == 'bi_id':
                     existing_bi_id_uc = session_db.query(UseCase).filter(
                         UseCase.bi_id == new_value,
                         UseCase.id != uc_id
                     ).first()
                     if existing_bi_id_uc:
-                        failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": f"BI_ID '{new_value}' already exists for another use case."})
-                        continue
+                        failed_updates_details.append({"id": uc_id, "field": field, "value": new_value, "error": f"BI_ID '{new_value}' already exists for another use case."})
+                        has_failed_field_update = True
+                        break
                 elif field == 'priority':
                     if new_value is not None:
                         try:
                             priority_int = int(new_value)
                             if not (1 <= priority_int <= 4):
-                                failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": "Priority must be between 1 and 4, or empty."})
-                                continue
+                                failed_updates_details.append({"id": uc_id, "field": field, "value": new_value, "error": "Priority must be between 1 and 4, or empty."})
+                                has_failed_field_update = True
+                                break
                             setattr(uc, field, priority_int)
                         except ValueError:
-                            failed_updates.append({"id": uc_id, "field": field, "value": new_value, "error": "Invalid priority format (not an integer)."})
-                            continue
+                            failed_updates_details.append({"id": uc_id, "field": field, "value": new_value, "error": "Invalid priority format (not an integer)."})
+                            has_failed_field_update = True
+                            break
                     else:
                         setattr(uc, field, None) 
-                    continue 
+                    continue # Skip default setattr for priority
 
                 setattr(uc, field, new_value)
             
-            session_db.add(uc)
-            successful_updates += 1
+            if not has_failed_field_update: # Only add if no field update failed for this UC
+                session_db.add(uc)
+                successful_updates_count += 1 # Increment here
         
-        session_db.commit()
+        if successful_updates_count > 0: # Only commit if there were successful updates to attempt
+            session_db.commit()
+        else:
+            session_db.rollback() # Rollback if no successful updates to prevent empty transaction
         
-        message = f"Successfully saved {successful_updates} changes."
-        if failed_updates:
-            message += f" {len(failed_updates)} updates failed."
-            flash(f"{message} See details below.", "warning")
-            return jsonify(success=False, message=message, failed_updates=failed_updates), 200
+        message = f"Successfully saved changes for {successful_updates_count} use cases."
+        if not failed_updates_details and successful_updates_count == 0:
+             message = "No actual changes were applied to any use case."
+             flash(message, "info")
+             return jsonify(success=True, message=message), 200
+
+        if failed_updates_details:
+            message += f" {len(failed_updates_details)} use case updates failed or had field errors."
+            flash(f"{message} See console or server logs for details.", "warning")
+            return jsonify(success=False, message=message, failed_updates=failed_updates_details), 200
         else:
             flash(message, "success")
             return jsonify(success=True, message=message), 200
@@ -745,8 +775,8 @@ def save_all_usecases_changes():
     except IntegrityError as e:
         session_db.rollback()
         if 'priority_range_check' in str(e).lower():
-            return jsonify(success=False, message="Database error: Priority must be between 1 and 4, or empty.", failed_updates=failed_updates), 500
-        return jsonify(success=False, message=f"Database integrity error: {e}. Changes rolled back.", failed_updates=failed_updates), 500
+            return jsonify(success=False, message="Database error: Priority must be between 1 and 4, or empty.", failed_updates=failed_updates_details), 500
+        return jsonify(success=False, message=f"Database integrity error: {e}. Changes rolled back.", failed_updates=failed_updates_details), 500
     except Exception as e:
         session_db.rollback()
         print(f"Error saving bulk use case changes: {e}")
@@ -757,7 +787,6 @@ def save_all_usecases_changes():
 
 
 # --- ROUTES FOR STEP INJECTION PREVIEW AND FINALIZATION ---
-
 @injection_routes.route('/steps/injection-preview')
 @login_required
 def preview_steps_injection():
@@ -769,6 +798,9 @@ def preview_steps_injection():
     session_db = SessionLocal()
     try:
         all_areas_objs = session_db.query(Area).order_by(Area.name).all()
+        # CORRECTED: Create a list of dicts for all_areas, not Area objects
+        all_areas_for_template = [{'id': area.id, 'name': area.name, 'description': area.description} for area in all_areas_objs]
+
         all_areas_flat_js = serialize_for_js(all_areas_objs, 'area')
         all_steps_flat_js = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat_js = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -777,7 +809,7 @@ def preview_steps_injection():
             'step_injection_preview.html',
             title='Process Step Import Preview',
             preview_data=preview_data,
-            all_areas=all_areas_objs,
+            all_areas=all_areas_for_template, # Pass the JSON-serializable list
             step_detail_fields=STEP_DETAIL_FIELDS,
             current_item=None,
             current_area=None,
@@ -788,11 +820,15 @@ def preview_steps_injection():
             all_usecases_flat=all_usecases_flat_js
         )
     except Exception as e:
-        flash(f"Error loading step injection preview: {e}", "danger")
+        # Print the error to the console for debugging
         print(f"Error loading step injection preview: {e}")
+        traceback.print_exc() # Print full traceback
+        flash(f"Error loading step injection preview: {e}", "danger")
+        # Redirect to data_update_page on error
         return redirect(url_for('injection.data_update_page'))
     finally:
         SessionLocal.remove()
+
 
 @injection_routes.route('/steps/finalize', methods=['POST'])
 @login_required
@@ -803,9 +839,11 @@ def finalize_steps_import():
 
     result = finalize_step_import(resolved_steps_data)
     if result['success']:
-        session.pop('step_import_preview_data', None)
+        session.pop('step_import_preview_data', None) # Clear session data
         flash(f"Process Step import complete: Added {result.get('added_count', 0)}, Updated {result.get('updated_count', 0)}, Skipped {result.get('skipped_count', 0)}, Failed {result.get('failed_count', 0)}.", "success")
-        return jsonify(result), 200
+        # Return the full result object for better JS handling
+        return jsonify(result), 200 
     else:
-        flash(f"Finalizing import failed: {result['message']}", "danger")
+        flash(f"Finalizing import failed: {result.get('message', 'Unknown error')}", "danger")
+         # Return the full result object for better JS handling
         return jsonify(result), 500

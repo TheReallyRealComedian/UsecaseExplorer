@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "export_date": "2025-06-07T16:43:50.311959",
+    "export_date": "2025-06-07T19:26:59.226939",
     "version": "1.0"
   },
   "data": {
@@ -905,6 +905,114 @@
         "targets_text": null,
         "created_at": "2025-06-06T14:05:40.147324+00:00",
         "updated_at": "2025-06-07T16:37:59.392696+00:00"
+      },
+      {
+        "id": 51,
+        "bi_id": "Maint-05",
+        "name": "05 | Maintenance Complete",
+        "area_id": 4,
+        "step_description": "After TECO, all relevant activities regarding documentation, quality and validation are performed and finalized - including lessons learned and calibration.\r\n\r\nKey aspects include:\r\n- Performing breakdown analysis (methodology, demonstration).\r\n- Conducting maintenance cost analysis.\r\n- Analyzing material consumption.\r\n- Evaluating maintenance practice & Strategy KPIs.",
+        "raw_content": null,
+        "summary": "Finalizes maintenance work, documentation, quality checks, and performance analysis.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:25:17.841934+00:00"
+      },
+      {
+        "id": 50,
+        "bi_id": "Maint-04",
+        "name": "04 | Maintenance Execution",
+        "area_id": 4,
+        "step_description": "The work is performed according to the scheduled order & technically completed (TECO). The generated costs are posted to the work order (labor, invoices ...) to ensure transparent performance management.\r\n\r\nKey aspects include:\r\n- Adhering to compliance requirements and tolerances.\r\n- Employing efficient and accurate tracking methods, typically through SAP PM.",
+        "raw_content": null,
+        "summary": "Carries out maintenance work, including technical completion and cost posting.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:25:37.628417+00:00"
+      },
+      {
+        "id": 47,
+        "bi_id": "Maint-01",
+        "name": "01 | Maintenance Request",
+        "area_id": 4,
+        "step_description": "Maintenance Events Occur (Reactive or Preventive) and feed the Maintenance Requests after review as a starting point for following actions and processes.",
+        "raw_content": null,
+        "summary": "Initiates maintenance workflow based on reactive or preventive events.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:25:57.691525+00:00"
+      },
+      {
+        "id": 48,
+        "bi_id": "Maint-02",
+        "name": "02 | Maintenance Planning",
+        "area_id": 4,
+        "step_description": "A work order is defined, based on the Input of the Maintenance Request, including all needed resources (e.g. costs, labor, material).\r\n\r\nKey aspects include:\r\n- Streamlining E2E work order management process to gain planning efficiency.\r\n- Implementing efficient workflows to prioritize and schedule maintenance tasks effectively.",
+        "raw_content": null,
+        "summary": "Defines work orders and allocates resources for maintenance tasks.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:26:13.358215+00:00"
+      },
+      {
+        "id": 49,
+        "bi_id": "Maint-03",
+        "name": "03 | Maintenance Scheduling",
+        "area_id": 4,
+        "step_description": "The work is performed according to the scheduled order & technically completed (TECO). The generated costs are posted to the work order (labor, invoices ...) to ensure transparent performance management.\r\n\r\nKey aspects include:\r\n- Ensuring compliance requirements and tolerances are met.\r\n- Utilizing efficient and accurate tracking methods, typically through SAP PM.",
+        "raw_content": null,
+        "summary": "Schedules and initiates maintenance work, ensuring cost tracking.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:26:27.545415+00:00"
+      },
+      {
+        "id": 52,
+        "bi_id": "Maint-EN01",
+        "name": "E1 | Maintenance Spare Part Management",
+        "area_id": 4,
+        "step_description": "Ensures reliability of all maintenance activities, including transparent availability check.\r\n\r\nKey aspects include:\r\n- Spare Part Identification and classification.\r\n- Inventory optimization.\r\n- Material expense control.",
+        "raw_content": null,
+        "summary": "Manages spare parts to ensure availability and cost efficiency for maintenance.",
+        "vision_statement": null,
+        "in_scope": null,
+        "out_of_scope": null,
+        "interfaces_text": null,
+        "what_is_actually_done": null,
+        "pain_points": null,
+        "targets_text": null,
+        "created_at": "2025-06-07T19:20:49.372177+00:00",
+        "updated_at": "2025-06-07T19:26:46.284547+00:00"
       }
     ],
     "use_cases": [
@@ -5964,22 +6072,184 @@
     "usecase_usecase_relevance": [],
     "process_step_process_step_relevance": [
       {
-        "id": 10,
-        "source_process_step_id": 8,
-        "target_process_step_id": 6,
-        "relevance_score": 80,
-        "relevance_content": "Type: Strategic Guidance & Lifecycle Management. Description: SPM08 operates as a specialized and integral part of SPM05's broader mandate for holistic quality oversight of external partners. While SPM05 defines the overall quality strategy for CMOs, SPM08 focuses specifically on the unique requirements and coordination of contract laboratory services within that framework.",
-        "created_at": "2025-06-06T14:05:40.147324+00:00",
-        "updated_at": "2025-06-06T14:05:40.147324+00:00"
+        "id": 86,
+        "source_process_step_id": 25,
+        "target_process_step_id": 21,
+        "relevance_score": 85,
+        "relevance_content": "The completion of specific manufacturing stages within MANUFACTURING PROCESSES (PS-MFG-002) directly triggers the need for sample collection for in-process controls (IPCs) or finished product release. This event initiates the SAMPLING AND SAMPLE STORAGE (PS-QC-003) process, making it a critical sequential prerequisite for subsequent quality testing.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:36:58.275431+00:00"
       },
       {
-        "id": 14,
-        "source_process_step_id": 6,
-        "target_process_step_id": 8,
-        "relevance_score": 90,
-        "relevance_content": "**Type**: Planning & Resource Coordination. \n\n**Description**: SPM05 holds the overarching responsibility for quality oversight of all external partners, including the testing conducted by contract laboratories. This general mandate is specifically executed and detailed by SPM08, which manages the direct coordination and performance of these contract labs, demonstrating a clear internal delegation of function within SPM.",
-        "created_at": "2025-06-06T14:05:40.147324+00:00",
-        "updated_at": "2025-06-06T14:05:40.147324+00:00"
+        "id": 81,
+        "source_process_step_id": 14,
+        "target_process_step_id": 27,
+        "relevance_score": 75,
+        "relevance_content": "The foundational master data (e.g., material masters, Bills of Materials, vendor data) established and governed by Supply Chain Management's Enabling (SCM-E01) process is a critical and continuous input for Manufacturing's PRODUCT, SITE, PROCESS DATA USAGE (PS-MFG-005). Accurate and harmonized master data from SCM is essential for MFG-005 to correctly interpret, contextualize, and analyze production and process data, enabling continuous process verification and performance improvement.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:46.493910+00:00"
+      },
+      {
+        "id": 84,
+        "source_process_step_id": 2,
+        "target_process_step_id": 36,
+        "relevance_score": 85,
+        "relevance_content": "The Manufacturing PRODUCTION PLANNING & SCHEDULING PROCESS (PS-MFG-001) relies heavily on the capacity and availability of Quality Control laboratories for in-process and release testing. Close coordination with QC's LAB PLANNING AND SCHEDULING (PS-QC-001) is essential to ensure that QC lab resources (personnel, equipment) are available to support the manufacturing schedule, preventing bottlenecks and delays in batch release.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:36:24.343276+00:00"
+      },
+      {
+        "id": 78,
+        "source_process_step_id": 28,
+        "target_process_step_id": 36,
+        "relevance_score": 70,
+        "relevance_content": "The consensus demand forecasts and sales projections generated by Supply Chain Management's Demand Planning / Sales Forecasting (SCM-02) are a foundational and indispensable input for the Manufacturing area's PRODUCTION PLANNING & SCHEDULING PROCESS (PS-MFG-001). This tactical planning information dictates the quantity and timing of products needed, enabling manufacturing to build its detailed production schedules and plan resource allocation. Without this direct input, manufacturing planning cannot effectively begin or align with market needs.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:36:44.931423+00:00"
+      },
+      {
+        "id": 87,
+        "source_process_step_id": 25,
+        "target_process_step_id": 44,
+        "relevance_score": 80,
+        "relevance_content": "Real-time data, including in-process control (IPC) results and Process Analytical Technology (PAT) data generated during MANUFACTURING PROCESSES (PS-MFG-002), provides crucial information to Quality Control's TESTING PREPARATION AND EXECUTION (PS-QC-004). This immediate feedback enables QC to make informed decisions about testing strategies, potentially allowing for reduced traditional lab testing or rapid intervention if deviations occur.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:37:04.426991+00:00"
+      },
+      {
+        "id": 83,
+        "source_process_step_id": 25,
+        "target_process_step_id": 29,
+        "relevance_score": 75,
+        "relevance_content": "Upon the successful completion of batch production and final quality release (as confirmed by QA), the finished goods from MANUFACTURING PROCESSES (PS-MFG-002) are physically transferred to Logistics (L-06) for outbound operations, including warehousing, order fulfillment, and dispatch to the market. This represents a critical, sequential hand-off of the final product in the value chain.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:37:21.439125+00:00"
+      },
+      {
+        "id": 85,
+        "source_process_step_id": 43,
+        "target_process_step_id": 25,
+        "relevance_score": 70,
+        "relevance_content": "The official and binding product specifications and analytical procedures established by Quality Control's SPECIFICATION CREATION AND HANDLING (PS-QC-002) are paramount for MANUFACTURING PROCESSES (PS-MFG-002). Manufacturing must strictly adhere to these specifications during all production activities (e.g., dispensing, blending, compression, in-process controls) to ensure the manufactured product conforms to quality and regulatory standards.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:37:26.664939+00:00"
+      },
+      {
+        "id": 82,
+        "source_process_step_id": 29,
+        "target_process_step_id": 25,
+        "relevance_score": 80,
+        "relevance_content": "The successful completion of inbound logistics operations, including the receipt, quarantine, and quality release of raw materials by Logistics (L-06), is a direct and indispensable prerequisite for the initiation of material dispensing and subsequent processing within MANUFACTURING PROCESSES (PS-MFG-002). Manufacturing cannot begin production without these materials physically present and released.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:22.307310+00:00"
+      },
+      {
+        "id": 97,
+        "source_process_step_id": 49,
+        "target_process_step_id": 25,
+        "relevance_score": 85,
+        "relevance_content": "An unexpected equipment breakdown or malfunction during MANUFACTURING PROCESSES (PS-MFG-002) directly triggers the initiation of Corrective Maintenance Execution (Maint-03). Manufacturing personnel are often the first to report these critical issues, requiring immediate intervention from Maintenance to restore functionality and prevent prolonged production halts. This is a vital, reactive interdependence.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T19:23:02.359725+00:00"
+      },
+      {
+        "id": 88,
+        "source_process_step_id": 37,
+        "target_process_step_id": 44,
+        "relevance_score": 80,
+        "relevance_content": "Following the cleaning and sterilization procedures during CHANGE OVERS (PS-MFG-003), specific cleaning verification samples are collected. These samples must then be submitted to Quality Control's TESTING PREPARATION AND EXECUTION (PS-QC-004) for analysis. The successful testing and release of these samples by QC is a mandatory prerequisite for the manufacturing equipment to be cleared for the next production run.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:37:36.163832+00:00"
+      },
+      {
+        "id": 98,
+        "source_process_step_id": 26,
+        "target_process_step_id": 48,
+        "relevance_score": 75,
+        "relevance_content": "The EQUIPMENT & AUTOMATION LIFECYCLE PROCESS (PS-MFG-004) generates comprehensive documentation and data throughout an asset's lifespan, including installation records, qualification documents, modification history, and performance data. This detailed information is a critical and continuous input for Maintenance Documentation & Data Management (Maint-06), which is responsible for maintaining complete Equipment History Records (EHRs) essential for compliance, audits, and continuous improvement of maintenance strategies.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T19:24:04.190124+00:00"
+      },
+      {
+        "id": 89,
+        "source_process_step_id": 27,
+        "target_process_step_id": 45,
+        "relevance_score": 80,
+        "relevance_content": "The comprehensive production, site, and process data made accessible and usable by Manufacturing's PRODUCT, SITE, PROCESS DATA USAGE (PS-MFG-005) is a primary and essential input for Quality Control's QC DATA ANALYSIS AND TRENDING (PS-QC-006). This includes batch records, IPC data, and equipment performance data, which QC uses to correlate analytical results, identify trends, predict potential quality issues, and drive process improvements.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:08.668510+00:00"
+      },
+      {
+        "id": 94,
+        "source_process_step_id": 20,
+        "target_process_step_id": 26,
+        "relevance_score": 70,
+        "relevance_content": "Quality Assurance's Validation and qualification (PS-QA-006) rigorously defines and oversees the qualification (IQ, OQ, PQ) requirements for all GxP-critical equipment and automated systems managed by Manufacturing's EQUIPMENT & AUTOMATION LIFECYCLE PROCESS (PS-MFG-004). This is an indispensable control mechanism ensuring that all manufacturing assets are fit for purpose and operate reliably according to regulatory standards.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:32.789255+00:00"
+      },
+      {
+        "id": 95,
+        "source_process_step_id": 22,
+        "target_process_step_id": 25,
+        "relevance_score": 85,
+        "relevance_content": "Quality Assurance's Product release, packaging & labelling (PS-QA-008) holds the ultimate authority for final batch disposition and issuing formal release. This means that batches produced by MANUFACTURING PROCESSES (PS-MFG-002) cannot be commercially distributed until PS-QA-008 has completed its comprehensive review and issued a positive release, making it the critical gate for market supply.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:40.896518+00:00"
+      },
+      {
+        "id": 96,
+        "source_process_step_id": 48,
+        "target_process_step_id": 36,
+        "relevance_score": 85,
+        "relevance_content": "Manufacturing's PRODUCTION PLANNING & SCHEDULING PROCESS (PS-MFG-001) must coordinate extensively with Maintenance Planning & Scheduling (Maint-01) to align planned production schedules with preventive maintenance windows and equipment availability. This mutual coordination is crucial to minimize operational disruption, ensure equipment reliability, and maximize manufacturing uptime.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T19:24:28.098808+00:00"
+      },
+      {
+        "id": 90,
+        "source_process_step_id": 17,
+        "target_process_step_id": 25,
+        "relevance_score": 60,
+        "relevance_content": "Quality Assurance's enabling processes (PS-QA-001) establish and enforce the fundamental quality frameworks, such as Standard Operating Procedures (SOPs), Good Manufacturing Practice (GMP) principles, and Data Integrity (ALCOA+) requirements. Manufacturing Processes (PS-MFG-002) must strictly adhere to these overarching governance mechanisms for every batch executed, ensuring compliance, consistency, and product quality.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:36:30.102824+00:00"
+      },
+      {
+        "id": 91,
+        "source_process_step_id": 18,
+        "target_process_step_id": 25,
+        "relevance_score": 85,
+        "relevance_content": "Any unplanned deviations, out-of-specification (OOS) results, or other quality-related events detected during MANUFACTURING PROCESSES (PS-MFG-002) directly trigger the investigation and management processes within Quality Assurance's NON-CONFORMANCE AND EVENT MANAGEMENT (PS-QA-004). This is a critical exception-handling mechanism to ensure that manufacturing issues are promptly addressed, investigated, and, if necessary, lead to corrective and preventive actions.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:37:56.974418+00:00"
+      },
+      {
+        "id": 79,
+        "source_process_step_id": 12,
+        "target_process_step_id": 36,
+        "relevance_score": 89,
+        "relevance_content": "The approved, higher-level Master Production Schedule (MPS) and detailed production plans developed by Supply Chain Management's Production Planning & Detailed Scheduling (SCM-04) serve as a direct prerequisite for the Manufacturing area's PRODUCTION PLANNING & SCHEDULING PROCESS (PS-MFG-001). MFG-001 takes this top-down plan and refines it into executable, facility-specific schedules, ensuring alignment with the overall supply chain strategy and efficient allocation of local manufacturing resources.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:02.531024+00:00"
+      },
+      {
+        "id": 92,
+        "source_process_step_id": 33,
+        "target_process_step_id": 25,
+        "relevance_score": 80,
+        "relevance_content": "Quality Assurance's Production and process control (PS-QA-005) provides essential oversight and defines control strategies for core manufacturing activities executed in MANUFACTURING PROCESSES (PS-MFG-002). This includes enforcing contamination control strategies (CCS), overseeing aseptic processing, and defining control parameters, all crucial for maintaining product quality and sterility during production.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:14.388406+00:00"
+      },
+      {
+        "id": 93,
+        "source_process_step_id": 20,
+        "target_process_step_id": 25,
+        "relevance_score": 75,
+        "relevance_content": "Quality Assurance's Validation and qualification (PS-QA-006) is responsible for validating manufacturing processes. This means PS-QA-006 dictates the protocols and standards that MANUFACTURING PROCESSES (PS-MFG-002) must operate under to demonstrate consistent production of quality products. The validated state of the process is a mandatory prerequisite for commercial manufacturing.",
+        "created_at": "2025-06-07T18:09:34.727166+00:00",
+        "updated_at": "2025-06-07T18:38:27.306948+00:00"
       }
     ]
   }
