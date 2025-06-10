@@ -588,44 +588,47 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- NEW: CSV Download Functionality ---
-    function escapeCsvField(field) {
+    function escapeCsvField(field, delimiter = ';') { // Added delimiter parameter, defaults to semicolon
         if (field === null || field === undefined) {
             return "";
         }
         const stringField = String(field);
-        // If the field contains a comma, double quote, or newline, enclose it in double quotes
+        // If the field contains the delimiter, double quote, or newline, enclose it in double quotes
         // and escape any existing double quotes by doubling them.
-        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n') || stringField.includes('\r')) {
+        if (stringField.includes(delimiter) || stringField.includes('"') || stringField.includes('\n') || stringField.includes('\r')) {
             return `"${stringField.replace(/"/g, '""')}"`;
         }
         return stringField;
     }
 
-    function downloadCsv(data, filename = 'export.csv') {
+    function downloadCsv(data, filename = 'export.csv', delimiter = ';') { // Added delimiter parameter
         const csvRows = [];
         const headers = [
             "Source Step Name", "Source Area", "Source BI_ID",
             "Target Step Name", "Target Area", "Target BI_ID",
             "Score", "Content"
         ];
-        csvRows.push(headers.join(','));
+        // Escape headers themselves in case they contain the delimiter (unlikely here, but good practice)
+        csvRows.push(headers.map(header => escapeCsvField(header, delimiter)).join(delimiter));
 
         data.forEach(row => {
             const csvRow = [
-                escapeCsvField(row.source_step_name),
-                escapeCsvField(row.source_area_name),
-                escapeCsvField(row.source_step_bi_id),
-                escapeCsvField(row.target_step_name),
-                escapeCsvField(row.target_area_name),
-                escapeCsvField(row.target_step_bi_id),
-                escapeCsvField(row.relevance_score),
-                escapeCsvField(row.relevance_content) // Use full content for CSV
-            ].join(',');
+                escapeCsvField(row.source_step_name, delimiter),
+                escapeCsvField(row.source_area_name, delimiter),
+                escapeCsvField(row.source_step_bi_id, delimiter),
+                escapeCsvField(row.target_step_name, delimiter),
+                escapeCsvField(row.target_area_name, delimiter),
+                escapeCsvField(row.target_step_bi_id, delimiter),
+                escapeCsvField(row.relevance_score, delimiter),
+                escapeCsvField(row.relevance_content, delimiter) // Use full content for CSV
+            ].join(delimiter); // Use the specified delimiter
             csvRows.push(csvRow);
         });
 
         const csvString = csvRows.join('\r\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        // Ensure UTF-8 BOM for better Excel compatibility with special characters
+        const BOM = "\uFEFF"; 
+        const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         if (link.download !== undefined) { // Feature detection
             const url = URL.createObjectURL(blob);
@@ -665,7 +668,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "");
-            downloadCsv(dataToExport, `process_step_links_${timestamp}.csv`);
+            // Call downloadCsv with the semicolon delimiter
+            downloadCsv(dataToExport, `process_step_links_${timestamp}.csv`, ';'); 
         });
     }
     // --- END NEW CSV Download ---
