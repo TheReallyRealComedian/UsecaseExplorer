@@ -23,26 +23,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalLabel = document.getElementById('linkReviewModalLabel');
     const modalLinkIdInput = document.getElementById('modalLinkId');
     
-    // NEW: Select elements for source and target steps in modal
     const modalSourceStepSelect = document.getElementById('modalSourceStepSelect');
     const modalTargetStepSelect = document.getElementById('modalTargetStepSelect');
     
-    // Hidden inputs for selected IDs (can be removed if reading directly from selects)
-    // const modalSourceStepIdHidden = document.getElementById('modalSourceStepIdHidden'); 
-    // const modalTargetStepIdHidden = document.getElementById('modalTargetStepIdHidden');
-
     const modalRelevanceScoreInput = document.getElementById('modalRelevanceScore');
     const modalRelevanceContentInput = document.getElementById('modalRelevanceContent');
     const modalRelevanceContentPreview = document.getElementById('modalRelevanceContentPreview');
     const modalSaveLinkBtn = document.getElementById('modalSaveLinkBtn');
     const modalDeleteLinkBtn = document.getElementById('modalDeleteLinkBtn');
 
+    // NEW: Delete All Links Button
+    const deleteAllStepLinksBtn = document.getElementById('deleteAllStepLinksBtn');
+
+
     // Modal Instance
     let linkModal = null;
 
     // Store current link data fetched from the API
     let currentLinksData = [];
-    let allStepsForModalSelects = []; // Changed variable name for clarity
+    let allStepsForModalSelects = []; 
 
 
     // --- Utility Functions ---
@@ -69,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function populateLinksTable(links) {
         linksTableBody.innerHTML = '';
-        currentLinksData = links; // Update global store of links
+        currentLinksData = links; 
 
         if (!links || links.length === 0) {
             linksPlaceholder.textContent = 'No relevance links found for the selected criteria.';
@@ -84,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function () {
         links.forEach(link => {
             const row = document.createElement('tr');
             row.dataset.linkId = link.id;
-            // Use sanitizeText for all displayed data from the link object
             row.innerHTML = `
                 <td>${sanitizeText(link.source_step_name)}<br><small class="text-muted">(${sanitizeText(link.source_area_name)} - ${sanitizeText(link.source_step_bi_id)})</small></td>
                 <td>${sanitizeText(link.target_step_name)}<br><small class="text-muted">(${sanitizeText(link.target_area_name)} - ${sanitizeText(link.target_step_bi_id)})</small></td>
@@ -159,7 +157,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = linksTable.querySelector('tbody');
         if (!tbody) return;
         
-        // Sort a copy of the currently displayed (filtered) links
         const rows = Array.from(tbody.querySelectorAll('tr'));
         const linksToSort = rows.map(row => currentLinksData.find(l => l.id === parseInt(row.dataset.linkId))).filter(Boolean);
 
@@ -188,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (typeof valueA === 'string') valueA = valueA.toLowerCase();
             if (typeof valueB === 'string') valueB = valueB.toLowerCase();
             
-            // Handle numbers explicitly for relevance_score
             if (columnKey === 'relevance_score') {
                 valueA = Number(valueA);
                 valueB = Number(valueB);
@@ -198,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (valueA > valueB) return currentSortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-        renderFilteredTable(linksToSort); // Re-render the sorted subset
+        renderFilteredTable(linksToSort);
     }
 
     async function handleDeleteLink(linkId) {
@@ -217,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     showFlashMessage(result.message, 'success');
                     if (currentLinksData) {
                          currentLinksData = currentLinksData.filter(link => link.id !== linkId);
-                         applyClientSideFilters(); // Re-apply filters to refresh the table
+                         applyClientSideFilters(); 
                     }
                 } else {
                     showFlashMessage(`Error: ${result.error || 'Could not delete link.'}`, 'danger');
@@ -247,9 +243,8 @@ document.addEventListener('DOMContentLoaded', function () {
          return linkModal;
     }
     
-    // Function to populate a select dropdown
     function populateStepSelect(selectElement, steps, selectedValue = null) {
-        selectElement.innerHTML = '<option value="">-- Select Step --</option>'; // Default option
+        selectElement.innerHTML = '<option value="">-- Select Step --</option>'; 
         if (steps && steps.length > 0) {
             const sortedSteps = [...steps].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             sortedSteps.forEach(step => {
@@ -268,10 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = getLinkModal();
         if (!modal) return;
 
-        // Reset modal fields
         modalLinkIdInput.value = '';
-        // modalSourceStepIdHidden.value = ''; // If using hidden inputs
-        // modalTargetStepIdHidden.value = ''; // If using hidden inputs
         modalRelevanceScoreInput.value = '50';
         modalRelevanceContentInput.value = '';
         modalRelevanceContentPreview.innerHTML = typeof marked !== 'undefined' && marked.parse ? marked.parse('<em>No content provided.</em>') : '<em>No content provided.</em>';
@@ -280,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function () {
         modalSaveLinkBtn.disabled = false;
         modalDeleteLinkBtn.disabled = false;
 
-        // Populate both source and target dropdowns
         populateStepSelect(modalSourceStepSelect, allStepsForModalSelects);
         populateStepSelect(modalTargetStepSelect, allStepsForModalSelects);
         
@@ -295,11 +286,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const linkData = await response.json();
                 if (linkData.error) throw new Error(linkData.error);
 
-                // Pre-select the source and target steps in the dropdowns
                 modalSourceStepSelect.value = linkData.source_step_id;
                 modalTargetStepSelect.value = linkData.target_step_id;
-                // modalSourceStepIdHidden.value = linkData.source_step_id; // If using hidden inputs
-                // modalTargetStepIdHidden.value = linkData.target_step_id; // If using hidden inputs
                 
                 modalRelevanceScoreInput.value = linkData.relevance_score;
                 modalRelevanceContentInput.value = linkData.relevance_content || '';
@@ -310,7 +298,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         } else {
              modalLabel.textContent = 'Create New Link';
-             // Dropdowns already populated, just ensure no pre-selection for new link
              modalSourceStepSelect.value = "";
              modalTargetStepSelect.value = "";
         }
@@ -340,9 +327,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 const data = await response.json();
                 if (data.error) { throw new Error(data.error); }
-                currentLinksData = data.links || []; // Update global store
-                populateLinksTable(currentLinksData); // Populate with all fetched links
-                applyClientSideFilters(); // Then apply filters
+                currentLinksData = data.links || []; 
+                populateLinksTable(currentLinksData); 
+                applyClientSideFilters(); 
             } catch (error) {
                 showFlashMessage(`Error loading links: ${error.message}`, 'danger');
                  linksPlaceholder.textContent = `Error loading links: ${error.message}.`;
@@ -402,7 +389,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const score = parseInt(modalRelevanceScoreInput.value);
             const content = modalRelevanceContentInput.value;
 
-            // Get selected source and target step IDs from the dropdowns
             const selectedSourceStepId = modalSourceStepSelect.value;
             const selectedTargetStepId = modalTargetStepSelect.value;
 
@@ -425,15 +411,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const payload = { 
                 relevance_score: score, 
                 relevance_content: content.trim() === '' ? null : content.trim(),
-                source_step_id: parseInt(selectedSourceStepId), // Add to payload
-                target_step_id: parseInt(selectedTargetStepId)  // Add to payload
+                source_step_id: parseInt(selectedSourceStepId), 
+                target_step_id: parseInt(selectedTargetStepId) 
             };
             
             let url, method;
-            if (linkId) { // Editing existing link
+            if (linkId) { 
                 url = `/review/api/process-links/link/${linkId}`; 
                 method = 'PUT';
-            } else { // Creating new link
+            } else { 
                 url = `/review/api/process-links/link`; 
                 method = 'POST';
             }
@@ -448,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (result.success) {
                     showFlashMessage(result.message, 'success');
                     if (modal) modal.hide();
-                    if (loadDiagramBtn) loadDiagramBtn.click(); // Refresh the table
+                    if (loadDiagramBtn) loadDiagramBtn.click(); 
                 } else { 
                     showFlashMessage(`Error: ${result.error || 'Could not save link.'}`, 'danger');
                 }
@@ -475,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (result.success) {
                         showFlashMessage(result.message, 'success');
                         if (modal) modal.hide();
-                        if (loadDiagramBtn) loadDiagramBtn.click(); // Refresh the table
+                        if (loadDiagramBtn) loadDiagramBtn.click(); 
                     } else { 
                         showFlashMessage(`Error: ${result.error || 'Could not delete link.'}`, 'danger'); 
                     }
@@ -500,16 +486,14 @@ document.addEventListener('DOMContentLoaded', function () {
         focusAreaSelect.dispatchEvent(new Event('change'));
     }
 
-    async function fetchAllStepsForModalSelects() { // Renamed function
+    async function fetchAllStepsForModalSelects() { 
          try {
-             const response = await fetch('/steps/api/all'); // Use the existing endpoint from step_routes
+             const response = await fetch('/steps/api/all'); 
              if (!response.ok) throw new Error('Failed to fetch all steps for select dropdowns.');
              const stepsData = await response.json();
-             // Assuming stepsData is an array of {id, name, area_name, bi_id}
              allStepsForModalSelects = stepsData; 
              console.log(`Fetched ${allStepsForModalSelects.length} steps for modal selects.`);
              
-             // Initial population for modal selects if they exist
              if (modalSourceStepSelect) populateStepSelect(modalSourceStepSelect, allStepsForModalSelects);
              if (modalTargetStepSelect) populateStepSelect(modalTargetStepSelect, allStepsForModalSelects);
 
@@ -518,7 +502,51 @@ document.addEventListener('DOMContentLoaded', function () {
              showFlashMessage('Could not load steps for link creation/editing.', 'danger');
          }
     }
-    fetchAllStepsForModalSelects(); // Fetch steps on page load
+    fetchAllStepsForModalSelects(); 
+
+    // --- NEW: Delete All Step Links Functionality ---
+    if (deleteAllStepLinksBtn) {
+        deleteAllStepLinksBtn.addEventListener('click', async () => {
+            const confirmationText = "Are you absolutely sure you want to delete ALL links between process steps? This action cannot be undone and will remove all existing step-to-step relevance links.";
+            if (confirm(confirmationText)) {
+                const finalConfirmation = prompt("To confirm, please type 'DELETE ALL LINKS' (all uppercase) in the box below:");
+                if (finalConfirmation === "DELETE ALL LINKS") {
+                    deleteAllStepLinksBtn.disabled = true;
+                    deleteAllStepLinksBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting...';
+                    try {
+                        const response = await fetch('/review/api/process-links/delete-all', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                // Add CSRF token header if your application uses them for POST requests
+                                // 'X-CSRFToken': getCsrfToken() // Example
+                            }
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            showFlashMessage(result.message || 'All process step links deleted successfully.', 'success');
+                            currentLinksData = []; // Clear local data store
+                            populateLinksTable(currentLinksData); // Refresh table (will show as empty)
+                        } else {
+                            showFlashMessage(`Error: ${result.error || 'Could not delete all links.'}`, 'danger');
+                        }
+                    } catch (error) {
+                        showFlashMessage(`Network error: ${error.message}`, 'danger');
+                        console.error("Error deleting all step links:", error);
+                    } finally {
+                        deleteAllStepLinksBtn.disabled = false;
+                        deleteAllStepLinksBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Delete All Step-to-Step Links';
+                    }
+                } else if (finalConfirmation !== null) { // User typed something but it was wrong
+                    alert("Incorrect confirmation text. Action cancelled.");
+                } else { // User cancelled the prompt
+                    alert("Action cancelled.");
+                }
+            }
+        });
+    }
+    // --- END NEW ---
+
 
     window.cleanupReviewProcessLinksUI = function() {
         if (linkModal && typeof linkModal.dispose === 'function') {
@@ -526,6 +554,8 @@ document.addEventListener('DOMContentLoaded', function () {
             linkModal = null;
         }
         // Remove other event listeners if necessary, though usually not needed if elements are removed/page changes
+        // NEW: Cleanup for delete all button if dynamic listeners were added (not the case here)
+        // if (deleteAllStepLinksBtn) { /* remove listeners if any */ }
     };
 
 });

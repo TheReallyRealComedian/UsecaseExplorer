@@ -238,7 +238,7 @@ def create_process_link():
         session.add(new_link)
         session.commit()
         return jsonify(success=True, message="Link created successfully.", link_id=new_link.id), 201
-    except sqlalchemy_exc.IntegrityError as e: # Catch specific integrity errors
+    except sqlalchemy_exc.IntegrityError as e: 
         session.rollback()
         if "no_self_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
@@ -264,7 +264,6 @@ def update_process_link(link_id):
 
         data = request.json
         
-        # --- START: Handle potential linkage changes ---
         new_source_step_id = data.get('source_step_id')
         new_target_step_id = data.get('target_step_id')
 
@@ -278,7 +277,6 @@ def update_process_link(link_id):
             return jsonify(error="Cannot link a step to itself."), 400
 
         if source_changed or target_changed:
-            # Validate existence of new steps if they are being changed
             if source_changed:
                 source_step_exists = session.query(ProcessStep).get(final_source_id)
                 if not source_step_exists:
@@ -289,7 +287,6 @@ def update_process_link(link_id):
                 if not target_step_exists:
                     return jsonify(error=f"New target step with ID {final_target_id} not found."), 404
             
-            # Check for duplicate link if source/target combination changes
             existing_duplicate = session.query(ProcessStepProcessStepRelevance).filter(
                 ProcessStepProcessStepRelevance.id != link_id,
                 ProcessStepProcessStepRelevance.source_process_step_id == final_source_id,
@@ -298,13 +295,9 @@ def update_process_link(link_id):
             if existing_duplicate:
                 return jsonify(error="A link with the new source and target steps already exists."), 409
             
-            # Update link IDs
             link.source_process_step_id = final_source_id
             link.target_process_step_id = final_target_id
-        # --- END: Handle potential linkage changes ---
 
-
-        # Update score and content (existing logic)
         relevance_score = data.get('relevance_score')
         relevance_content = data.get('relevance_content', '').strip() 
 
@@ -322,7 +315,7 @@ def update_process_link(link_id):
         
         session.commit()
         return jsonify(success=True, message="Link updated successfully.")
-    except sqlalchemy_exc.IntegrityError as e: # Catch specific integrity errors
+    except sqlalchemy_exc.IntegrityError as e: 
         session.rollback()
         if "no_self_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
@@ -356,6 +349,28 @@ def delete_process_link(link_id):
         if session and session.is_active:
             session.close()
 
+# NEW API endpoint to delete all ProcessStep-ProcessStep relevance links
+@review_routes.route('/api/process-links/delete-all', methods=['POST'])
+@login_required
+def delete_all_process_links():
+    session = SessionLocal()
+    try:
+        num_deleted = session.query(ProcessStepProcessStepRelevance).delete()
+        session.commit()
+        
+        message = f"Successfully deleted {num_deleted} process step link(s)."
+        if num_deleted == 0:
+            message = "No process step links found to delete."
+        
+        return jsonify(success=True, message=message), 200
+    except Exception as e:
+        session.rollback()
+        print(f"Error deleting all process step links: {e}") 
+        return jsonify(success=False, error="An unexpected error occurred while deleting links."), 500
+    finally:
+        if session and session.is_active:
+            session.close()
+
 
 # General API Blueprint (for endpoints not strictly tied to a specific review section)
 general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
@@ -366,15 +381,11 @@ def get_all_steps_for_select():
     session = SessionLocal()
     try:
         steps_query = session.query(ProcessStep).options(
-            joinedload(ProcessStep.area)  # Eager load area information
+            joinedload(ProcessStep.area) 
         ).order_by(ProcessStep.name).all()
 
         steps_data = []
         for step in steps_query:
-            area_info = None
-            if step.area:
-                area_info = {"name": step.area.name}
-
             steps_data.append({
                 "id": step.id,
                 "name": step.name,
