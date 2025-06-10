@@ -32,8 +32,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalSaveLinkBtn = document.getElementById('modalSaveLinkBtn');
     const modalDeleteLinkBtn = document.getElementById('modalDeleteLinkBtn');
 
-    // NEW: Delete All Links Button
     const deleteAllStepLinksBtn = document.getElementById('deleteAllStepLinksBtn');
+
+    // NEW: Download CSV Button
+    const downloadLinksCsvBtn = document.getElementById('downloadLinksCsvBtn');
 
 
     // Modal Instance
@@ -74,15 +76,29 @@ document.addEventListener('DOMContentLoaded', function () {
             linksPlaceholder.textContent = 'No relevance links found for the selected criteria.';
             linksPlaceholder.style.display = 'block';
             if (linksTable) linksTable.style.display = 'none';
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download button
             return;
         }
 
         linksPlaceholder.style.display = 'none';
         if (linksTable) linksTable.style.display = '';
+        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block'; // Show download button
+
 
         links.forEach(link => {
             const row = document.createElement('tr');
             row.dataset.linkId = link.id;
+            // Store all necessary data for CSV export on the row itself or ensure currentLinksData is used for CSV generation
+            row.dataset.sourceStepName = link.source_step_name;
+            row.dataset.sourceAreaName = link.source_area_name;
+            row.dataset.sourceStepBiId = link.source_step_bi_id;
+            row.dataset.targetStepName = link.target_step_name;
+            row.dataset.targetAreaName = link.target_area_name;
+            row.dataset.targetStepBiId = link.target_step_bi_id;
+            row.dataset.relevanceScore = link.relevance_score;
+            row.dataset.relevanceContent = link.relevance_content || "";
+
+
             row.innerHTML = `
                 <td>${sanitizeText(link.source_step_name)}<br><small class="text-muted">(${sanitizeText(link.source_area_name)} - ${sanitizeText(link.source_step_bi_id)})</small></td>
                 <td>${sanitizeText(link.target_step_name)}<br><small class="text-muted">(${sanitizeText(link.target_area_name)} - ${sanitizeText(link.target_step_bi_id)})</small></td>
@@ -129,13 +145,26 @@ document.addEventListener('DOMContentLoaded', function () {
             linksPlaceholder.textContent = 'No links match the current filters.';
             linksPlaceholder.style.display = 'block';
             if (linksTable) linksTable.style.display = 'none';
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download button
             return;
         }
         linksPlaceholder.style.display = 'none';
         if (linksTable) linksTable.style.display = '';
+        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block'; // Show download button
+
         linksToRender.forEach(link => {
             const row = document.createElement('tr');
             row.dataset.linkId = link.id;
+            // Store all necessary data for CSV export on the row itself
+            row.dataset.sourceStepName = link.source_step_name;
+            row.dataset.sourceAreaName = link.source_area_name;
+            row.dataset.sourceStepBiId = link.source_step_bi_id;
+            row.dataset.targetStepName = link.target_step_name;
+            row.dataset.targetAreaName = link.target_area_name;
+            row.dataset.targetStepBiId = link.target_step_bi_id;
+            row.dataset.relevanceScore = link.relevance_score;
+            row.dataset.relevanceContent = link.relevance_content || ""; // Ensure content is always a string
+
             row.innerHTML = `
                 <td>${sanitizeText(link.source_step_name)}<br><small class="text-muted">(${sanitizeText(link.source_area_name)} - ${sanitizeText(link.source_step_bi_id)})</small></td>
                 <td>${sanitizeText(link.target_step_name)}<br><small class="text-muted">(${sanitizeText(link.target_area_name)} - ${sanitizeText(link.target_step_bi_id)})</small></td>
@@ -158,7 +187,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         
         const rows = Array.from(tbody.querySelectorAll('tr'));
-        const linksToSort = rows.map(row => currentLinksData.find(l => l.id === parseInt(row.dataset.linkId))).filter(Boolean);
+        // Get the data for sorting directly from the row's dataset attributes
+        // to ensure we sort what's currently displayed and filtered.
+        const linksToSort = rows.map(row => ({
+            id: parseInt(row.dataset.linkId),
+            source_step_name: row.dataset.sourceStepName,
+            source_area_name: row.dataset.sourceAreaName,
+            source_step_bi_id: row.dataset.sourceStepBiId,
+            target_step_name: row.dataset.targetStepName,
+            target_area_name: row.dataset.targetAreaName,
+            target_step_bi_id: row.dataset.targetStepBiId,
+            relevance_score: parseInt(row.dataset.relevanceScore),
+            relevance_content: row.dataset.relevanceContent,
+            // relevance_content_snippet can be derived if needed or use relevance_content
+        }));
 
 
         if (currentSortColumn === columnKey) {
@@ -178,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 case 'source_step_name': valueA = linkA.source_step_name; valueB = linkB.source_step_name; break;
                 case 'target_step_name': valueA = linkA.target_step_name; valueB = linkB.target_step_name; break;
                 case 'relevance_score': valueA = linkA.relevance_score; valueB = linkB.relevance_score; break;
-                case 'relevance_content_snippet': valueA = linkA.relevance_content || ""; valueB = linkB.relevance_content || ""; break;
+                case 'relevance_content_snippet': valueA = linkA.relevance_content || ""; valueB = linkB.relevance_content || ""; break; // Sort by full content
                 default: return 0;
             }
 
@@ -194,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (valueA > valueB) return currentSortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-        renderFilteredTable(linksToSort);
+        renderFilteredTable(linksToSort); // Re-render the sorted subset
     }
 
     async function handleDeleteLink(linkId) {
@@ -316,6 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
             linksPlaceholder.style.display = 'block';
             linksTableBody.innerHTML = '';
             if (linksTable) linksTable.style.display = 'none';
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download btn during load
             try {
                 const params = new URLSearchParams({ focus_area_id: focusAreaId });
                 comparisonAreaIds.forEach(id => params.append('comparison_area_ids[]', id));
@@ -334,6 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 showFlashMessage(`Error loading links: ${error.message}`, 'danger');
                  linksPlaceholder.textContent = `Error loading links: ${error.message}.`;
                  linksPlaceholder.style.display = 'block';
+                 if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none';
                  currentLinksData = [];
             } finally {
                 loadDiagramBtn.disabled = false;
@@ -504,7 +548,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     fetchAllStepsForModalSelects(); 
 
-    // --- NEW: Delete All Step Links Functionality ---
     if (deleteAllStepLinksBtn) {
         deleteAllStepLinksBtn.addEventListener('click', async () => {
             const confirmationText = "Are you absolutely sure you want to delete ALL links between process steps? This action cannot be undone and will remove all existing step-to-step relevance links.";
@@ -518,15 +561,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                // Add CSRF token header if your application uses them for POST requests
-                                // 'X-CSRFToken': getCsrfToken() // Example
                             }
                         });
                         const result = await response.json();
                         if (response.ok && result.success) {
                             showFlashMessage(result.message || 'All process step links deleted successfully.', 'success');
-                            currentLinksData = []; // Clear local data store
-                            populateLinksTable(currentLinksData); // Refresh table (will show as empty)
+                            currentLinksData = []; 
+                            populateLinksTable(currentLinksData); 
                         } else {
                             showFlashMessage(`Error: ${result.error || 'Could not delete all links.'}`, 'danger');
                         }
@@ -537,15 +578,97 @@ document.addEventListener('DOMContentLoaded', function () {
                         deleteAllStepLinksBtn.disabled = false;
                         deleteAllStepLinksBtn.innerHTML = '<i class="fas fa-trash-alt me-1"></i> Delete All Step-to-Step Links';
                     }
-                } else if (finalConfirmation !== null) { // User typed something but it was wrong
+                } else if (finalConfirmation !== null) { 
                     alert("Incorrect confirmation text. Action cancelled.");
-                } else { // User cancelled the prompt
+                } else { 
                     alert("Action cancelled.");
                 }
             }
         });
     }
-    // --- END NEW ---
+
+    // --- NEW: CSV Download Functionality ---
+    function escapeCsvField(field) {
+        if (field === null || field === undefined) {
+            return "";
+        }
+        const stringField = String(field);
+        // If the field contains a comma, double quote, or newline, enclose it in double quotes
+        // and escape any existing double quotes by doubling them.
+        if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n') || stringField.includes('\r')) {
+            return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+    }
+
+    function downloadCsv(data, filename = 'export.csv') {
+        const csvRows = [];
+        const headers = [
+            "Source Step Name", "Source Area", "Source BI_ID",
+            "Target Step Name", "Target Area", "Target BI_ID",
+            "Score", "Content"
+        ];
+        csvRows.push(headers.join(','));
+
+        data.forEach(row => {
+            const csvRow = [
+                escapeCsvField(row.source_step_name),
+                escapeCsvField(row.source_area_name),
+                escapeCsvField(row.source_step_bi_id),
+                escapeCsvField(row.target_step_name),
+                escapeCsvField(row.target_area_name),
+                escapeCsvField(row.target_step_bi_id),
+                escapeCsvField(row.relevance_score),
+                escapeCsvField(row.relevance_content) // Use full content for CSV
+            ].join(',');
+            csvRows.push(csvRow);
+        });
+
+        const csvString = csvRows.join('\r\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) { // Feature detection
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } else {
+            alert("CSV download is not supported by your browser.");
+        }
+    }
+
+    if (downloadLinksCsvBtn) {
+        downloadLinksCsvBtn.addEventListener('click', () => {
+            // Get currently visible rows from the table
+            const visibleRows = Array.from(linksTableBody.querySelectorAll('tr'));
+            if (visibleRows.length === 0) {
+                showFlashMessage('No data to download.', 'info');
+                return;
+            }
+
+            const dataToExport = visibleRows.map(row => {
+                // Extract data from the row's dataset attributes
+                return {
+                    source_step_name: row.dataset.sourceStepName,
+                    source_area_name: row.dataset.sourceAreaName,
+                    source_step_bi_id: row.dataset.sourceStepBiId,
+                    target_step_name: row.dataset.targetStepName,
+                    target_area_name: row.dataset.targetAreaName,
+                    target_step_bi_id: row.dataset.targetStepBiId,
+                    relevance_score: parseInt(row.dataset.relevanceScore),
+                    relevance_content: row.dataset.relevanceContent
+                };
+            });
+
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "");
+            downloadCsv(dataToExport, `process_step_links_${timestamp}.csv`);
+        });
+    }
+    // --- END NEW CSV Download ---
 
 
     window.cleanupReviewProcessLinksUI = function() {
@@ -553,9 +676,6 @@ document.addEventListener('DOMContentLoaded', function () {
             linkModal.dispose();
             linkModal = null;
         }
-        // Remove other event listeners if necessary, though usually not needed if elements are removed/page changes
-        // NEW: Cleanup for delete all button if dynamic listeners were added (not the case here)
-        // if (deleteAllStepLinksBtn) { /* remove listeners if any */ }
     };
 
 });

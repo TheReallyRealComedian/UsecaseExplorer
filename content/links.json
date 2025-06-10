@@ -36,476 +36,476 @@
   },
   {
     "source_process_step_bi_id": "PS-MFG-002",
-    "target_process_step_bi_id": "03",
+    "target_process_step_bi_id": "Maint-03",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "An unexpected equipment breakdown during MANUFACTURING PROCESSES (PS-MFG-002) directly triggers Corrective Maintenance Execution, coordinated via Maintenance Scheduling (Maint-03). Manufacturing's immediate reporting is vital for Maintenance intervention. Conversely, the speed and effectiveness of Maintenance's response, communicated via scheduling updates, directly determine the extent of production downtime and impact Manufacturing's ability to meet production targets.",
     "relevance_score": 80
   },
   {
     "source_process_step_bi_id": "PS-MFG-004",
-    "target_process_step_bi_id": "02",
+    "target_process_step_bi_id": "Maint-02",
     "relevance_type": "Information Integration",
     "relevance_content": "Manufacturing's EQUIPMENT & AUTOMATION LIFECYCLE PROCESS (PS-MFG-004) generates comprehensive documentation and performance data (e.g., installation records, qualification, performance data) essential for Maintenance Planning (Maint-02) to develop effective maintenance strategies and schedules. Reciprocally, Maintenance Planning's analysis of historical maintenance data, equipment failure trends, and suggestions for design improvements feeds back into PS-MFG-004, influencing equipment lifecycle decisions and URS updates.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "02",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's product-related enabling processes (e.g., Change Control, QRM) define critical requirements for managing product changes and risks. Strategic Partner Management's Routine & Performance Management (SPM05) must implement these for outsourced products/processes with CMOs. SPM05, in turn, provides feedback to QA on the applicability and effectiveness of these controls in the CMO context and reports on CMO compliance and performance against these QA standards.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "SPM05",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Audit and intelligence (PS-QA-003) conducts supplier/CMO audits, providing critical validation for Strategic Partner Management's Quality Oversight (SPM04). These findings drive partner qualification and ensure standards are met. SPM04 provides QA with ongoing partner performance data and identifies areas requiring further audit focus or intelligence gathering, contributing to a more targeted audit strategy.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QA-004",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Governance & Control",
     "relevance_content": "Deviations or OOS results related to CMO products, managed by QA's Non-conformance and event management (PS-QA-004), trigger collaborative investigations with Strategic Partner Management's Routine & Performance Management (SPM05) for root cause analysis and CAPA implementation at the CMO. SPM05 is responsible for ensuring CMOs execute these CAPAs and provides QA with evidence of closure and effectiveness, impacting CMO performance metrics and ongoing oversight activities.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "06",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "SPM05",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Validation and qualification (PS-QA-006) defines the validation framework (equipment, process, cleaning, CSV) that Strategic Partner Management's Quality Oversight (SPM04) must ensure CMOs adhere to. This impacts CMO qualification status. SPM04 provides QA with CMO validation documentation for review and reports on their adherence, and may highlight practical challenges or needs for guidance in applying these standards externally.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "08",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QA-008",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "QA's Product release (PS-QA-008) is the final disposition for all products, including those from CMOs. This release is a direct trigger enabling Strategic Partner Management's Routine & Performance Management (SPM05) to track and manage CMO delivery and commercialization performance. SPM05, in turn, provides QA with information on CMO readiness for release and any issues that might impact QA's final decision.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PS-QC-004",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's enabling processes (PS-QA-001) establish fundamental quality documentation (SOPs) and data integrity governance (ALCOA+) that Quality Control's Testing Preparation and Execution (PS-QC-004) must strictly adhere to. QC provides feedback on the implementability of these SOPs and data integrity practices in the lab environment, and audit findings from QC operations can inform QA of areas needing refinement in these enabling processes.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "02",
-    "target_process_step_bi_id": "02",
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "PS-QC-002",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Changes managed through QA's Product related QA enabling processes (PS-QA-002, e.g., Change Control) directly necessitate updates to product specifications and analytical procedures managed by QC's Specification Creation and Handling (PS-QC-002). QC, in turn, provides QA with technical input during the change assessment regarding the impact on specifications and test methods, and is responsible for implementing these updated specifications.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "06",
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PS-QC-006",
     "relevance_type": "Information Integration",
     "relevance_content": "Findings from QA's internal/external audits and regulatory intelligence (PS-QA-003) provide crucial feedback to QC's Data Analysis and Trending (PS-QC-006), highlighting areas for strengthened analysis or new method considerations. QC's trend data and analysis can also highlight areas of concern that may trigger QA audits or further intelligence gathering by QA.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QA-004",
+    "target_process_step_bi_id": "PS-QC-005",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "OOS/OOT investigations managed by QA's Non-conformance and event management (PS-QA-004) are a critical collaborative process with QC. The outcome directly impacts QC's final batch release decisions (PS-QC-005). QC provides the initial OOS/OOT data and performs laboratory investigations that are core to QA's overall non-conformance management and final disposition.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "05",
-    "target_process_step_bi_id": "06",
+    "source_process_step_bi_id": "PS-QA-005",
+    "target_process_step_bi_id": "PS-QC-006",
     "relevance_type": "Information Integration",
     "relevance_content": "Environmental monitoring data and defined control strategies from QA's Production and process control (PS-QA-005) are essential inputs for QC's Data Analysis and Trending (PS-QC-006), enabling correlation of conditions with product quality. QC's trend analysis, in turn, can provide QA with early warnings of environmental or process control drifts that might require intervention or adjustments to control strategies.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "06",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-004",
     "relevance_type": "Governance & Control",
     "relevance_content": "The validation of analytical methods by QA's Validation and qualification (PS-QA-006) is a mandatory prerequisite for QC's Testing Preparation and Execution (PS-QC-004). QC can only use QA-validated methods. QC provides input during method development and validation regarding practicality and robustness, and QC's ongoing method performance data feeds back into QA's lifecycle management of these methods.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "06",
-    "target_process_step_bi_id": "07",
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "PS-QC-007",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Validation and qualification (PS-QA-006) establishes rigorous qualification requirements for GxP lab equipment, dictating how QC's Equipment Readiness (PS-QC-007) manages its instruments. QC ensures adherence and provides QA with equipment qualification data and feedback on the suitability and performance of equipment against these standards.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "07",
-    "target_process_step_bi_id": "07",
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "PS-QC-007",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Facility and equipment lifecycle (PS-QA-007) provides overarching quality oversight for GxP equipment, including lab instruments. This ensures QC's Equipment Readiness (PS-QC-007) maintains instruments in a compliant state. QC provides data on equipment performance and maintenance compliance, which informs QA’s oversight and any necessary adjustments to lifecycle management policies.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "08",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QA-008",
+    "target_process_step_bi_id": "PS-QC-005",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "QA's Product release (PS-QA-008) is directly dependent on the comprehensive QC release data and verdict from QC's Result Generation, Evaluation & Release (PS-QC-005). QC's release is a pre-condition for QA's final disposition. QC must provide all necessary data in a timely and compliant manner to enable QA's decision, and QA's queries or findings during review directly impact QC's finalization of the release package.",
     "relevance_score": 95
   },
   {
-    "source_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PS-QA-001",
     "target_process_step_bi_id": "06",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's enabling processes (PS-QA-001) establish overarching Good Distribution Practice (GDP) standards and documentation requirements that Logistics (L-06) operations must strictly adhere to for compliant product handling. Logistics provides feedback on the operational impact of these GDP standards and audit findings from logistics operations inform QA of areas for potential refinement in GDP guidelines or training.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "08",
+    "source_process_step_bi_id": "PS-QA-008",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "QA's Product release (PS-QA-008) provides the indispensable prerequisite (e.g., QP release) for Logistics (L-06) to initiate the physical dispatch of finished goods, ensuring only quality-approved products are distributed. Logistics must ensure all pre-dispatch conditions are met and provide QA with necessary confirmations, and QA's release documentation triggers Logistics' execution.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "Maint-01",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's enabling processes (PS-QA-001) establish GxP guidelines, SOPs, and data integrity requirements that all Maintenance activities (initiated via Maintenance Request, Maint-01) on GxP-critical equipment must follow. Maintenance provides feedback on the practicality of these guidelines during execution and maintenance records serve as evidence of compliance for QA oversight.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "06",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PS-QA-006",
+    "target_process_step_bi_id": "Maint-01",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Validation and qualification (PS-QA-006) defines validation protocols (e.g., re-qualification after major overhauls) for GxP-critical equipment, dictating how Maintenance activities (initiated via Maint-01) must be performed to maintain a validated state. Maintenance executes these activities according to QA standards and provides documentation confirming the validated state, which QA reviews.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "07",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PS-QA-007",
+    "target_process_step_bi_id": "Maint-01",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's Facility and equipment lifecycle (PS-QA-007) provides quality oversight for facility/equipment design, qualification, and maintenance, setting GxP requirements that influence the planning and execution of Maintenance activities (via Maint-01). Maintenance's performance data and adherence to these requirements inform QA's ongoing lifecycle oversight and potential updates to facility/equipment standards.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "E01",
+    "source_process_step_bi_id": "PS-QA-001",
+    "target_process_step_bi_id": "PM-E01",
     "relevance_type": "Governance & Control",
     "relevance_content": "QA's enabling processes (PS-QA-001) establish data integrity (ALCOA+) and governance frameworks, ensuring quality data reliability. Performance Management's Data Collection & Analysis (PM-E01) relies on this for accurate performance insights. Performance Management, in its analysis, might identify data quality gaps that provide feedback to QA for strengthening its governance frameworks.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "02",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-002",
+    "target_process_step_bi_id": "PM-04",
     "relevance_type": "Information Integration",
     "relevance_content": "QA's product-related processes (PS-QA-002, e.g., QRM, APQR) identify quality performance gaps and improvement opportunities. These insights are directly fed into Performance Management's Gap Closure & Continuous Improvement (PM-04) for systematic action. Performance Management tracks the implementation and effectiveness of these actions, providing feedback to QA on the success of quality improvement initiatives.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PS-QA-003",
+    "target_process_step_bi_id": "PM-04",
     "relevance_type": "Information Integration",
     "relevance_content": "Findings from QA's audits and intelligence (PS-QA-003) highlight non-conformances and improvement opportunities, serving as critical inputs for Performance Management's Gap Closure & Continuous Improvement (PM-04) to drive CAPAs. Performance Management ensures these CAPAs are implemented and tracks their effectiveness, providing QA with data on how audit findings are being addressed across the organization.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PS-QC-005",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "The final QC release decision from QC's Result Generation, Evaluation & Release (PS-QC-005) is a mandatory prerequisite for Logistics (L-06) to initiate dispatch. Logistics cannot move products from quarantine until QC provides a positive release. Logistics relies on timely release information from QC to plan shipments, and any delays or issues in QC release directly impact Logistics' ability to meet delivery schedules.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "03",
+    "source_process_step_bi_id": "PS-QC-001",
+    "target_process_step_bi_id": "PM-03",
     "relevance_type": "Information Integration",
     "relevance_content": "QC's Lab Planning and Scheduling (PS-QC-001) uses digital dashboards displaying real-time lab performance metrics, which directly feed into Performance Management's Monitoring & Performance Dialogues (PM-03) for discussions on lab efficiency. Performance Management, in turn, may provide QC with comparative benchmarks or identify systemic issues affecting lab performance, guiding adjustments in QC's planning.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "05",
-    "target_process_step_bi_id": "03",
+    "source_process_step_bi_id": "PS-QC-005",
+    "target_process_step_bi_id": "PM-03",
     "relevance_type": "Information Integration",
     "relevance_content": "QC's Result Generation, Evaluation & Release (PS-QC-005) provides evaluated QC results and release statuses, often via real-time dashboards, which are utilized by Performance Management's Monitoring & Performance Dialogues (PM-03) to track product quality and release efficiency. Insights from Performance Management regarding overall quality trends or release cycle times can then inform QC about areas needing attention or improvement in its processes.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PM-01",
     "target_process_step_bi_id": "PS-MFG-001",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "Performance Management's goal-setting (PM-01) provides direct performance objectives (e.g., throughput) that Manufacturing's Production Planning & Scheduling (PS-MFG-001) must incorporate. Manufacturing provides crucial feedback on the feasibility of these targets based on operational realities and capacity, influencing potential adjustments in targets or the strategies to achieve them, and its performance against these targets informs PM-01.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "PM-03",
     "target_process_step_bi_id": "PS-MFG-002",
     "relevance_type": "Information Integration",
     "relevance_content": "Real-time monitoring and dialogue outcomes from Performance Management (PM-03) provide direct feedback on operational efficiency to Manufacturing Processes (PS-MFG-002), enabling immediate adjustments. Manufacturing's operational data and responses to performance feedback are crucial inputs for PM-03 to assess the effectiveness of its monitoring and dialogue structures and to identify broader trends.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PM-04",
     "target_process_step_bi_id": "PS-MFG-002",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Performance Management's Gap Closure & Continuous Improvement (PM-04) initiates and tracks improvement actions (e.g., CAPAs) that often translate into mandated changes for Manufacturing Processes (PS-MFG-002) to implement. Manufacturing's successful implementation and feedback on the outcomes of these changes are essential for PM-04 to verify gap closure and sustain operational excellence.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PM-01",
+    "target_process_step_bi_id": "PS-QC-001",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "Performance Management's goal-setting (PM-01) provides specific performance objectives for QC labs, which Lab Planning and Scheduling (PS-QC-001) must incorporate. QC provides feedback on the feasibility of these targets given lab capacity and resources, and its performance against targets informs PM-01's future goal-setting cycles.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PM-03",
+    "target_process_step_bi_id": "PS-QC-005",
     "relevance_type": "Information Integration",
     "relevance_content": "Real-time monitoring and insights from Performance Management's Dialogues (PM-03, e.g., QC release cycle time) are directly relevant to QC's Result Generation, Evaluation & Release (PS-QC-005). QC's actual release performance and any identified bottlenecks in its release process provide critical data for PM-03's monitoring and inform discussions on QC efficiency.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "06",
+    "source_process_step_bi_id": "PM-04",
+    "target_process_step_bi_id": "PS-QC-006",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Performance Management's Gap Closure (PM-04) identifies systemic issues that may prompt deeper dives or new trend analyses within QC's Data Analysis and Trending (PS-QC-006). QC's analytical findings and trend reports are then crucial for PM-04 to validate corrective actions and track the impact of improvement initiatives on quality performance.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PM-01",
     "target_process_step_bi_id": "06",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "Performance Management's goal-setting (PM-01) defines key performance objectives for Logistics (L-06), providing a framework for its activities. Logistics provides feedback on the achievability of these targets based on operational constraints and capacities, and its performance informs PM-01's ongoing assessment of strategic alignment.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "PM-03",
     "target_process_step_bi_id": "06",
     "relevance_type": "Information Integration",
     "relevance_content": "Performance Management's real-time monitoring (PM-03) provides crucial feedback on Logistics KPIs, enabling timely adjustments. Logistics' operational data and performance reports are essential inputs for PM-03's monitoring activities and dialogues, highlighting areas for improvement in service levels or cost efficiency.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "04",
+    "source_process_step_bi_id": "PM-04",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Continuous improvement initiatives from Performance Management's Gap Closure (PM-04) often translate into mandated projects for Logistics (L-06) to resolve performance gaps. Logistics' successful implementation of these projects and feedback on their impact are vital for PM-04 to confirm gap closure and drive operational excellence.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "02",
+    "source_process_step_bi_id": "PM-01",
+    "target_process_step_bi_id": "Maint-02",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "Performance Management's goal-setting (PM-01) establishes performance objectives for Maintenance, directly influencing Maintenance Planning (Maint-02). Maintenance provides feedback on the feasibility of these targets based on equipment condition and resource availability, and its performance against these targets informs PM-01's strategic oversight.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "02",
+    "source_process_step_bi_id": "PM-03",
+    "target_process_step_bi_id": "Maint-02",
     "relevance_type": "Information Integration",
     "relevance_content": "Real-time monitoring from Performance Management (PM-03, e.g., equipment trends) provides critical feedback to Maintenance Planning (Maint-02) for proactive adjustments. Maintenance Planning's data on equipment reliability and intervention effectiveness is crucial for PM-03's performance dialogues and identifying systemic issues.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "02",
+    "source_process_step_bi_id": "PM-04",
+    "target_process_step_bi_id": "Maint-02",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Performance Management's Gap Closure (PM-04) initiates improvement actions that directly inform and mandate changes in Maintenance Planning (Maint-02, e.g., revised PMs). Maintenance Planning's implementation of these changes and data on their effectiveness are essential for PM-04 to confirm continuous improvement in maintenance.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "PM-01",
+    "target_process_step_bi_id": "SPM01",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "Performance Management's goal-setting (PM-01) defines overarching performance expectations for external networks, guiding Strategic Partner Management's Strategy & Outsourcing Portfolio Management (SPM01). SPM01 provides feedback on the feasibility of these targets within the external network and insights on partner capabilities, informing PM-01's strategic planning.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PM-03",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Information Integration",
     "relevance_content": "Performance Management's Monitoring & Performance Dialogues (PM-03) provides a framework leveraged by Strategic Partner Management's Routine & Performance Management (SPM05) to monitor CMO/CLO performance. SPM05 provides PM-03 with partner-specific performance data, contributing to the overall organizational performance picture and highlighting external network contributions or challenges.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "PM-04",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Outcomes from Performance Management's Gap Closure (PM-04) inform Strategic Partner Management's Routine & Performance Management (SPM05), driving improvement initiatives with external partners. SPM05 is responsible for implementing these initiatives with partners and reporting back to PM-04 on their effectiveness in addressing performance shortfalls in the outsourced network.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "02",
+    "source_process_step_bi_id": "SPM02",
     "target_process_step_bi_id": "06",
     "relevance_type": "Resource Coordination",
     "relevance_content": "As Strategic Partner Management's Partner Acquisition & Contracting (SPM02) brings new CMOs online, it requires coordination with Logistics (L-06) to plan initial inbound material flows. Logistics, in turn, provides input on its capacity and capability to handle these new material streams, which can influence SPM02's contracting terms or partner onboarding plans, ensuring operational feasibility from the outset.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "05",
+    "source_process_step_bi_id": "SPM06",
     "target_process_step_bi_id": "06",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Strategic Partner Management's Routine & Performance Management (SPM05) oversees material flows to/from CMOs, involving close coordination with Logistics (L-06) for efficient movements. Logistics provides SPM05 with critical operational feedback on transport schedules, inventory levels, and any issues related to CMO material flows, enabling SPM05 to manage CMO performance effectively.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "BEX03",
     "target_process_step_bi_id": "PS-MFG-002",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Bio Excellence's Contract to Cash - Project Phase (BEX03), particularly its tech-transfer and submission/approval stages, directly leads to Manufacturing Processes (PS-MFG-002) executing test or initial commercial runs. Manufacturing's execution capabilities, timelines, and feedback on process scalability are critical inputs back to Bio Excellence for successful project completion and client satisfaction.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "04",
+    "source_process_step_bi_id": "BEX04",
     "target_process_step_bi_id": "PS-MFG-001",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Bio Excellence's Account Management (BEX04) communicates client demand forecasts and project timelines, crucial for Manufacturing's Production Planning & Scheduling (PS-MFG-001) to integrate client needs into capacity planning. Manufacturing, in return, provides Bio Excellence with information on available capacity, lead times, and potential scheduling constraints, enabling realistic commitments to clients.",
     "relevance_score": 60
   },
   {
-    "source_process_step_bi_id": "04",
+    "source_process_step_bi_id": "BEX04",
     "target_process_step_bi_id": "06",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Bio Excellence's Account Management (BEX04) coordinates client product distribution, requiring direct coordination with Logistics (L-06) for outbound shipments. Logistics provides Bio Excellence with information on shipping capacities, lead times, and any distribution constraints, ensuring efficient and compliant delivery of client-specific goods.",
     "relevance_score": 55
   },
   {
-    "source_process_step_bi_id": "02",
+    "source_process_step_bi_id": "Maint-02",
     "target_process_step_bi_id": "PS-MFG-001",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Maintenance Planning (Maint-02) determines preventive/planned maintenance schedules, directly impacting equipment availability. This schedule is a critical input for Manufacturing's Production Planning & Scheduling (PS-MFG-001). Manufacturing, in turn, provides feedback on production priorities and preferred windows, allowing Maintenance to optimize its schedule for minimal disruption while ensuring equipment reliability.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "Maint-03",
     "target_process_step_bi_id": "PS-MFG-002",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "The execution of maintenance by Maintenance Scheduling (Maint-03) directly impacts Manufacturing Processes (PS-MFG-002) by causing equipment downtime. Clear communication from Maintenance is vital for MFG-002. Manufacturing provides critical information about equipment status and operational urgency that directly influences Maintenance Scheduling's prioritization and execution of tasks.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "02",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "Maint-02",
+    "target_process_step_bi_id": "PS-QC-001",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Maintenance Planning (Maint-02), including calibration/PM of lab equipment, is crucial for QC's Lab Planning and Scheduling (PS-QC-001) to manage instrument/personnel availability. QC provides Maintenance with feedback on testing priorities and preferred windows for equipment servicing, allowing Maintenance to optimize its schedule while ensuring QC operational continuity.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "07",
+    "source_process_step_bi_id": "Maint-04",
+    "target_process_step_bi_id": "PS-QC-007",
     "relevance_type": "Governance & Control",
     "relevance_content": "Maintenance's Calibration Management (Maint-04) ensures GxP instrument accuracy, directly enabling QC's Equipment Readiness (PS-QC-007) by providing validated calibration. QC relies on these calibrations for accurate testing and provides feedback to Maintenance on instrument performance or any calibration-related issues, ensuring equipment remains fit for purpose.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "E1",
+    "source_process_step_bi_id": "Maint-EN01",
     "target_process_step_bi_id": "06",
     "relevance_type": "Resource Coordination",
     "relevance_content": "Maintenance's Spare Part Management (Maint-E1) identifies critical spares and initiates procurement. Logistics (L-06) handles physical receipt, warehousing, and internal distribution of these parts. Logistics' efficiency in managing these spare parts and providing timely availability information is crucial for Maintenance to execute repairs promptly, and Maintenance's demand forecasts for spares guide Logistics' inventory planning.",
     "relevance_score": 65
   },
   {
-    "source_process_step_bi_id": "00",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCM00",
+    "target_process_step_bi_id": "SPM01",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "SCM's Product Lifecycle Management (SCM-00) defines overarching product strategies (NPIs, make-or-buy) that guide Strategic Partner Management's (SPM01) external network shaping. Conversely, SPM's assessments of external capabilities and market dynamics provide critical intelligence that informs and refines SCM's PLM strategies and make-or-buy decisions, ensuring a strategically aligned and capable external network.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCM01",
+    "target_process_step_bi_id": "SPM01",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "SCM's Strategic S&OP & SC Design (SCM-01) establishes long-term supply chain direction, including network configurations and capacity investments, fundamentally framing SPM's Strategy & Outsourcing Portfolio Management (SPM01). Reciprocally, SPM's insights into external partner capabilities, market intelligence, and outsourcing risks are vital inputs that inform and validate SCM's long-term network design and strategic make-versus-buy analyses.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "03",
-    "target_process_step_bi_id": "05",
+    "source_process_step_bi_id": "SCM03",
+    "target_process_step_bi_id": "SPM06",
     "relevance_type": "Resource Coordination",
     "relevance_content": "SCM's Tactical & Operational Supply Planning (SCM-03) generates detailed supply plans and forecasts critical for CMOs. SPM's Routine & Performance Management (SPM05) uses these for CMO oversight. Conversely, performance data, capacity updates, and feedback on plan feasibility from SPM regarding CMOs directly influence adjustments and refinements in SCM's tactical supply planning, ensuring realistic and achievable plans.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "SCM03",
     "target_process_step_bi_id": "PS-MFG-001",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Feasible supply plans from SCM's Tactical & Operational Planning (SCM-03) are a critical input for Manufacturing's Production Planning & Scheduling (PS-MFG-001) to create executable local schedules. In turn, Manufacturing provides SCM with essential feedback on actual production capacity, lead times, and operational constraints, enabling SCM to adjust and optimize its tactical supply plans for overall network efficiency.",
     "relevance_score": 85
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCM04",
+    "target_process_step_bi_id": "PS-QC-001",
     "relevance_type": "Resource Coordination",
     "relevance_content": "SCM's detailed production schedule (SCM-04) dictates the timing and volume of samples for QC testing, requiring QC's Lab Planning (PS-QC-001) to align resources. Concurrently, QC's feedback on lab capacity constraints, actual testing lead times, and any testing bottlenecks is crucial for SCM to develop realistic and executable production schedules, ensuring smooth end-to-end flow.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "E01",
-    "target_process_step_bi_id": "02",
+    "source_process_step_bi_id": "SCME01",
+    "target_process_step_bi_id": "PS-QC-002",
     "relevance_type": "Information Integration",
     "relevance_content": "SCM's Enabling process (SCM-E01) governs critical master data (material/product attributes), essential for QC's Specification Creation (PS-QC-002) to define accurate specifications. In return, approved product specifications and analytical procedures from QC become integral to the comprehensive master data managed by SCM, ensuring data consistency and alignment for all supply chain and quality operations.",
     "relevance_score": 80
   },
   {
-    "source_process_step_bi_id": "03",
+    "source_process_step_bi_id": "SCM03",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "SCM's Tactical Supply Planning (SCM-03) establishes plans, inventory targets, and material flow decisions that directly guide Logistics' (L-06) operational activities. Feedback from Logistics regarding warehouse/transport capacity, operational constraints, and performance is vital for SCM to adjust and refine its tactical supply plans, ensuring feasibility and efficiency.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "04",
+    "source_process_step_bi_id": "SCM04",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "Detailed production schedules from SCM (SCM-04) specify raw material needs and finished goods availability, enabling Logistics (L-06) to plan inbound staging and outbound shipments. Conversely, Logistics' feedback on receiving, storage, and dispatch capacities and lead times directly influences the realism and optimization of SCM's detailed production schedules.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "05",
+    "source_process_step_bi_id": "SCM05",
     "target_process_step_bi_id": "06",
     "relevance_type": "Flow Dependencies",
     "relevance_content": "SCM's Global Supply & Transportation Management (SCM-05) plans material movement across the global network. Logistics (L-06) executes physical inbound, internal handling, and outbound dispatch locally. Feedback from Logistics on real-time transport issues, customs challenges, and warehouse capacity directly informs and impacts SCM's global transportation strategies and operational planning.",
     "relevance_score": 90
   },
   {
-    "source_process_step_bi_id": "E01",
+    "source_process_step_bi_id": "SCME01",
     "target_process_step_bi_id": "06",
     "relevance_type": "Information Integration",
     "relevance_content": "SCM's Enabling process (SCM-E01) ensures integrity of master data (material attributes, storage conditions) fundamental for Logistics (L-06) core functions. In turn, Logistics operations may identify data discrepancies or new data requirements (e.g., specific handling instructions) that inform and improve SCM's master data governance and accuracy.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "04",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCM04",
+    "target_process_step_bi_id": "Maint-01",
     "relevance_type": "Resource Coordination",
     "relevance_content": "SCM's production schedule (SCM-04) identifies planned production times and available windows, a key input for Maintenance's Request process (Maint-01) to schedule PMs. Reciprocally, Maintenance's feedback on equipment status, unplanned downtime, and resource availability is critical for SCM to create realistic and feasible production schedules, optimizing overall asset utilization.",
     "relevance_score": 60
   },
   {
-    "source_process_step_bi_id": "00",
-    "target_process_step_bi_id": "08",
+    "source_process_step_bi_id": "SCM00",
+    "target_process_step_bi_id": "PS-QA-008",
     "relevance_type": "Governance & Control",
     "relevance_content": "SCM's Product Lifecycle Management (SCM-00) defines approved product specifications and packaging/labeling requirements. QA's Product Release (PS-QA-008) relies on and enforces these for batch disposition. Any deviations or quality issues identified during QA's review can trigger feedback to SCM's PLM for necessary updates, investigations, or changes to product information.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "05",
-    "target_process_step_bi_id": "08",
+    "source_process_step_bi_id": "SCM05",
+    "target_process_step_bi_id": "PS-QA-008",
     "relevance_type": "Governance & Control",
     "relevance_content": "SCM's Global Supply & Transportation Management (SCM-05) implements supply chain integrity measures (e.g., serialization). QA's Product Release (PS-QA-008) verifies these measures before dispatch and maintains oversight. QA's findings related to transport quality, integrity breaches, or suspected counterfeits provide critical feedback to SCM for investigation, process improvement, and risk mitigation in the supply chain.",
     "relevance_score": 75
   },
   {
-    "source_process_step_bi_id": "E01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCME01",
+    "target_process_step_bi_id": "PS-QA-001",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "SCM's Enabling process (SCM-E01) establishes fundamental data governance frameworks (ALCOA+, master data standards). QA's enabling processes (PS-QA-001) leverage these for robust GxP-compliant documentation. Conversely, QA's specific GxP and data integrity requirements, along with audit findings, provide critical input that shapes and strengthens SCM's overall data governance and master data management strategies.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "01",
-    "target_process_step_bi_id": "01",
+    "source_process_step_bi_id": "SCM01",
+    "target_process_step_bi_id": "PM-01",
     "relevance_type": "Strategic Direction & Support",
     "relevance_content": "SCM's Strategic S&OP (SCM-01) defines long-term SC objectives, a primary input for Performance Management's goal setting (PM-01) to ensure operational targets align with SC strategy. Feedback from Performance Management on the achievement, feasibility, and impact of these cascaded targets can, in turn, inform and refine SCM's strategic planning and resource allocation.",
     "relevance_score": 70
   },
   {
-    "source_process_step_bi_id": "E01",
-    "target_process_step_bi_id": "E01",
+    "source_process_step_bi_id": "SCME01",
+    "target_process_step_bi_id": "PM-E01",
     "relevance_type": "Information Integration",
     "relevance_content": "SCM's Enabling process (SCM-E01) is critical for establishing a \"single source of truth\" for master data, indispensable for Performance Management's Data Collection & Analysis (PM-E01) to build a reliable data backbone. Conversely, insights from Performance Management's data analysis (e.g., data quality issues, new data needs) provide crucial feedback to SCM for continuous improvement of its master data and governance processes.",
     "relevance_score": 80
