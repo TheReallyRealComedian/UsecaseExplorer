@@ -39,21 +39,26 @@
         var chartDom = document.getElementById('relevanceChart');
         if (!chartDom) {
             console.error("Chart container #relevanceChart not found or no data to render.");
-            return; // Exit if no chart container (e.g., no data rendered)
+            return; 
         }
+
+        var myChart; // Declare myChart here so it's in scope for setChartDimensions
 
         function setChartDimensions() {
             var width = chartDom.offsetWidth;
             var height = width; // Maintain 1:1 aspect ratio
             chartDom.style.height = height + 'px';
-            myChart.resize(); // Inform ECharts about the new size
+            if (myChart) { // Ensure myChart is initialized before calling resize
+                myChart.resize();
+            }
         }
 
-        var myChart = echarts.init(chartDom);
+        myChart = echarts.init(chartDom);
         
         var echartsData = {{ echarts_data | tojson }};
 
-        if (!echartsData || !echartsData.nodes || echartsData.nodes.length === 0) {
+        // Check if nodes and categories exist and are not empty
+        if (!echartsData || !echartsData.nodes || echartsData.nodes.length === 0 || !echartsData.categories || echartsData.categories.length === 0) {
             console.warn("No valid data provided for ECharts. Skipping chart rendering.");
             if (chartDom.parentElement) {
                  chartDom.style.display = 'none';
@@ -61,9 +66,41 @@
             return;
         }
 
-        var option;
+        // Define area_colors using BI Brand Guide Secondary Colors
+        const biSecondaryColors = [
+            '#6AD2E2', // bi-blue-500
+            '#EE6541', // bi-red-500
+            '#928BDE', // bi-violet-500
+            '#FFD03D', // bi-yellow-500
+            '#A3E5EE', // bi-blue-400
+            '#F58A68', // bi-red-400
+            '#C5C3EE', // bi-violet-400
+            '#FFE667', // bi-yellow-200 (main)
+            '#076D7E', // bi-blue-700
+            '#86251B', // bi-red-700
+            '#5D4495', // bi-violet-700
+            '#E18600', // bi-yellow-700
+            '#D2F2F7', // bi-blue-100
+            '#F5CDB9', // bi-red-100
+            '#E0E1F6', // bi-violet-100
+            '#FBF9AA'  // bi-yellow-100
+        ];
 
-        option = {
+        // Update echartsData.categories to use the new BI colors
+        echartsData.categories.forEach((category, index) => {
+            category.itemStyle = { color: biSecondaryColors[index % biSecondaryColors.length] };
+        });
+
+        // CRITICAL FIX: Update individual node colors based on their category's new color
+        echartsData.nodes.forEach(node => {
+            if (node.category !== undefined && echartsData.categories[node.category] && echartsData.categories[node.category].itemStyle) {
+                // Ensure node.itemStyle exists or create it
+                node.itemStyle = node.itemStyle || {};
+                node.itemStyle.color = echartsData.categories[node.category].itemStyle.color;
+            }
+        });
+
+        var option = {
             tooltip: {
                 trigger: 'item',
                 confine: true, // Keep tooltip within chart boundaries
@@ -82,18 +119,17 @@
                 }
             },
             legend: {
-                // MODIFIED: Legend position and orientation
                 data: echartsData.categories.map(c => c.name),
-                left: '5%',       // Position legend to the right, with 5% margin
-                top: 'top',     // Center legend vertically
-                orient: 'vertical', // Vertical alignment
-                type: 'scroll',    // Enable scrolling for many categories
-                itemGap: 10,       // Increase spacing for vertical readability
+                left: '5%',       
+                top: 'top',     
+                orient: 'vertical', 
+                type: 'scroll',    
+                itemGap: 10,       
                 itemWidth: 15,
                 itemHeight: 15,
                 textStyle: {
-                    fontSize: 12,
-                    color: '#333'
+                    fontSize: 12, 
+                    color: '#191919' // BI Black
                 }
             },
             series: [
@@ -102,40 +138,40 @@
                     type: 'graph',
                     layout: 'circular',
                     circular: {
-                        rotateLabel: true // Labels rotate with the node
+                        rotateLabel: true 
                     },
                     data: echartsData.nodes,
                     links: echartsData.links,
                     categories: echartsData.categories,
-                    roam: true, // Enable dragging and zooming
+                    roam: true, 
                     label: {
                         show: true,
-                        position: 'right', // Position node labels to the right of the node
-                        formatter: '{b}', // Display node name (from 'name' property)
-                        fontSize: 10, // Smaller font size for node labels for better fit
-                        color: '#333', // Darker color for readability
-                        textBorderColor: '#fff', // White border for text to stand out against colored nodes
+                        position: 'right', 
+                        formatter: '{b}', 
+                        fontSize: 10, 
+                        color: '#191919', // BI Black for node labels
+                        textBorderColor: '#FFFFFF', // BI White for text border
                         textBorderWidth: 2,
-                        distance: 5 // Distance from node symbol
+                        distance: 5 
                     },
                     labelLayout: {
-                        hideOverlap: true // Hide overlapping labels automatically
+                        hideOverlap: true 
                     },
                     lineStyle: {
                         opacity: 0.8,
-                        width: 2, // Default width for lines, overridden by link.lineStyle.width
-                        curveness: 0.3, // Default curveness for lines, overridden by link.lineStyle.curveness
-                        color: '#999' // Default line color
+                        width: 2, 
+                        curveness: 0.3, 
+                        color: '#B7B6B2' // BI Neutral-500 for default link color
                     },
                     emphasis: {
-                        focus: 'adjacency', // Highlight connected nodes/edges on hover
+                        focus: 'adjacency', 
                         lineStyle: {
-                            width: 5, // Thicker line on hover
-                            color: '#5D8C7B' // Primary color highlight
+                            width: 5, 
+                            color: '#00E47C' // BI Accent Green-500 for link emphasis
                         },
                         label: {
                              show: true,
-                             color: '#000',
+                             color: '#191919', // BI Black for emphasized label text
                              fontWeight: 'bold'
                         }
                     },
@@ -149,8 +185,7 @@
 
         setChartDimensions(); 
         window.addEventListener('resize', function() {
-            setChartDimensions();
-            myChart.resize();
+            setChartDimensions(); // This will also call myChart.resize() internally
         });
 
         myChart.on('click', function (params) {

@@ -34,8 +34,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const deleteAllStepLinksBtn = document.getElementById('deleteAllStepLinksBtn');
 
-    // NEW: Download CSV Button
+    // Download Buttons
     const downloadLinksCsvBtn = document.getElementById('downloadLinksCsvBtn');
+    const downloadInvolvedStepsCsvBtn = document.getElementById('downloadInvolvedStepsCsvBtn'); // NEW BUTTON
 
 
     // Modal Instance
@@ -52,13 +53,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!flashContainer.closest('.page-content')) {
             flashContainer.classList.add('flash-messages');
             const pageContent = document.querySelector('.page-content');
-            if (pageContent) { pageContent.prepend(flashContainer); } else { document.body.prepend(flashContainer); }
+            if (pageContent) {
+                pageContent.prepend(flashContainer);
+            } else {
+                document.body.prepend(flashContainer);
+            }
         }
         const alertDiv = document.createElement('div');
         alertDiv.classList.add('alert', `alert-${category}`);
         alertDiv.textContent = message;
         flashContainer.appendChild(alertDiv);
-        setTimeout(() => { alertDiv.remove(); }, 5000);
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
     }
 
     function sanitizeText(text) {
@@ -76,19 +83,20 @@ document.addEventListener('DOMContentLoaded', function () {
             linksPlaceholder.textContent = 'No relevance links found for the selected criteria.';
             linksPlaceholder.style.display = 'block';
             if (linksTable) linksTable.style.display = 'none';
-            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download button
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none';
+            if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'none'; // Hide new button
             return;
         }
 
         linksPlaceholder.style.display = 'none';
         if (linksTable) linksTable.style.display = '';
-        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block'; // Show download button
+        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block';
+        if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'inline-block'; // Show new button
 
 
         links.forEach(link => {
             const row = document.createElement('tr');
             row.dataset.linkId = link.id;
-            // Store all necessary data for CSV export on the row itself or ensure currentLinksData is used for CSV generation
             row.dataset.sourceStepName = link.source_step_name;
             row.dataset.sourceAreaName = link.source_area_name;
             row.dataset.sourceStepBiId = link.source_step_bi_id;
@@ -145,17 +153,19 @@ document.addEventListener('DOMContentLoaded', function () {
             linksPlaceholder.textContent = 'No links match the current filters.';
             linksPlaceholder.style.display = 'block';
             if (linksTable) linksTable.style.display = 'none';
-            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download button
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none';
+            if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'none'; // Hide new button
             return;
         }
         linksPlaceholder.style.display = 'none';
         if (linksTable) linksTable.style.display = '';
-        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block'; // Show download button
+        if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'inline-block';
+        if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'inline-block'; // Show new button
+
 
         linksToRender.forEach(link => {
             const row = document.createElement('tr');
             row.dataset.linkId = link.id;
-            // Store all necessary data for CSV export on the row itself
             row.dataset.sourceStepName = link.source_step_name;
             row.dataset.sourceAreaName = link.source_area_name;
             row.dataset.sourceStepBiId = link.source_step_bi_id;
@@ -163,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
             row.dataset.targetAreaName = link.target_area_name;
             row.dataset.targetStepBiId = link.target_step_bi_id;
             row.dataset.relevanceScore = link.relevance_score;
-            row.dataset.relevanceContent = link.relevance_content || ""; // Ensure content is always a string
+            row.dataset.relevanceContent = link.relevance_content || "";
 
             row.innerHTML = `
                 <td>${sanitizeText(link.source_step_name)}<br><small class="text-muted">(${sanitizeText(link.source_area_name)} - ${sanitizeText(link.source_step_bi_id)})</small></td>
@@ -178,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
             linksTableBody.appendChild(row);
         });
     }
-
+    
     // --- Client-Side Sorting ---
     let currentSortColumn = null;
     let currentSortDirection = 'asc';
@@ -187,8 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         
         const rows = Array.from(tbody.querySelectorAll('tr'));
-        // Get the data for sorting directly from the row's dataset attributes
-        // to ensure we sort what's currently displayed and filtered.
         const linksToSort = rows.map(row => ({
             id: parseInt(row.dataset.linkId),
             source_step_name: row.dataset.sourceStepName,
@@ -199,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
             target_step_bi_id: row.dataset.targetStepBiId,
             relevance_score: parseInt(row.dataset.relevanceScore),
             relevance_content: row.dataset.relevanceContent,
-            // relevance_content_snippet can be derived if needed or use relevance_content
+            relevance_content_snippet: (row.dataset.relevanceContent || "").substring(0,100)
         }));
 
 
@@ -220,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 case 'source_step_name': valueA = linkA.source_step_name; valueB = linkB.source_step_name; break;
                 case 'target_step_name': valueA = linkA.target_step_name; valueB = linkB.target_step_name; break;
                 case 'relevance_score': valueA = linkA.relevance_score; valueB = linkB.relevance_score; break;
-                case 'relevance_content_snippet': valueA = linkA.relevance_content || ""; valueB = linkB.relevance_content || ""; break; // Sort by full content
+                case 'relevance_content_snippet': valueA = linkA.relevance_content || ""; valueB = linkB.relevance_content || ""; break;
                 default: return 0;
             }
 
@@ -236,11 +244,14 @@ document.addEventListener('DOMContentLoaded', function () {
             if (valueA > valueB) return currentSortDirection === 'asc' ? 1 : -1;
             return 0;
         });
-        renderFilteredTable(linksToSort); // Re-render the sorted subset
+        renderFilteredTable(linksToSort); 
     }
 
     async function handleDeleteLink(linkId) {
-        if (!linkId) { showFlashMessage('Invalid link ID for deletion.', 'danger'); return; }
+        if (!linkId) {
+            showFlashMessage('Invalid link ID for deletion.', 'danger');
+            return;
+        }
         if (confirm('Are you sure you want to delete this link? This action cannot be undone.')) {
             const rowToDelete = linksTableBody.querySelector(`tr[data-link-id="${linkId}"]`);
             if (rowToDelete) {
@@ -249,7 +260,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (deleteButton) deleteButton.disabled = true;
             }
             try {
-                const response = await fetch(`/review/api/process-links/link/${linkId}`, { method: 'DELETE' });
+                const response = await fetch(`/review/api/process-links/link/${linkId}`, {
+                    method: 'DELETE'
+                });
                 const result = await response.json();
                 if (result.success) {
                     showFlashMessage(result.message, 'success');
@@ -280,7 +293,10 @@ document.addEventListener('DOMContentLoaded', function () {
          if (!linkModal) {
             if (linkModalElement && typeof window.bootstrap !== 'undefined' && typeof window.bootstrap.Modal === 'function') {
                 linkModal = new window.bootstrap.Modal(linkModalElement);
-            } else { console.error("Link review modal element or Bootstrap Modal library not found."); return null; }
+            } else {
+                console.error("Link review modal element or Bootstrap Modal library not found.");
+                return null;
+            }
          }
          return linkModal;
     }
@@ -336,7 +352,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 modalRelevanceContentPreview.innerHTML = typeof marked !== 'undefined' && marked.parse ? (linkData.relevance_content ? marked.parse(linkData.relevance_content) : marked.parse('<em>No content provided.</em>')) : (linkData.relevance_content || 'No content provided.');
             } catch (error) {
                 showFlashMessage(`Error loading link details: ${error.message}`, 'danger');
-                if (modal) modal.hide(); return;
+                if (modal) modal.hide();
+                return;
             }
         } else {
              modalLabel.textContent = 'Create New Link';
@@ -351,25 +368,37 @@ document.addEventListener('DOMContentLoaded', function () {
             const focusAreaId = focusAreaSelect.value;
             const selectedComparisonOptions = Array.from(comparisonAreaSelect.selectedOptions);
             const comparisonAreaIds = selectedComparisonOptions.map(opt => opt.value).filter(id => id !== "");
-            if (!focusAreaId) { showFlashMessage('Please select a Focus Area.', 'warning'); return; }
+            if (!focusAreaId) {
+                showFlashMessage('Please select a Focus Area.', 'warning');
+                return;
+            }
             loadDiagramBtn.disabled = true;
             loadDiagramBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
             linksPlaceholder.textContent = 'Loading links...';
             linksPlaceholder.style.display = 'block';
             linksTableBody.innerHTML = '';
             if (linksTable) linksTable.style.display = 'none';
-            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none'; // Hide download btn during load
+            if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none';
+            if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'none'; // Hide new button
+
             try {
-                const params = new URLSearchParams({ focus_area_id: focusAreaId });
+                const params = new URLSearchParams({
+                    focus_area_id: focusAreaId
+                });
                 comparisonAreaIds.forEach(id => params.append('comparison_area_ids[]', id));
                 const response = await fetch(`/review/api/process-links/data?${params.toString()}`);
                 if (!response.ok) {
                      let errorMsg = `Server error: ${response.status}`;
-                    try { const errorData = await response.json(); errorMsg = errorData.error || errorMsg; } catch (e) {}
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {}
                     throw new Error(errorMsg);
                 }
                 const data = await response.json();
-                if (data.error) { throw new Error(data.error); }
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 currentLinksData = data.links || []; 
                 populateLinksTable(currentLinksData); 
                 applyClientSideFilters(); 
@@ -378,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function () {
                  linksPlaceholder.textContent = `Error loading links: ${error.message}.`;
                  linksPlaceholder.style.display = 'block';
                  if (downloadLinksCsvBtn) downloadLinksCsvBtn.style.display = 'none';
+                 if (downloadInvolvedStepsCsvBtn) downloadInvolvedStepsCsvBtn.style.display = 'none'; // Hide new button
                  currentLinksData = [];
             } finally {
                 loadDiagramBtn.disabled = false;
@@ -387,7 +417,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (addNewLinkBtn) {
-         addNewLinkBtn.addEventListener('click', () => { openLinkModal(null); });
+         addNewLinkBtn.addEventListener('click', () => {
+             openLinkModal(null);
+         });
     }
 
     if (linksTableBody) {
@@ -471,7 +503,9 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const response = await fetch(url, { 
                     method: method, 
-                    headers: { 'Content-Type': 'application/json' }, 
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }, 
                     body: JSON.stringify(payload) 
                 });
                 const result = await response.json();
@@ -493,14 +527,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (modalDeleteLinkBtn) {
         modalDeleteLinkBtn.addEventListener('click', async () => {
-             const modal = getLinkModal(); if (!modal) return;
+            const modal = getLinkModal();
+            if (!modal) return;
             const linkId = modalLinkIdInput.value ? parseInt(modalLinkIdInput.value) : null;
             if (!linkId) return;
             if (confirm('Are you sure you want to delete this link? This action cannot be undone.')) {
-                modalDeleteLinkBtn.disabled = true; modalSaveLinkBtn.disabled = true;
+                modalDeleteLinkBtn.disabled = true;
+                modalSaveLinkBtn.disabled = true;
                 modalDeleteLinkBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting...';
                 try {
-                    const response = await fetch(`/review/api/process-links/link/${linkId}`, { method: 'DELETE' });
+                    const response = await fetch(`/review/api/process-links/link/${linkId}`, {
+                        method: 'DELETE'
+                    });
                     const result = await response.json();
                     if (result.success) {
                         showFlashMessage(result.message, 'success');
@@ -512,7 +550,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 } catch (error) { 
                     showFlashMessage(`Network error: ${error.message}`, 'danger');
                 } finally {
-                     modalDeleteLinkBtn.disabled = false; modalSaveLinkBtn.disabled = false;
+                     modalDeleteLinkBtn.disabled = false;
+                     modalSaveLinkBtn.disabled = false;
                      modalDeleteLinkBtn.innerHTML = 'Delete Link';
                 }
             }
@@ -524,7 +563,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const focusValue = this.value;
             Array.from(comparisonAreaSelect.options).forEach(opt => {
                 opt.disabled = (opt.value === focusValue && focusValue !== "");
-                if (opt.disabled && opt.selected) { opt.selected = false; }
+                if (opt.disabled && opt.selected) {
+                    opt.selected = false;
+                }
             });
         });
         focusAreaSelect.dispatchEvent(new Event('change'));
@@ -587,28 +628,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- NEW: CSV Download Functionality ---
-    function escapeCsvField(field, delimiter = ';') { // Added delimiter parameter, defaults to semicolon
+    // --- CSV Download Functionality ---
+    function escapeCsvField(field, delimiter = ';') {
         if (field === null || field === undefined) {
             return "";
         }
         const stringField = String(field);
-        // If the field contains the delimiter, double quote, or newline, enclose it in double quotes
-        // and escape any existing double quotes by doubling them.
         if (stringField.includes(delimiter) || stringField.includes('"') || stringField.includes('\n') || stringField.includes('\r')) {
             return `"${stringField.replace(/"/g, '""')}"`;
         }
         return stringField;
     }
 
-    function downloadCsv(data, filename = 'export.csv', delimiter = ';') { // Added delimiter parameter
+    function downloadCsv(data, filename = 'export.csv', delimiter = ';') {
         const csvRows = [];
         const headers = [
             "Source Step Name", "Source Area", "Source BI_ID",
             "Target Step Name", "Target Area", "Target BI_ID",
             "Score", "Content"
         ];
-        // Escape headers themselves in case they contain the delimiter (unlikely here, but good practice)
         csvRows.push(headers.map(header => escapeCsvField(header, delimiter)).join(delimiter));
 
         data.forEach(row => {
@@ -620,17 +658,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 escapeCsvField(row.target_area_name, delimiter),
                 escapeCsvField(row.target_step_bi_id, delimiter),
                 escapeCsvField(row.relevance_score, delimiter),
-                escapeCsvField(row.relevance_content, delimiter) // Use full content for CSV
-            ].join(delimiter); // Use the specified delimiter
+                escapeCsvField(row.relevance_content, delimiter)
+            ].join(delimiter);
             csvRows.push(csvRow);
         });
 
         const csvString = csvRows.join('\r\n');
-        // Ensure UTF-8 BOM for better Excel compatibility with special characters
         const BOM = "\uFEFF"; 
-        const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([BOM + csvString], {
+            type: 'text/csv;charset=utf-8;'
+        });
         const link = document.createElement('a');
-        if (link.download !== undefined) { // Feature detection
+        if (link.download !== undefined) {
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
             link.setAttribute('download', filename);
@@ -646,7 +685,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (downloadLinksCsvBtn) {
         downloadLinksCsvBtn.addEventListener('click', () => {
-            // Get currently visible rows from the table
             const visibleRows = Array.from(linksTableBody.querySelectorAll('tr'));
             if (visibleRows.length === 0) {
                 showFlashMessage('No data to download.', 'info');
@@ -654,7 +692,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const dataToExport = visibleRows.map(row => {
-                // Extract data from the row's dataset attributes
                 return {
                     source_step_name: row.dataset.sourceStepName,
                     source_area_name: row.dataset.sourceAreaName,
@@ -668,11 +705,37 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const timestamp = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "");
-            // Call downloadCsv with the semicolon delimiter
             downloadCsv(dataToExport, `process_step_links_${timestamp}.csv`, ';'); 
         });
     }
-    // --- END NEW CSV Download ---
+
+    // --- NEW: Involved Steps CSV Download ---
+    if (downloadInvolvedStepsCsvBtn) {
+        downloadInvolvedStepsCsvBtn.addEventListener('click', () => {
+            const focusAreaId = focusAreaSelect.value;
+            const selectedComparisonOptions = Array.from(comparisonAreaSelect.selectedOptions);
+            const comparisonAreaIds = selectedComparisonOptions.map(opt => opt.value).filter(id => id !== "");
+
+            if (!focusAreaId) {
+                showFlashMessage('Please select a Focus Area first to determine involved steps.', 'warning');
+                return;
+            }
+             if (currentLinksData.length === 0 && linksTable.style.display === 'none') {
+                showFlashMessage('No links loaded. Please click "Load Links" first.', 'info');
+                return;
+            }
+
+            const params = new URLSearchParams({
+                focus_area_id: focusAreaId
+            });
+            comparisonAreaIds.forEach(id => params.append('comparison_area_ids[]', id));
+            
+            const exportUrl = `/review/export-involved-steps-csv?${params.toString()}`;
+            // Trigger download by navigating to the URL
+            window.location.href = exportUrl;
+        });
+    }
+    // --- END NEW Involved Steps CSV Download ---
 
 
     window.cleanupReviewProcessLinksUI = function() {

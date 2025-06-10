@@ -24,7 +24,7 @@
         }
         .table th.sorted-asc::after { content: " ▲"; }
         .table th.sorted-desc::after { content: " ▼"; }
-        .table td pre { /* Style for content snippet */
+        .table td .content-snippet { /* Changed from .table td pre */
              white-space: pre-wrap;
              word-break: break-word;
              max-height: 80px; /* Limit snippet height */
@@ -91,11 +91,15 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center"> {# Added flex for button alignment #}
             <h2 class="card-title mb-0">Process Step Links Table</h2> {# Renamed title, remove mb-0 if button below title #}
-            {# NEW Download CSV Button #}
-            <button id="downloadLinksCsvBtn" class="btn btn-sm btn-outline-secondary" style="display: none;">
-                <i class="fas fa-download me-1"></i> Download Visible as CSV
-            </button>
-            {# END NEW Download CSV Button #}
+            <div> {# Wrapper for download buttons #}
+                <button id="downloadLinksCsvBtn" class="btn btn-sm btn-outline-secondary" style="display: none;">
+                    <i class="fas fa-download me-1"></i> Download Visible Links as CSV
+                </button>
+                {# NEW BUTTON HERE #}
+                <button id="downloadInvolvedStepsCsvBtn" class="btn btn-sm btn-outline-success ms-2" style="display: none;">
+                    <i class="fas fa-file-csv me-1"></i> Download Involved Steps as CSVs
+                </button>
+            </div>
         </div>
         <div class="card-body">
             {# Replace Sankey container with table and filter inputs #}
@@ -147,6 +151,7 @@
 </div>
 
 <!-- Create/Edit Link Modal -->
+{# ... (modal HTML remains unchanged) ... #}
 <div class="modal fade" id="linkReviewModal" tabindex="-1" aria-labelledby="linkReviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -156,24 +161,17 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modalLinkId">
-                {# Hidden inputs to store the *selected* IDs from the dropdowns #}
                 <input type="hidden" id="modalSourceStepIdHidden"> 
                 <input type="hidden" id="modalTargetStepIdHidden">
-
-                {# Source Process Step Selection #}
                 <div class="mb-3">
                     <label for="modalSourceStepSelect" class="form-label fw-bold">From Process Step:</label>
                     <select class="form-select" id="modalSourceStepSelect" required>
-                        {# Options will be populated by JavaScript #}
                         <option value="">-- Select Source Step --</option>
                     </select>
                 </div>
-
-                {# Target Process Step Selection #}
                 <div class="mb-3">
                     <label for="modalTargetStepSelect" class="form-label fw-bold">To Process Step:</label>
                     <select class="form-select" id="modalTargetStepSelect" required>
-                        {# Options will be populated by JavaScript #}
                         <option value="">-- Select Target Step --</option>
                     </select>
                 </div>
@@ -185,7 +183,6 @@
                 <div class="mb-3">
                     <label for="modalRelevanceContent" class="form-label">Relevance Content (Markdown supported):</label>
                     <div id="modalRelevanceContentPreview" class="markdown-content p-2 border rounded mb-2" style="min-height: 50px; background-color: #f8f9fa;">
-                        <!-- Markdown preview will be rendered here by JS -->
                     </div>
                     <textarea class="form-control" id="modalRelevanceContent" rows="5"></textarea>
                 </div>
