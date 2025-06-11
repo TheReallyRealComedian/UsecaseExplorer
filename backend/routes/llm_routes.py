@@ -7,7 +7,7 @@ import traceback
 from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-from sqlalchemy import select
+from sqlalchemy import select, distinct, or_, and_ # Added distinct, or_, and_
 
 from ..llm_service import (
     get_all_available_llm_models,
@@ -86,15 +86,11 @@ SELECTABLE_USECASE_FIELDS = {
     'dependencies_text': "Dependencies",
     'contact_persons_text': "Contact Persons",
     'related_projects_text': "Related Projects",
-    # ADDED NEW FIELDS HERE
     'pilot_site_factory_text': "Pilot Site, Factory",
     'usecase_type_category': "Use Case Type Category",
-    # END ADDED NEW FIELDS
 }
 
 # Specialized system prompt for image-to-field update
-# Important: The fields listed here MUST match the keys you expect in the JSON output from the LLM
-# and also match the attribute names in your UseCase model.
 AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE = """
 You are an expert business analyst tasked with updating use case documentation based on the provided image.
 The image contains various details about a use case.
@@ -213,6 +209,15 @@ def llm_data_prep_page():
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
 
+        distinct_waves_query = session.query(distinct(UseCase.wave)).filter(UseCase.wave.isnot(None)).filter(UseCase.wave != '').order_by(UseCase.wave).all()
+        all_wave_values_for_filter = [w[0] for w in distinct_waves_query if w[0]]
+        # Add "N/A" if there are use cases with NULL or empty wave, to allow filtering for them
+        # This check could be more precise if needed, e.g., by querying count of UCs with NULL/empty wave
+        if session.query(UseCase).filter(or_(UseCase.wave.is_(None), UseCase.wave == '')).first():
+            if "N/A" not in all_wave_values_for_filter: # Ensure "N/A" is for actual empty/null values
+                 all_wave_values_for_filter.append("N/A")
+
+
         prepared_data = {"process_steps": [], "use_cases": []}
 
         selected_area_ids_int = []
@@ -221,6 +226,7 @@ def llm_data_prep_page():
         selected_step_fields_form = []
         selected_usecase_fields_form = []
         export_uc_step_relevance = False
+        selected_wave_values_form = []
 
         total_tokens = 0
 
@@ -230,6 +236,7 @@ def llm_data_prep_page():
             selected_usecase_ids_str = request.form.getlist('usecase_ids')
             selected_step_fields_form = request.form.getlist('step_fields')
             selected_usecase_fields_form = request.form.getlist('usecase_fields')
+            selected_wave_values_form = request.form.getlist('wave_values')
 
             export_uc_step_relevance = request.form.get('export_uc_step_relevance') == 'on'
 
@@ -245,7 +252,8 @@ def llm_data_prep_page():
 
             if not selected_step_fields_form and (selected_step_ids_int or selected_area_ids_int):
                 flash("No Process Step fields explicitly selected. Including default fields (BI_ID, Name, Short Description) for selected steps.", "info")
-            if not selected_usecase_fields_form and (selected_usecase_ids_int or selected_step_ids_int or selected_area_ids_int):
+            if not selected_usecase_fields_form and \
+               (selected_usecase_ids_int or selected_step_ids_int or selected_area_ids_int or selected_wave_values_form):
                 flash("No Use Case fields explicitly selected. Including default fields (BI_ID, Name, Summary) for selected use cases.", "info")
 
             step_query = session.query(ProcessStep)
@@ -255,19 +263,20 @@ def llm_data_prep_page():
                 step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
 
             steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
-
-            for step in steps_for_preview:
-                step_data = {
-                    'id': step.id,
-                    'area_id': step.area_id,
-                    'area_name': step.area.name if step.area else 'N/A'
-                }
-                for field_key in fields_to_export_steps:
-                    if hasattr(step, field_key):
-                        step_data[field_key] = getattr(step, field_key)
-                    else:
-                        step_data[field_key] = "N/A"
-                prepared_data["process_steps"].append(step_data)
+            
+            if selected_step_ids_int or selected_area_ids_int or not (selected_usecase_ids_int or selected_wave_values_form):
+                for step in steps_for_preview:
+                    step_data = {
+                        'id': step.id,
+                        'area_id': step.area_id,
+                        'area_name': step.area.name if step.area else 'N/A'
+                    }
+                    for field_key in fields_to_export_steps:
+                        if hasattr(step, field_key):
+                            step_data[field_key] = getattr(step, field_key)
+                        else:
+                            step_data[field_key] = "N/A"
+                    prepared_data["process_steps"].append(step_data)
 
             usecase_query = session.query(UseCase)
             if selected_usecase_ids_int:
@@ -277,6 +286,24 @@ def llm_data_prep_page():
             elif selected_area_ids_int:
                 subquery_step_ids = select(ProcessStep.id).where(ProcessStep.area_id.in_(selected_area_ids_int)).scalar_subquery()
                 usecase_query = usecase_query.filter(UseCase.process_step_id.in_(subquery_step_ids))
+            
+            if selected_wave_values_form:
+                actual_wave_filters = []
+                has_na_wave_filter = False
+                for w_val in selected_wave_values_form:
+                    if w_val == "N/A":
+                        has_na_wave_filter = True
+                    else:
+                        actual_wave_filters.append(w_val)
+                
+                wave_conditions = []
+                if actual_wave_filters:
+                    wave_conditions.append(UseCase.wave.in_(actual_wave_filters))
+                if has_na_wave_filter:
+                    wave_conditions.append(or_(UseCase.wave.is_(None), UseCase.wave == ''))
+                
+                if wave_conditions:
+                    usecase_query = usecase_query.filter(or_(*wave_conditions))
 
             usecases_for_preview = usecase_query.options(
                 joinedload(UseCase.process_step).joinedload(ProcessStep.area)
@@ -288,7 +315,8 @@ def llm_data_prep_page():
                     'process_step_id': uc.process_step_id,
                     'process_step_name': uc.process_step.name if uc.process_step else 'N/A',
                     'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else 'N/A',
-                    'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A'
+                    'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A',
+                    'wave': uc.wave
                 }
                 for field_key in fields_to_export_usecases:
                     if hasattr(uc, field_key):
@@ -298,27 +326,27 @@ def llm_data_prep_page():
                 prepared_data["use_cases"].append(uc_data)
 
             prepared_data["usecase_step_relevance"] = []
-
             if export_uc_step_relevance:
                 relevance_query = session.query(UsecaseStepRelevance).options(
                     joinedload(UsecaseStepRelevance.source_usecase),
                     joinedload(UsecaseStepRelevance.target_process_step)
                 )
+                actual_exported_uc_ids = {uc_item['id'] for uc_item in prepared_data["use_cases"]}
+                actual_exported_step_ids = {ps_item['id'] for ps_item in prepared_data["process_steps"]}
 
-                actual_exported_uc_ids = {uc['id'] for uc in prepared_data["use_cases"]}
-                actual_exported_step_ids = {ps['id'] for ps in prepared_data["process_steps"]}
+                relevance_filter_conditions = []
+                if actual_exported_uc_ids:
+                    relevance_filter_conditions.append(UsecaseStepRelevance.source_usecase_id.in_(actual_exported_uc_ids))
+                if actual_exported_step_ids:
+                     relevance_filter_conditions.append(UsecaseStepRelevance.target_process_step_id.in_(actual_exported_step_ids))
+                
+                if relevance_filter_conditions:
+                    relevance_query = relevance_query.filter(and_(*relevance_filter_conditions))
+                else: 
+                    relevance_query = relevance_query.filter(False)
 
-                if selected_usecase_ids_int:
-                    relevance_query = relevance_query.filter(
-                        UsecaseStepRelevance.source_usecase_id.in_(selected_usecase_ids_int)
-                    )
-                if selected_step_ids_int:
-                    relevance_query = relevance_query.filter(
-                        UsecaseStepRelevance.target_process_step_id.in_(selected_step_ids_int)
-                    )
 
                 uc_step_relevances = relevance_query.all()
-
                 for rel in uc_step_relevances:
                     if rel.source_usecase_id in actual_exported_uc_ids and \
                        rel.target_process_step_id in actual_exported_step_ids:
@@ -337,6 +365,7 @@ def llm_data_prep_page():
                         }
                         prepared_data["usecase_step_relevance"].append(rel_data)
 
+
             json_string_for_tokens = json.dumps(prepared_data, indent=2)
             total_tokens = count_tokens(json_string_for_tokens)
 
@@ -354,6 +383,7 @@ def llm_data_prep_page():
             areas=areas,
             all_steps=all_steps_db,
             all_usecases=all_usecases_db,
+            all_wave_values=all_wave_values_for_filter,
             selectable_fields_steps=SELECTABLE_STEP_FIELDS,
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data=prepared_data,
@@ -363,6 +393,7 @@ def llm_data_prep_page():
             selected_usecase_ids=selected_usecase_ids_int,
             selected_step_fields_form=selected_step_fields_form,
             selected_usecase_fields_form=selected_usecase_fields_form,
+            selected_wave_values_form=selected_wave_values_form,
             export_uc_step_relevance=export_uc_step_relevance,
             ollama_models=ollama_models,
             chat_history=chat_history,
@@ -392,6 +423,7 @@ def llm_data_prep_page():
             areas=[],
             all_steps=[],
             all_usecases=[],
+            all_wave_values=[],
             selectable_fields_steps=SELECTABLE_STEP_FIELDS,
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data={"process_steps": [], "use_cases": []},
@@ -401,6 +433,7 @@ def llm_data_prep_page():
             selected_usecase_ids=[],
             selected_step_fields_form=[],
             selected_usecase_fields_form=[],
+            selected_wave_values_form=[],
             export_uc_step_relevance=False,
             ollama_models=[],
             chat_history=[],
@@ -543,17 +576,16 @@ def analyze_usecase_image_with_llm():
         if not usecase:
             return jsonify({"success": False, "message": "Use Case not found."}), 404
 
-        # Updated prompt context to include new fields and remove irrelevant ones
         prompt_context = {
             "usecase_name": usecase.name or "N/A",
             "usecase_summary": usecase.summary or "N/A",
             "usecase_business_problem_solved": usecase.business_problem_solved or "N/A",
             "usecase_target_solution_description": usecase.target_solution_description or "N/A",
-            "usecase_pilot_site_factory_text": usecase.pilot_site_factory_text or "N/A", # NEW
+            "usecase_pilot_site_factory_text": usecase.pilot_site_factory_text or "N/A",
             "usecase_effort_quantification": usecase.effort_quantification or "N/A",
             "usecase_potential_quantification": usecase.potential_quantification or "N/A",
             "usecase_dependencies_text": usecase.dependencies_text or "N/A",
-            "usecase_usecase_type_category": usecase.usecase_type_category or "N/A", # NEW
+            "usecase_usecase_type_category": usecase.usecase_type_category or "N/A",
         }
         
         active_system_prompt_template = system_prompt_override if system_prompt_override else AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE
@@ -573,9 +605,6 @@ def analyze_usecase_image_with_llm():
 
         llm_response_data = {"success": False, "message": "LLM provider not supported or error."}
 
-        # Note: system_prompt is passed as None because the task-specific instructions are
-        #       already in final_llm_prompt_text (which is passed as the user message).
-        #       Chat history is [] for single-turn image analysis.
         if provider == "openai":
             llm_response_data = generate_openai_chat_response(
                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
@@ -601,11 +630,10 @@ def analyze_usecase_image_with_llm():
 
         if llm_response_data.get("success"):
             try:
-                # Attempt to strip markdown code block fences if present
                 response_message = llm_response_data["message"]
                 if response_message.startswith("```json"):
                     response_message = response_message[len("```json"):].strip()
-                if response_message.startswith("```"): # Generic fence
+                if response_message.startswith("```"): 
                      response_message = response_message[len("```"):].strip()
                 if response_message.endswith("```"):
                     response_message = response_message[:-len("```")].strip()

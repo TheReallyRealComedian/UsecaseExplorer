@@ -1,4 +1,3 @@
-
 // UsecaseExplorer/backend/static/js/llm_ui.js
 import { initializeLLMChat } from './common_llm_chat.js'; // Import the new module
 
@@ -19,12 +18,12 @@ document.addEventListener('DOMContentLoaded', function () {
         'llmModelSelect',
         'systemPromptInput',
         'saveSystemPromptButton',
-        'chatInput', // Pass chatInput as the target for image paste/drop
-        'imagePreview', // ID of the image preview element
-        'clearImageButton' // ID of the button to clear the image
+        'chatInput', 
+        'imagePreview', 
+        'clearImageButton'
     );
 
-    // --- Custom Select Implementation (existing, no change) ---
+    // --- Custom Select Implementation ---
     function initializeCustomSelects() {
         document.querySelectorAll('.select-option').forEach(option => {
             option.addEventListener('click', function() {
@@ -35,9 +34,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Update hidden inputs for form submission
     function updateHiddenInputs(inputName) {
-        const container = document.getElementById(inputName.replace('_ids', '') + '_hidden_inputs');
+        const container = document.getElementById(inputName.replace('_ids', '').replace('_values', '') + '_hidden_inputs'); // Adjusted for wave_values
         if (!container) return;
         
         container.innerHTML = '';
@@ -52,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Update selection counts
     function updateCount(inputName) {
         const countElement = document.getElementById(inputName + '_selected_count');
         if (!countElement) return;
@@ -65,23 +62,32 @@ document.addEventListener('DOMContentLoaded', function () {
         updateCount('area_ids');
         updateCount('step_ids');
         updateCount('usecase_ids');
+        updateCount('wave_values'); // NEW
     }
 
-    // --- Search functionality (existing, no change) ---
+    // --- Search functionality ---
     function initializeSearch() {
         document.getElementById('area_search')?.addEventListener('input', function() {
             filterOptions(this.value, 'area-select-container');
+            // Re-filter dependent selects when area search changes
             filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         });
         
         document.getElementById('step_search')?.addEventListener('input', function() {
             filterOptions(this.value, 'step-select-container');
+            // Re-filter use case select when step search changes
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         });
         
         document.getElementById('usecase_search')?.addEventListener('input', function() {
             filterOptions(this.value, 'usecase-select-container');
+        });
+
+        document.getElementById('wave_search')?.addEventListener('input', function() { // NEW
+            filterOptions(this.value, 'wave-select-container');
+            // Re-filter use case select when wave search changes
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         });
     }
 
@@ -96,33 +102,46 @@ document.addEventListener('DOMContentLoaded', function () {
                                 .map(opt => opt.dataset.value);
         const selectedStepIds = Array.from(document.querySelectorAll('.select-option[data-name="step_ids"].selected'))
                                .map(opt => opt.dataset.value);
+        const selectedWaveValues = Array.from(document.querySelectorAll('.select-option[data-name="wave_values"].selected')) // NEW
+                                .map(opt => opt.dataset.value); // NEW
 
         options.forEach(option => {
             const text = option.textContent.toLowerCase();
             const optionAreaId = option.dataset.areaId;
             const optionStepId = option.dataset.stepId;
+            const optionWave = option.dataset.wave; // NEW
 
             let matchesSearch = text.includes(term);
             let matchesAreaFilter = true;
             let matchesStepFilter = true;
+            let matchesWaveFilter = true; // NEW
 
-            if (selectedAreaIds.length > 0) {
-                if (optionAreaId) {
-                    matchesAreaFilter = selectedAreaIds.includes(optionAreaId);
-                } else if (containerId === 'step-select-container' || containerId === 'usecase-select-container') {
+            // Filter steps based on selected areas
+            if (containerId === 'step-select-container') {
+                if (selectedAreaIds.length > 0 && optionAreaId && !selectedAreaIds.includes(optionAreaId)) {
                     matchesAreaFilter = false;
                 }
             }
-
-            if (containerId === 'usecase-select-container' && selectedStepIds.length > 0) {
-                if (optionStepId) {
-                    matchesStepFilter = selectedStepIds.includes(optionStepId);
-                } else {
+            // Filter use cases based on selected areas, steps, and waves
+            else if (containerId === 'usecase-select-container') {
+                if (selectedAreaIds.length > 0 && optionAreaId && !selectedAreaIds.includes(optionAreaId)) {
+                    matchesAreaFilter = false;
+                }
+                if (selectedStepIds.length > 0 && optionStepId && !selectedStepIds.includes(optionStepId)) {
                     matchesStepFilter = false;
                 }
+                if (selectedWaveValues.length > 0) { // NEW Wave Filter Logic
+                    if (optionWave) { // Ensure the use case option has a wave attribute
+                        matchesWaveFilter = selectedWaveValues.includes(optionWave);
+                    } else { // If a wave filter is active, and the use case has no wave, it doesn't match
+                        matchesWaveFilter = false;
+                    }
+                }
             }
+            // For area and wave containers, only search term matters for now.
+            // If a wave filter should affect steps (e.g. show steps that have UCs of a certain wave), that's more complex.
 
-            if (matchesSearch && matchesAreaFilter && matchesStepFilter) {
+            if (matchesSearch && matchesAreaFilter && matchesStepFilter && matchesWaveFilter) { // MODIFIED
                 option.style.display = 'block';
             } else {
                 option.style.display = 'none';
@@ -130,18 +149,20 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Select All / Clear All functions for custom selects (existing, no change) ---
+    // --- Select All / Clear All functions ---
     function selectAll(type) {
         const containerMap = {
             'areas': 'area-select-container',
             'steps': 'step-select-container', 
-            'usecases': 'usecase-select-container'
+            'usecases': 'usecase-select-container',
+            'waves': 'wave-select-container' // NEW
         };
         
         const inputNameMap = {
             'areas': 'area_ids',
             'steps': 'step_ids', 
-            'usecases': 'usecase_ids'
+            'usecases': 'usecase_ids',
+            'waves': 'wave_values' // NEW
         };
         
         const container = document.getElementById(containerMap[type]);
@@ -149,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         const options = container.querySelectorAll('.select-option');
         options.forEach(option => {
-            if (option.style.display !== 'none') {
+            if (option.style.display !== 'none') { // Only select visible options
                 option.classList.add('selected');
             }
         });
@@ -158,10 +179,13 @@ document.addEventListener('DOMContentLoaded', function () {
         updateHiddenInputs(inputName);
         updateCount(inputName);
         
+        // Trigger dependent filtering
         if (type === 'areas') {
             filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         } else if (type === 'steps') {
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        } else if (type === 'waves') { // NEW
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         }
     }
@@ -170,13 +194,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const containerMap = {
             'areas': 'area-select-container',
             'steps': 'step-select-container',
-            'usecases': 'usecase-select-container'
+            'usecases': 'usecase-select-container',
+            'waves': 'wave-select-container' // NEW
         };
         
         const inputNameMap = {
             'areas': 'area_ids',
             'steps': 'step_ids', 
-            'usecases': 'usecase_ids'
+            'usecases': 'usecase_ids',
+            'waves': 'wave_values' // NEW
         };
         
         const container = document.getElementById(containerMap[type]);
@@ -189,15 +215,18 @@ document.addEventListener('DOMContentLoaded', function () {
         updateHiddenInputs(inputName);
         updateCount(inputName);
 
+        // Trigger dependent filtering
         if (type === 'areas') {
             filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         } else if (type === 'steps') {
             filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        } else if (type === 'waves') { // NEW
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
         }
     }
 
-    // --- Event Listeners for Custom Select All/Clear All Buttons (existing, no change) ---
+    // --- Event Listeners for Custom Select All/Clear All Buttons ---
     document.getElementById('selectAllAreas')?.addEventListener('click', () => selectAll('areas'));
     document.getElementById('clearAllAreas')?.addEventListener('click', () => clearAll('areas'));
     
@@ -207,7 +236,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('selectAllUsecases')?.addEventListener('click', () => selectAll('usecases'));
     document.getElementById('clearAllUsecases')?.addEventListener('click', () => clearAll('usecases'));
 
-    // --- Logic for dependent filtering of custom selects when options are clicked (existing, no change) ---
+    document.getElementById('selectAllWaves')?.addEventListener('click', () => selectAll('waves')); // NEW
+    document.getElementById('clearAllWaves')?.addEventListener('click', () => clearAll('waves'));   // NEW
+
+
+    // --- Logic for dependent filtering of custom selects when options are clicked ---
     document.querySelectorAll('.select-option[data-name="area_ids"]').forEach(option => {
         option.addEventListener('click', () => {
             filterOptions(document.getElementById('step_search')?.value || '', 'step-select-container');
@@ -221,6 +254,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    document.querySelectorAll('.select-option[data-name="wave_values"]').forEach(option => { // NEW
+        option.addEventListener('click', () => {
+            filterOptions(document.getElementById('usecase_search')?.value || '', 'usecase-select-container');
+        });
+    });
+
+    // ... (rest of the file: JSON Preview, Bootstrap Collapse, Field Checkboxes - remains the same) ...
     // --- JSON Preview Control (existing, no change) ---
     const copyJsonButton = document.getElementById('copyJsonButton');
     const jsonDataPreview = document.getElementById('jsonDataPreview');
@@ -336,5 +376,4 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('clearAllUsecaseFieldsBtn')?.addEventListener('click', () => {
         document.querySelectorAll('input[name="usecase_fields"]').forEach(cb => cb.checked = false);
     });
-
 });

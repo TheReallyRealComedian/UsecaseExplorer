@@ -95,7 +95,8 @@
                                      data-value="{{ uc.id }}"
                                      data-name="usecase_ids"
                                      data-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}"
-                                     data-step-id="{{ uc.process_step.id if uc.process_step else '' }}">
+                                     data-step-id="{{ uc.process_step.id if uc.process_step else '' }}"
+                                     data-wave="{{ uc.wave | default('N/A', true) }}"> {# NEW: Add data-wave attribute #}
                                     {{ uc.name }} ({{ uc.process_step.name if uc.process_step else 'No Step' }} - BI_ID: {{ uc.bi_id }})
                                 </div>
                             {% endfor %}
@@ -103,8 +104,42 @@
                         <div class="help-text">Choose specific use cases to include</div>
                         <div id="usecase_hidden_inputs"></div>
                     </div>
+
+                    {# NEW: Waves Selection #}
+                    <div class="selection-item">
+                        <div class="selection-label">
+                            <span>Filter by Wave</span>
+                            <span class="count-badge" id="wave_values_selected_count">0 selected</span>
+                        </div>
+                        <div class="search-button-row">
+                            <input type="search" id="wave_search" class="search-input" placeholder="Search waves...">
+                            <div class="button-group">
+                                <button type="button" class="btn btn-sm" id="selectAllWaves">All</button>
+                                <button type="button" class="btn btn-sm" id="clearAllWaves">None</button>
+                            </div>
+                        </div>
+                        <div class="custom-select" id="wave-select-container">
+                            {% for wave_val in all_wave_values %}
+                                <div class="select-option {% if wave_val in selected_wave_values_form %}selected{% endif %}"
+                                     data-value="{{ wave_val }}"
+                                     data-name="wave_values">
+                                    {{ wave_val }}
+                                </div>
+                            {% endfor %}
+                            {# Optionally add an "N/A" option if you want to explicitly filter for use cases with no wave #}
+                            <div class="select-option {% if 'N/A' in selected_wave_values_form %}selected{% endif %}"
+                                 data-value="N/A"
+                                 data-name="wave_values">
+                                (No Wave / N/A)
+                            </div>
+                        </div>
+                        <div class="help-text">Optional filter for use case waves</div>
+                        <div id="wave_hidden_inputs"></div>
+                    </div>
+
                 </div>
 
+                {# ... (rest of the form: Field Selection, Relevance Links, Submit Button) ... #}
                 {# Improved Field Selection #}
                 <div class="field-groups">
                     <!-- Process Step Fields -->
@@ -196,7 +231,7 @@
             </form>
         </div>
     </div>
-
+    {# ... (rest of the page: System Prompt, Prepared Data Preview, LLM Chat) ... #}
     {# System Prompt Card (already existed, making it collapsible) #}
     <div class="mb-xl">
         <div class="card-header d-flex justify-content-between align-items-center" id="systemPromptHeader">
@@ -242,7 +277,7 @@
             </div>
         </div>
         <div id="preparedDataBody" class="card-body collapse show">
-            {% if prepared_data.process_steps or prepared_data.use_cases %}
+            {% if prepared_data.process_steps or prepared_data.use_cases or prepared_data.usecase_step_relevance %}
                 {# Keep your existing table structure here #}
                 {% if prepared_data.process_steps %}
                     <h3 class="mb-3">Process Steps ({{ prepared_data.process_steps|length }})</h3>
@@ -286,7 +321,7 @@
                             </tbody>
                         </table>
                     </div>
-                {% else %}
+                {% elif not prepared_data.use_cases and not prepared_data.usecase_step_relevance %}
                     <p class="text-muted"><em>No Process Steps included in the preview.</em></p>
                 {% endif %}
 
@@ -336,9 +371,36 @@
                             </tbody>
                         </table>
                     </div>
-                {% else %}
+                {% elif not prepared_data.process_steps and not prepared_data.usecase_step_relevance %}
                     <p class="text-muted"><em>No Use Cases included in the preview.</em></p>
                 {% endif %}
+
+                {% if prepared_data.usecase_step_relevance %}
+                    <h3 class="mb-3 mt-4">Use Case to Step Relevance Links ({{ prepared_data.usecase_step_relevance|length }})</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Source Use Case</th>
+                                    <th>Target Process Step</th>
+                                    <th>Score</th>
+                                    <th>Content Snippet</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rel_item in prepared_data.usecase_step_relevance %}
+                                <tr>
+                                    <td>{{ rel_item.source_usecase_name }} ({{ rel_item.source_usecase_bi_id }})</td>
+                                    <td>{{ rel_item.target_process_step_name }} ({{ rel_item.target_process_step_bi_id }})</td>
+                                    <td>{{ rel_item.relevance_score }}/100</td>
+                                    <td><div class="scrollable-cell-content"><pre>{{ rel_item.relevance_content | truncate(100) if rel_item.relevance_content else 'N/A' }}</pre></div></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+
 
                 <div id="jsonPreviewContainer" class="mt-4" style="display: none;">
                     <pre id="jsonDataPreview" class="p-3 rounded" style="max-height: 400px; overflow-y: auto;">{{ prepared_data | tojson(indent=2) }}</pre>
@@ -367,7 +429,8 @@
                     {% if chat_history %}
                         {% for msg in chat_history %}
                             <div class="chat-bubble chat-bubble-{{ msg.role }}">
-                                {{ msg.content | safe }}
+                                {# Use the markdown filter for chat messages #}
+                                {{ msg.content | markdown | safe }}
                             </div>
                         {% endfor %}
                     {% else %}
@@ -378,31 +441,35 @@
                     {% endif %}
                 </div>
                 <div class="chat-input-area">
-                    <select id="llmModelSelect" class="form-select">
-                        {% if ollama_models %}
-                            {% for model in ollama_models %}
-                                <option value="{{ model }}">{{ model }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option value="">No models found</option>
-                        {% endif %}
-                    </select>
-                    {# Image preview will be displayed here directly above the input #}
-                    <img id="imagePreview" src="" alt="Pasted Image Preview" style="display:none; max-height:100px; margin-bottom: 5px; border-radius:8px;">
-                    <textarea id="chatInput" class="form-control" placeholder="Type your message or paste/drag an image here..." rows="1"></textarea>
-                    <button class="btn btn-primary" id="sendMessageButton">
-                        <i class="fas fa-paper-plane"></i> Send
-                    </button>
-                    <button class="btn btn-secondary" id="clearChatButton">
-                        <i class="fas fa-eraser"></i> Clear
-                    </button>
-                     <button type="button" class="btn btn-sm btn-secondary ms-2" id="clearImageButton" style="display:none;">
-                        <i class="fas fa-times-circle"></i> Clear Image
-                    </button>
+                     <div class="main-input-row"> {# Added this wrapper #}
+                        <select id="llmModelSelect" class="form-select">
+                            {% if ollama_models %}
+                                {% for model in ollama_models %}
+                                    <option value="{{ model }}">{{ model }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="">No models found</option>
+                            {% endif %}
+                        </select>
+                        <textarea id="chatInput" class="form-control" placeholder="Type your message or paste/drag an image here..." rows="1"></textarea>
+                        <button class="btn btn-primary" id="sendMessageButton">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                        <button class="btn btn-secondary" id="clearChatButton">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                    </div> {# End of main-input-row #}
+                    {# Image preview and its clear button - now separate for better layout control #}
+                    <div class="image-preview-wrapper d-flex align-items-center mt-2" style="display:none;"> {# Initially hidden #}
+                        <img id="imagePreview" src="" alt="Pasted Image Preview">
+                        <button type="button" class="btn btn-sm btn-secondary ms-2" id="clearImageButton">
+                            <i class="fas fa-times-circle"></i> Clear Image
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="help-text" style="margin-top: 0.5rem;">
-                Chat has limited memory (last {{ config.MAX_CHAT_HISTORY_LENGTH if config else 'N/A' }} messages). Choose an Ollama model from the dropdown.
+                Chat has limited memory (last {{ config.MAX_CHAT_HISTORY_LENGTH if config else 'N/A' }} messages). Choose an LLM model from the dropdown.
             </div>
         </div>
     </div>
