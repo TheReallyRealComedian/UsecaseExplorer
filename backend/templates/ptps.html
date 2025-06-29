@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="ptps-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        A landscape of all Process Steps and their alignment to Areas.
+    </p>
+
+    <div class="mb-xl">
+        <div class="card-header">
+            <h2 class="card-title">Process Steps Overview</h2>
+        </div>
+        <div class="card-body">
+            {% if all_steps %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Area</th>
+                                <th>BI_ID</th>
+                                <th>Name</th>
+                                <th>Use Cases</th>
+                                <th>Description Snippet</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in all_steps %}
+                            <tr>
+                                <td>{{ step.area.name if step.area else 'N/A' }}</td>
+                                <td>{{ step.bi_id }}</td>
+                                <td><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></td>
+                                <td>{{ step.use_cases | length }}</td>
+                                <td>{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
+                                <td>
+                                    <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
+                                    <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No process steps found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                 <p class="text-muted text-center"><em>No process steps found in the database.</em></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-xl">
+        <div class="card-header">
+            <h2 class="card-title">Process Step to Area Alignment</h2>
+        </div>
+        <div class="card-body">
+            {% if areas_with_steps %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%;">Current Area</th>
+                                <th style="width: 70%;">Process Steps in this Area</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for area in areas_with_steps %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('areas.view_area', area_id=area.id) }}">
+                                        <strong>{{ area.name }}</strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if area.process_steps %}
+                                        <ul class="list-unstyled mb-0">
+                                        {% for step in area.process_steps | sort(attribute='name') %}
+                                            <li>
+                                                <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
+                                                <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
+                                            </li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <em class="text-muted">No process steps in this area.</em>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center"><em>No areas found in the database.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

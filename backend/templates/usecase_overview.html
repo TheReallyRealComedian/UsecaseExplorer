@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block head_extra %}
+    {{ super() }}
+    <style>
+        .table th.checkbox-column, .table td.checkbox-column {
+            width: 30px;
+            text-align: center;
+        }
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-dropdown-container {
+            position: relative;
+        }
+        .filter-dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            z-index: 1000;
+            min-width: 220px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            padding: .5rem 0;
+            margin-top: 4px;
+        }
+        .filter-dropdown-menu.show { display: block; }
+        .filter-options-list label { display: block; padding: 0.25rem 1rem; }
+        .filter-options-list label:hover { background-color: #f1f1f1; }
+        .filter-actions { padding: 0.25rem 1rem; border-bottom: 1px solid #ddd; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="usecase-overview-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        A comprehensive, filterable list of all Use Cases.
+    </p>
+
+    <!-- Global Filter Controls for Use Cases -->
+    <div class="filter-controls">
+        <!-- Area Filter (Tabs) -->
+        <div class="area-filter-tabs me-2" id="usecaseAreaFilterTabs">
+            <button class="btn btn-sm btn-outline-secondary active" data-area-id="all">All Areas</button>
+            {% for area in all_areas_for_filters %}
+                <button class="btn btn-sm btn-outline-secondary" data-area-id="{{ area.id }}">{{ area.name }}</button>
+            {% endfor %}
+        </div>
+        <!-- Other Dropdown Filters -->
+        <div class="filter-dropdown-container me-2" data-filter-type="stepName">
+            <button class="btn btn-sm btn-outline-secondary filter-dropdown-toggle" type="button">
+                Step Name <span class="filter-indicator"></span> <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="filter-dropdown-menu shadow-sm">
+                <div class="filter-actions d-flex justify-content-between">
+                    <button type="button" class="btn btn-link btn-sm p-0 select-all-action">All</button>
+                    <button type="button" class="btn btn-link btn-sm p-0 clear-selection-action">None</button>
+                </div>
+                <div class="filter-options-list"></div>
+            </div>
+        </div>
+        <div class="filter-dropdown-container me-2" data-filter-type="wave">
+             <button class="btn btn-sm btn-outline-secondary filter-dropdown-toggle" type="button">
+                Wave <span class="filter-indicator"></span> <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="filter-dropdown-menu shadow-sm">
+                <div class="filter-actions d-flex justify-content-between">
+                    <button type="button" class="btn btn-link btn-sm p-0 select-all-action">All</button>
+                    <button type="button" class="btn btn-link btn-sm p-0 clear-selection-action">None</button>
+                </div>
+                <div class="filter-options-list"></div>
+            </div>
+        </div>
+        <div class="ms-auto"><button class="btn btn-sm btn-danger" id="clearAllUsecaseFiltersBtn">Clear All Filters</button></div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="useCasesTable">
+            <thead class="table-light">
+                <tr>
+                    <th class="sortable" data-sort-key="area_name">Area</th>
+                    <th class="sortable" data-sort-key="step_name">Process Step</th>
+                    <th class="sortable" data-sort-key="uc_bi_id">UC BI_ID</th>
+                    <th class="sortable" data-sort-key="uc_name">Use Case Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for uc in usecases %}
+                <tr data-uc-id="{{ uc.id }}" 
+                    data-uc-area-id="{{ uc.process_step.area.id if uc.process_step and uc.process_step.area else '' }}" 
+                    data-uc-step-id="{{ uc.process_step.id if uc.process_step else '' }}"
+                    data-uc-wave="{{ uc.wave | default('N/A', true) }}">
+                    <td data-sort-value="{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}">{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}</td>
+                    <td data-sort-value="{{ uc.process_step.name if uc.process_step else 'N/A' }}">{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
+                    <td>{{ uc.bi_id }}</td>
+                    <td><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
+                    <td>
+                        <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
+                        <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No use cases found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Pass data to JS
+    const allStepsDataForJS = {{ all_steps_for_js | tojson | safe }};
+    const allUsecasesDataForJS = {{ all_usecases_for_js_filtering | tojson | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/usecase_overview.js') }}"></script>
+{% endblock %}

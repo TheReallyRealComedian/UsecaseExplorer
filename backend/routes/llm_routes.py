@@ -149,55 +149,6 @@ Example JSON output:
 MOST IMPORTANT OF ALL: Output ONLY the JSON object and nothing else!!!!!
 """
 
-
-@llm_routes.route('/chat-dedicated')
-@login_required
-def llm_chat_page():
-    session_db = SessionLocal()
-    user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
-
-    all_areas_flat = []
-    all_steps_flat = []
-    all_usecases_flat = []
-
-    try:
-        all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
-        return render_template(
-            'llm_chat.html',
-            title="LLM Chat",
-            config=current_app.config,
-            user_system_prompt=user_system_prompt,
-            current_item=None,
-            current_area=None,
-            current_step=None,
-            current_usecase=None,
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
-        )
-    except Exception as e:
-        print(f"Error loading LLM Chat page: {e}")
-        flash("An error occurred while loading the LLM Chat page.", "danger")
-        return render_template(
-            'llm_chat.html',
-            title="LLM Chat",
-            config=current_app.config,
-            user_system_prompt=user_system_prompt,
-            current_item=None,
-            current_area=None,
-            current_step=None,
-            current_usecase=None,
-            all_areas_flat=[],
-            all_steps_flat=[],
-            all_usecases_flat=[]
-        )
-    finally:
-        SessionLocal.remove()
-
-
 @llm_routes.route('/data-prep', methods=['GET', 'POST'])
 @login_required
 def llm_data_prep_page():

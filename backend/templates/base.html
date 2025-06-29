@@ -23,30 +23,26 @@
             </div>
             <nav class="sidebar-menu">
                 <ul>
+                    <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    </li>
+                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">PTPs</li>
                     <li class="{% if request.endpoint == 'index' %}active{% endif %}">
-                        <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+                        <a href="{{ url_for('index') }}"><i class="fas fa-sitemap"></i> Process Landscape</a>
                     </li>
-                    <li class="{% if request.endpoint == 'areas.list_areas' %}active{% endif %}">
-                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-th-large"></i> Overview</a>
-                    </li>
-                    <li class="{% if request.blueprint == 'relevance' %}active{% endif %}">
+                     <li class="{% if request.endpoint == 'relevance.visualize_relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
                     </li>
-                    <li class="{% if request.endpoint == 'llm.llm_chat_page' %}active{% endif %}">
-                        <a href="{{ url_for('llm.llm_chat_page') }}"><i class="fas fa-comments"></i> LLM Chat</a>
+                    <li class="{% if request.endpoint == 'review.review_process_links_page' %}active{% endif %}">
+                        <a href="{{ url_for('review.review_process_links_page') }}"><i class="fas fa-link"></i> Relevance Links (PS-PS)</a>
                     </li>
-                    <li class="{% if request.blueprint == 'llm' and request.endpoint != 'llm.llm_chat_page' %}active{% endif %}">
+
+                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">Analysis</li>
+                    <li class="{% if request.blueprint == 'usecases' %}active{% endif %}">
+                        <a href="{{ url_for('usecases.list_usecases') }}"><i class="fas fa-tasks"></i> Use-Cases</a>
+                    </li>
+                    <li class="{% if request.blueprint == 'llm' %}active{% endif %}">
                         <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> Data Mining</a>
-                    </li>
-                    <li class="{% if request.blueprint == 'injection' %}active{% endif %}">
-                        <a href="{{ url_for('injection.data_update_page') }}"><i class="fas fa-upload"></i> Data Update</a>
-                    </li>
-                    <li class="{% if request.blueprint == 'data_alignment' %}active{% endif %}">
-                        <a href="{{ url_for('data_alignment.data_alignment_page') }}"><i class="fas fa-link"></i> Data Alignment</a>
-                    </li>
-                    {# NEW REVIEW LINK #}
-                    <li class="{% if request.blueprint == 'review' %}active{% endif %}">
-                        <a href="{{ url_for('review.review_dashboard') }}"><i class="fas fa-search-plus"></i> Review</a>
                     </li>
                  </ul>
             </nav>
@@ -77,7 +73,17 @@
             </header>
 
             <div class="breadcrumbs-fixed">
-                <a href="{{ url_for('index') }}" class="breadcrumb-item {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                {# PTPs is the new home, so no breadcrumb for it #}
+                {% if request.endpoint == 'index' %}
+                     <span class="breadcrumb-item active">PTPs</span>
+                {% else %}
+                    <a href="{{ url_for('index') }}" class="breadcrumb-item">PTPs</a>
+                {% endif %}
+                
+                {% if request.endpoint == 'dashboard' %}
+                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
+                    <span class="breadcrumb-item active">Dashboard</span>
+                {% endif %}
 
                 {% if current_area %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
@@ -89,16 +95,9 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
-                {% elif request.blueprint == 'areas' and request.endpoint == 'areas.list_areas' %}
+                {% elif request.blueprint == 'usecases' and request.endpoint == 'usecases.list_usecases' %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-areas-breadcrumb-container" data-item-type="areas_overview">
-                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            All Areas
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="all-areas-breadcrumb-container">
-                            <!-- Dynamic content filled by JS -->
-                        </ul>
-                    </div>
+                     <span class="breadcrumb-item active">Use-Cases</span>
                 {% endif %}
 
                 {% if current_step %}
@@ -108,16 +107,6 @@
                             {{ current_step.name }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="step-breadcrumb-container">
-                            <!-- Dynamic content filled by JS -->
-                        </ul>
-                    </div>
-                {% elif request.blueprint == 'steps' and request.endpoint == 'steps.list_steps' %}
-                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-steps-breadcrumb-container" data-item-type="steps_overview">
-                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            All Process Steps
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="all-steps-breadcrumb-container">
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
@@ -133,19 +122,9 @@
                             <!-- Dynamic content filled by JS -->
                         </ul>
                     </div>
-                {% elif request.blueprint == 'usecases' and request.endpoint == 'usecases.list_usecases' %}
-                    <i class="fas fa-chevron-right breadcrumb-separator"></i>
-                    <div class="breadcrumb-dropdown-container dropdown" id="all-usecases-breadcrumb-container" data-item-type="usecases_overview">
-                        <a href="#" class="breadcrumb-item active dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            All Use Cases
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="all-usecases-breadcrumb-container">
-                            <!-- Dynamic content filled by JS -->
-                        </ul>
-                    </div>
                 {% endif %}
 
-                {% if request.endpoint != 'index' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
+                {% if request.endpoint != 'index' and request.endpoint != 'dashboard' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <span class="breadcrumb-item active">{{ title }}</span>
                 {% endif %}

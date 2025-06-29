@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, redirect, url_for, flash, jsonify
 import json
 
-from sqlalchemy import func # For count
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
 import markupsafe
@@ -12,22 +12,20 @@ import markdown
 from flask_session import Session
 
 from .config import get_config
-from .models import Base, User, Area, ProcessStep, UseCase, LLMSettings
+from .models import Base, User, Area, ProcessStep, UseCase
 from .db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
-from .utils import serialize_for_js # <<< NEW IMPORT
+from .utils import serialize_for_js
 
 from . import llm_service
 
 # --- Blueprint Imports ---
 from .routes.auth_routes import auth_routes
-from .routes.injection_routes import injection_routes
 from .routes.usecase_routes import usecase_routes
 from .routes.relevance_routes import relevance_routes
 from .routes.llm_routes import llm_routes
 from .routes.area_routes import area_routes
 from .routes.step_routes import step_routes
 from .routes.export_routes import export_routes
-from .routes.data_alignment_routes import data_alignment_routes
 from .routes.settings_routes import settings_routes
 from .routes.review_routes import review_routes
 
@@ -160,37 +158,14 @@ def create_app():
 
     print("DEBUG: About to import and register blueprints.")
     
-    print("DEBUG: Registering auth_routes.")
     app.register_blueprint(auth_routes)
-    
-    print("DEBUG: Registering injection_routes.")
-    app.register_blueprint(injection_routes)
-    
-    print("DEBUG: Registering usecase_routes.")
     app.register_blueprint(usecase_routes)
-    
-    print("DEBUG: Registering relevance_routes.")
     app.register_blueprint(relevance_routes)
-    
-    print("DEBUG: Registering llm_routes.")
     app.register_blueprint(llm_routes)
-    
-    print("DEBUG: Registering area_routes.")
     app.register_blueprint(area_routes)
-    
-    print("DEBUG: Registering step_routes.")
     app.register_blueprint(step_routes)
-    
-    print("DEBUG: Registering export_routes.")
     app.register_blueprint(export_routes)
-    
-    print("DEBUG: Registering data_alignment_routes.")
-    app.register_blueprint(data_alignment_routes)
-    
-    print("DEBUG: Registering settings_routes.")
     app.register_blueprint(settings_routes)
-    
-    print("DEBUG: Registering review_routes.")
     app.register_blueprint(review_routes) 
     
     print("Blueprint registration complete.")
@@ -198,34 +173,76 @@ def create_app():
     @app.route('/')
     def index():
         if current_user.is_authenticated:
-            session_db = flask_sqlalchemy_db.session
-            
-            all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
-            all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-            all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+            session_db = SessionLocal()
+            try:
+                # This page is the new "PTPs" home.
+                # It contains a process steps table and a step-to-area alignment view.
+                
+                # Data for Process Steps Table
+                all_steps = session_db.query(ProcessStep).options(
+                    joinedload(ProcessStep.area),
+                    joinedload(ProcessStep.use_cases)
+                ).order_by(ProcessStep.area_id, ProcessStep.name).all()
 
-            total_areas = session_db.query(func.count(Area.id)).scalar()
-            total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
-            total_usecases = session_db.query(func.count(UseCase.id)).scalar()
+                # Data for Step-to-Area Alignment View
+                areas_with_steps = session_db.query(Area).options(
+                    joinedload(Area.process_steps)
+                ).order_by(Area.name).all()
+                all_areas = session_db.query(Area).order_by(Area.name).all()
 
-            usecases_by_priority = session_db.query(
-                UseCase.priority, func.count(UseCase.id)
-            ).group_by(UseCase.priority).all()
-            
-            return render_template(
-                'index.html', 
-                title='Dashboard', 
-                total_areas=total_areas,
-                total_steps=total_steps,
-                total_usecases=total_usecases,
-                current_item=None,
-                current_area=None,
-                current_step=None,
-                current_usecase=None,
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-            )
+                # Data for Breadcrumbs
+                all_areas_flat = serialize_for_js(all_areas, 'area')
+                all_steps_flat = serialize_for_js(all_steps, 'step')
+                all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+
+                return render_template(
+                    'ptps.html',
+                    title='Process Target Pictures (PTPs)',
+                    all_steps=all_steps,
+                    areas_with_steps=areas_with_steps,
+                    all_areas_for_select=all_areas,
+                    current_item=None,
+                    current_area=None,
+                    current_step=None,
+                    current_usecase=None,
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
+            finally:
+                session_db.close()
+        else:
+            return redirect(url_for('auth.login'))
+
+    @app.route('/dashboard')
+    def dashboard():
+        if current_user.is_authenticated:
+            session_db = SessionLocal()
+            try:
+                all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
+                all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+                all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+
+                total_areas = session_db.query(func.count(Area.id)).scalar()
+                total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
+                total_usecases = session_db.query(func.count(UseCase.id)).scalar()
+                
+                return render_template(
+                    'index.html', 
+                    title='Dashboard', 
+                    total_areas=total_areas,
+                    total_steps=total_steps,
+                    total_usecases=total_usecases,
+                    current_item=None,
+                    current_area=None,
+                    current_step=None,
+                    current_usecase=None,
+                    all_areas_flat=all_areas_flat,
+                    all_steps_flat=all_steps_flat,
+                    all_usecases_flat=all_usecases_flat
+                )
+            finally:
+                session_db.close()
         else:
             return redirect(url_for('auth.login'))
 
@@ -241,6 +258,7 @@ def create_app():
             from .models import User as DebugUser, LLMSettings as DebugLLMSettings
             results["checks"]["models_import"] = "OK"
 
+            # Check remaining blueprints
             auth_bp_registered = app.blueprints.get('auth') is not None
             results["checks"]["auth_blueprint_registered"] = auth_bp_registered
             usecase_bp_registered = app.blueprints.get('usecases') is not None
@@ -253,51 +271,29 @@ def create_app():
             results["checks"]["area_blueprint_registered"] = area_bp_registered
             step_bp_registered = app.blueprints.get('steps') is not None
             results["checks"]["step_blueprint_registered"] = step_bp_registered
-            data_alignment_bp_registered = app.blueprints.get('data_alignment') is not None
-            results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
-            injection_bp_registered = app.blueprints.get('injection') is not None
-            results["checks"]["injection_blueprint_registered"] = injection_bp_registered
             settings_bp_registered = app.blueprints.get('settings') is not None
             results["checks"]["settings_blueprint_registered"] = settings_bp_registered
             review_bp_registered = app.blueprints.get('review') is not None
             results["checks"]["review_blueprint_registered"] = review_bp_registered
 
+            # Check removed blueprints
+            data_alignment_bp_registered = app.blueprints.get('data_alignment') is not None
+            results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
+            injection_bp_registered = app.blueprints.get('injection') is not None
+            results["checks"]["injection_blueprint_registered"] = injection_bp_registered
+
 
             secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
-            openai_key_present = 'OPENAI_API_KEY' in app.config and \
-                                 bool(app.config.get('OPENAI_API_KEY'))
             results["checks"]["secret_key_loaded"] = secret_key_present
             results["checks"]["db_url_loaded"] = db_url_present
-            results["checks"]["openai_key_loaded"] = openai_key_present
-
-            results["checks"]["session_type"] = app.config.get('SESSION_TYPE')
-            results["checks"]["session_sqlalchemy_table"] = app.config.get('SESSION_SQLALCHEMY_TABLE')
-            results["checks"]["session_sqlalchemy_instance_type"] = str(type(app.config.get('SESSION_SQLALCHEMY')))
-
-
+            
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
-                add_area_rel_url = url_for('relevance.add_area_relevance')
-                results["checks"]["url_for_relevance_add_area"] = f"OK ({add_area_rel_url})"
-                try:
-                    list_areas_url = url_for('areas.list_areas') 
-                    results["checks"]["url_for_areas_list"] = f"OK ({list_areas_url})"
-                except Exception as area_url_err:
-                    results["checks"]["url_for_areas_list"] = f"FAILED ({area_url_err})"
-
-                data_alignment_url = url_for('data_alignment.data_alignment_page')
-                results["checks"]["url_for_data_alignment"] = f"OK ({data_alignment_url})"
-                settings_url = url_for('settings.manage_settings')
-                results["checks"]["url_for_settings"] = f"OK ({settings_url})"
-                
-                try:
-                    review_dashboard_url = url_for('review.review_dashboard')
-                    results["checks"]["url_for_review_dashboard"] = f"OK ({review_dashboard_url})"
-                except Exception as review_url_err:
-                    results["checks"]["url_for_review_dashboard"] = f"FAILED ({review_url_err})"
-
+                # Check for a new route
+                usecases_url = url_for('usecases.list_usecases')
+                results["checks"]["url_for_usecases_list"] = f"OK ({usecases_url})"
 
             except Exception as url_err:
                 results["checks"]["url_for_generation"] = f"FAILED ({url_err})"

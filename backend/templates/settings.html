@@ -69,9 +69,43 @@
             </div>
 
             <button type="submit" class="btn btn-primary mt-3">Save Settings</button>
-            <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
         </form>
     </div>
 </div>
 
+<div class="mb-xl">
+    <div class="card-header">
+        <h2 class="card-title">Full Database Management</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Export Database</h3>
+                <p>Download a complete backup of your database as a JSON file.</p>
+                <a href="{{ url_for('export.export_db_json') }}" class="btn btn-info">
+                    <i class="fas fa-download me-1"></i> Export Full Database (JSON)
+                </a>
+            </div>
+            <div class="col-md-6">
+                <h3>Import Full Database</h3>
+                <p>Upload a previously exported JSON file to restore the database. <strong>Warning:</strong> This will overwrite existing data.</p>
+                <form action="{{ url_for('settings.manage_settings') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="database_file" class="form-label">Database JSON File:</label>
+                        <input type="file" id="database_file" name="database_file" accept=".json" required class="form-control">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="clear_existing_data" id="clear_existing_data" checked>
+                        <label class="form-check-label" for="clear_existing_data">
+                            Clear all existing data before import (Recommended for full restore)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-1"></i> Import Full Database
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
