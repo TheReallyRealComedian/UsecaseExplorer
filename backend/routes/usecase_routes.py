@@ -41,12 +41,12 @@ def list_usecases():
         usecases = session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
-        
+
         all_areas_for_filters = session.query(Area).order_by(Area.name).all()
         all_steps_for_filters = session.query(ProcessStep).order_by(ProcessStep.name).all()
 
         # Data for JS filtering
-        all_usecases_for_js_filtering = [] 
+        all_usecases_for_js_filtering = []
         for uc in usecases:
             all_usecases_for_js_filtering.append({
                 'id': uc.id,
@@ -70,7 +70,7 @@ def list_usecases():
             title="All Use Cases",
             usecases=usecases,
             all_areas_for_filters=all_areas_for_filters,
-            all_steps_for_js=all_steps_flat, # Pass flattened steps for JS
+            all_steps_for_js=all_steps_flat,  # Pass flattened steps for JS
             all_usecases_for_js_filtering=all_usecases_for_js_filtering,
             current_item=None,
             current_area=None,
@@ -185,7 +185,7 @@ def edit_usecase(usecase_id):
                     else:
                         flash("Invalid priority value. Must be a number between 1 and 4, or empty.", "danger")
                 else:
-                     flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
+                    flash("Invalid priority format. Must be a number (1-4) or empty.", "danger")
             else:
                 usecase.priority = None
 
@@ -226,7 +226,7 @@ def edit_usecase(usecase_id):
                 except IntegrityError as e:
                     session.rollback()
                     if 'priority_range_check' in str(e).lower():
-                         flash("Database error: Priority must be between 1 and 4, or empty.", "danger")
+                        flash("Database error: Priority must be between 1 and 4, or empty.", "danger")
                     elif 'use_cases_bi_id_key' in str(e).lower() or \
                        ('unique constraint' in str(e).lower() and 'bi_id' in str(e).lower()):
                         flash(f"Database error: BI_ID '{usecase.bi_id}' might already exist.", "danger")
@@ -279,15 +279,15 @@ def delete_usecase(usecase_id):
                 if step_id_for_redirect is not None:
                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
                 elif original_step_id:
-                     redirect_url = url_for('steps.view_step', step_id=original_step_id)
+                    redirect_url = url_for('steps.view_step', step_id=original_step_id)
             except Exception as e:
                 session.rollback()
                 flash(f"Error deleting use case: {e}", "danger")
                 print(f"Error deleting use case {usecase_id}: {e}")
                 if step_id_for_redirect is not None:
-                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
+                    redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
                 elif usecase and usecase.process_step_id:
-                     redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
+                    redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
     except Exception as e:
         flash(f"An unexpected error occurred: {e}", "danger")
         print(f"Outer error in delete_usecase for {usecase_id}: {e}")
@@ -358,7 +358,7 @@ def inline_update_usecase(usecase_id):
 
         if 'use_cases_bi_id_key' in err_msg.lower() or \
            ('unique constraint' in err_msg.lower() and 'bi_id' in err_msg.lower()):
-             return jsonify(success=False, message=f"Error: BI_ID '{bi_id_value_for_msg}' likely already exists."), 409
+            return jsonify(success=False, message=f"Error: BI_ID '{bi_id_value_for_msg}' likely already exists."), 409
         return jsonify(success=False, message=f"Database error during update: {err_msg}"), 500
     except Exception as e:
         session_db.rollback()
@@ -446,4 +446,4 @@ def edit_usecase_with_ai(usecase_id):
         flash("An error occurred while loading the AI-assisted editing page.", "danger")
         return redirect(url_for('usecases.list_usecases'))
     finally:
-        SessionLocal.remove()w
+        SessionLocal.remove()

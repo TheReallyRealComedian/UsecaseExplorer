@@ -9,98 +9,115 @@
         A landscape of all Process Steps and their alignment to Areas.
     </p>
 
+    <!-- Process Steps Overview (Now Collapsible) -->
     <div class="mb-xl">
-        <div class="card-header">
-            <h2 class="card-title">Process Steps Overview</h2>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title mb-0">Process Steps Overview</h2>
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#processStepsOverviewCollapse" aria-expanded="true" aria-controls="processStepsOverviewCollapse">
+                <i class="fas fa-chevron-up"></i>
+            </button>
         </div>
-        <div class="card-body">
-            {% if all_steps %}
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Area</th>
-                                <th>BI_ID</th>
-                                <th>Name</th>
-                                <th>Use Cases</th>
-                                <th>Description Snippet</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for step in all_steps %}
-                            <tr>
-                                <td>{{ step.area.name if step.area else 'N/A' }}</td>
-                                <td>{{ step.bi_id }}</td>
-                                <td><a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a></td>
-                                <td>{{ step.use_cases | length }}</td>
-                                <td>{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
-                                <td>
-                                    <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
-                                    <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted">No process steps found.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                 <p class="text-muted text-center"><em>No process steps found in the database.</em></p>
-            {% endif %}
+        <div id="processStepsOverviewCollapse" class="collapse show">
+            <div class="card-body">
+                {% if all_steps %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="processStepsOverviewTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Area</th>
+                                    <th>BI_ID</th>
+                                    <th>Name</th>
+                                    <th>Use Cases</th>
+                                    <th>Description Snippet</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for step in all_steps %}
+                                <tr data-step-id="{{ step.id }}"> {# Add data-step-id for JS #}
+                                    <td data-field="area_id" class="editable-cell">{{ step.area.name if step.area else 'N/A' }}</td>
+                                    <td data-field="bi_id" class="editable-cell">{{ step.bi_id }}</td>
+                                    <td data-field="name" class="editable-cell">{{ step.name }}</td>
+                                    <td>{{ step.use_cases | length }}</td>
+                                    <td data-field="step_description" class="editable-cell">{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
+                                        <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                     <p class="text-muted text-center"><em>No process steps found in the database.</em></p>
+                {% endif %}
+            </div>
         </div>
     </div>
 
+    <!-- Process Step to Area Alignment (Now Collapsible) -->
     <div class="mb-xl">
-        <div class="card-header">
-            <h2 class="card-title">Process Step to Area Alignment</h2>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title mb-0">Process Step to Area Alignment</h2>
+            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#areaAlignmentCollapse" aria-expanded="true" aria-controls="areaAlignmentCollapse">
+                <i class="fas fa-chevron-up"></i>
+            </button>
         </div>
-        <div class="card-body">
-            {% if areas_with_steps %}
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 30%;">Current Area</th>
-                                <th style="width: 70%;">Process Steps in this Area</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for area in areas_with_steps %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('areas.view_area', area_id=area.id) }}">
-                                        <strong>{{ area.name }}</strong>
-                                    </a>
-                                </td>
-                                <td>
-                                    {% if area.process_steps %}
-                                        <ul class="list-unstyled mb-0">
-                                        {% for step in area.process_steps | sort(attribute='name') %}
-                                            <li>
-                                                <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
-                                                <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
-                                            </li>
-                                        {% endfor %}
-                                        </ul>
-                                    {% else %}
-                                        <em class="text-muted">No process steps in this area.</em>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted text-center"><em>No areas found in the database.</em></p>
-            {% endif %}
+        <div id="areaAlignmentCollapse" class="collapse show">
+            <div class="card-body">
+                {% if areas_with_steps %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 30%;">Current Area</th>
+                                    <th style="width: 70%;">Process Steps in this Area</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for area in areas_with_steps %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}">
+                                            <strong>{{ area.name }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if area.process_steps %}
+                                            <ul class="list-unstyled mb-0">
+                                            {% for step in area.process_steps | sort(attribute='name') %}
+                                                <li>
+                                                    <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
+                                                    <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
+                                                </li>
+                                            {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <em class="text-muted">No process steps in this area.</em>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center"><em>No areas found in the database.</em></p>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Pass data to the new JS file
+    window.allAreasForSelect = {{ all_areas_for_select | tojson | safe }};
+</script>
+<script type="module" src="{{ url_for('static', filename='js/inline_table_edit.js') }}"></script>
 {% endblock %}

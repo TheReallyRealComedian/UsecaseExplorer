@@ -132,6 +132,8 @@ def delete_area(area_id):
 
     if area is None:
         flash(f"Area with ID {area_id} not found.", "warning")
+        session.close() # Close the session here since finally won't be reached in this branch
+        return redirect(url_for('dashboard'))
     else:
         try:
             session.delete(area)
@@ -141,7 +143,8 @@ def delete_area(area_id):
             session.rollback()
             flash(f"Error deleting area: {e}", "danger")
             print(f"Error deleting area {area_id}: {e}")
-    finally:
-        session.close()
+        finally:
+            # THIS IS THE FIX: Indent this block
+            session.close()
 
     return redirect(url_for('dashboard'))

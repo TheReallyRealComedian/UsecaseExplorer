@@ -269,3 +269,66 @@ def delete_step(step_id):
                  redirect_url = url_for('areas.view_area', area_id=step.area_id)
     # SessionLocal.remove() will be handled by teardown_request
     return redirect(redirect_url)
+
+
+@step_routes.route('/api/steps/<int:step_id>/inline-update', methods=['PUT'])
+@login_required
+def inline_update_step(step_id):
+    session = SessionLocal()
+    try:
+        step = session.query(ProcessStep).get(step_id)
+        if not step:
+            return jsonify(success=False, message="Process Step not found"), 404
+
+        data = request.json
+        if not data or len(data) != 1:
+            return jsonify(success=False, message="Invalid update data. Expecting a single field."), 400
+
+        field_to_update = list(data.keys())[0]
+        new_value = data[field_to_update]
+
+        allowed_fields = ['name', 'bi_id', 'area_id', 'step_description']
+        if field_to_update not in allowed_fields:
+            return jsonify(success=False, message=f"Field '{field_to_update}' cannot be updated inline."), 400
+
+        # Field-specific validation
+        if field_to_update in ['name', 'bi_id']:
+            new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
+            if not new_value_stripped:
+                return jsonify(success=False, message=f"{field_to_update.replace('_', ' ').title()} cannot be empty."), 400
+            if field_to_update == 'bi_id':
+                existing = session.query(ProcessStep).filter(ProcessStep.bi_id == new_value_stripped, ProcessStep.id != step_id).first()
+                if existing:
+                    return jsonify(success=False, message=f"BI_ID '{new_value_stripped}' already exists."), 409
+            new_value = new_value_stripped
+        
+        if field_to_update == 'area_id':
+            if not new_value:
+                 return jsonify(success=False, message="Area cannot be empty."), 400
+            area_exists = session.query(Area).get(new_value)
+            if not area_exists:
+                return jsonify(success=False, message="Selected area does not exist."), 404
+
+        setattr(step, field_to_update, new_value)
+        session.commit()
+        
+        # Reload the step's area relationship to get the name for the response
+        session.refresh(step, ['area'])
+
+        updated_data = {
+            'id': step.id,
+            'name': step.name,
+            'bi_id': step.bi_id,
+            'area_id': step.area_id,
+            'area_name': step.area.name if step.area else 'N/A',
+            'step_description': step.step_description
+        }
+        return jsonify(success=True, message="Step updated.", step=updated_data)
+    except IntegrityError as e:
+        session.rollback()
+        return jsonify(success=False, message=f"Database error: {e.orig}"), 500
+    except Exception as e:
+        session.rollback()
+        return jsonify(success=False, message=f"An unexpected error occurred: {str(e)}"), 500
+    finally:
+        session.close()

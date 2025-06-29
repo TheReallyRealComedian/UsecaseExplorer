@@ -100,6 +100,15 @@ def htmlsafe_json_filter(value):
     """
     return markupsafe.Markup(json.dumps(value))
 
+def map_priority_to_benefit_filter(priority):
+    """Maps a priority number to a benefit string."""
+    if priority == 1:
+        return "High"
+    if priority == 2:
+        return "Medium"
+    if priority == 3:
+        return "Low"
+    return "N/A"
 
 def create_app():
     """
@@ -124,6 +133,8 @@ def create_app():
     app.jinja_env.filters['truncate'] = truncate_filter
     app.jinja_env.filters['zfill'] = zfill_filter
     app.jinja_env.filters['htmlsafe_json'] = htmlsafe_json_filter
+    app.jinja_env.filters['map_priority_to_benefit'] = map_priority_to_benefit_filter
+
 
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
     print(f"DEBUG: Initializing database with URL: {db_url}")
@@ -139,14 +150,14 @@ def create_app():
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SECURE'] = False # Set to True in production if using HTTPS
     app.config['SESSION_SQLALCHEMY_CREATE_TABLE'] = False
-    
+
     print("DEBUG: Initializing Flask-Session...")
-    Session(app) 
+    Session(app)
     print("DEBUG: Flask-Session initialized.")
-    
+
     with app.app_context():
         try:
-            with db_instance.engine.connect() as connection: 
+            with db_instance.engine.connect() as connection:
                 print("Database connection successful!")
         except Exception as e:
             print(f"Database connection failed: {e}")
@@ -157,7 +168,7 @@ def create_app():
         SessionLocal.remove()
 
     print("DEBUG: About to import and register blueprints.")
-    
+
     app.register_blueprint(auth_routes)
     app.register_blueprint(usecase_routes)
     app.register_blueprint(relevance_routes)
@@ -166,8 +177,8 @@ def create_app():
     app.register_blueprint(step_routes)
     app.register_blueprint(export_routes)
     app.register_blueprint(settings_routes)
-    app.register_blueprint(review_routes) 
-    
+    app.register_blueprint(review_routes)
+
     print("Blueprint registration complete.")
 
     @app.route('/')
@@ -177,7 +188,7 @@ def create_app():
             try:
                 # This page is the new "PTPs" home.
                 # It contains a process steps table and a step-to-area alignment view.
-                
+
                 # Data for Process Steps Table
                 all_steps = session_db.query(ProcessStep).options(
                     joinedload(ProcessStep.area),
@@ -188,10 +199,14 @@ def create_app():
                 areas_with_steps = session_db.query(Area).options(
                     joinedload(Area.process_steps)
                 ).order_by(Area.name).all()
-                all_areas = session_db.query(Area).order_by(Area.name).all()
+
+                # We still need all_areas for the dropdowns in the inline editor.
+                # Query them and then serialize them for JavaScript.
+                all_areas_for_select_query = session_db.query(Area).order_by(Area.name).all()
+                all_areas_for_select_js = serialize_for_js(all_areas_for_select_query, 'area')
 
                 # Data for Breadcrumbs
-                all_areas_flat = serialize_for_js(all_areas, 'area')
+                all_areas_flat = serialize_for_js(all_areas_for_select_query, 'area') # Can reuse the query
                 all_steps_flat = serialize_for_js(all_steps, 'step')
                 all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
@@ -200,7 +215,7 @@ def create_app():
                     title='Process Target Pictures (PTPs)',
                     all_steps=all_steps,
                     areas_with_steps=areas_with_steps,
-                    all_areas_for_select=all_areas,
+                    all_areas_for_select=all_areas_for_select_js,
                     current_item=None,
                     current_area=None,
                     current_step=None,
@@ -226,10 +241,10 @@ def create_app():
                 total_areas = session_db.query(func.count(Area.id)).scalar()
                 total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
                 total_usecases = session_db.query(func.count(UseCase.id)).scalar()
-                
+
                 return render_template(
-                    'index.html', 
-                    title='Dashboard', 
+                    'index.html',
+                    title='Dashboard',
                     total_areas=total_areas,
                     total_steps=total_steps,
                     total_usecases=total_usecases,
@@ -255,7 +270,7 @@ def create_app():
         try:
             from .config import Config
             results["checks"]["config_import"] = "OK"
-            from .models import User as DebugUser, LLMSettings as DebugLLMSettings
+            from .models import User, LLMSettings
             results["checks"]["models_import"] = "OK"
 
             # Check remaining blueprints
@@ -276,18 +291,11 @@ def create_app():
             review_bp_registered = app.blueprints.get('review') is not None
             results["checks"]["review_blueprint_registered"] = review_bp_registered
 
-            # Check removed blueprints
-            data_alignment_bp_registered = app.blueprints.get('data_alignment') is not None
-            results["checks"]["data_alignment_blueprint_registered"] = data_alignment_bp_registered
-            injection_bp_registered = app.blueprints.get('injection') is not None
-            results["checks"]["injection_blueprint_registered"] = injection_bp_registered
-
-
             secret_key_present = bool(app.config.get('SECRET_KEY'))
             db_url_present = bool(app.config.get('SQLALCHEMY_DATABASE_URI'))
             results["checks"]["secret_key_loaded"] = secret_key_present
             results["checks"]["db_url_loaded"] = db_url_present
-            
+
             try:
                 login_url = url_for('auth.login')
                 results["checks"]["url_for_auth_login"] = f"OK ({login_url})"
@@ -313,7 +321,7 @@ def create_app():
             return jsonify(results), 500
         finally:
             pass
-        
+
         return jsonify(results)
 
     print("DEBUG: create_app function about to return app object.")
