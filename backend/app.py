@@ -12,7 +12,7 @@ import markdown
 from flask_session import Session
 
 from .config import get_config
-from .models import Base, User, Area, ProcessStep, UseCase
+from .models import User, Area, ProcessStep, UseCase
 from .db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
 from .utils import serialize_for_js
 
@@ -28,6 +28,7 @@ from .routes.step_routes import step_routes
 from .routes.export_routes import export_routes
 from .routes.settings_routes import settings_routes
 from .routes.review_routes import review_routes
+from .routes.data_management_routes import data_management_bp
 
 
 login_manager = LoginManager()
@@ -135,9 +136,6 @@ def create_app():
     app.jinja_env.filters['htmlsafe_json'] = htmlsafe_json_filter
     app.jinja_env.filters['map_priority_to_benefit'] = map_priority_to_benefit_filter
 
-
-    db_url = app.config.get('SQLALCHEMY_DATABASE_URI')
-    print(f"DEBUG: Initializing database with URL: {db_url}")
     db_instance = init_app_db(app)
 
     app.config['SESSION_TYPE'] = 'sqlalchemy'
@@ -151,9 +149,7 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = False # Set to True in production if using HTTPS
     app.config['SESSION_SQLALCHEMY_CREATE_TABLE'] = False
 
-    print("DEBUG: Initializing Flask-Session...")
     Session(app)
-    print("DEBUG: Flask-Session initialized.")
 
     with app.app_context():
         try:
@@ -161,13 +157,10 @@ def create_app():
                 print("Database connection successful!")
         except Exception as e:
             print(f"Database connection failed: {e}")
-        print("DEBUG: Database connection check passed within app_context.")
 
     @app.teardown_request
     def remove_session(exception=None):
         SessionLocal.remove()
-
-    print("DEBUG: About to import and register blueprints.")
 
     app.register_blueprint(auth_routes)
     app.register_blueprint(usecase_routes)
@@ -178,8 +171,7 @@ def create_app():
     app.register_blueprint(export_routes)
     app.register_blueprint(settings_routes)
     app.register_blueprint(review_routes)
-
-    print("Blueprint registration complete.")
+    app.register_blueprint(data_management_bp)
 
     @app.route('/')
     def index():
@@ -264,7 +256,6 @@ def create_app():
 
     @app.route('/debug-check')
     def debug_check():
-        print("Accessing /debug-check route")
         results = {"status": "success", "checks": {}}
         session_for_debug = flask_sqlalchemy_db.session
         try:
@@ -324,5 +315,4 @@ def create_app():
 
         return jsonify(results)
 
-    print("DEBUG: create_app function about to return app object.")
     return app

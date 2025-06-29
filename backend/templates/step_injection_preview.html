@@ -1,0 +1,230 @@
+<!-- backend/templates/step_injection_preview.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="step-injection-preview-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>{{ title }}</h1>
+        <div>
+            <button type="button" class="btn btn-secondary me-2" id="cancelImportBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="confirmImportBtn" form="finalizeStepImportForm">Confirm Import</button>
+        </div>
+    </div>
+    <p class="text-color-light mb-4">
+        Review the proposed changes for Process Steps. Use the "Review/Edit Details" button to manage individual fields.
+        Changes will be applied only after you click "Confirm Import".
+    </p>
+
+    <form id="finalizeStepImportForm" method="POST"> {# The form now wraps the table and buttons #}
+        {# This form will be submitted by JS, but it helps structure the data #}
+        <div class="mb-xl">
+            <div class="card-header">
+                <h2 class="card-title">Step Changes Summary</h2>
+            </div>
+            <div class="card-body">
+                {% if preview_data %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 8%;">Status</th>
+                                    <th style="width: 10%;">BI_ID</th>
+                                    <th style="width: 20%;">Name</th>
+                                    <th style="width: 20%;">Area</th>
+                                    <th style="width: 17%;">Details</th> {# New column for detail button #}
+                                    <th style="width: 25%;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in preview_data %}
+                                <tr data-bi-id="{{ item.bi_id }}" data-status="{{ item.status }}" data-row-index="{{ loop.index0 }}"
+                                    class="{% if item.status == 'update' %}unsaved-change{% endif %}"> {# Initial highlighting #}
+                                    <td class="text-center">
+                                        <span class="status-badge badge 
+                                            {% if item.status == 'new' %}bg-success
+                                            {% elif item.status == 'update' %}bg-warning text-dark
+                                            {% elif item.status == 'no_change' %}bg-secondary
+                                            {% else %}bg-danger{% endif %}">
+                                            {{ item.status | upper }}
+                                        </span>
+                                        {% if item.messages %}
+                                            <div class="small text-muted mt-1 message-display">{{ item.messages[0] | default('') }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.bi_id }}</td>
+                                    <td>
+                                        <label class="d-block mb-1 fw-bold">Final Name:</label>
+                                        <input type="text" 
+                                               class="form-control form-control-sm row-final-value-input" 
+                                               data-field="name" 
+                                               value="{{ item.new_values.name | default('') }}"
+                                               {% if item.status == 'skipped' or (item.status == 'no_change' and not item.conflicts.name) %}disabled{% endif %}>
+                                    </td>
+                                    <td>
+                                        <label class="d-block mb-1 fw-bold">Final Area:</label>
+                                        <select class="form-select form-select-sm row-final-area-select" data-field="area_id"
+                                            {% if item.status == 'skipped' or (item.status == 'no_change' and not item.conflicts.area_id) %}disabled{% endif %}>
+                                            {% for area in all_areas %}
+                                                <option value="{{ area.id }}" 
+                                                    {% if item.new_values.area_id == area.id %}selected{% endif %}
+                                                >
+                                                    {{ area.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if 'area_id' in item.conflicts %}
+                                            <small class="text-danger d-block mt-1">Current: {{ item.conflicts.area_id.old_value | default('N/A') }}</small>
+                                            <small class="text-success d-block">JSON: {{ item.conflicts.area_id.new_value | default('N/A') }}</small>
+                                        {% elif item.status == 'new' and item.area_name %}
+                                            <small class="text-muted d-block mt-1">(From JSON: {{ item.area_name }})</small>
+                                        {% elif item.status != 'new' and item.db_data.area_name %}
+                                            <small class="text-muted d-block mt-1">(Current: {{ item.db_data.area_name }})</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {# Indicate if there are specific conflicts to review #}
+                                        {% if item.conflicts and item.status != 'skipped' %}
+                                            <span class="badge bg-danger">Conflicts</span>
+                                        {% elif item.status == 'new' %}
+                                            <span class="badge bg-success">New Fields</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Conflicts</span>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-info mt-2 review-details-btn" data-bs-toggle="modal" data-bs-target="#stepDetailModal" data-row-index="{{ loop.index0 }}">
+                                            Review/Edit Details
+                                        </button>
+                                    </td>
+                                    <td class="action-choice">
+                                        {% if item.status == 'skipped' %}
+                                            <span class="text-danger fw-bold">Skipped</span>
+                                        {% else %}
+                                            <div class="form-check">
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_add_{{ item.bi_id }}" value="add" {% if item.status == 'new' %}checked{% endif %} data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_add_{{ item.bi_id }}">Add</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_update_{{ item.bi_id }}" value="update" {% if item.status == 'update' or item.status == 'no_change' %}checked{% endif %} data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_update_{{ item.bi_id }}">Update</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_skip_{{ item.bi_id }}" value="skip" data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_skip_{{ item.bi_id }}">Skip</label>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center"><em>No data to preview. Please upload a Process Step JSON file from the <a href="{{ url_for('injection.handle_injection') }}">Data Injection</a> page.</em></p>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+{# --- Step Detail Modal Structure --- #}
+<div class="modal fade" id="stepDetailModal" tabindex="-1" aria-labelledby="stepDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"> {# Larger modal #}
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stepDetailModalLabel">Review Process Step: <span id="modalStepName"></span> (<span id="modalStepBiId"></span>)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">Adjust values for this step. For conflicting fields, choose between current DB, incoming JSON, or a manual override.</p>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Parent Area:</label>
+                    <select class="form-select" id="modalAreaSelect" data-field="area_id">
+                        {% for area in all_areas %}
+                            <option value="{{ area.id }}">{{ area.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted d-block mt-1">Current DB: <span id="modalAreaDbValue"></span> | JSON: <span id="modalAreaJsonValue"></span></small>
+                </div>
+
+                <hr>
+
+                <div id="modal-fields-container">
+                    {# Dynamic fields will be inserted here by JavaScript #}
+                    {% for field_key, field_name in step_detail_fields.items() %}
+                        <div class="mb-4 modal-field-group" data-field-key="{{ field_key }}">
+                            <label class="form-label fw-bold">{{ field_name }}:</label>
+                            <div class="form-text text-muted mb-2 field-conflict-message" style="display: none;">Conflict detected. Choose a value below.</div>
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input modal-radio-choice" type="radio" 
+                                               name="modal_choice_{{ field_key }}" 
+                                               id="modal_db_choice_{{ field_key }}" value="db"
+                                               data-field="{{ field_key }}">
+                                        <label class="form-check-label" for="modal_db_choice_{{ field_key }}">
+                                            Current DB Value:
+                                        </label>
+                                    </div>
+                                    <div class="modal-pre-container current-db-value">
+                                        <pre class="modal-db-content bg-light p-2 rounded small">N/A</pre>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input modal-radio-choice" type="radio" 
+                                               name="modal_choice_{{ field_key }}" 
+                                               id="modal_json_choice_{{ field_key }}" value="json"
+                                               data-field="{{ field_key }}">
+                                        <label class="form-check-label" for="modal_json_choice_{{ field_key }}">
+                                            Incoming JSON Value:
+                                        </label>
+                                    </div>
+                                    <div class="modal-pre-container incoming-json-value">
+                                        <pre class="modal-json-content bg-light p-2 rounded small">N/A</pre>
+                                    </div>
+                                </div>
+                                <div class="col-md-10 mt-3"> {# Full width for manual override #}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input modal-radio-choice" type="radio" 
+                                               name="modal_choice_{{ field_key }}" 
+                                               id="modal_manual_choice_{{ field_key }}" value="manual"
+                                               data-field="{{ field_key }}">
+                                        <label class="form-check-label" for="modal_manual_choice_{{ field_key }}">
+                                            Manual Override:
+                                        </label>
+                                    </div>
+                                    <textarea class="form-control modal-final-value-input" 
+                                              data-field="{{ field_key }}" 
+                                              id="modal_manual_input_{{ field_key }}" 
+                                              rows="4"></textarea>
+                                </div>
+                            </div>
+                            <hr class="mt-4">
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveModalChangesBtn">Save Changes for Step</button>
+            </div>
+        </div>
+    </div>
+</div>
+{# --- End Step Detail Modal Structure --- #}
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{# Pass original data to JavaScript for client-side processing #}
+<script type="text/javascript">
+    const INITIAL_PREVIEW_DATA = {{ preview_data | tojson | safe }};
+    const STEP_DETAIL_FIELDS_CONFIG = {{ step_detail_fields | tojson | safe }};
+    const ALL_AREAS_DATA = {{ all_areas | tojson | safe }};
+</script>
+{# New JavaScript file for preview logic #}
+<script src="{{ url_for('static', filename='js/step_injection_preview_ui.js') }}"></script>
+{% endblock %}

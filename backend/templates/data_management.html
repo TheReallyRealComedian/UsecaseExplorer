@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% macro map_priority_to_benefit(priority_val) %}
+    {% if priority_val == 1 %}High
+    {% elif priority_val == 2 %}Medium
+    {% elif priority_val == 3 %}Low
+    {% else %}N/A{% endif %}
+{% endmacro %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p class="mb-4 text-color-light">
+    Manage your application's data through bulk imports, exports, and updates.
+</p>
+
+<!-- Full Database Management -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Full Database Management</h2>
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#fullDbMgmtBody" aria-expanded="true"><i class="fas fa-chevron-up"></i></button>
+    </div>
+    <div id="fullDbMgmtBody" class="collapse show card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h3>Export Database</h3>
+                <p>Download a complete backup of your database as a JSON file.</p>
+                <a href="{{ url_for('export.export_db_json') }}" class="btn btn-info"><i class="fas fa-download me-1"></i> Export Full Database</a>
+            </div>
+            <div class="col-md-6">
+                <h3>Import Full Database</h3>
+                <p>Upload a previously exported JSON file. <strong>Warning:</strong> This can overwrite existing data.</p>
+                <form action="{{ url_for('data_management.data_management_page') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <input type="file" id="database_file" name="database_file" accept=".json" required class="form-control">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="clear_existing_data" id="clear_existing_data" checked>
+                        <label class="form-check-label" for="clear_existing_data">Clear all existing data before import</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Import Full Database</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Entity-Specific Data Injection -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Entity-Specific Data Injection</h2>
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#entityInjectionBody" aria-expanded="true"><i class="fas fa-chevron-up"></i></button>
+    </div>
+    <div id="entityInjectionBody" class="collapse show card-body">
+         <div class="row g-4">
+            <!-- All other forms from old data_update.html go here -->
+            <div class="col-md-6">
+                <h4>Areas</h4>
+                <p class="small text-muted">Inject new Areas or update descriptions of existing ones.</p>
+                <form action="{{ url_for('data_management.data_management_page') }}" method="post" enctype="multipart/form-data">
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="area_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary">Upload Areas</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h4>Process Steps (with Preview)</h4>
+                <p class="small text-muted">Add new or update existing Process Steps.</p>
+                 <form action="{{ url_for('data_management.data_management_page') }}" method="post" enctype="multipart/form-data">
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="step_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary">Upload Steps</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h4>Use Cases</h4>
+                <p class="small text-muted">Add new or update existing Use Cases.</p>
+                <form action="{{ url_for('data_management.data_management_page') }}" method="post" enctype="multipart/form-data">
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="usecase_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary">Upload Use Cases</button>
+                    </div>
+                </form>
+            </div>
+             <div class="col-md-6">
+                <h4>Relevance Links (PS-PS)</h4>
+                <p class="small text-muted">Inject links between Process Steps.</p>
+                 <form action="{{ url_for('data_management.data_management_page') }}" method="post" enctype="multipart/form-data">
+                    <div class="input-group input-group-sm">
+                        <input type="file" name="ps_ps_relevance_file" accept=".json" required class="form-control">
+                        <button type="submit" class="btn btn-outline-primary">Upload PS-PS Links</button>
+                    </div>
+                </form>
+            </div>
+            <!-- ... Add other relevance forms similarly ... -->
+         </div>
+    </div>
+</div>
+
+<!-- Bulk Editing Section -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Bulk Editing</h2>
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#bulkEditBody" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
+    </div>
+    <div id="bulkEditBody" class="collapse card-body">
+        <div class="row">
+            <div class="col-12">
+                <h4>Prepare Items for Bulk Edit</h4>
+                <p>Select items from the tables below and click "Prepare for Update" to go to the bulk editing interface.</p>
+            </div>
+            <div class="col-lg-6">
+                <h5>Process Steps</h5>
+                 <form action="{{ url_for('data_management.prepare_steps_for_edit') }}" method="post" id="prepareStepsForm">
+                    <input type="hidden" name="selected_update_steps_ids" id="selected_update_steps_ids_hidden">
+                    <button type="button" class="btn btn-primary btn-sm mb-2" id="prepareStepsBtn">Prepare Selected Steps</button>
+                </form>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm table-striped" id="processStepsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th><input type="checkbox" id="selectAllStepsCheckbox"></th><th>Area</th><th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in all_steps %}
+                            <tr>
+                                <td><input type="checkbox" value="{{ step.id }}" class="step-checkbox"></td>
+                                <td>{{ step.area.name if step.area else 'N/A' }}</td>
+                                <td>{{ step.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h5>Use Cases</h5>
+                <form action="{{ url_for('data_management.prepare_usecases_for_edit') }}" method="post" id="prepareUsecasesForm">
+                    <input type="hidden" name="selected_update_usecases_ids" id="selected_update_usecases_ids_hidden">
+                    <button type="button" class="btn btn-primary btn-sm mb-2" id="prepareUsecasesBtn">Prepare Selected Use Cases</button>
+                </form>
+                <div class="table-responsive" style="max-height: 400px;">
+                     <table class="table table-sm table-striped" id="useCasesTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th><input type="checkbox" id="selectAllUsecasesCheckbox"></th><th>Area</th><th>Step</th><th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for uc in all_usecases %}
+                            <tr>
+                                <td><input type="checkbox" value="{{ uc.id }}" class="usecase-checkbox"></td>
+                                <td>{{ uc.area.name if uc.area else 'N/A' }}</td>
+                                <td>{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
+                                <td>{{ uc.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/data_update_page_ui.js') }}"></script>
+{% endblock %}

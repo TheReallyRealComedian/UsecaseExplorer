@@ -46,7 +46,6 @@
         A comprehensive, filterable list of all Use Cases.
     </p>
 
-    <!-- Global Filter Controls for Use Cases (unchanged) -->
     <div class="filter-controls">
         <div class="area-filter-tabs me-2" id="usecaseAreaFilterTabs">
             <button class="btn btn-sm btn-outline-secondary active" data-area-id="all">All Areas</button>
@@ -89,7 +88,6 @@
                     <th class="sortable" data-sort-key="step_name">Process Step</th>
                     <th class="sortable" data-sort-key="uc_bi_id">UC BI_ID</th>
                     <th class="sortable" data-sort-key="uc_name">Use Case Name</th>
-                    <!-- Make new columns editable -->
                     <th class="sortable editable-header" data-sort-key="quality_improvement_quant">Benefit</th>
                     <th class="sortable editable-header" data-sort-key="effort_level">Effort</th>
                     <th class="sortable editable-header" data-sort-key="wave">Wave</th>
@@ -106,11 +104,13 @@
                     <td data-sort-value="{{ uc.process_step.name if uc.process_step else 'N/A' }}">{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
                     <td data-field="bi_id" class="editable-cell">{{ uc.bi_id }}</td>
                     <td data-field="name" class="editable-cell"><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
-                    <!-- Add data-field attribute and editable-cell class -->
                     <td data-field="quality_improvement_quant" class="editable-cell" data-sort-value="{{ uc.priority }}">{{ uc.quality_improvement_quant | default(uc.priority | map_priority_to_benefit, true) }}</td>
                     <td data-field="effort_level" class="editable-cell">{{ uc.effort_level | default('N/A', true) }}</td>
                     <td data-field="wave" class="editable-cell">{{ uc.wave | default('N/A', true) }}</td>
                     <td>
+                        <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info me-1" title="Edit with AI Assist">
+                            <i class="fas fa-magic"></i> AI
+                        </a>
                         <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
                         <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
                             <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
@@ -127,12 +127,9 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Pass data to JS
     const allStepsDataForJS = {{ all_steps_for_js | tojson | safe }};
     const allUsecasesDataForJS = {{ all_usecases_for_js_filtering | tojson | safe }};
-    // Note: allAreasForSelect is not needed here but good practice if generalizing
 </script>
 <script src="{{ url_for('static', filename='js/usecase_overview.js') }}"></script>
-{# Replace area_overview_inline_edit.js with the new generic script #}
 <script type="module" src="{{ url_for('static', filename='js/inline_table_edit.js') }}"></script>
 {% endblock %}
