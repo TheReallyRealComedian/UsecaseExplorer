@@ -11,8 +11,11 @@
 
 {% block content %}
 <h1>{{ title }}</h1>
-<p class="mb-4 text-color-light">
+<p class="text-color-light mb-4">
     Manage your application's data through bulk imports, exports, and updates.
+    <a href="{{ url_for('data_management.data_help_page') }}" class="btn btn-outline-info btn-sm ms-3">
+        <i class="fas fa-question-circle"></i> View Formatting Help & Templates
+    </a>
 </p>
 
 <!-- Full Database Management -->

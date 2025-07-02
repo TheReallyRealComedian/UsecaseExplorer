@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="data-help-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        This page provides documentation and templates for importing data into the application via JSON files.
+    </p>
+    
+    <!-- Section for General Principles -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">General Principles for JSON Files</h2>
+        </div>
+        <div class="card-body">
+            <p>Before creating your JSON files, please review these fundamental rules:</p>
+            <ul>
+                <li><strong>JSON Format</strong>: All files must be a JSON array of objects, e.g., <code>[ { ... }, { ... } ]</code>.</li>
+                <li><strong>ID Fields</strong>: Do not include an <code>"id"</code> field for new items. The database assigns this automatically. Use the <code>"bi_id"</code> (for Steps and Use Cases) or <code>"name"</code> (for Areas) for linking.</li>
+                <li><strong>Data Integrity</strong>: You must import parent items before their children. The required order is: <strong>1. Areas</strong> -> <strong>2. Process Steps</strong> -> <strong>3. Use Cases</strong> -> <strong>4. Relevance Links</strong>.</li>
+                <li><strong>Whitespace</strong>: Leading/trailing whitespace is automatically removed from text fields.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Area Import Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">1. Area Import Template</h3>
+        </div>
+        <div class="card-body">
+            <p>Use this format to add or update Areas. The <code>name</code> must be unique.</p>
+            <pre class="bg-light p-3 rounded"><code>[
+    {
+        "name": "Your Area Name 1",
+        "description": "A brief description of this area."
+    },
+    {
+        "name": "Your Area Name 2",
+        "description": "Another area description."
+    }
+]</code></pre>
+            <h5 class="mt-3">Existing Areas:</h5>
+            <textarea class="form-control" rows="5" readonly>{{ area_names_list }}</textarea>
+        </div>
+    </div>
+
+    <!-- Process Step Import Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">2. Process Step Import Template</h3>
+        </div>
+        <div class="card-body">
+            <p>Use this format to add or update Process Steps. The <code>area_name</code> must match an existing Area name exactly.</p>
+            <pre class="bg-light p-3 rounded"><code>[
+    {
+        "bi_id": "UNIQUE-STEP-ID-1",
+        "name": "Name of the Process Step",
+        "area_name": "Supply Chain Management",
+        "step_description": "A detailed description of the process step.",
+        "vision_statement": "The future vision for this process.",
+        "in_scope": "What is included.",
+        "out_of_scope": "What is not excluded.",
+        "interfaces_text": "Interactions with other systems or processes.",
+        "what_is_actually_done": "Current state of the process.",
+        "pain_points": "Known issues or challenges.",
+        "targets_text": "Goals and objectives for this process."
+    }
+]</code></pre>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5>Available Area Names:</h5>
+                    <textarea class="form-control" rows="5" readonly>{{ area_names_list }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Use Case Import Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">3. Use Case Import Template</h3>
+        </div>
+        <div class="card-body">
+            <p>Use this format to add or update Use Cases. The <code>process_step_bi_id</code> must match an existing Process Step BI_ID.</p>
+            <pre class="bg-light p-3 rounded"><code>[
+    {
+        "bi_id": "UNIQUE-UC-ID-1",
+        "name": "Name of the Use Case",
+        "process_step_bi_id": "SCM-00",
+        "priority": 1,
+        "summary": "A brief summary of the use case.",
+        "inspiration": "The source of inspiration or original idea.",
+        "wave": "e.g., Wave 1, 2024, etc.",
+        "effort_level": "e.g., Low, Medium, High",
+        "status": "e.g., Ideation, In Progress, Implemented",
+        "business_problem_solved": "Description of the problem this solves.",
+        "target_solution_description": "Description of the proposed solution.",
+        "technologies_text": "e.g., Python, AI/ML, Power BI",
+        "requirements": "Specific requirements for implementation.",
+        "relevants_text": "Keywords or tags, comma-separated.",
+        "reduction_time_transfer": "e.g., 'High (month)'",
+        "reduction_time_launches": "e.g., 'Low (weeks)'",
+        "reduction_costs_supply": "e.g., 'Medium'",
+        "quality_improvement_quant": "e.g., 'High'",
+        "ideation_notes": "Notes from the initial idea phase.",
+        "further_ideas": "Additional ideas.",
+        "effort_quantification": "Detailed description of the effort involved.",
+        "potential_quantification": "Detailed description of the potential benefits.",
+        "dependencies_text": "Dependencies on other projects or teams.",
+        "contact_persons_text": "e.g., 'John Doe (IT), Jane Smith (Business)'",
+        "related_projects_text": "e.g., 'Project Phoenix'"
+    }
+]</code></pre>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5>Available Process Step BI_IDs:</h5>
+                    <p class="text-muted small">Use the value from the "BI_ID" column for the <code>process_step_bi_id</code> field in your JSON.</p>
+                    <textarea class="form-control" rows="10" readonly>{{ steps_text_block }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Process Step to Process Step Relevance Import Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title mb-0">4. Process Step to Process Step Relevance Import Template</h3>
+        </div>
+        <div class="card-body">
+            <p>Use this format to create links between existing Process Steps. Both <code>source_process_step_bi_id</code> and <code>target_process_step_bi_id</code> must match existing Process Step BI_IDs from the list below.</p>
+            <pre class="bg-light p-3 rounded"><code>[
+    {
+        "source_process_step_bi_id": "SCM-00",
+        "target_process_step_bi_id": "MFG-001",
+        "relevance_score": 95,
+        "relevance_content": "Description of why these two steps are related."
+    }
+]</code></pre>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <h5>Available Process Step BI_IDs:</h5>
+                     <p class="text-muted small">Use the values from the "BI_ID" column for the <code>source_process_step_bi_id</code> and <code>target_process_step_bi_id</code> fields in your JSON.</p>
+                    <textarea class="form-control" rows="10" readonly>{{ steps_text_block }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

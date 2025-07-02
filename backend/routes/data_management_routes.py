@@ -119,9 +119,9 @@ def data_management_page():
                             if result.get('success') and result.get('skipped_count', 0) > 0:
                                 flash_category = 'warning'
                             flash(result.get('message', 'File processed.'), flash_category)
-                        
+
                         return redirect(request.url)
-            
+
             flash('No file submitted or unknown action.', 'warning')
             return redirect(request.url)
 
@@ -152,6 +152,47 @@ def data_management_page():
 
 # --- Routes for Bulk Edit & Step Injection Preview (from old injection_routes.py) ---
 
+@data_management_bp.route('/help', methods=['GET'])
+@login_required
+def data_help_page():
+    session_db = SessionLocal()
+    try:
+        # Fetch data
+        all_areas = session_db.query(Area).order_by(Area.name).all()
+        all_steps = session_db.query(ProcessStep).order_by(ProcessStep.name).all()
+
+        # Prepare formatted strings for textareas
+        area_names_list = "\n".join([area.name for area in all_areas])
+        
+        step_list_lines = ["BI_ID | Name", "--------------------------------------------------"]
+        for step in all_steps:
+            step_list_lines.append(f"{step.bi_id} | {step.name}")
+        steps_text_block = "\n".join(step_list_lines)
+
+        # Prepare data for breadcrumbs
+        all_areas_flat = serialize_for_js(all_areas, 'area')
+        all_steps_flat = serialize_for_js(all_steps, 'step')
+        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+
+        return render_template(
+            'data_help.html',
+            title='Data Import/Export Help',
+            # Pass the generated strings to the template
+            area_names_list=area_names_list,
+            steps_text_block=steps_text_block,
+            # Pass other necessary data
+            current_item=None,
+            current_area=None,
+            current_step=None,
+            current_usecase=None,
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+        )
+    finally:
+        session_db.close()
+
+
 @data_management_bp.route('/steps/prepare-for-edit', methods=['POST'])
 @login_required
 def prepare_steps_for_edit():
@@ -160,7 +201,7 @@ def prepare_steps_for_edit():
         flash("No process steps selected for update.", "warning")
         return redirect(url_for('data_management.data_management_page'))
     selected_ids = [int(id_val) for id_val in selected_ids_str.split(',') if id_val.isdigit()]
-    
+
     session_db = SessionLocal()
     try:
         steps_to_edit = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).filter(ProcessStep.id.in_(selected_ids)).all()
@@ -181,7 +222,7 @@ def edit_multiple_steps():
     steps_data = session.get('steps_to_edit', [])
     if not steps_data:
         return redirect(url_for('data_management.data_management_page'))
-    
+
     session_db = SessionLocal()
     try:
         all_areas = session_db.query(Area).order_by(Area.name).all()
@@ -194,7 +235,7 @@ def edit_multiple_steps():
         )
     finally:
         session_db.close()
-        
+
 @data_management_bp.route('/steps/save-all-changes', methods=['POST'])
 @login_required
 def save_all_steps_changes():
@@ -223,7 +264,7 @@ def prepare_usecases_for_edit():
         flash("No use cases selected for update.", "warning")
         return redirect(url_for('data_management.data_management_page'))
     selected_ids = [int(id_val) for id_val in selected_ids_str.split(',') if id_val.isdigit()]
-    
+
     session_db = SessionLocal()
     try:
         usecases_to_edit = session_db.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).filter(UseCase.id.in_(selected_ids)).all()
@@ -247,7 +288,7 @@ def edit_multiple_usecases():
     usecases_data = session.get('usecases_to_edit', [])
     if not usecases_data:
         return redirect(url_for('data_management.data_management_page'))
-    
+
     session_db = SessionLocal()
     try:
         all_steps = session_db.query(ProcessStep).order_by(ProcessStep.name).all()

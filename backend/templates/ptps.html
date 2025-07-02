@@ -9,6 +9,17 @@
         A landscape of all Process Steps and their alignment to Areas.
     </p>
 
+    <!-- NEW: Area Filter Buttons -->
+    <div class="filter-controls mb-3">
+        <div class="area-filter-tabs" id="ptpAreaFilterTabs">
+            <button class="btn btn-sm btn-outline-secondary active" data-area-id="all">All Areas</button>
+            {% for area in areas_with_steps %}
+                <button class="btn btn-sm btn-outline-secondary" data-area-id="{{ area.id }}">{{ area.name }}</button>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- END NEW: Area Filter Buttons -->
+
     <!-- Process Steps Overview (Now Collapsible) -->
     <div class="mb-xl">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -34,7 +45,8 @@
                             </thead>
                             <tbody>
                                 {% for step in all_steps %}
-                                <tr data-step-id="{{ step.id }}"> {# Add data-step-id for JS #}
+                                {# MODIFIED: Added data-step-area-id attribute for filtering #}
+                                <tr data-step-id="{{ step.id }}" data-step-area-id="{{ step.area_id }}">
                                     <td data-field="area_id" class="editable-cell">{{ step.area.name if step.area else 'N/A' }}</td>
                                     <td data-field="bi_id" class="editable-cell">{{ step.bi_id }}</td>
                                     <td data-field="name" class="editable-cell">{{ step.name }}</td>
@@ -120,4 +132,39 @@
     window.allAreasForSelect = {{ all_areas_for_select | tojson | safe }};
 </script>
 <script type="module" src="{{ url_for('static', filename='js/inline_table_edit.js') }}"></script>
+
+<!-- NEW: In-page script for area filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterTabsContainer = document.getElementById('ptpAreaFilterTabs');
+    const table = document.getElementById('processStepsOverviewTable');
+
+    if (filterTabsContainer && table) {
+        const tableRows = table.querySelectorAll('tbody tr');
+
+        filterTabsContainer.addEventListener('click', function(event) {
+            const clickedButton = event.target.closest('button.btn');
+            if (!clickedButton || !clickedButton.dataset.areaId) {
+                return; // Exit if not a filter button
+            }
+
+            // Update active state on buttons
+            filterTabsContainer.querySelectorAll('button.btn').forEach(btn => btn.classList.remove('active'));
+            clickedButton.classList.add('active');
+
+            const selectedAreaId = clickedButton.dataset.areaId;
+
+            // Filter table rows
+            tableRows.forEach(row => {
+                const rowAreaId = row.dataset.stepAreaId;
+                if (selectedAreaId === 'all' || !rowAreaId || rowAreaId === selectedAreaId) {
+                    row.style.display = ''; // Show row
+                } else {
+                    row.style.display = 'none'; // Hide row
+                }
+            });
+        });
+    }
+});
+</script>
 {% endblock %}
