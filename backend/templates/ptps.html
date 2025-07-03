@@ -35,24 +35,25 @@
                         <table class="table table-striped table-hover" id="processStepsOverviewTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Area</th>
-                                    <th>BI_ID</th>
-                                    <th>Name</th>
-                                    <th>Use Cases</th>
+                                    <th class="sortable" data-sort-key="area_name">Area</th>
+                                    <th class="sortable" data-sort-key="bi_id">BI_ID</th>
+                                    <th class="sortable" data-sort-key="name">Name</th>
+                                    <th class="sortable" data-sort-key="use_case_count">Use Cases</th>
                                     <th>Description Snippet</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for step in all_steps %}
-                                {# MODIFIED: Added data-step-area-id attribute for filtering #}
+                                {# MODIFIED: Added data-step-area-id and data-sort-value attributes #}
                                 <tr data-step-id="{{ step.id }}" data-step-area-id="{{ step.area_id }}">
-                                    <td data-field="area_id" class="editable-cell">{{ step.area.name if step.area else 'N/A' }}</td>
-                                    <td data-field="bi_id" class="editable-cell">{{ step.bi_id }}</td>
-                                    <td data-field="name" class="editable-cell">{{ step.name }}</td>
-                                    <td>{{ step.use_cases | length }}</td>
+                                    <td data-field="area_id" class="editable-cell" data-sort-value="{{ step.area.name if step.area else 'Z' }}">{{ step.area.name if step.area else 'N/A' }}</td>
+                                    <td data-field="bi_id" class="editable-cell" data-sort-value="{{ step.bi_id }}">{{ step.bi_id }}</td>
+                                    <td data-field="name" class="editable-cell" data-sort-value="{{ step.name }}">{{ step.name }}</td>
+                                    <td data-sort-value="{{ step.use_cases|length }}">{{ step.use_cases | length }}</td>
                                     <td data-field="step_description" class="editable-cell">{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
                                     <td>
+                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
                                         <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
                                         <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
                                             <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
@@ -65,59 +66,6 @@
                     </div>
                 {% else %}
                      <p class="text-muted text-center"><em>No process steps found in the database.</em></p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Process Step to Area Alignment (Now Collapsible) -->
-    <div class="mb-xl">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2 class="card-title mb-0">Process Step to Area Alignment</h2>
-            <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#areaAlignmentCollapse" aria-expanded="true" aria-controls="areaAlignmentCollapse">
-                <i class="fas fa-chevron-up"></i>
-            </button>
-        </div>
-        <div id="areaAlignmentCollapse" class="collapse show">
-            <div class="card-body">
-                {% if areas_with_steps %}
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 30%;">Current Area</th>
-                                    <th style="width: 70%;">Process Steps in this Area</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for area in areas_with_steps %}
-                                <tr>
-                                    <td>
-                                        <a href="{{ url_for('areas.view_area', area_id=area.id) }}">
-                                            <strong>{{ area.name }}</strong>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        {% if area.process_steps %}
-                                            <ul class="list-unstyled mb-0">
-                                            {% for step in area.process_steps | sort(attribute='name') %}
-                                                <li>
-                                                    <a href="{{ url_for('steps.view_step', step_id=step.id) }}">{{ step.name }}</a>
-                                                    <small class="text-muted">(BI_ID: {{ step.bi_id }})</small>
-                                                </li>
-                                            {% endfor %}
-                                            </ul>
-                                        {% else %}
-                                            <em class="text-muted">No process steps in this area.</em>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <p class="text-muted text-center"><em>No areas found in the database.</em></p>
                 {% endif %}
             </div>
         </div>
@@ -165,6 +113,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // --- NEW: Table Sorting Functionality ---
+    function makeTableSortable(tableElement) {
+        if (!tableElement) return;
+        const headers = tableElement.querySelectorAll('th.sortable');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : null);
+                let sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+
+                tableElement.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+                const tbody = tableElement.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const colIndex = Array.from(header.parentNode.children).indexOf(header);
+
+                rows.sort((a, b) => {
+                    let valA = a.cells[colIndex].dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex].textContent.trim();
+                    let valB = b.cells[colIndex].dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex].textContent.trim();
+                    const numA = parseFloat(valA); const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) { return sortOrder === 'asc' ? numA - numB : numB - numA; }
+                    return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                });
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    }
+    makeTableSortable(document.getElementById('processStepsOverviewTable'));
 });
 </script>
 {% endblock %}

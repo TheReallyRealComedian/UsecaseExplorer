@@ -97,20 +97,20 @@
                                         </button>
                                     </td>
                                     <td class="action-choice">
-                                        {% if item.status == 'skipped' %}
+                                        {% if item.original_status == 'skipped' %} {# Use original_status to check for non-recoverable skips #}
                                             <span class="text-danger fw-bold">Skipped</span>
                                         {% else %}
                                             <div class="form-check">
-                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_add_{{ item.bi_id }}" value="add" {% if item.status == 'new' %}checked{% endif %} data-row-index="{{ loop.index0 }}">
-                                                <label class="form-check-label" for="action_add_{{ item.bi_id }}">Add</label>
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" id="action_add_{{ loop.index0 }}" value="add" data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_add_{{ loop.index0 }}">Add</label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_update_{{ item.bi_id }}" value="update" {% if item.status == 'update' or item.status == 'no_change' %}checked{% endif %} data-row-index="{{ loop.index0 }}">
-                                                <label class="form-check-label" for="action_update_{{ item.bi_id }}">Update</label>
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" id="action_update_{{ loop.index0 }}" value="update" data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_update_{{ loop.index0 }}">Update</label>
                                             </div>
                                             <div class="form-check">
-                                                <input class="form-check-input action-radio" type="radio" name="action_{{ item.bi_id }}" id="action_skip_{{ item.bi_id }}" value="skip" data-row-index="{{ loop.index0 }}">
-                                                <label class="form-check-label" for="action_skip_{{ item.bi_id }}">Skip</label>
+                                                <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" id="action_skip_{{ loop.index0 }}" value="skip" data-row-index="{{ loop.index0 }}">
+                                                <label class="form-check-label" for="action_skip_{{ loop.index0 }}">Skip</label>
                                             </div>
                                         {% endif %}
                                     </td>
@@ -120,7 +120,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted text-center"><em>No data to preview. Please upload a Process Step JSON file from the <a href="{{ url_for('injection.handle_injection') }}">Data Injection</a> page.</em></p>
+                    <p class="text-muted text-center"><em>No data to preview. Please upload a Process Step JSON file from the <a href="{{ url_for('data_management.data_management_page') }}">Data Management</a> page.</em></p>
                 {% endif %}
             </div>
         </div>
@@ -223,7 +223,7 @@
 <script type="text/javascript">
     const INITIAL_PREVIEW_DATA = {{ preview_data | tojson | safe }};
     const STEP_DETAIL_FIELDS_CONFIG = {{ step_detail_fields | tojson | safe }};
-    const ALL_AREAS_DATA = {{ all_areas | tojson | safe }};
+    const ALL_AREAS_DATA = {{ all_areas_flat | tojson | safe }};
 </script>
 {# New JavaScript file for preview logic #}
 <script src="{{ url_for('static', filename='js/step_injection_preview_ui.js') }}"></script>

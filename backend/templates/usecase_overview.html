@@ -104,10 +104,11 @@
                     <td data-sort-value="{{ uc.process_step.name if uc.process_step else 'N/A' }}">{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
                     <td data-field="bi_id" class="editable-cell">{{ uc.bi_id }}</td>
                     <td data-field="name" class="editable-cell"><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
-                    <td data-field="quality_improvement_quant" class="editable-cell" data-sort-value="{{ uc.priority }}">{{ uc.quality_improvement_quant | default(uc.priority | map_priority_to_benefit, true) }}</td>
+                    <td data-field="quality_improvement_quant" class="editable-cell" data-sort-value="{{ uc.priority | default(99) }}">{{ uc.quality_improvement_quant | default(uc.priority | map_priority_to_benefit, true) }}</td>
                     <td data-field="effort_level" class="editable-cell">{{ uc.effort_level | default('N/A', true) }}</td>
                     <td data-field="wave" class="editable-cell">{{ uc.wave | default('N/A', true) }}</td>
                     <td>
+                        <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
                         <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info me-1" title="Edit with AI Assist">
                             <i class="fas fa-magic"></i> AI
                         </a>

@@ -30,6 +30,9 @@
                     <li class="{% if request.endpoint == 'index' %}active{% endif %}">
                         <a href="{{ url_for('index') }}"><i class="fas fa-sitemap"></i> Process Target Pictures</a>
                     </li>
+                    <li class="{% if request.blueprint == 'areas' and request.endpoint != 'areas.view_area' %}active{% endif %}">
+                        <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-map-marked-alt"></i> Areas</a>
+                    </li>
                      <li class="{% if request.endpoint == 'relevance.visualize_relevance' %}active{% endif %}">
                         <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
                     </li>

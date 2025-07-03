@@ -64,23 +64,27 @@ document.addEventListener('DOMContentLoaded', function() {
             areaSelect.disabled = (item.action === 'skip');
         }
 
-        // Update row action radio buttons
+        // --- START FIX for Radio Button Disabling Logic ---
         const actionRadios = rowElement.querySelectorAll(`.action-radio[name="action_${item.bi_id}"]`);
         actionRadios.forEach(radio => {
             radio.checked = (radio.value === item.action);
-            // Business logic for disabling radio buttons:
-            // If the original status was 'new', then 'update' action is not allowed.
-            // If the original status was 'update' or 'no_change', then 'add' action is not allowed.
-            // 'skipped' status is handled by the action directly.
+            
+            // New, more robust disabling logic
+            const isAddRadio = radio.value === 'add';
+            const isUpdateRadio = radio.value === 'update';
+
+            radio.disabled = false; // Enable by default
+
             if (item.original_status === 'new') {
-                radio.disabled = (radio.value === 'update');
+                if (isUpdateRadio) radio.disabled = true;
             } else if (item.original_status === 'update' || item.original_status === 'no_change') {
-                radio.disabled = (radio.value === 'add');
-            } else {
-                radio.disabled = false; // Default to enabled if no specific original status rule applies
+                if (isAddRadio) radio.disabled = true;
+            } else if (item.original_status === 'skipped') {
+                // If the item was skipped for a non-recoverable reason, disable both add and update
+                if (isAddRadio || isUpdateRadio) radio.disabled = true;
             }
         });
-
+        // --- END FIX for Radio Button Disabling Logic ---
 
         // Add/remove unsaved-change class
         if (item.action === 'update' || item.action === 'add') {
@@ -412,7 +416,9 @@ document.addEventListener('DOMContentLoaded', function() {
         cancelImportBtn.disabled = true;
 
         try {
-            const response = await fetch('/data-update/steps/finalize', {
+            // --- START FIX for 404 Error ---
+            const response = await fetch('/data-management/steps/finalize', {
+            // --- END FIX for 404 Error ---
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -424,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok && result.success) {
                 flashMessage(`Process Step import complete: Added ${result.added_count || 0}, Updated ${result.updated_count || 0}, Skipped ${result.skipped_count || 0}, Failed ${result.failed_count || 0}. Redirecting...`, 'success');
                 setTimeout(() => {
-                    window.location.href = '/data-update';
+                    window.location.href = '/data-management/';
                 }, 2000);
             } else {
                 const errorMsg = result.message || (result.messages ? result.messages.join('; ') : `Server error ${response.status}.`);
@@ -442,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     cancelImportBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to cancel the import and discard all changes?')) {
-            window.location.href = '/data-update';
+            window.location.href = '/data-management/';
         }
     });
 

@@ -222,7 +222,8 @@ def edit_usecase(usecase_id):
                 try:
                     session.commit()
                     flash("Use Case updated successfully!", "success")
-                    return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
+                    # REDIRECT FIX: Redirect to the main use case list view instead of the detail page.
+                    return redirect(url_for('usecases.list_usecases'))
                 except IntegrityError as e:
                     session.rollback()
                     if 'priority_range_check' in str(e).lower():
@@ -270,24 +271,20 @@ def delete_usecase(usecase_id):
         if usecase is None:
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
         else:
-            original_step_id = usecase.process_step_id
             uc_name = usecase.name
             try:
                 session.delete(usecase)
                 session.commit()
                 flash(f"Use Case '{uc_name}' deleted successfully.", "success")
-                if step_id_for_redirect is not None:
+                # REDIRECT FIX: Prefer redirecting to the main list view for consistency.
+                if step_id_for_redirect is not None:  # Keep this logic if coming from a specific step page
                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-                elif original_step_id:
-                    redirect_url = url_for('steps.view_step', step_id=original_step_id)
             except Exception as e:
                 session.rollback()
                 flash(f"Error deleting use case: {e}", "danger")
                 print(f"Error deleting use case {usecase_id}: {e}")
-                if step_id_for_redirect is not None:
+                if step_id_for_redirect is not None:  # Fallback redirect
                     redirect_url = url_for('steps.view_step', step_id=step_id_for_redirect)
-                elif usecase and usecase.process_step_id:
-                    redirect_url = url_for('steps.view_step', step_id=usecase.process_step_id)
     except Exception as e:
         flash(f"An unexpected error occurred: {e}", "danger")
         print(f"Outer error in delete_usecase for {usecase_id}: {e}")

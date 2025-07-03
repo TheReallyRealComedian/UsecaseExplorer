@@ -34,7 +34,7 @@
                     Use Case: <a href="{{ url_for('usecases.view_usecase', usecase_id=uc_item.id) }}">{{ uc_item.name }}</a>
                     <small class="text-muted">(BI_ID: {{ uc_item.bi_id }})</small>
                 </h2>
-                <small class="text-muted">Current Step: {{ uc_item.process_step_name }} (Area: {{ uc_item.area_name }})</small>
+                <small class="text-muted">Current Step: {{ uc_item.current_process_step_name }} (Area: {{ uc_item.area_name }})</small>
             </div>
             <div class="card-body">
                 {% for field_key, field_name in editable_fields.items() %}
@@ -90,11 +90,11 @@
 
     {% else %}
         <div class="alert alert-warning text-center">
-            No use cases loaded for editing. Please select some from the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.
+            No use cases loaded for editing. Please select some from the <a href="{{ url_for('data_management.data_management_page') }}">Data Management</a> page.
         </div>
     {% endif %}
 
-    <a href="{{ url_for('injection.data_update_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Update</a>
+    <a href="{{ url_for('data_management.data_management_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Management</a>
 </div>
 {% endblock %}
 

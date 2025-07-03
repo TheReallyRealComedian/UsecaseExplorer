@@ -231,14 +231,14 @@ def create_app():
                 all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
                 total_areas = session_db.query(func.count(Area.id)).scalar()
-                total_steps = session_db.query(func.count(ProcessStep.id)).scalar()
+                total_process_steps = session_db.query(func.count(ProcessStep.id)).scalar()
                 total_usecases = session_db.query(func.count(UseCase.id)).scalar()
 
                 return render_template(
                     'index.html',
                     title='Dashboard',
                     total_areas=total_areas,
-                    total_steps=total_steps,
+                    total_steps=total_process_steps,
                     total_usecases=total_usecases,
                     current_item=None,
                     current_area=None,

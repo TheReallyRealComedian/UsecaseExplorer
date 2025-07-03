@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usecase Explorer{% endblock %}
+
+{% block content %}
+<div class="area-overview-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">
+        A list of all business areas. Click on a name to view details.
+    </p>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Areas Overview</h2>
+        </div>
+        <div class="card-body">
+            {% if all_areas %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="areasOverviewTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="sortable" data-sort-key="name">Name</th>
+                                <th class="sortable" data-sort-key="step_count">Process Steps</th>
+                                <th class="sortable" data-sort-key="use_case_count">Use Cases</th>
+                                <th>Description Snippet</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for area in all_areas %}
+                                {% set step_count = area.process_steps|length %}
+                                {% set use_case_count = area.process_steps|sum(attribute='use_cases')|length %}
+                                <tr>
+                                    <td data-sort-value="{{ area.name }}"><a href="{{ url_for('areas.view_area', area_id=area.id) }}"><strong>{{ area.name }}</strong></a></td>
+                                    <td data-sort-value="{{ step_count }}">{{ step_count }}</td>
+                                    <td data-sort-value="{{ use_case_count }}">{{ use_case_count }}</td>
+                                    <td>{{ area.description | truncate(100) | default('N/A', true) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center"><em>No areas found in the database.</em></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function makeTableSortable(tableElement) {
+        if (!tableElement) return;
+        const headers = tableElement.querySelectorAll('th.sortable');
+
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : null);
+                let sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+                tableElement.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                const tbody = tableElement.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const colIndex = Array.from(header.parentNode.children).indexOf(header);
+                rows.sort((a, b) => {
+                    let valA = a.cells[colIndex].dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex].textContent.trim();
+                    let valB = b.cells[colIndex].dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex].textContent.trim();
+                    const numA = parseFloat(valA); const numB = parseFloat(valB);
+                    if (!isNaN(numA) && !isNaN(numB)) { return sortOrder === 'asc' ? numA - numB : numB - numA; }
+                    return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                });
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    }
+    makeTableSortable(document.getElementById('areasOverviewTable'));
+});
+</script>
+{% endblock %}

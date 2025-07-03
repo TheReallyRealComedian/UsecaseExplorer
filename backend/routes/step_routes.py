@@ -44,7 +44,6 @@ def api_get_all_steps():
 @login_required
 def list_steps():
     session = SessionLocal()
-    # Removed redundant initialization of steps, all_areas_flat etc.
     try:
         steps = session.query(ProcessStep).options(
             joinedload(ProcessStep.area),
@@ -72,7 +71,6 @@ def list_steps():
         flash("An error occurred while fetching process step overview.", "danger")
         return redirect(url_for('index'))
     finally:
-        # SessionLocal.remove() is handled by app.teardown_request
         pass
 
 
@@ -80,7 +78,6 @@ def list_steps():
 @login_required
 def view_step(step_id):
     session = SessionLocal()
-    # Removed redundant initialization of all_areas_flat etc.
     try:
         step = session.query(ProcessStep).options(
             joinedload(ProcessStep.area),
@@ -102,7 +99,6 @@ def view_step(step_id):
             .order_by(ProcessStep.name)
         
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        # Pass the already queried other_steps to serialize_for_js if appropriate, or query all again for consistency
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step') 
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
@@ -124,7 +120,6 @@ def view_step(step_id):
         flash("An error occurred while fetching step details. Please check server logs.", "danger")
         return redirect(url_for('index'))
     finally:
-        # SessionLocal.remove() is handled by app.teardown_request
         pass
 
 
@@ -134,27 +129,21 @@ def edit_step(step_id):
     session = SessionLocal()
     step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
     
-    # Fetch all_areas once for the select dropdown
     all_areas_for_select = session.query(Area).order_by(Area.name).all()
 
-    # Prepare breadcrumb data
-    all_areas_flat_js = serialize_for_js(all_areas_for_select, 'area') # Use already queried data
+    all_areas_flat_js = serialize_for_js(all_areas_for_select, 'area')
     all_steps_flat_js = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
     all_usecases_flat_js = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
     if step is None:
         flash(f"Process Step with ID {step_id} not found.", "warning")
-        # SessionLocal.remove() # Let teardown_request handle session removal
         return redirect(url_for('index'))
 
-    # Store original step name for title in case of validation errors before commit
-    # If step.name is changed by form, this preserves the original for the title if re-rendering
     original_step_name_for_title = step.name 
 
     if request.method == 'POST':
-        original_bi_id = step.bi_id # Store original BI_ID for comparison
+        original_bi_id = step.bi_id
         
-        # Update step attributes from form
         step.name = request.form.get('name', '').strip()
         step.bi_id = request.form.get('bi_id', '').strip()
         step.area_id = request.form.get('area_id', type=int)
@@ -172,22 +161,20 @@ def edit_step(step_id):
         if not step.name or not step.bi_id or not step.area_id:
             flash("Step Name, BI_ID, and Area are required.", "danger")
         else:
-            # Check for BI_ID uniqueness only if it has changed
             if step.bi_id != original_bi_id:
                 existing_step = session.query(ProcessStep).filter(
                     ProcessStep.bi_id == step.bi_id, 
-                    ProcessStep.id != step_id  # Exclude the current step itself
+                    ProcessStep.id != step_id
                 ).first()
                 if existing_step:
                     flash(f"Another process step with BI_ID '{step.bi_id}' already exists.", "danger")
-                    # Do not remove session here, re-render template with current (unsaved) step data
                     return render_template(
                         'edit_step.html',
-                        title=f"Edit Step: {original_step_name_for_title}", # Use original name for title
-                        step=step, # Pass the modified step object back to the form
+                        title=f"Edit Step: {original_step_name_for_title}",
+                        step=step,
                         all_areas=all_areas_for_select, 
                         current_step=step, 
-                        current_area=step.area, # This will be reloaded if needed, or use the new one
+                        current_area=step.area,
                         current_usecase=None, 
                         current_item=step, 
                         all_areas_flat=all_areas_flat_js,
@@ -195,13 +182,12 @@ def edit_step(step_id):
                         all_usecases_flat=all_usecases_flat_js
                     )
             
-            # If all checks pass, attempt to commit
             try:
                 session.commit()
                 flash("Process Step updated successfully!", "success")
-                # SessionLocal.remove() # Let teardown_request handle session removal
-                return redirect(url_for('steps.view_step', step_id=step.id))
-            except IntegrityError: # Catches DB-level uniqueness violations if any slip through
+                # REDIRECT FIX: Redirect to the PTPs overview page instead of the detail page.
+                return redirect(url_for('index'))
+            except IntegrityError:
                 session.rollback()
                 flash("Database error: Could not update step. BI_ID might already exist or area is invalid.", "danger")
             except Exception as e:
@@ -209,15 +195,13 @@ def edit_step(step_id):
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating step {step_id}: {e}")
         
-        # If any validation failed or commit error occurred, re-render the form
-        # The session is still active here.
         return render_template(
             'edit_step.html',
-            title=f"Edit Step: {original_step_name_for_title}", # Use original name for title
+            title=f"Edit Step: {original_step_name_for_title}",
             step=step, 
             all_areas=all_areas_for_select, 
             current_step=step, 
-            current_area=step.area, # Use current step's area
+            current_area=step.area,
             current_usecase=None, 
             current_item=step, 
             all_areas_flat=all_areas_flat_js,
@@ -225,11 +209,9 @@ def edit_step(step_id):
             all_usecases_flat=all_usecases_flat_js
         )
     
-    # For GET requests
-    # SessionLocal.remove() # Let teardown_request handle session removal
     return render_template(
         'edit_step.html',
-        title=f"Edit Step: {step.name}", # Use current step name for title
+        title=f"Edit Step: {step.name}",
         step=step, 
         all_areas=all_areas_for_select, 
         current_step=step, 
@@ -247,12 +229,12 @@ def edit_step(step_id):
 def delete_step(step_id):
     session = SessionLocal()
     step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
-    redirect_url = url_for('index') # Default redirect
+    redirect_url = url_for('index')
 
     if step is None:
         flash(f"Process Step with ID {step_id} not found.", "warning")
     else:
-        area_id_for_redirect = step.area_id # Store before potential deletion
+        area_id_for_redirect = step.area_id
         step_name = step.name
         try:
             session.delete(step)
@@ -264,10 +246,8 @@ def delete_step(step_id):
             session.rollback()
             flash(f"Error deleting process step: {e}", "danger")
             print(f"Error deleting step {step_id}: {e}")
-            # If step still exists (e.g., rollback occurred), redirect to its area
             if step and step.area_id: 
                  redirect_url = url_for('areas.view_area', area_id=step.area_id)
-    # SessionLocal.remove() will be handled by teardown_request
     return redirect(redirect_url)
 
 
@@ -291,7 +271,6 @@ def inline_update_step(step_id):
         if field_to_update not in allowed_fields:
             return jsonify(success=False, message=f"Field '{field_to_update}' cannot be updated inline."), 400
 
-        # Field-specific validation
         if field_to_update in ['name', 'bi_id']:
             new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
             if not new_value_stripped:
@@ -312,7 +291,6 @@ def inline_update_step(step_id):
         setattr(step, field_to_update, new_value)
         session.commit()
         
-        # Reload the step's area relationship to get the name for the response
         session.refresh(step, ['area'])
 
         updated_data = {

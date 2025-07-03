@@ -12,6 +12,37 @@ area_routes = Blueprint('areas', __name__,
                         template_folder='../templates',
                         url_prefix='/areas')
 
+
+@area_routes.route('/')
+@login_required
+def list_areas():
+    session = SessionLocal()
+    try:
+        all_areas = session.query(Area).options(
+            selectinload(Area.process_steps).selectinload(ProcessStep.use_cases)
+        ).order_by(Area.name).all()
+
+        # Data for breadcrumbs
+        all_areas_flat = serialize_for_js(all_areas, 'area')
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+
+        return render_template(
+            'area_overview.html',
+            title="All Areas",
+            all_areas=all_areas,
+            current_item=None,
+            current_area=None,
+            current_step=None,
+            current_usecase=None,
+            all_areas_flat=all_areas_flat,
+            all_steps_flat=all_steps_flat,
+            all_usecases_flat=all_usecases_flat
+        )
+    finally:
+        session.close()
+
+
 @area_routes.route('/<int:area_id>')
 @login_required
 def view_area(area_id):
@@ -65,12 +96,10 @@ def edit_area(area_id):
         if not new_name:
             flash("Area name cannot be empty.", "danger")
         else:
-            # Check for name conflicts only if the name is actually changing
             if new_name != area.name:
                 existing_area = session.query(Area).filter(Area.name == new_name, Area.id != area_id).first()
                 if existing_area:
                     flash(f"Another area with the name '{new_name}' already exists.", "danger")
-                    # Don't update the area object, just return the form with error
                     all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
                     all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
                     all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -88,7 +117,6 @@ def edit_area(area_id):
                         all_usecases_flat=all_usecases_flat
                     )
 
-            # If we reach here, no name conflict exists (or name didn't change)
             area.name = new_name
             area.description = new_description if new_description else None
             try:
@@ -103,8 +131,7 @@ def edit_area(area_id):
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
                 print(f"Error updating area {area_id}: {e}")
-    
-    # GET request or POST with validation errors
+
     all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
     all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
     all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -132,7 +159,7 @@ def delete_area(area_id):
 
     if area is None:
         flash(f"Area with ID {area_id} not found.", "warning")
-        session.close() # Close the session here since finally won't be reached in this branch
+        session.close()
         return redirect(url_for('dashboard'))
     else:
         try:
@@ -144,7 +171,6 @@ def delete_area(area_id):
             flash(f"Error deleting area: {e}", "danger")
             print(f"Error deleting area {area_id}: {e}")
         finally:
-            # THIS IS THE FIX: Indent this block
             session.close()
 
     return redirect(url_for('dashboard'))

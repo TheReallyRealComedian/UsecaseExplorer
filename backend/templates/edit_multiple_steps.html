@@ -79,11 +79,11 @@
 
     {% else %}
         <div class="alert alert-warning text-center">
-            No process steps loaded for editing. Please select some from the <a href="{{ url_for('injection.data_update_page') }}">Data Update</a> page.
+            No process steps loaded for editing. Please select some from the <a href="{{ url_for('data_management.data_management_page') }}">Data Management</a> page.
         </div>
     {% endif %}
 
-    <a href="{{ url_for('injection.data_update_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Update</a>
+    <a href="{{ url_for('data_management.data_management_page') }}" class="btn btn-outline-secondary mt-3">Back to Data Management</a>
 </div>
 {% endblock %}
 
@@ -221,7 +221,7 @@
             const changesPayload = Object.values(pendingChanges);
 
             try {
-                const response = await fetch('/data-update/steps/save-all-changes', {
+                const response = await fetch('/data-management/steps/save-all-changes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -253,8 +253,8 @@
                     // Clear pending changes completely
                     Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
                     updatePendingChangesCount();
-                    // Optionally, reload the page or redirect to data_update_page after a delay
-                    setTimeout(() => { window.location.href = '/data-update'; }, 1500);
+                    // Optionally, reload the page or redirect to data_management_page after a delay
+                    setTimeout(() => { window.location.href = '/data-management'; }, 1500);
 
                 } else {
                     showFlashMessage(result.message, 'danger');
