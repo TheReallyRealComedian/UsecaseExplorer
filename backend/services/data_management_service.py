@@ -1,10 +1,10 @@
-# backend/injection_service.py
+# backend/data_management_service.py
 import json
 import traceback
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, OperationalError
-from .db import SessionLocal, db as flask_sqlalchemy_db
-from .models import (
+from ..db import SessionLocal, db as flask_sqlalchemy_db
+from ..models import (
     Base, User, Area, ProcessStep, UseCase, LLMSettings,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
     ProcessStepProcessStepRelevance

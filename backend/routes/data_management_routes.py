@@ -1,24 +1,13 @@
 # backend/routes/data_management_routes.py
-import os
-import traceback
 import json
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
 
-from ..models import Area, ProcessStep, UseCase
-from ..injection_service import (
-    process_area_file,
-    process_step_file,
-    process_usecase_file,
-    process_ps_ps_relevance_file,
-    process_usecase_area_relevance_file,
-    process_usecase_step_relevance_file,
-    process_usecase_usecase_relevance_file,
-    import_database_from_json,
-    finalize_step_import
-)
+# Import services
+from ..services import data_management_service, bulk_edit_service
 from ..db import SessionLocal
+from ..models import Area, ProcessStep, UseCase
 from ..utils import serialize_for_js
 
 data_management_bp = Blueprint('data_management', __name__,
@@ -61,7 +50,6 @@ def data_management_page():
     session_db = SessionLocal()
     try:
         if request.method == 'POST':
-            # --- Full DB Import Logic (from settings) ---
             if 'database_file' in request.files:
                 file = request.files['database_file']
                 if file.filename == '':
@@ -70,25 +58,23 @@ def data_management_page():
                     clear_data = request.form.get('clear_existing_data') == 'on'
                     try:
                         file_content = file.read().decode('utf-8')
-                        result = import_database_from_json(file_content, clear_existing_data=clear_data)
+                        result = data_management_service.import_database_from_json(file_content, clear_existing_data=clear_data)
                         flash_category = 'success' if result.get('success') else 'danger'
                         flash(result.get('message', 'An unknown error occurred.'), flash_category)
                     except Exception as e:
-                        traceback.print_exc()
                         flash(f"An unexpected error occurred during database import: {str(e)}", 'danger')
                 else:
                     flash('Invalid file type for database import. Please upload a .json file.', 'danger')
                 return redirect(url_for('data_management.data_management_page'))
 
-            # --- Individual File Injection Logic (from old injection_routes) ---
             file_handlers = {
-                'area_file': (process_area_file, {}),
-                'step_file': (process_step_file, {'is_preview': True}),
-                'usecase_file': (process_usecase_file, {}),
-                'ps_ps_relevance_file': (process_ps_ps_relevance_file, {}),
-                'usecase_area_relevance_file': (process_usecase_area_relevance_file, {}),
-                'usecase_step_relevance_file': (process_usecase_step_relevance_file, {}),
-                'usecase_usecase_relevance_file': (process_usecase_usecase_relevance_file, {})
+                'area_file': (data_management_service.process_area_file, {}),
+                'step_file': (data_management_service.process_step_file, {'is_preview': True}),
+                'usecase_file': (data_management_service.process_usecase_file, {}),
+                'ps_ps_relevance_file': (data_management_service.process_ps_ps_relevance_file, {}),
+                'usecase_area_relevance_file': (data_management_service.process_usecase_area_relevance_file, {}),
+                'usecase_step_relevance_file': (data_management_service.process_usecase_step_relevance_file, {}),
+                'usecase_usecase_relevance_file': (data_management_service.process_usecase_usecase_relevance_file, {})
             }
 
             for file_key, (handler, options) in file_handlers.items():
@@ -125,7 +111,6 @@ def data_management_page():
             flash('No file submitted or unknown action.', 'warning')
             return redirect(request.url)
 
-        # --- GET Request Logic ---
         all_steps = session_db.query(ProcessStep).options(joinedload(ProcessStep.area), joinedload(ProcessStep.use_cases)).order_by(ProcessStep.area_id, ProcessStep.name).all()
         all_usecases = session_db.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).order_by(UseCase.process_step_id, UseCase.name).all()
         all_areas_for_filters = session_db.query(Area).order_by(Area.name).all()
@@ -150,26 +135,21 @@ def data_management_page():
     finally:
         session_db.close()
 
-# --- Routes for Bulk Edit & Step Injection Preview (from old injection_routes.py) ---
-
 @data_management_bp.route('/help', methods=['GET'])
 @login_required
 def data_help_page():
     session_db = SessionLocal()
     try:
-        # Fetch data
         all_areas = session_db.query(Area).order_by(Area.name).all()
         all_steps = session_db.query(ProcessStep).order_by(ProcessStep.name).all()
 
-        # Prepare formatted strings for textareas
         area_names_list = "\n".join([area.name for area in all_areas])
-        
+
         step_list_lines = ["BI_ID | Name", "--------------------------------------------------"]
         for step in all_steps:
             step_list_lines.append(f"{step.bi_id} | {step.name}")
         steps_text_block = "\n".join(step_list_lines)
 
-        # Prepare data for breadcrumbs
         all_areas_flat = serialize_for_js(all_areas, 'area')
         all_steps_flat = serialize_for_js(all_steps, 'step')
         all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -177,10 +157,8 @@ def data_help_page():
         return render_template(
             'data_help.html',
             title='Data Import/Export Help',
-            # Pass the generated strings to the template
             area_names_list=area_names_list,
             steps_text_block=steps_text_block,
-            # Pass other necessary data
             current_item=None,
             current_area=None,
             current_step=None,
@@ -204,17 +182,12 @@ def prepare_steps_for_edit():
 
     session_db = SessionLocal()
     try:
-        steps_to_edit = session_db.query(ProcessStep).options(joinedload(ProcessStep.area)).filter(ProcessStep.id.in_(selected_ids)).all()
-        prepared_data = [{
-            'id': step.id, 'name': step.name, 'bi_id': step.bi_id,
-            'current_area_id': step.area_id, 'current_area_name': step.area.name if step.area else 'N/A',
-            **{f'current_{key}': getattr(step, key) for key in PROCESS_STEP_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'area_id']},
-            'new_values': {key: getattr(step, key) for key in PROCESS_STEP_EDITABLE_FIELDS}
-        } for step in steps_to_edit]
+        prepared_data = bulk_edit_service.prepare_steps_for_bulk_edit(session_db, selected_ids, PROCESS_STEP_EDITABLE_FIELDS)
         session['steps_to_edit'] = prepared_data
         return redirect(url_for('data_management.edit_multiple_steps'))
     finally:
         session_db.close()
+
 
 @data_management_bp.route('/steps/edit-multiple', methods=['GET'])
 @login_required
@@ -236,25 +209,22 @@ def edit_multiple_steps():
     finally:
         session_db.close()
 
+
 @data_management_bp.route('/steps/save-all-changes', methods=['POST'])
 @login_required
 def save_all_steps_changes():
     changes = request.get_json()
     session_db = SessionLocal()
     try:
-        for item in changes:
-            step = session_db.query(ProcessStep).get(item['id'])
-            if step:
-                for field, value in item['updated_fields'].items():
-                    setattr(step, field, value)
-        session_db.commit()
+        message = bulk_edit_service.save_bulk_step_changes(session_db, changes)
         session.pop('steps_to_edit', None)
-        return jsonify(success=True, message="All changes saved successfully.")
+        return jsonify(success=True, message=message)
     except Exception as e:
         session_db.rollback()
         return jsonify(success=False, message=str(e)), 500
     finally:
         session_db.close()
+
 
 @data_management_bp.route('/usecases/prepare-for-edit', methods=['POST'])
 @login_required
@@ -267,15 +237,7 @@ def prepare_usecases_for_edit():
 
     session_db = SessionLocal()
     try:
-        usecases_to_edit = session_db.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).filter(UseCase.id.in_(selected_ids)).all()
-        prepared_data = [{
-            'id': uc.id, 'name': uc.name, 'bi_id': uc.bi_id,
-            'current_process_step_id': uc.process_step_id,
-            'current_process_step_name': uc.process_step.name if uc.process_step else 'N/A',
-            'area_name': uc.area.name if uc.area else 'N/A',
-            **{f'current_{key}': getattr(uc, key) for key in PROCESS_USECASE_EDITABLE_FIELDS if key not in ['name', 'bi_id', 'process_step_id']},
-            'new_values': {key: getattr(uc, key) for key in PROCESS_USECASE_EDITABLE_FIELDS}
-        } for uc in usecases_to_edit]
+        prepared_data = bulk_edit_service.prepare_usecases_for_bulk_edit(session_db, selected_ids, PROCESS_USECASE_EDITABLE_FIELDS)
         session['usecases_to_edit'] = prepared_data
         return redirect(url_for('data_management.edit_multiple_usecases'))
     finally:
@@ -309,14 +271,9 @@ def save_all_usecases_changes():
     changes = request.get_json()
     session_db = SessionLocal()
     try:
-        for item in changes:
-            uc = session_db.query(UseCase).get(item['id'])
-            if uc:
-                for field, value in item['updated_fields'].items():
-                    setattr(uc, field, value)
-        session_db.commit()
+        message = bulk_edit_service.save_bulk_usecase_changes(session_db, changes)
         session.pop('usecases_to_edit', None)
-        return jsonify(success=True, message="All use case changes saved successfully.")
+        return jsonify(success=True, message=message)
     except Exception as e:
         session_db.rollback()
         return jsonify(success=False, message=str(e)), 500
@@ -345,6 +302,7 @@ def preview_steps_injection():
     finally:
         session_db.close()
 
+
 @data_management_bp.route('/steps/finalize', methods=['POST'])
 @login_required
 def finalize_steps_import():
@@ -352,7 +310,7 @@ def finalize_steps_import():
     if not resolved_steps_data:
         return jsonify(success=False, message="No data received for finalization."), 400
 
-    result = finalize_step_import(resolved_steps_data)
+    result = data_management_service.finalize_step_import(resolved_steps_data)
     if result['success']:
         session.pop('step_import_preview_data', None)
     return jsonify(result)

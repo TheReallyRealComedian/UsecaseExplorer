@@ -1,47 +1,24 @@
 # backend/routes/llm_routes.py
 
 import json
-import tiktoken
 import traceback
 
 from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-from sqlalchemy import select, distinct, or_, and_ # Added distinct, or_, and_
+from sqlalchemy import distinct, or_
 
-from ..llm_service import (
-    get_all_available_llm_models,
-    generate_ollama_chat_response,
-    generate_openai_chat_response,
-    generate_anthropic_chat_response,
-    generate_google_chat_response,
-    generate_apollo_chat_response,
-    clear_chat_history,
-    get_chat_history,
-    add_message_to_history
-)
+from ..services import llm_service
 from ..db import SessionLocal
 from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
 from ..utils import serialize_for_js
 
-
-# Helper function to count tokens
-def count_tokens(text: str, model_name: str = "cl100k_base") -> int:
-    """
-    Counts tokens in a given text using tiktoken.
-    Default model 'cl100k_base' is used for GPT-4, GPT-3.5-turbo, etc.
-    """
-    try:
-        encoding = tiktoken.get_encoding(model_name)
-    except KeyError:
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(text))
-
-
-# Define the blueprint
-llm_routes = Blueprint('llm', __name__,
-                       template_folder='../templates',
-                       url_prefix='/llm')
+llm_routes = Blueprint(
+    'llm',
+    __name__,
+    template_folder='../templates',
+    url_prefix='/llm'
+)
 
 # Define which ProcessStep fields are selectable by the user
 SELECTABLE_STEP_FIELDS = {
@@ -154,6 +131,34 @@ MOST IMPORTANT OF ALL: Output ONLY the JSON object and nothing else!!!!!
 def llm_data_prep_page():
     session = SessionLocal()
     try:
+        prepared_data = {"process_steps": [], "use_cases": []}
+        total_tokens = 0
+        form_data_for_template = {
+            'selected_area_ids': [],
+            'selected_step_ids': [],
+            'selected_usecase_ids': [],
+            'selected_step_fields_form': [],
+            'selected_usecase_fields_form': [],
+            'selected_wave_values_form': [],
+            'export_uc_step_relevance': False
+        }
+
+        if request.method == 'POST':
+            prepared_data, total_tokens = llm_service.prepare_data_for_llm(
+                session, request.form, SELECTABLE_STEP_FIELDS.keys(), SELECTABLE_USECASE_FIELDS.keys()
+            )
+            # Store selections to re-render the form state
+            form_data_for_template = {
+                'selected_area_ids': [int(id_str) for id_str in request.form.getlist('area_ids') if id_str.isdigit()],
+                'selected_step_ids': [int(id_str) for id_str in request.form.getlist('step_ids') if id_str.isdigit()],
+                'selected_usecase_ids': [int(id_str) for id_str in request.form.getlist('usecase_ids') if id_str.isdigit()],
+                'selected_step_fields_form': request.form.getlist('step_fields'),
+                'selected_usecase_fields_form': request.form.getlist('usecase_fields'),
+                'selected_wave_values_form': request.form.getlist('wave_values'),
+                'export_uc_step_relevance': request.form.get('export_uc_step_relevance') == 'on'
+            }
+
+        # Data for initial page load and for re-rendering the form filters
         areas = session.query(Area).order_by(Area.name).all()
         all_steps_db = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
         all_usecases_db = session.query(UseCase).options(
@@ -162,167 +167,13 @@ def llm_data_prep_page():
 
         distinct_waves_query = session.query(distinct(UseCase.wave)).filter(UseCase.wave.isnot(None)).filter(UseCase.wave != '').order_by(UseCase.wave).all()
         all_wave_values_for_filter = [w[0] for w in distinct_waves_query if w[0]]
-        # Add "N/A" if there are use cases with NULL or empty wave, to allow filtering for them
-        # This check could be more precise if needed, e.g., by querying count of UCs with NULL/empty wave
         if session.query(UseCase).filter(or_(UseCase.wave.is_(None), UseCase.wave == '')).first():
-            if "N/A" not in all_wave_values_for_filter: # Ensure "N/A" is for actual empty/null values
-                 all_wave_values_for_filter.append("N/A")
-
-
-        prepared_data = {"process_steps": [], "use_cases": []}
-
-        selected_area_ids_int = []
-        selected_step_ids_int = []
-        selected_usecase_ids_int = []
-        selected_step_fields_form = []
-        selected_usecase_fields_form = []
-        export_uc_step_relevance = False
-        selected_wave_values_form = []
-
-        total_tokens = 0
-
-        if request.method == 'POST':
-            selected_area_ids_str = request.form.getlist('area_ids')
-            selected_step_ids_str = request.form.getlist('step_ids')
-            selected_usecase_ids_str = request.form.getlist('usecase_ids')
-            selected_step_fields_form = request.form.getlist('step_fields')
-            selected_usecase_fields_form = request.form.getlist('usecase_fields')
-            selected_wave_values_form = request.form.getlist('wave_values')
-
-            export_uc_step_relevance = request.form.get('export_uc_step_relevance') == 'on'
-
-            selected_area_ids_int = [int(id_str) for id_str in selected_area_ids_str if id_str.isdigit()]
-            selected_step_ids_int = [int(id_str) for id_str in selected_step_ids_str if id_str.isdigit()]
-            selected_usecase_ids_int = [int(id_str) for id_str in selected_usecase_ids_str if id_str.isdigit()]
-
-            default_step_fields = ['bi_id', 'name', 'step_description']
-            default_usecase_fields = ['bi_id', 'name', 'summary']
-
-            fields_to_export_steps = selected_step_fields_form if selected_step_fields_form else default_step_fields
-            fields_to_export_usecases = selected_usecase_fields_form if selected_usecase_fields_form else default_usecase_fields
-
-            if not selected_step_fields_form and (selected_step_ids_int or selected_area_ids_int):
-                flash("No Process Step fields explicitly selected. Including default fields (BI_ID, Name, Short Description) for selected steps.", "info")
-            if not selected_usecase_fields_form and \
-               (selected_usecase_ids_int or selected_step_ids_int or selected_area_ids_int or selected_wave_values_form):
-                flash("No Use Case fields explicitly selected. Including default fields (BI_ID, Name, Summary) for selected use cases.", "info")
-
-            step_query = session.query(ProcessStep)
-            if selected_step_ids_int:
-                step_query = step_query.filter(ProcessStep.id.in_(selected_step_ids_int))
-            elif selected_area_ids_int:
-                step_query = step_query.filter(ProcessStep.area_id.in_(selected_area_ids_int))
-
-            steps_for_preview = step_query.options(joinedload(ProcessStep.area)).order_by(ProcessStep.area_id, ProcessStep.name).all()
-            
-            if selected_step_ids_int or selected_area_ids_int or not (selected_usecase_ids_int or selected_wave_values_form):
-                for step in steps_for_preview:
-                    step_data = {
-                        'id': step.id,
-                        'area_id': step.area_id,
-                        'area_name': step.area.name if step.area else 'N/A'
-                    }
-                    for field_key in fields_to_export_steps:
-                        if hasattr(step, field_key):
-                            step_data[field_key] = getattr(step, field_key)
-                        else:
-                            step_data[field_key] = "N/A"
-                    prepared_data["process_steps"].append(step_data)
-
-            usecase_query = session.query(UseCase)
-            if selected_usecase_ids_int:
-                usecase_query = usecase_query.filter(UseCase.id.in_(selected_usecase_ids_int))
-            elif selected_step_ids_int:
-                usecase_query = usecase_query.filter(UseCase.process_step_id.in_(selected_step_ids_int))
-            elif selected_area_ids_int:
-                subquery_step_ids = select(ProcessStep.id).where(ProcessStep.area_id.in_(selected_area_ids_int)).scalar_subquery()
-                usecase_query = usecase_query.filter(UseCase.process_step_id.in_(subquery_step_ids))
-            
-            if selected_wave_values_form:
-                actual_wave_filters = []
-                has_na_wave_filter = False
-                for w_val in selected_wave_values_form:
-                    if w_val == "N/A":
-                        has_na_wave_filter = True
-                    else:
-                        actual_wave_filters.append(w_val)
-                
-                wave_conditions = []
-                if actual_wave_filters:
-                    wave_conditions.append(UseCase.wave.in_(actual_wave_filters))
-                if has_na_wave_filter:
-                    wave_conditions.append(or_(UseCase.wave.is_(None), UseCase.wave == ''))
-                
-                if wave_conditions:
-                    usecase_query = usecase_query.filter(or_(*wave_conditions))
-
-            usecases_for_preview = usecase_query.options(
-                joinedload(UseCase.process_step).joinedload(ProcessStep.area)
-            ).order_by(UseCase.process_step_id, UseCase.name).all()
-
-            for uc in usecases_for_preview:
-                uc_data = {
-                    'id': uc.id,
-                    'process_step_id': uc.process_step_id,
-                    'process_step_name': uc.process_step.name if uc.process_step else 'N/A',
-                    'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else 'N/A',
-                    'area_name': uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A',
-                    'wave': uc.wave
-                }
-                for field_key in fields_to_export_usecases:
-                    if hasattr(uc, field_key):
-                        uc_data[field_key] = getattr(uc, field_key)
-                    else:
-                        uc_data[field_key] = "N/A"
-                prepared_data["use_cases"].append(uc_data)
-
-            prepared_data["usecase_step_relevance"] = []
-            if export_uc_step_relevance:
-                relevance_query = session.query(UsecaseStepRelevance).options(
-                    joinedload(UsecaseStepRelevance.source_usecase),
-                    joinedload(UsecaseStepRelevance.target_process_step)
-                )
-                actual_exported_uc_ids = {uc_item['id'] for uc_item in prepared_data["use_cases"]}
-                actual_exported_step_ids = {ps_item['id'] for ps_item in prepared_data["process_steps"]}
-
-                relevance_filter_conditions = []
-                if actual_exported_uc_ids:
-                    relevance_filter_conditions.append(UsecaseStepRelevance.source_usecase_id.in_(actual_exported_uc_ids))
-                if actual_exported_step_ids:
-                     relevance_filter_conditions.append(UsecaseStepRelevance.target_process_step_id.in_(actual_exported_step_ids))
-                
-                if relevance_filter_conditions:
-                    relevance_query = relevance_query.filter(and_(*relevance_filter_conditions))
-                else: 
-                    relevance_query = relevance_query.filter(False)
-
-
-                uc_step_relevances = relevance_query.all()
-                for rel in uc_step_relevances:
-                    if rel.source_usecase_id in actual_exported_uc_ids and \
-                       rel.target_process_step_id in actual_exported_step_ids:
-                        rel_data = {
-                            "id": rel.id,
-                            "source_usecase_id": rel.source_usecase_id,
-                            "source_usecase_bi_id": rel.source_usecase.bi_id if rel.source_usecase else "N/A",
-                            "source_usecase_name": rel.source_usecase.name if rel.source_usecase else "N/A",
-                            "target_process_step_id": rel.target_process_step_id,
-                            "target_process_step_bi_id": rel.target_process_step.bi_id if rel.target_process_step else "N/A",
-                            "target_process_step_name": rel.target_process_step.name if rel.target_process_step else "N/A",
-                            "relevance_score": rel.relevance_score,
-                            "relevance_content": rel.relevance_content,
-                            "created_at": rel.created_at.isoformat() if rel.created_at else None,
-                            "updated_at": rel.updated_at.isoformat() if rel.updated_at else None,
-                        }
-                        prepared_data["usecase_step_relevance"].append(rel_data)
-
-
-            json_string_for_tokens = json.dumps(prepared_data, indent=2)
-            total_tokens = count_tokens(json_string_for_tokens)
+            if "N/A" not in all_wave_values_for_filter:
+                all_wave_values_for_filter.append("N/A")
 
         user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
-        ollama_models = get_all_available_llm_models()
-        chat_history = list(get_chat_history())
+        ollama_models = llm_service.get_all_available_llm_models()
+        chat_history = list(llm_service.get_chat_history())
 
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
@@ -339,13 +190,6 @@ def llm_data_prep_page():
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data=prepared_data,
             total_tokens=total_tokens,
-            selected_area_ids=selected_area_ids_int,
-            selected_step_ids=selected_step_ids_int,
-            selected_usecase_ids=selected_usecase_ids_int,
-            selected_step_fields_form=selected_step_fields_form,
-            selected_usecase_fields_form=selected_usecase_fields_form,
-            selected_wave_values_form=selected_wave_values_form,
-            export_uc_step_relevance=export_uc_step_relevance,
             ollama_models=ollama_models,
             chat_history=chat_history,
             config=current_app.config,
@@ -356,7 +200,8 @@ def llm_data_prep_page():
             current_usecase=None,
             all_areas_flat=all_areas_flat,
             all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
+            all_usecases_flat=all_usecases_flat,
+            **form_data_for_template
         )
 
     except Exception as e:
@@ -371,35 +216,22 @@ def llm_data_prep_page():
         return render_template(
             'llm_data_prep.html',
             title="Data Mining",
-            areas=[],
-            all_steps=[],
-            all_usecases=[],
-            all_wave_values=[],
+            areas=[], all_steps=[], all_usecases=[], all_wave_values=[],
             selectable_fields_steps=SELECTABLE_STEP_FIELDS,
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data={"process_steps": [], "use_cases": []},
             total_tokens=0,
-            selected_area_ids=[],
-            selected_step_ids=[],
-            selected_usecase_ids=[],
-            selected_step_fields_form=[],
-            selected_usecase_fields_form=[],
-            selected_wave_values_form=[],
-            export_uc_step_relevance=False,
-            ollama_models=[],
-            chat_history=[],
+            ollama_models=[], chat_history=[],
             config=current_app.config,
             user_system_prompt=user_system_prompt_on_error,
-            current_item=None,
-            current_area=None,
-            current_step=None,
-            current_usecase=None,
-            all_areas_flat=[],
-            all_steps_flat=[],
-            all_usecases_flat=[]
+            current_item=None, current_area=None, current_step=None, current_usecase=None,
+            all_areas_flat=[], all_steps_flat=[], all_usecases_flat=[],
+            selected_area_ids=[], selected_step_ids=[], selected_usecase_ids=[],
+            selected_step_fields_form=[], selected_usecase_fields_form=[],
+            selected_wave_values_form=[], export_uc_step_relevance=False,
         )
     finally:
-        SessionLocal.remove()
+        session.close()
 
 
 @llm_routes.route('/analyze/<int:usecase_id>', methods=['POST', 'GET'])
@@ -428,7 +260,7 @@ def llm_chat():
     if not model_name:
         return jsonify({"success": False, "message": "Model is required."}), 400
 
-    chat_history = get_chat_history()
+    chat_history = llm_service.get_chat_history()
 
     parts = model_name.split('-', 1)
     provider = parts[0] if len(parts) > 0 else "unknown"
@@ -438,23 +270,23 @@ def llm_chat():
 
     try:
         if provider == "ollama":
-            response = generate_ollama_chat_response(
+            response = llm_service.generate_ollama_chat_response(
                 model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
             )
         elif provider == "openai":
-            response = generate_openai_chat_response(
+            response = llm_service.generate_openai_chat_response(
                 model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
             )
         elif provider == "anthropic":
-            response = generate_anthropic_chat_response(
+            response = llm_service.generate_anthropic_chat_response(
                 model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
             )
         elif provider == "google":
-            response = generate_google_chat_response(
+            response = llm_service.generate_google_chat_response(
                 model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
             )
         elif provider == "apollo":
-            response = generate_apollo_chat_response(
+            response = llm_service.generate_apollo_chat_response(
                 model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
             )
         else:
@@ -468,8 +300,8 @@ def llm_chat():
         user_message_for_history = user_message
         if not user_message_for_history and image_base64:
             user_message_for_history = "Image provided."
-        add_message_to_history('user', user_message_for_history)
-        add_message_to_history('assistant', response["message"])
+        llm_service.add_message_to_history('user', user_message_for_history)
+        llm_service.add_message_to_history('assistant', response["message"])
 
     return jsonify(response)
 
@@ -483,26 +315,21 @@ def save_system_prompt():
 
     session = SessionLocal()
     try:
-        user = session.query(User).get(current_user.id)
-        if user:
-            user.system_prompt = prompt_content.strip() if prompt_content else None
-            session.commit()
-            return jsonify({"success": True, "message": "System prompt saved."})
-        else:
-            return jsonify({"success": False, "message": "User not found."}), 404
+        success, message = llm_service.save_user_system_prompt(session, current_user.id, prompt_content)
+        return jsonify({"success": success, "message": message}), 200 if success else 404
     except Exception as e:
         session.rollback()
         print(f"Error saving system prompt for user {current_user.id}: {e}")
         traceback.print_exc()
         return jsonify({"success": False, "message": f"Failed to save system prompt: {e}"}), 500
     finally:
-        SessionLocal.remove()
+        session.close()
 
 
 @llm_routes.route('/chat/clear', methods=['POST'])
 @login_required
 def llm_chat_clear():
-    clear_chat_history()
+    llm_service.clear_chat_history()
     return jsonify({"success": True, "message": "Chat history cleared."})
 
 
@@ -557,23 +384,23 @@ def analyze_usecase_image_with_llm():
         llm_response_data = {"success": False, "message": "LLM provider not supported or error."}
 
         if provider == "openai":
-            llm_response_data = generate_openai_chat_response(
+            llm_response_data = llm_service.generate_openai_chat_response(
                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
             )
         elif provider == "anthropic":
-            llm_response_data = generate_anthropic_chat_response(
+            llm_response_data = llm_service.generate_anthropic_chat_response(
                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
             )
         elif provider == "google":
-             llm_response_data = generate_google_chat_response(
+             llm_response_data = llm_service.generate_google_chat_response(
                  model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
              )
         elif provider == "ollama":
-            llm_response_data = generate_ollama_chat_response(
+            llm_response_data = llm_service.generate_ollama_chat_response(
                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
             )
         elif provider == "apollo":
-            llm_response_data = generate_apollo_chat_response(
+            llm_response_data = llm_service.generate_apollo_chat_response(
                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
             )
         else:
@@ -621,12 +448,12 @@ def analyze_usecase_image_with_llm():
 @llm_routes.route('/get_llm_models', methods=['GET'])
 @login_required
 def get_llm_models_api():
-    models = get_all_available_llm_models()
+    models = llm_service.get_all_available_llm_models()
     return jsonify({"success": True, "models": models})
 
 
 @llm_routes.route('/get_chat_history', methods=['GET'])
 @login_required
 def get_chat_history_api():
-    history = get_chat_history()
+    history = llm_service.get_chat_history()
     return jsonify({"success": True, "history": history})

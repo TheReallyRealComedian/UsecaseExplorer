@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const changesPayload = Object.values(pendingChanges);
 
         try {
-            const response = await fetch('/data-update/usecases/save-all-changes', {
+            const response = await fetch('/data-management/usecases/save-all-changes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

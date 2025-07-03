@@ -3,8 +3,8 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 
-from ..models import User
-from ..db import SessionLocal # CHANGED
+from ..db import SessionLocal
+from ..services import auth_service  # <-- Use the service
 
 auth_routes = Blueprint('auth', __name__,
                         template_folder='../templates',
@@ -20,27 +20,17 @@ def register():
         password = request.form.get('password')
         session = SessionLocal()
         try:
-            existing_user = session.query(User).filter_by(username=username).first()
-            if existing_user:
-                flash('Username already exists. Please choose a different one.', 'warning')
-                return render_template('register.html', title='Register')
-
-            if not username or not password:
-                 flash('Username and password are required.', 'danger')
-                 return render_template('register.html', title='Register')
-
-            new_user = User(username=username)
-            new_user.set_password(password)
-            session.add(new_user)
-            session.commit()
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('auth.login'))
+            new_user, message = auth_service.create_user(session, username, password)
+            if new_user:
+                flash(message, 'success')
+                return redirect(url_for('auth.login'))
+            else:
+                flash(message, 'danger')
         except Exception as e:
             session.rollback()
             flash(f'An error occurred during registration: {e}', 'danger')
-            print(f"Registration error: {e}")
         finally:
-            SessionLocal.remove()
+            session.close()
 
     return render_template('register.html', title='Register')
 
@@ -55,8 +45,8 @@ def login():
         remember = request.form.get('remember_me') is not None
         session = SessionLocal()
         try:
-            user = session.query(User).filter_by(username=username).first()
-            if user and user.check_password(password):
+            user = auth_service.authenticate_user(session, username, password)
+            if user:
                 login_user(user, remember=remember)
                 flash('Login successful!', 'success')
                 next_page = request.args.get('next')
@@ -67,9 +57,8 @@ def login():
                 flash('Invalid username or password.', 'danger')
         except Exception as e:
             flash(f'An error occurred during login: {e}', 'danger')
-            print(f"Login error: {e}")
         finally:
-            SessionLocal.remove()
+            session.close()
 
     return render_template('login.html', title='Sign In')
 

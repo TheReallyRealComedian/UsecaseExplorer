@@ -30,6 +30,9 @@ from .routes.settings_routes import settings_routes
 from .routes.review_routes import review_routes
 from .routes.data_management_routes import data_management_bp
 
+# --- Service Imports ---
+from .services import step_service, dashboard_service
+
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
@@ -178,27 +181,16 @@ def create_app():
         if current_user.is_authenticated:
             session_db = SessionLocal()
             try:
-                # This page is the new "PTPs" home.
-                # It contains a process steps table and a step-to-area alignment view.
-
-                # Data for Process Steps Table
-                all_steps = session_db.query(ProcessStep).options(
-                    joinedload(ProcessStep.area),
-                    joinedload(ProcessStep.use_cases)
-                ).order_by(ProcessStep.area_id, ProcessStep.name).all()
-
-                # Data for Step-to-Area Alignment View
+                # Call the service to get data
+                all_steps = step_service.get_all_steps_with_details(session_db)
                 areas_with_steps = session_db.query(Area).options(
                     joinedload(Area.process_steps)
-                ).order_by(Area.name).all()
+                ).order_by(Area.name).all() # This could also be a service function
 
-                # We still need all_areas for the dropdowns in the inline editor.
-                # Query them and then serialize them for JavaScript.
-                all_areas_for_select_query = session_db.query(Area).order_by(Area.name).all()
-                all_areas_for_select_js = serialize_for_js(all_areas_for_select_query, 'area')
-
-                # Data for Breadcrumbs
-                all_areas_flat = serialize_for_js(all_areas_for_select_query, 'area') # Can reuse the query
+                # Prepare data for JS
+                all_areas_query = session_db.query(Area).order_by(Area.name).all()
+                all_areas_for_select_js = serialize_for_js(all_areas_query, 'area')
+                all_areas_flat = serialize_for_js(all_areas_query, 'area')
                 all_steps_flat = serialize_for_js(all_steps, 'step')
                 all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
@@ -226,20 +218,20 @@ def create_app():
         if current_user.is_authenticated:
             session_db = SessionLocal()
             try:
+                # Call the service for stats
+                stats = dashboard_service.get_dashboard_stats(session_db)
+
+                # Prepare breadcrumb data
                 all_areas_flat = serialize_for_js(session_db.query(Area).order_by(Area.name).all(), 'area')
                 all_steps_flat = serialize_for_js(session_db.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
                 all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
-                total_areas = session_db.query(func.count(Area.id)).scalar()
-                total_process_steps = session_db.query(func.count(ProcessStep.id)).scalar()
-                total_usecases = session_db.query(func.count(UseCase.id)).scalar()
-
                 return render_template(
                     'index.html',
                     title='Dashboard',
-                    total_areas=total_areas,
-                    total_steps=total_process_steps,
-                    total_usecases=total_usecases,
+                    total_areas=stats["total_areas"],
+                    total_steps=stats["total_steps"],
+                    total_usecases=stats["total_usecases"],
                     current_item=None,
                     current_area=None,
                     current_step=None,

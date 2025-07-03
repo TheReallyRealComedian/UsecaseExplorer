@@ -28,7 +28,7 @@
                         <tbody>
                             {% for area in all_areas %}
                                 {% set step_count = area.process_steps|length %}
-                                {% set use_case_count = area.process_steps|sum(attribute='use_cases')|length %}
+                                {% set use_case_count = area.process_steps | map(attribute='use_cases') | map('length') | sum %}
                                 <tr>
                                     <td data-sort-value="{{ area.name }}"><a href="{{ url_for('areas.view_area', area_id=area.id) }}"><strong>{{ area.name }}</strong></a></td>
                                     <td data-sort-value="{{ step_count }}">{{ step_count }}</td>

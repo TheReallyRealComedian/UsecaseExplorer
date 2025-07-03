@@ -1,310 +1,139 @@
 # backend/routes/step_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify # Added jsonify
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify
 from flask_login import login_required
-from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from ..db import SessionLocal
-from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance
+from ..models import ProcessStep, UseCase, Area
 from ..utils import serialize_for_js
+from ..services import step_service  # <-- Use the new service
 
 step_routes = Blueprint('steps', __name__,
                         template_folder='../templates',
                         url_prefix='/steps')
 
-# NEW API Endpoint to get all steps as JSON
-@step_routes.route('/api/all', methods=['GET']) # Changed route to /api/all to avoid conflict and be more specific
+@step_routes.route('/api/all', methods=['GET'])
 @login_required
 def api_get_all_steps():
     session = SessionLocal()
     try:
-        steps = session.query(ProcessStep).options(
-            joinedload(ProcessStep.area) # Eager load area for area_name
-        ).order_by(ProcessStep.name).all()
-        
-        steps_data = []
-        for step in steps:
-            steps_data.append({
-                "id": step.id,
-                "name": step.name,
-                "bi_id": step.bi_id,
-                "area_id": step.area_id,
-                "area_name": step.area.name if step.area else "N/A"
-                # Add other fields if needed by the modal's select dropdown rendering
-            })
+        steps_data = step_service.get_all_steps_for_api(session)
         return jsonify(steps_data)
     except Exception as e:
-        print(f"Error fetching all steps for API: {e}")
         return jsonify(error=str(e)), 500
     finally:
         session.close()
-
 
 @step_routes.route('/')
 @login_required
 def list_steps():
     session = SessionLocal()
     try:
-        steps = session.query(ProcessStep).options(
-            joinedload(ProcessStep.area),
-            joinedload(ProcessStep.use_cases)
-        ).order_by(ProcessStep.name).all()
-
+        steps = step_service.get_all_steps_with_details(session)
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(steps, 'step') # Pass the already queried steps
+        all_steps_flat = serialize_for_js(steps, 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
-        return render_template(
-            'step_overview.html', 
-            title="All Process Steps",
-            steps=steps,
-            current_item=None, 
-            current_area=None, 
-            current_step=None, 
-            current_usecase=None, 
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
-        )
+        return render_template('step_overview.html', title="All Process Steps", steps=steps, all_areas_flat=all_areas_flat, all_steps_flat=all_steps_flat, all_usecases_flat=all_usecases_flat)
     except Exception as e:
-        print(f"Error fetching all steps for overview: {e}")
         flash("An error occurred while fetching process step overview.", "danger")
         return redirect(url_for('index'))
     finally:
-        pass
-
+        session.close()
 
 @step_routes.route('/<int:step_id>')
 @login_required
 def view_step(step_id):
     session = SessionLocal()
     try:
-        step = session.query(ProcessStep).options(
-            joinedload(ProcessStep.area),
-            selectinload(ProcessStep.use_cases),
-            selectinload(ProcessStep.usecase_relevance)
-                .joinedload(UsecaseStepRelevance.source_usecase),
-            selectinload(ProcessStep.relevant_to_steps_as_source)
-                .joinedload(ProcessStepProcessStepRelevance.target_process_step),
-            selectinload(ProcessStep.relevant_to_steps_as_target)
-                .joinedload(ProcessStepProcessStepRelevance.source_process_step)
-        ).get(step_id)
-
-        if step is None:
+        step = step_service.get_step_by_id(session, step_id)
+        if not step:
             flash(f"Process Step with ID {step_id} not found.", "warning")
             return redirect(url_for('index'))
 
-        other_steps_query = session.query(ProcessStep)\
-            .filter(ProcessStep.id != step_id)\
-            .order_by(ProcessStep.name)
-        
+        other_steps = step_service.get_all_other_steps(session, step_id)
         all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step') 
+        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
-        return render_template(
-            'step_detail.html',
-            title=f"Process Step: {step.name}",
-            step=step,
-            other_steps=other_steps_query.all(), 
-            current_step=step, 
-            current_area=step.area, 
-            current_usecase=None, 
-            current_item=step, 
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
-        )
+        return render_template('step_detail.html', title=f"Process Step: {step.name}", step=step, other_steps=other_steps, current_step=step, current_area=step.area, current_item=step, all_areas_flat=all_areas_flat, all_steps_flat=all_steps_flat, all_usecases_flat=all_usecases_flat)
     except Exception as e:
-        print(f"Error fetching step {step_id}: {e}")
-        flash("An error occurred while fetching step details. Please check server logs.", "danger")
+        flash("An error occurred while fetching step details.", "danger")
         return redirect(url_for('index'))
     finally:
-        pass
-
+        session.close()
 
 @step_routes.route('/<int:step_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_step(step_id):
     session = SessionLocal()
-    step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
-    
-    all_areas_for_select = session.query(Area).order_by(Area.name).all()
+    try:
+        step = step_service.get_step_by_id(session, step_id)
+        if not step:
+            flash(f"Process Step with ID {step_id} not found.", "warning")
+            return redirect(url_for('index'))
 
-    all_areas_flat_js = serialize_for_js(all_areas_for_select, 'area')
-    all_steps_flat_js = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-    all_usecases_flat_js = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
-    if step is None:
-        flash(f"Process Step with ID {step_id} not found.", "warning")
-        return redirect(url_for('index'))
-
-    original_step_name_for_title = step.name 
-
-    if request.method == 'POST':
-        original_bi_id = step.bi_id
-        
-        step.name = request.form.get('name', '').strip()
-        step.bi_id = request.form.get('bi_id', '').strip()
-        step.area_id = request.form.get('area_id', type=int)
-        step.step_description = request.form.get('step_description', '').strip() or None
-        step.raw_content = request.form.get('raw_content', '').strip() or None
-        step.summary = request.form.get('summary', '').strip() or None
-        step.vision_statement = request.form.get('vision_statement', '').strip() or None
-        step.in_scope = request.form.get('in_scope', '').strip() or None
-        step.out_of_scope = request.form.get('out_of_scope', '').strip() or None
-        step.interfaces_text = request.form.get('interfaces_text', '').strip() or None
-        step.what_is_actually_done = request.form.get('what_is_actually_done', '').strip() or None
-        step.pain_points = request.form.get('pain_points', '').strip() or None
-        step.targets_text = request.form.get('targets_text', '').strip() or None
-
-        if not step.name or not step.bi_id or not step.area_id:
-            flash("Step Name, BI_ID, and Area are required.", "danger")
-        else:
-            if step.bi_id != original_bi_id:
-                existing_step = session.query(ProcessStep).filter(
-                    ProcessStep.bi_id == step.bi_id, 
-                    ProcessStep.id != step_id
-                ).first()
-                if existing_step:
-                    flash(f"Another process step with BI_ID '{step.bi_id}' already exists.", "danger")
-                    return render_template(
-                        'edit_step.html',
-                        title=f"Edit Step: {original_step_name_for_title}",
-                        step=step,
-                        all_areas=all_areas_for_select, 
-                        current_step=step, 
-                        current_area=step.area,
-                        current_usecase=None, 
-                        current_item=step, 
-                        all_areas_flat=all_areas_flat_js,
-                        all_steps_flat=all_steps_flat_js,
-                        all_usecases_flat=all_usecases_flat_js
-                    )
-            
+        if request.method == 'POST':
             try:
-                session.commit()
-                flash("Process Step updated successfully!", "success")
-                # REDIRECT FIX: Redirect to the PTPs overview page instead of the detail page.
-                return redirect(url_for('index'))
-            except IntegrityError:
+                success, message = step_service.update_step_from_form(session, step, request.form)
+                if success:
+                    flash(message, "success")
+                    return redirect(url_for('index'))
+                else:
+                    flash(message, "danger")
+            except IntegrityError as e:
                 session.rollback()
-                flash("Database error: Could not update step. BI_ID might already exist or area is invalid.", "danger")
+                flash(f"Database error: {e.orig}", "danger")
             except Exception as e:
                 session.rollback()
                 flash(f"An unexpected error occurred: {e}", "danger")
-                print(f"Error updating step {step_id}: {e}")
         
-        return render_template(
-            'edit_step.html',
-            title=f"Edit Step: {original_step_name_for_title}",
-            step=step, 
-            all_areas=all_areas_for_select, 
-            current_step=step, 
-            current_area=step.area,
-            current_usecase=None, 
-            current_item=step, 
-            all_areas_flat=all_areas_flat_js,
-            all_steps_flat=all_steps_flat_js,
-            all_usecases_flat=all_usecases_flat_js
-        )
-    
-    return render_template(
-        'edit_step.html',
-        title=f"Edit Step: {step.name}",
-        step=step, 
-        all_areas=all_areas_for_select, 
-        current_step=step, 
-        current_area=step.area, 
-        current_usecase=None, 
-        current_item=step, 
-        all_areas_flat=all_areas_flat_js,
-        all_steps_flat=all_steps_flat_js,
-        all_usecases_flat=all_usecases_flat_js
-    )
-
+        all_areas = session.query(Area).order_by(Area.name).all()
+        all_areas_flat_js = serialize_for_js(all_areas, 'area')
+        all_steps_flat_js = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat_js = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        
+        return render_template('edit_step.html', title=f"Edit Step: {step.name}", step=step, all_areas=all_areas, current_step=step, current_area=step.area, current_item=step, all_areas_flat=all_areas_flat_js, all_steps_flat=all_steps_flat_js, all_usecases_flat=all_usecases_flat_js)
+    finally:
+        session.close()
 
 @step_routes.route('/<int:step_id>/delete', methods=['POST'])
 @login_required
 def delete_step(step_id):
     session = SessionLocal()
-    step = session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
     redirect_url = url_for('index')
-
-    if step is None:
-        flash(f"Process Step with ID {step_id} not found.", "warning")
-    else:
-        area_id_for_redirect = step.area_id
-        step_name = step.name
-        try:
-            session.delete(step)
-            session.commit()
-            flash(f"Process Step '{step_name}' and its use cases deleted successfully.", "success")
-            if area_id_for_redirect:
-                 redirect_url = url_for('areas.view_area', area_id=area_id_for_redirect)
-        except Exception as e:
-            session.rollback()
-            flash(f"Error deleting process step: {e}", "danger")
-            print(f"Error deleting step {step_id}: {e}")
-            if step and step.area_id: 
-                 redirect_url = url_for('areas.view_area', area_id=step.area_id)
+    try:
+        step_name, area_id, message = step_service.delete_step_by_id(session, step_id)
+        if step_name:
+            flash(message, "success")
+            if area_id:
+                redirect_url = url_for('areas.view_area', area_id=area_id)
+        else:
+            flash(message, "warning")
+    except Exception as e:
+        flash(f"Error deleting process step: {e}", "danger")
+    finally:
+        session.close()
     return redirect(redirect_url)
-
 
 @step_routes.route('/api/steps/<int:step_id>/inline-update', methods=['PUT'])
 @login_required
 def inline_update_step(step_id):
     session = SessionLocal()
     try:
-        step = session.query(ProcessStep).get(step_id)
-        if not step:
+        step_to_update = session.query(ProcessStep).get(step_id)
+        if not step_to_update:
             return jsonify(success=False, message="Process Step not found"), 404
 
         data = request.json
-        if not data or len(data) != 1:
-            return jsonify(success=False, message="Invalid update data. Expecting a single field."), 400
-
-        field_to_update = list(data.keys())[0]
-        new_value = data[field_to_update]
-
-        allowed_fields = ['name', 'bi_id', 'area_id', 'step_description']
-        if field_to_update not in allowed_fields:
-            return jsonify(success=False, message=f"Field '{field_to_update}' cannot be updated inline."), 400
-
-        if field_to_update in ['name', 'bi_id']:
-            new_value_stripped = new_value.strip() if isinstance(new_value, str) else ''
-            if not new_value_stripped:
-                return jsonify(success=False, message=f"{field_to_update.replace('_', ' ').title()} cannot be empty."), 400
-            if field_to_update == 'bi_id':
-                existing = session.query(ProcessStep).filter(ProcessStep.bi_id == new_value_stripped, ProcessStep.id != step_id).first()
-                if existing:
-                    return jsonify(success=False, message=f"BI_ID '{new_value_stripped}' already exists."), 409
-            new_value = new_value_stripped
+        if not data or len(data) != 1: return jsonify(success=False, message="Invalid update data."), 400
+        field, value = list(data.items())[0]
         
-        if field_to_update == 'area_id':
-            if not new_value:
-                 return jsonify(success=False, message="Area cannot be empty."), 400
-            area_exists = session.query(Area).get(new_value)
-            if not area_exists:
-                return jsonify(success=False, message="Selected area does not exist."), 404
-
-        setattr(step, field_to_update, new_value)
-        session.commit()
-        
-        session.refresh(step, ['area'])
-
-        updated_data = {
-            'id': step.id,
-            'name': step.name,
-            'bi_id': step.bi_id,
-            'area_id': step.area_id,
-            'area_name': step.area.name if step.area else 'N/A',
-            'step_description': step.step_description
-        }
-        return jsonify(success=True, message="Step updated.", step=updated_data)
-    except IntegrityError as e:
-        session.rollback()
-        return jsonify(success=False, message=f"Database error: {e.orig}"), 500
+        updated_step, message = step_service.inline_update_step_field(session, step_to_update, field, value)
+        if updated_step:
+            updated_data = {'id': updated_step.id, 'name': updated_step.name, 'bi_id': updated_step.bi_id, 'area_id': updated_step.area_id, 'area_name': updated_step.area.name if updated_step.area else 'N/A', 'step_description': updated_step.step_description}
+            return jsonify(success=True, message=message, step=updated_data)
+        else:
+            return jsonify(success=False, message=message), 400
     except Exception as e:
         session.rollback()
         return jsonify(success=False, message=f"An unexpected error occurred: {str(e)}"), 500

@@ -7,6 +7,7 @@ from sqlalchemy import or_, and_, exc as sqlalchemy_exc
 from ..db import SessionLocal
 from ..utils import serialize_for_js
 from ..models import Area, ProcessStep, ProcessStepProcessStepRelevance, UseCase
+from ..services import review_service
 
 import io
 import csv
@@ -16,7 +17,7 @@ review_routes = Blueprint('review', __name__,
                           template_folder='../templates',
                           url_prefix='/review')
 
-# Route for the main review dashboard
+
 @review_routes.route('/')
 @login_required
 def review_dashboard():
@@ -38,7 +39,7 @@ def review_dashboard():
                            all_steps_flat=all_steps_flat,
                            all_usecases_flat=all_usecases_flat)
 
-# Route for the Process Links Review page
+
 @review_routes.route('/process-links/')
 @login_required
 def review_process_links_page():
@@ -63,7 +64,7 @@ def review_process_links_page():
     finally:
         session.close()
 
-# API endpoint to fetch data for the process links table
+
 @review_routes.route('/api/process-links/data', methods=['GET'])
 @login_required
 def get_process_links_data():
@@ -82,76 +83,8 @@ def get_process_links_data():
         if not focus_area_id:
             return jsonify(error="Focus area ID is required."), 400
 
-        SourceStep = aliased(ProcessStep, name='source_step')
-        TargetStep = aliased(ProcessStep, name='target_step')
-        SourceArea = aliased(Area, name='source_area')
-        TargetArea = aliased(Area, name='target_area')
-
-        query = session.query(
-            ProcessStepProcessStepRelevance,
-            SourceStep.name.label('source_step_name'),
-            SourceStep.bi_id.label('source_step_bi_id'),
-            TargetStep.name.label('target_step_name'),
-            TargetStep.bi_id.label('target_step_bi_id'),
-            SourceArea.name.label('source_area_name'),
-            TargetArea.name.label('target_area_name'),
-            SourceStep.id.label('source_step_actual_id'),
-            TargetStep.id.label('target_step_actual_id')
-        ).join(
-            SourceStep, ProcessStepProcessStepRelevance.source_process_step_id == SourceStep.id
-        ).join(
-            TargetStep, ProcessStepProcessStepRelevance.target_process_step_id == TargetStep.id
-        ).join(
-            SourceArea, SourceStep.area_id == SourceArea.id
-        ).join(
-            TargetArea, TargetStep.area_id == TargetArea.id
-        )
-
-        main_filter_conditions = []
-        is_focus_only_scenario = not comparison_area_ids or \
-                                 (len(comparison_area_ids) == 1 and comparison_area_ids[0] == focus_area_id)
-
-        if is_focus_only_scenario:
-            main_filter_conditions.append(
-                and_(SourceStep.area_id == focus_area_id, TargetStep.area_id == focus_area_id)
-            )
-        else:
-            cond1 = and_(SourceStep.area_id == focus_area_id, TargetStep.area_id.in_(comparison_area_ids))
-            cond2 = and_(TargetStep.area_id == focus_area_id, SourceStep.area_id.in_(comparison_area_ids))
-            main_filter_conditions.append(or_(cond1, cond2))
-
-
-        if main_filter_conditions:
-            query = query.filter(or_(*main_filter_conditions))
-        else:
-            query = query.filter(False)
-
-        query = query.order_by(SourceStep.name, TargetStep.name)
-        db_results = query.all()
-
-        links_data = []
-        for result_row in db_results:
-            (relevance_obj, source_step_name, source_step_bi_id,
-             target_step_name, target_step_bi_id,
-             source_area_name, target_area_name,
-             source_step_actual_id, target_step_actual_id) = result_row
-
-            links_data.append({
-                "id": relevance_obj.id,
-                "source_step_id": source_step_actual_id,
-                "target_step_id": target_step_actual_id,
-                "source_step_name": source_step_name,
-                "source_step_bi_id": source_step_bi_id,
-                "target_step_name": target_step_name,
-                "target_step_bi_id": target_step_bi_id,
-                "source_area_name": source_area_name,
-                "target_area_name": target_area_name,
-                "relevance_score": relevance_obj.relevance_score,
-                "relevance_content_snippet": (relevance_obj.relevance_content or "")[:100] + ('...' if (relevance_obj.relevance_content or "")[100:] else ''),
-                "relevance_content": relevance_obj.relevance_content or "",
-                "created_at": relevance_obj.created_at.isoformat() if relevance_obj.created_at else None,
-                "updated_at": relevance_obj.updated_at.isoformat() if relevance_obj.updated_at else None,
-            })
+        # Call the service function to get the data
+        links_data = review_service.get_process_links_for_review(session, focus_area_id, comparison_area_ids)
 
         return jsonify(links=links_data)
 
@@ -165,7 +98,6 @@ def get_process_links_data():
             session.close()
 
 
-# NEW ROUTE for exporting involved steps
 @review_routes.route('/export-involved-steps-csv', methods=['GET'])
 @login_required
 def export_involved_steps_csv():
@@ -259,7 +191,7 @@ def export_involved_steps_csv():
         if session and session.is_active:
             session.close()
 
-# API endpoint to get a single link's details (for pre-filling edit modal)
+
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['GET'])
 @login_required
 def get_process_link_detail(link_id):
@@ -289,7 +221,6 @@ def get_process_link_detail(link_id):
             session.close()
 
 
-# API endpoint to create a new ProcessStep-ProcessStep relevance link
 @review_routes.route('/api/process-links/link', methods=['POST'])
 @login_required
 def create_process_link():
@@ -354,7 +285,7 @@ def create_process_link():
         if session and session.is_active:
             session.close()
 
-# API endpoint to update an existing ProcessStep-ProcessStep relevance link
+
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['PUT'])
 @login_required
 def update_process_link(link_id):
@@ -431,7 +362,7 @@ def update_process_link(link_id):
         if session and session.is_active:
             session.close()
 
-# API endpoint to delete an existing ProcessStep-ProcessStep relevance link
+
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['DELETE'])
 @login_required
 def delete_process_link(link_id):
@@ -451,7 +382,7 @@ def delete_process_link(link_id):
         if session and session.is_active:
             session.close()
 
-# NEW API endpoint to delete all ProcessStep-ProcessStep relevance links
+
 @review_routes.route('/api/process-links/delete-all', methods=['POST'])
 @login_required
 def delete_all_process_links():
@@ -474,8 +405,8 @@ def delete_all_process_links():
             session.close()
 
 
-# General API Blueprint (for endpoints not strictly tied to a specific review section)
 general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
+
 
 @general_api_routes.route('/steps', methods=['GET'])
 @login_required
