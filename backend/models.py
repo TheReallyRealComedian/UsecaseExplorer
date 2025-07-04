@@ -1,5 +1,5 @@
 # /backend/models.py
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, DateTime, CheckConstraint, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, DateTime, CheckConstraint, UniqueConstraint, Table
 from sqlalchemy.orm import relationship, declarative_base, sessionmaker, scoped_session
 from sqlalchemy.sql import func
 from passlib.hash import pbkdf2_sha256
@@ -7,6 +7,35 @@ from flask_login import UserMixin
 
 # Base class for declarative models
 Base = declarative_base()
+
+# --- NEW: Association Table for UseCase <-> Tag ---
+usecase_tag_association = Table('usecase_tag_association', Base.metadata,
+    Column('usecase_id', Integer, ForeignKey('use_cases.id', ondelete='CASCADE'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
+)
+
+# --- NEW: Tag Model ---
+class Tag(Base):
+    __tablename__ = 'tags'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    # Category helps us differentiate between 'it_system', 'data_type', 'tag', etc.
+    category = Column(String(50), nullable=False, default='tag', index=True)
+
+    use_cases = relationship(
+        "UseCase",
+        secondary=usecase_tag_association,
+        back_populates="tags"
+    )
+
+    __table_args__ = (
+        UniqueConstraint('name', 'category', name='unique_name_category_in_tags'),
+    )
+
+    def __repr__(self):
+        return f"<Tag(name='{self.name}', category='{self.category}')>"
+
 
 # --- User Model ---
 class User(UserMixin, Base):
@@ -150,6 +179,14 @@ class UseCase(Base):
 
     process_step = relationship("ProcessStep", back_populates="use_cases")
 
+    # UPDATE: Add relationship to the Tag model
+    tags = relationship(
+        "Tag",
+        secondary=usecase_tag_association,
+        back_populates="use_cases",
+        cascade="all, delete"  # Optional: Deleting a use case doesn't delete the tag, just the link.
+    )
+
     relevant_to_areas = relationship(
         "UsecaseAreaRelevance",
         back_populates="source_usecase",
@@ -176,6 +213,20 @@ class UseCase(Base):
     @property
     def area(self):
         return self.process_step.area if self.process_step and self.process_step.area else None
+        
+    # NEW: Convenience properties to access categorized tags easily
+    @property
+    def it_systems(self):
+        return [tag for tag in self.tags if tag.category == 'it_system']
+
+    @property
+    def data_types(self):
+        return [tag for tag in self.tags if tag.category == 'data_type']
+
+    @property
+    def generic_tags(self):
+        return [tag for tag in self.tags if tag.category == 'tag']
+
 
     def __repr__(self):
         return f"<UseCase(name='{self.name}', bi_id='{self.bi_id}', wave='{self.wave}', status='{self.status}')>"
@@ -303,7 +354,7 @@ class LLMSettings(Base):
 
     # Apollo credentials
     apollo_client_id = Column(String(255), nullable=True)
-    apollo_client_secret = Column(String(255), nullable=True)
+    apollo_client_secret = Column(String(length=255), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())

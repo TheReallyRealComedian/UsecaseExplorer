@@ -1,15 +1,17 @@
 # backend/services/usecase_service.py
 from sqlalchemy.orm import Session, joinedload, selectinload
-from ..models import UseCase, ProcessStep, Area, UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance
+from ..models import UseCase, ProcessStep, Area, UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance, Tag
 
 def get_all_usecases_with_details(db_session: Session):
     return db_session.query(UseCase).options(
-        joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        joinedload(UseCase.process_step).joinedload(ProcessStep.area),
+        selectinload(UseCase.tags) # Eager load tags
     ).order_by(UseCase.name).all()
 
 def get_usecase_by_id(db_session: Session, usecase_id: int):
     return db_session.query(UseCase).options(
         joinedload(UseCase.process_step).joinedload(ProcessStep.area),
+        selectinload(UseCase.tags), # Eager load tags
         selectinload(UseCase.relevant_to_areas).joinedload(UsecaseAreaRelevance.target_area),
         selectinload(UseCase.relevant_to_steps).joinedload(UsecaseStepRelevance.target_process_step),
         selectinload(UseCase.relevant_to_usecases_as_source).joinedload(UsecaseUsecaseRelevance.target_usecase),
@@ -18,6 +20,35 @@ def get_usecase_by_id(db_session: Session, usecase_id: int):
 
 def get_all_other_usecases(db_session: Session, usecase_id: int):
     return db_session.query(UseCase).filter(UseCase.id != usecase_id).order_by(UseCase.name).all()
+
+def _handle_tags(db_session: Session, tag_string: str, category: str):
+    """Helper function to process a comma-separated string of tags."""
+    if not tag_string:
+        return []
+    
+    tag_names = [name.strip() for name in tag_string.split(',') if name.strip()]
+    if not tag_names:
+        return []
+    
+    # Find existing tags in one query
+    existing_tags = db_session.query(Tag).filter(
+        Tag.category == category,
+        Tag.name.in_(tag_names)
+    ).all()
+    existing_tag_names = {tag.name for tag in existing_tags}
+    
+    # Create new tags for those that don't exist
+    new_tags = [
+        Tag(name=name, category=category)
+        for name in tag_names if name not in existing_tag_names
+    ]
+    
+    # Add new tags to the session
+    if new_tags:
+        db_session.add_all(new_tags)
+        db_session.flush() # Flush to get IDs for new tags
+        
+    return existing_tags + new_tags
 
 def update_usecase_from_form(db_session: Session, usecase: UseCase, form_data: dict):
     original_bi_id = usecase.bi_id
@@ -42,6 +73,15 @@ def update_usecase_from_form(db_session: Session, usecase: UseCase, form_data: d
     ]
     for field in text_fields:
         setattr(usecase, field, form_data.get(field, '').strip() or None)
+
+    # --- NEW: Handle tags ---
+    it_system_tags = _handle_tags(db_session, form_data.get('it_systems', ''), 'it_system')
+    data_type_tags = _handle_tags(db_session, form_data.get('data_types', ''), 'data_type')
+    generic_tags = _handle_tags(db_session, form_data.get('generic_tags', ''), 'tag')
+
+    # Combine all tags and update the relationship
+    # This automatically handles the association table
+    usecase.tags = it_system_tags + data_type_tags + generic_tags
 
     if not all([usecase.name, usecase.bi_id, usecase.process_step_id]):
         return False, "Use Case Name, BI_ID, and Process Step are required."

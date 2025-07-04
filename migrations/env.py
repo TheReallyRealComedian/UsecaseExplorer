@@ -58,20 +58,22 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-    # ... (rest of the function is correct) ...
-    """
-    connectable = app.extensions['sqlalchemy'].engine
+    """Run migrations in 'online' mode."""
+    # --- START MODIFICATION ---
+    # We wrap the code that needs the Flask app in an app_context.
+    with app.app_context():
+        connectable = app.extensions['sqlalchemy'].engine
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, 
-            target_metadata=target_metadata,
-            include_object=include_object,
-        )
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection, 
+                target_metadata=target_metadata,
+                include_object=include_object,
+            )
 
-        with context.begin_transaction():
-            context.run_migrations()
+            with context.begin_transaction():
+                context.run_migrations()
+    # --- END MODIFICATION ---
 
 
 if context.is_offline_mode():

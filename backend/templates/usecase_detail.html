@@ -65,6 +65,33 @@
                     {% endif %}
                 </dd>
 
+                {# --- NEW: Display Tags --- #}
+                {% if usecase.it_systems %}
+                <dt>IT Systems:</dt>
+                <dd>
+                    {% for tag in usecase.it_systems %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                </dd>
+                {% endif %}
+                {% if usecase.data_types %}
+                <dt>Data Types:</dt>
+                <dd>
+                    {% for tag in usecase.data_types %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                </dd>
+                {% endif %}
+                {% if usecase.generic_tags %}
+                <dt>Tags:</dt>
+                <dd>
+                    {% for tag in usecase.generic_tags %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                </dd>
+                {% endif %}
+                {# --- END NEW --- #}
+
                 <dt>Summary:</dt>
                 <dd><div class="markdown-content">{{ usecase.summary | markdown | default('N/A', true) }}</div></dd>
 

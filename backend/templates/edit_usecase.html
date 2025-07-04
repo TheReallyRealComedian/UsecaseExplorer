@@ -40,6 +40,28 @@
                     </div>
                 </div>
 
+                {# --- NEW TAGS SECTION --- #}
+                <hr>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="it_systems" class="form-label">IT Systems:</label>
+                        <input type="text" class="form-control" id="it_systems" name="it_systems" value="{{ usecase.it_systems | map(attribute='name') | join(', ') }}">
+                        <div class="form-text text-muted">Comma-separated list (e.g., SAP, LIMS, TrackWise).</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="data_types" class="form-label">Data Types:</label>
+                        <input type="text" class="form-control" id="data_types" name="data_types" value="{{ usecase.data_types | map(attribute='name') | join(', ') }}">
+                         <div class="form-text text-muted">Comma-separated list (e.g., Batch Records, Sensor Data).</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="generic_tags" class="form-label">Tags:</label>
+                        <input type="text" class="form-control" id="generic_tags" name="generic_tags" value="{{ usecase.generic_tags | map(attribute='name') | join(', ') }}">
+                        <div class="form-text text-muted">Comma-separated list of general keywords.</div>
+                    </div>
+                </div>
+                <hr>
+                {# --- END NEW TAGS SECTION --- #}
+
                 <h3>Additional Details</h3> {# Optional grouping #}
 
                 <div class="row">
