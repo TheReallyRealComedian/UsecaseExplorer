@@ -1,4 +1,4 @@
-# backend/export_service.py
+# backend/services/export_service.py
 import json
 from datetime import datetime
 import traceback
@@ -72,7 +72,12 @@ def export_database_to_json_string():
                 "dependencies_text": uc.dependencies_text,
                 "contact_persons_text": uc.contact_persons_text,
                 "related_projects_text": uc.related_projects_text,
-                "created_at": uc.created_at, "updated_at": uc.updated_at
+                "created_at": uc.created_at, "updated_at": uc.updated_at,
+                "llm_comment_1": uc.llm_comment_1,
+                "llm_comment_2": uc.llm_comment_2,
+                "llm_comment_3": uc.llm_comment_3,
+                "llm_comment_4": uc.llm_comment_4,
+                "llm_comment_5": uc.llm_comment_5
             } for uc in use_cases
         ]
 
@@ -101,7 +106,6 @@ def export_database_to_json_string():
             } for r in uur
         ]
 
-        # NEW: Export ProcessStepProcessStepRelevance
         pspsr = session.query(ProcessStepProcessStepRelevance).all()
         export_data["data"]["process_step_process_step_relevance"] = [
             {

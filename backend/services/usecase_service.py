@@ -69,7 +69,8 @@ def update_usecase_from_form(db_session: Session, usecase: UseCase, form_data: d
         'reduction_costs_supply', 'quality_improvement_quant', 'ideation_notes',
         'further_ideas', 'effort_quantification', 'potential_quantification',
         'dependencies_text', 'contact_persons_text', 'related_projects_text',
-        'pilot_site_factory_text', 'usecase_type_category'
+        'pilot_site_factory_text', 'usecase_type_category',
+        'llm_comment_1', 'llm_comment_2', 'llm_comment_3', 'llm_comment_4', 'llm_comment_5'
     ]
     for field in text_fields:
         setattr(usecase, field, form_data.get(field, '').strip() or None)

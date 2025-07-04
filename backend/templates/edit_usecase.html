@@ -1,3 +1,4 @@
+{# backend/templates/edit_usecase.html #}
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
@@ -188,6 +189,17 @@
                     <input type="text" class="form-control" id="usecase_type_category" name="usecase_type_category" value="{{ usecase.usecase_type_category | default('', true) }}">
                 </div>
                 {# END ADDED NEW FIELDS #}
+
+                {# --- START MODIFICATION: ADD LLM COMMENT FIELDS --- #}
+                <hr>
+                <h3>LLM Comments</h3>
+                {% for i in range(1, 6) %}
+                <div class="mb-3">
+                    <label for="llm_comment_{{ i }}" class="form-label">LLM Comment {{ i }}:</label>
+                    <textarea class="form-control" id="llm_comment_{{ i }}" name="llm_comment_{{ i }}" rows="3">{{ attribute(usecase, 'llm_comment_' ~ i) | default('', true) }}</textarea>
+                </div>
+                {% endfor %}
+                {# --- END MODIFICATION --- #}
 
                 <button type="submit" class="btn btn-primary">Save Changes</button>
                 <a href="{{ url_for('usecases.view_usecase', usecase_id=usecase.id) }}" class="btn btn-secondary">Cancel</a>

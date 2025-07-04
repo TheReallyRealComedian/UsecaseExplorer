@@ -1,4 +1,4 @@
-# backend/data_management_service.py
+# backend/services/data_management_service.py
 import json
 import traceback
 from sqlalchemy import text
@@ -8,14 +8,64 @@ from ..db import SessionLocal, db as flask_sqlalchemy_db
 from ..models import (
     Base, User, Area, ProcessStep, UseCase, LLMSettings,
     UsecaseAreaRelevance, UsecaseStepRelevance, UsecaseUsecaseRelevance,
-    ProcessStepProcessStepRelevance
+    ProcessStepProcessStepRelevance, Tag
 )
 from datetime import datetime
+from sqlalchemy.orm import Session
 
 def datetime_serializer(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
+
+def _get_or_create_tags(db_session: Session, tag_string: str, category: str, tag_cache: dict):
+    """
+    Efficiently gets or creates tags from a comma-separated string, using a
+    per-request cache to avoid duplicate creation within a single transaction.
+    """
+    if not tag_string or not isinstance(tag_string, str):
+        return []
+
+    tag_names = {name.strip() for name in tag_string.split(',') if name.strip()}
+    if not tag_names:
+        return []
+
+    tags_to_return = []
+    tags_to_query = []
+
+    # First, check the cache
+    for name in tag_names:
+        cache_key = (name, category)
+        if cache_key in tag_cache:
+            tags_to_return.append(tag_cache[cache_key])
+        else:
+            tags_to_query.append(name)
+    
+    # If there are tags not in the cache, query the DB
+    if tags_to_query:
+        existing_tags_from_db = db_session.query(Tag).filter(
+            Tag.category == category,
+            Tag.name.in_(tags_to_query)
+        ).all()
+
+        for tag in existing_tags_from_db:
+            cache_key = (tag.name, tag.category)
+            tag_cache[cache_key] = tag
+            tags_to_return.append(tag)
+        
+        existing_names_from_db = {t.name for t in existing_tags_from_db}
+
+        # Create new tags for those that were not in cache and not in DB
+        for name in tags_to_query:
+            if name not in existing_names_from_db:
+                new_tag = Tag(name=name, category=category)
+                db_session.add(new_tag) # Add to session, will be flushed
+                cache_key = (name, category)
+                tag_cache[cache_key] = new_tag
+                tags_to_return.append(new_tag)
+
+    return tags_to_return
+
 
 def process_area_file(file_stream):
     session = SessionLocal()
@@ -24,6 +74,9 @@ def process_area_file(file_stream):
     skipped_count = 0
     duplicates_not_updated = []
     skipped_errors_details = []
+
+    # --- START MODIFICATION: Track names processed within this single file/transaction ---
+    processed_names_in_this_run = set()
 
     message = ""
     success = False
@@ -48,6 +101,16 @@ def process_area_file(file_stream):
                 skipped_count += 1
                 skipped_errors_details.append(f"{item_identifier}: Invalid format or missing/empty 'name' field.")
                 continue
+            
+            # --- START MODIFICATION: Check for duplicates within the file itself ---
+            if area_name in processed_names_in_this_run:
+                skipped_count += 1
+                skipped_errors_details.append(f"{item_identifier}: Duplicate name found within the uploaded file. Skipping subsequent entry.")
+                continue
+            
+            # Add to the set to mark it as processed for this run
+            processed_names_in_this_run.add(area_name)
+            # --- END MODIFICATION ---
 
             description_from_json = item.get('description')
             if description_from_json is not None:
@@ -63,10 +126,15 @@ def process_area_file(file_stream):
             item_updated = False
 
             if existing_area:
-                if description_from_json and \
-                   (existing_area.description is None or existing_area.description == ''):
+                # --- START MODIFICATION: More permissive update logic ---
+                # Update description if it's different, not just if it was empty.
+                db_desc = existing_area.description or ""
+                json_desc = description_from_json or ""
+                
+                if description_from_json is not None and db_desc != json_desc:
                     existing_area.description = description_from_json
                     item_updated = True
+                # --- END MODIFICATION ---
 
                 if item_updated:
                     updated_count += 1
@@ -98,7 +166,8 @@ def process_area_file(file_stream):
         if duplicates_not_updated:
             message += f" (Existing items not updated: {len(duplicates_not_updated)}). "
         if skipped_errors_details:
-            message += f" (Details on specific skips available in server logs). "
+            print("Skipped item details:", skipped_errors_details)
+            message += f" (Review server logs for details on skipped items). "
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_area_file: {e}")
@@ -476,11 +545,15 @@ def process_usecase_file(file_stream):
         'Contact persons for further detailing': 'contact_persons_text',
         'Related ongoing projects (incl. contact person)': 'related_projects_text',
         'pilot_site_factory_text': 'pilot_site_factory_text',
-        'usecase_type_category': 'usecase_type_category'
+        'usecase_type_category': 'usecase_type_category',
+        'llm_comment_1': 'llm_comment_1', 'llm_comment_2': 'llm_comment_2',
+        'llm_comment_3': 'llm_comment_3', 'llm_comment_4': 'llm_comment_4',
+        'llm_comment_5': 'llm_comment_5'
     }
 
     try:
         print("Processing use case file (with update logic)")
+        tag_cache = {}
         step_lookup = {
             step.bi_id: step.id
             for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()
@@ -520,28 +593,29 @@ def process_usecase_file(file_stream):
 
             uc_fields_from_json = {}
             for json_key, model_attr in json_to_model_map.items():
-                json_value = item.get(json_key)
-                if model_attr == 'priority':
-                    priority_val = None
-                    if json_value is not None:
-                        try:
-                            priority_int = int(json_value)
-                            if 1 <= priority_int <= 4:
-                                priority_val = priority_int
-                            else:
+                if json_key in item: 
+                    json_value = item.get(json_key)
+                    if model_attr == 'priority':
+                        priority_val = None
+                        if json_value is not None:
+                            try:
+                                priority_int = int(json_value)
+                                if 1 <= priority_int <= 4:
+                                    priority_val = priority_int
+                                else:
+                                    skipped_invalid_priority += 1
+                                    skipped_errors_details.append(f"{item_log_string}: Invalid priority value '{json_value}' (must be 1-4). Skipping priority for this item.")
+                            except (ValueError, TypeError):
                                 skipped_invalid_priority += 1
-                                skipped_errors_details.append(f"{item_log_string}: Invalid priority value '{json_value}' (must be 1-4). Skipping priority for this item.")
-                        except (ValueError, TypeError):
-                            skipped_invalid_priority += 1
-                            skipped_errors_details.append(f"{item_log_string}: Non-integer priority '{json_value}'. Skipping priority for this item.")
-                    uc_fields_from_json[model_attr] = priority_val
-                elif isinstance(json_value, str):
-                    stripped_value = json_value.strip()
-                    uc_fields_from_json[model_attr] = stripped_value if stripped_value else None
-                else:
-                    uc_fields_from_json[model_attr] = None
-                    if json_value is not None:
-                        skipped_errors_details.append(f"{item_log_string}: Field '{model_attr}' (from JSON key '{json_key}') was not a string, treated as empty.")
+                                skipped_errors_details.append(f"{item_log_string}: Non-integer priority '{json_value}'. Skipping priority for this item.")
+                        uc_fields_from_json[model_attr] = priority_val
+                    elif isinstance(json_value, str):
+                        stripped_value = json_value.strip()
+                        uc_fields_from_json[model_attr] = stripped_value if stripped_value else None
+                    else:
+                        uc_fields_from_json[model_attr] = None
+                        if json_value is not None:
+                            skipped_errors_details.append(f"{item_log_string}: Field '{model_attr}' (from JSON key '{json_key}') was not a string, treated as empty.")
 
             if 'name' not in uc_fields_from_json or uc_fields_from_json['name'] is None:
                  name_val = item.get('name')
@@ -552,26 +626,37 @@ def process_usecase_file(file_stream):
                      uc_fields_from_json['name'] = None
 
             if existing_usecase:
-                current_process_step_id = existing_usecase.process_step_id
-
-                new_process_step_id = step_lookup.get(process_step_bi_id)
-                if new_process_step_id is None:
-                    skipped_errors_details.append(f"{item_log_string}: Parent Process Step BI_ID '{process_step_bi_id}' from JSON not found. Keeping existing parent step.")
-                elif new_process_step_id != current_process_step_id:
-                    existing_usecase.process_step_id = new_process_step_id
-                    item_updated = True
-                    skipped_errors_details.append(f"{item_log_string}: Parent Process Step changed from ID '{current_process_step_id}' to '{new_process_step_id}'.")
-
                 for model_attr, json_val in uc_fields_from_json.items():
-                    if model_attr == 'process_step_id':
-                        continue
+                    db_value = getattr(existing_usecase, model_attr, None)
+                    db_value_normalized = db_value.strip() if isinstance(db_value, str) else db_value
+                    if db_value_normalized == '': db_value_normalized = None
 
-                    db_value = getattr(existing_usecase, model_attr)
-                    db_value_normalized = db_value.strip() if isinstance(db_value, str) and db_value.strip() else (db_value if not isinstance(db_value, str) else None)
-
-                    if json_val is not None and (db_value_normalized is None or (isinstance(db_value_normalized, str) and db_value_normalized == '')):
+                    if json_val != db_value_normalized:
                         setattr(existing_usecase, model_attr, json_val)
                         item_updated = True
+                
+                new_process_step_id = step_lookup.get(process_step_bi_id)
+                if new_process_step_id and new_process_step_id != existing_usecase.process_step_id:
+                    existing_usecase.process_step_id = new_process_step_id
+                    item_updated = True
+
+                tags_to_update = {
+                    'it_systems': 'it_system',
+                    'data_types': 'data_type',
+                }
+                
+                current_tags = list(existing_usecase.tags)
+                tags_have_changed_in_json = any(key in item for key in tags_to_update)
+
+                if tags_have_changed_in_json:
+                    final_tags = [tag for tag in current_tags if tag.category not in tags_to_update.values()]
+                    for json_key, category in tags_to_update.items():
+                         if json_key in item:
+                            new_tags_for_category = _get_or_create_tags(session, item[json_key], category, tag_cache)
+                            final_tags.extend(new_tags_for_category)
+                    
+                    existing_usecase.tags = final_tags
+                    item_updated = True
 
                 if item_updated:
                     updated_count += 1
@@ -580,8 +665,8 @@ def process_usecase_file(file_stream):
                     skipped_count_total += 1
                     if uc_bi_id not in uc_bi_ids_existing_no_update:
                         uc_bi_ids_existing_no_update.append(uc_bi_id)
-                    skipped_errors_details.append(f"{item_log_string}: Already exists with no empty fields to fill or data matched. Skipped update.")
-            else:
+                    skipped_errors_details.append(f"{item_log_string}: Already exists with no fields to update. Skipped.")
+            else: # New use case
                 if process_step_bi_id not in step_lookup:
                     skipped_missing_step += 1
                     skipped_count_total += 1
@@ -595,10 +680,14 @@ def process_usecase_file(file_stream):
                     "bi_id": uc_bi_id,
                     "process_step_id": process_step_id,
                 }
-                for model_attr, json_val in uc_fields_from_json.items():
-                     new_uc_data[model_attr] = json_val
-
+                new_uc_data.update(uc_fields_from_json)
+                
                 new_uc = UseCase(**new_uc_data)
+                
+                it_system_tags = _get_or_create_tags(session, item.get('it_systems', ''), 'it_system', tag_cache)
+                data_type_tags = _get_or_create_tags(session, item.get('data_types', ''), 'data_type', tag_cache)
+                new_uc.tags = it_system_tags + data_type_tags
+
                 session.add(new_uc)
                 added_count += 1
 
