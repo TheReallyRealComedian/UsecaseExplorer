@@ -108,14 +108,14 @@
                     <td data-field="effort_level" class="editable-cell">{{ uc.effort_level | default('N/A', true) }}</td>
                     <td data-field="wave" class="editable-cell">{{ uc.wave | default('N/A', true) }}</td>
                     <td>
-                        <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
-                        <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info me-1" title="Edit with AI Assist">
-                            <i class="fas fa-magic"></i> AI
-                        </a>
-                        <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
-                        <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this use case?');">
-                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
-                        </form>
+                        <div class="actions-button-group" style="max-width: 72px;"> {# Wrapper with max-width to force 2x2 grid #}
+                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
+                            <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="Edit with AI Assist"><i class="fas fa-magic"></i></a>
+                            <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
+                            <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" onsubmit="return confirm('Delete this use case?');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

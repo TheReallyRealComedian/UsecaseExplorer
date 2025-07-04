@@ -51,11 +51,13 @@
                                     <td data-sort-value="{{ step.use_cases|length }}">{{ step.use_cases | length }}</td>
                                     <td data-field="step_description" class="editable-cell">{{ (step.step_description or step.vision_statement or '') | truncate(80) }}</td>
                                     <td>
-                                        <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
-                                        <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
-                                        <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this step and its use cases?');">
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
-                                        </form>
+                                        <div class="actions-button-group"> {# Simple wrapper for consistent spacing #}
+                                            <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
+                                            <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
+                                            <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" onsubmit="return confirm('Delete this step and its use cases?');">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}

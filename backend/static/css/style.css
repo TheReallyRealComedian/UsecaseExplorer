@@ -778,6 +778,28 @@ form button[type="submit"].btn-primary:disabled,
     transform: none;
 }
 
+.actions-button-group {
+    display: flex;
+    flex-wrap: wrap; /* Allows buttons to wrap to the next line if needed */
+    gap: 6px;        /* Consistent spacing between all buttons */
+    align-items: center; /* Vertically align items */
+}
+
+
+.actions-button-group > form {
+    margin: 0;
+}
+
+
+.actions-button-group .btn {
+    min-width: 34px;  /* Set a minimum width */
+    min-height: 32px; /* Set a minimum height */
+    line-height: 1;   /* Helps center content vertically */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 /* .btn-secondary - For neutral/less prominent actions */
 .btn-secondary {
@@ -3096,6 +3118,3 @@ form button[type="submit"].btn-primary:disabled,
 .strategic-partner .step-badge { background: var(--bi-neutral-700); color: var(--bi-white); }
 .supply-chain .step-badge { background: var(--bi-dark-green-900); color: var(--bi-white); }
 
-/* Ensure all secondary color badges have sufficient contrast if bg is light */
-/* Example: if --bi-violet-400 (#C5C3EE) text is --bi-dark-green-800 (#08312A) contrast is 8.9:1 - GOOD */
-/* Example: if --bi-neutral-700 (#5C5B59) text is --bi-white (#FFFFFF) contrast is 6.08:1 - GOOD */
