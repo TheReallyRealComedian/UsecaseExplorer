@@ -31,7 +31,7 @@ def list_steps():
         return render_template('step_overview.html', title="All Process Steps", steps=steps, all_areas_flat=all_areas_flat, all_steps_flat=all_steps_flat, all_usecases_flat=all_usecases_flat)
     except Exception as e:
         flash("An error occurred while fetching process step overview.", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
 @step_routes.route('/<int:step_id>')
 @login_required
@@ -40,7 +40,7 @@ def view_step(step_id):
         step = step_service.get_step_by_id(g.db_session, step_id)
         if not step:
             flash(f"Process Step with ID {step_id} not found.", "warning")
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
 
         other_steps = step_service.get_all_other_steps(g.db_session, step_id)
         all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
@@ -50,7 +50,7 @@ def view_step(step_id):
         return render_template('step_detail.html', title=f"Process Step: {step.name}", step=step, other_steps=other_steps, current_step=step, current_area=step.area, current_item=step, all_areas_flat=all_areas_flat, all_steps_flat=all_steps_flat, all_usecases_flat=all_usecases_flat)
     except Exception as e:
         flash("An error occurred while fetching step details.", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
 @step_routes.route('/<int:step_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -58,14 +58,14 @@ def edit_step(step_id):
     step = step_service.get_step_by_id(g.db_session, step_id)
     if not step:
         flash(f"Process Step with ID {step_id} not found.", "warning")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     if request.method == 'POST':
         try:
             success, message = step_service.update_step_from_form(g.db_session, step, request.form)
             if success:
                 flash(message, "success")
-                return redirect(url_for('index'))
+                return redirect(url_for('main.index'))
             else:
                 flash(message, "danger")
         except IntegrityError as e:

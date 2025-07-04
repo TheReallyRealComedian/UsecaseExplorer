@@ -32,7 +32,7 @@ def view_usecase(usecase_id):
     usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
     if not usecase:
         flash(f"Use Case with ID {usecase_id} not found.", "warning")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     all_areas_db = g.db_session.query(Area).order_by(Area.name).all()
     all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()

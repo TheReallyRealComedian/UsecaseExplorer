@@ -15,6 +15,9 @@ class Config:
                               'postgresql://user:password@db:5432/usecase_explorer_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    #SQLALCHEMY_DATABASE_URI = 'sqlite:///temp_for_init.db'
+    #SQLALCHEMY_TRACK_MODIFICATIONS = False
+
     # Flask-Login settings
     LOGIN_URL = '/login'
     LOGIN_MESSAGE = 'Please log in to access this page.'

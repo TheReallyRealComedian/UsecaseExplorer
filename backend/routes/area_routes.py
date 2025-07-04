@@ -46,7 +46,7 @@ def view_area(area_id):
 
     if area is None:
         flash(f"Area with ID {area_id} not found.", "warning")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
 
     all_areas_flat = serialize_for_js(
         g.db_session.query(Area).order_by(Area.name).all(), 'area'

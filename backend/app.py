@@ -1,35 +1,35 @@
 # backend/app.py
+
 import os
 from flask import Flask, render_template, redirect, url_for, flash, jsonify, g
-import json
-
-from sqlalchemy import func
-from sqlalchemy.orm import joinedload
 from flask_login import LoginManager, current_user
-import markupsafe
-import markdown
-
+from flask_migrate import Migrate
 from flask_session import Session
 
-from .config import get_config
-from .models import User, Area, ProcessStep, UseCase
-from .db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
-from .utils import serialize_for_js
+# --- CORRECTED ABSOLUTE IMPORTS ---
+from backend.config import get_config
+from backend.models import User
+from backend.db import init_app_db, SessionLocal, db as flask_sqlalchemy_db
+from backend.utils import (
+    serialize_for_js, nl2br, markdown_to_html_filter, truncate_filter,
+    zfill_filter, htmlsafe_json_filter, map_priority_to_benefit_filter
+)
 
 # --- Blueprint Imports ---
-from .routes.auth_routes import auth_routes
-from .routes.usecase_routes import usecase_routes
-from .routes.relevance_routes import relevance_routes
-from .routes.llm_routes import llm_routes
-from .routes.area_routes import area_routes
-from .routes.step_routes import step_routes
-from .routes.export_routes import export_routes
-from .routes.settings_routes import settings_routes
-from .routes.review_routes import review_routes
-from .routes.data_management_routes import data_management_bp
+from backend.routes.auth_routes import auth_routes
+from backend.routes.usecase_routes import usecase_routes
+from backend.routes.relevance_routes import relevance_routes
+from backend.routes.llm_routes import llm_routes
+from backend.routes.area_routes import area_routes
+from backend.routes.step_routes import step_routes
+from backend.routes.export_routes import export_routes
+from backend.routes.settings_routes import settings_routes
+from backend.routes.review_routes import review_routes
+from backend.routes.data_management_routes import data_management_bp
+from backend.routes.main_routes import main_routes
 
-# --- Service Imports ---
-from .services import step_service, dashboard_service
+# --- Service Imports (now only needed by routes, but we'll leave it for now) ---
+from backend.services import step_service, dashboard_service
 
 
 login_manager = LoginManager()
@@ -59,33 +59,8 @@ def load_user(user_id):
         if 'db_session' not in g:
             SessionLocal.remove()
 
-# --- CUSTOM JINJA FILTERS ---
-def nl2br(value):
-    if value is None: return ''
-    return markupsafe.Markup(markupsafe.escape(value).replace('\n', '<br>\n'))
 
-def markdown_to_html_filter(value):
-    if value is None: return ''
-    return markupsafe.Markup(markdown.markdown(value, extensions=['fenced_code', 'tables']))
-
-def truncate_filter(s, length=255, end='...'):
-    if s is None: return ''
-    return s[:length] + end if len(s) > length else s
-
-def zfill_filter(value, width):
-    if value is None: return ''
-    return str(value).zfill(width)
-
-def htmlsafe_json_filter(value):
-    return markupsafe.Markup(json.dumps(value))
-
-def map_priority_to_benefit_filter(priority):
-    if priority == 1: return "High"
-    if priority == 2: return "Medium"
-    if priority == 3: return "Low"
-    return "N/A"
-
-def create_app():
+def create_app(init_session=True):
     """
     Flask application factory function.
     Initializes the Flask app, loads config, sets up DB, and registers blueprints.
@@ -111,15 +86,19 @@ def create_app():
     app.jinja_env.filters['htmlsafe_json'] = htmlsafe_json_filter
     app.jinja_env.filters['map_priority_to_benefit'] = map_priority_to_benefit_filter
 
-    db_instance = init_app_db(app)
+    db_instance, migrate_instance = init_app_db(app)
 
-    # Flask-Session configuration
-    app.config['SESSION_TYPE'] = 'sqlalchemy'
-    app.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions'
-    app.config['SESSION_SQLALCHEMY'] = db_instance
-    app.config['SESSION_PERMANENT'] = True
-    app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7
-    Session(app)
+    #migrate = Migrate(app, db_instance, directory='/app/migrations')
+
+    # Conditionally initialize Flask-Session
+    if init_session:
+        # Flask-Session configuration
+        app.config['SESSION_TYPE'] = 'sqlalchemy'
+        app.config['SESSION_SQLALCHEMY_TABLE'] = 'flask_sessions'
+        app.config['SESSION_SQLALCHEMY'] = db_instance
+        app.config['SESSION_PERMANENT'] = True
+        app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7
+        Session(app)
 
     # --- Centralized DB Session Management ---
     @app.before_request
@@ -133,7 +112,7 @@ def create_app():
         db_session = g.pop('db_session', None)
         if db_session is not None:
             SessionLocal.remove()
-    
+
     # Register Blueprints
     app.register_blueprint(auth_routes)
     app.register_blueprint(usecase_routes)
@@ -145,64 +124,8 @@ def create_app():
     app.register_blueprint(settings_routes)
     app.register_blueprint(review_routes)
     app.register_blueprint(data_management_bp)
+    app.register_blueprint(main_routes)
 
-    @app.route('/')
-    def index():
-        if current_user.is_authenticated:
-            all_steps = step_service.get_all_steps_with_details(g.db_session)
-            areas_with_steps = g.db_session.query(Area).options(
-                joinedload(Area.process_steps)
-            ).order_by(Area.name).all()
-            all_areas_query = g.db_session.query(Area).order_by(Area.name).all()
-            all_usecases_query = g.db_session.query(UseCase).order_by(UseCase.name).all()
-            
-            # Prepare data for JS
-            all_areas_for_select_js = serialize_for_js(all_areas_query, 'area')
-            all_areas_flat = serialize_for_js(all_areas_query, 'area')
-            all_steps_flat = serialize_for_js(all_steps, 'step')
-            all_usecases_flat = serialize_for_js(all_usecases_query, 'usecase')
-
-            return render_template(
-                'ptps.html',
-                title='Process Target Pictures (PTPs)',
-                all_steps=all_steps,
-                areas_with_steps=areas_with_steps,
-                all_areas_for_select=all_areas_for_select_js,
-                current_item=None,
-                current_area=None,
-                current_step=None,
-                current_usecase=None,
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-            )
-        else:
-            return redirect(url_for('auth.login'))
-
-    @app.route('/dashboard')
-    def dashboard():
-        if current_user.is_authenticated:
-            stats = dashboard_service.get_dashboard_stats(g.db_session)
-            all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
-            all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-            all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
-            return render_template(
-                'index.html',
-                title='Dashboard',
-                total_areas=stats["total_areas"],
-                total_steps=stats["total_steps"],
-                total_usecases=stats["total_usecases"],
-                current_item=None,
-                current_area=None,
-                current_step=None,
-                current_usecase=None,
-                all_areas_flat=all_areas_flat,
-                all_steps_flat=all_steps_flat,
-                all_usecases_flat=all_usecases_flat
-            )
-        else:
-            return redirect(url_for('auth.login'))
 
     @app.route('/debug-check')
     def debug_check():

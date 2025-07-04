@@ -23,7 +23,7 @@ def export_db_json():
         )
     else:
         flash("Failed to export database.", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
 @export_routes.route('/area/<int:area_id>/markdown')
 @login_required

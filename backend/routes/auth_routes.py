@@ -12,7 +12,7 @@ auth_routes = Blueprint('auth', __name__,
 @auth_routes.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     if request.method == 'POST':
         username = request.form.get('username')

@@ -1,20 +1,35 @@
-#backend/requirements.txt
+### backend/requirements.txt
 
+#### Web Framework & Extensions
+
+Flask==2.3.3
 Flask-Login>=0.6.3
+Flask-Migrate
 Flask-SQLAlchemy==3.1.1
 Flask-Session==0.8.0
-Flask==2.3.3 # Or a recent version you prefer/is stable
-Pillow
-SQLAlchemy==2.0.25 # Or a recent version
+gunicorn==21.2.0
+
+
+#### Database & ORM
+
+SQLAlchemy==2.0.25
+psycopg2-binary==2.9.9
+
+
+#### AI & Language Models
+
 anthropic==0.23.1
 google-generativeai==0.6.0
-gunicorn==21.2.0 # WSGI server for Docker
-httpx
 langchain-openai
-markdown
-openai>=1.10.0,<2.0.0 # Official OpenAI library
-passlib==1.7.4
-psycopg2-binary==2.9.9 # Or a recent version
-python-dotenv==1.0.0 # For managing local environment variables
-requests==2.31.0
+openai>=1.10.0,<2.0.0
 tiktoken==0.5.2
+
+
+#### Utilities & Helpers
+
+Pillow
+httpx
+markdown
+passlib==1.7.4
+python-dotenv==1.0.0
+requests==2.31.0

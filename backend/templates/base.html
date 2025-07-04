@@ -19,13 +19,13 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="{{ url_for('index') }}" class="logo">Usecase Explorer</a>
+                <a href="{{ url_for('main.index') }}" class="logo">Usecase Explorer</a>
             </div>
             <nav class="sidebar-menu">
                 <ul>
                     {# ##Dashboard #}
-                    <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                        <a href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                    <li class="{% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                        <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                     </li>
 
                     {# #PTP CONTENT #}
@@ -37,8 +37,8 @@
                     </li>
                     
                     {# ##Process Steps #}
-                    <li class="{% if request.endpoint == 'index' %}active{% endif %}">
-                        <a href="{{ url_for('index') }}"><i class="fas fa-sitemap"></i> Process Steps</a>
+                    <li class="{% if request.endpoint == 'main.index' %}active{% endif %}">
+                        <a href="{{ url_for('main.index') }}"><i class="fas fa-sitemap"></i> Process Steps</a>
                     </li>
                     
                     {# ##Use Cases #}
@@ -104,13 +104,13 @@
 
             <div class="breadcrumbs-fixed">
                 {# PTPs is the new home, so no breadcrumb for it #}
-                {% if request.endpoint == 'index' %}
+                {% if request.endpoint == 'main.index' %}
                      <span class="breadcrumb-item active">PTPs</span>
                 {% else %}
-                    <a href="{{ url_for('index') }}" class="breadcrumb-item">PTPs</a>
+                    <a href="{{ url_for('main.index') }}" class="breadcrumb-item">PTPs</a>
                 {% endif %}
                 
-                {% if request.endpoint == 'dashboard' %}
+                {% if request.endpoint == 'main.dashboard' %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <span class="breadcrumb-item active">Dashboard</span>
                 {% endif %}
@@ -154,7 +154,7 @@
                     </div>
                 {% endif %}
 
-                {% if request.endpoint != 'index' and request.endpoint != 'dashboard' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
+                {% if request.endpoint != 'main.index' and request.endpoint != 'main.dashboard' and request.blueprint not in ['areas', 'steps', 'usecases'] %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <span class="breadcrumb-item active">{{ title }}</span>
                 {% endif %}
