@@ -1,7 +1,6 @@
 # backend/routes/relevance_routes.py
-from flask import Blueprint, request, flash, redirect, url_for, render_template
+from flask import Blueprint, request, flash, redirect, url_for, render_template, g
 from flask_login import login_required
-from ..db import SessionLocal
 from ..services import relevance_service
 from ..utils import serialize_for_js
 from ..models import Area, ProcessStep, UseCase
@@ -38,10 +37,9 @@ def add_area_relevance():
         flash("Invalid score format. Score must be a number.", "danger")
         return redirect(request.referrer or redirect_url)
 
-    session = SessionLocal()
     try:
         new_link, message = relevance_service.add_relevance_link(
-            session,
+            g.db_session,
             source_id=source_usecase_id,
             target_id=target_area_id,
             score=score,
@@ -50,12 +48,10 @@ def add_area_relevance():
         )
         flash(message, 'success' if new_link else 'danger')
         if new_link:
-            session.commit()
+            g.db_session.commit()
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(redirect_url)
 
@@ -88,10 +84,9 @@ def add_step_relevance():
         flash("Invalid score format. Score must be a number.", "danger")
         return redirect(request.referrer or redirect_url)
 
-    session = SessionLocal()
     try:
         new_link, message = relevance_service.add_relevance_link(
-            session,
+            g.db_session,
             source_id=source_usecase_id,
             target_id=target_process_step_id,
             score=score,
@@ -100,12 +95,10 @@ def add_step_relevance():
         )
         flash(message, 'success' if new_link else 'danger')
         if new_link:
-            session.commit()
+            g.db_session.commit()
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(redirect_url)
 
@@ -142,10 +135,9 @@ def add_usecase_relevance():
         flash("Invalid score format. Score must be a number.", "danger")
         return redirect(redirect_url)
 
-    session = SessionLocal()
     try:
         new_link, message = relevance_service.add_relevance_link(
-            session,
+            g.db_session,
             source_id=source_usecase_id,
             target_id=target_usecase_id,
             score=score,
@@ -154,12 +146,10 @@ def add_usecase_relevance():
         )
         flash(message, 'success' if new_link else 'danger')
         if new_link:
-            session.commit()
+            g.db_session.commit()
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(redirect_url)
 
@@ -196,10 +186,9 @@ def add_step_to_step_relevance():
         flash("Invalid score format. Score must be a number.", "danger")
         return redirect(redirect_url)
 
-    session = SessionLocal()
     try:
         new_link, message = relevance_service.add_relevance_link(
-            session,
+            g.db_session,
             source_id=source_process_step_id,
             target_id=target_process_step_id,
             score=score,
@@ -208,12 +197,10 @@ def add_step_to_step_relevance():
         )
         flash(message, 'success' if new_link else 'danger')
         if new_link:
-            session.commit()
+            g.db_session.commit()
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(redirect_url)
 
@@ -224,22 +211,19 @@ def add_step_to_step_relevance():
 @login_required
 def delete_area_relevance(relevance_id):
     source_usecase_id = request.form.get('source_usecase_id', type=int)
-    session = SessionLocal()
     redirect_id = source_usecase_id
     try:
         success, message, redirect_id_from_service = relevance_service.delete_relevance_link(
-            session, relevance_id, 'area', source_usecase_id
+            g.db_session, relevance_id, 'area', source_usecase_id
         )
         flash(message, 'success' if success else 'danger')
         if success:
-            session.commit()
+            g.db_session.commit()
             if redirect_id_from_service:
                 redirect_id = redirect_id_from_service
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"Error deleting area relevance link: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('index'))
 
@@ -249,21 +233,18 @@ def delete_area_relevance(relevance_id):
 def delete_step_relevance(relevance_id):
     source_usecase_id = request.form.get('source_usecase_id', type=int)
     referrer_step_id = request.form.get('referrer_step_id', type=int)
-    session = SessionLocal()
     try:
         success, message, redirect_ids = relevance_service.delete_relevance_link(
-            session, relevance_id, 'step', {'uc_id': source_usecase_id, 'step_id': referrer_step_id}
+            g.db_session, relevance_id, 'step', {'uc_id': source_usecase_id, 'step_id': referrer_step_id}
         )
         flash(message, 'success' if success else 'danger')
         if success:
-            session.commit()
+            g.db_session.commit()
             source_usecase_id = redirect_ids.get('uc_id', source_usecase_id)
             referrer_step_id = redirect_ids.get('step_id', referrer_step_id)
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"Error deleting step relevance link: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     if referrer_step_id:
         return redirect(url_for('steps.view_step', step_id=referrer_step_id))
@@ -276,22 +257,19 @@ def delete_step_relevance(relevance_id):
 @login_required
 def delete_usecase_relevance(relevance_id):
     source_usecase_id = request.form.get('source_usecase_id', type=int)
-    session = SessionLocal()
     redirect_id = source_usecase_id
     try:
         success, message, redirect_id_from_service = relevance_service.delete_relevance_link(
-            session, relevance_id, 'usecase', source_usecase_id
+            g.db_session, relevance_id, 'usecase', source_usecase_id
         )
         flash(message, 'success' if success else 'danger')
         if success:
-            session.commit()
+            g.db_session.commit()
             if redirect_id_from_service:
                 redirect_id = redirect_id_from_service
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"Error deleting use case relevance link: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('index'))
 
@@ -300,44 +278,40 @@ def delete_usecase_relevance(relevance_id):
 @login_required
 def delete_step_to_step_relevance(relevance_id):
     source_step_id = request.form.get('source_process_step_id', type=int)
-    session = SessionLocal()
     redirect_id = source_step_id
     try:
         success, message, redirect_id_from_service = relevance_service.delete_relevance_link(
-            session, relevance_id, 'step_to_step', source_step_id
+            g.db_session, relevance_id, 'step_to_step', source_step_id
         )
         flash(message, 'success' if success else 'danger')
         if success:
-            session.commit()
+            g.db_session.commit()
             if redirect_id_from_service:
                 redirect_id = redirect_id_from_service
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"Error deleting process step relevance link: {e}", "danger")
-    finally:
-        SessionLocal.remove()
 
     return redirect(url_for('steps.view_step', step_id=redirect_id) if redirect_id else url_for('index'))
 
 
 # --- EDIT ROUTES ---
 
-def _get_breadcrumb_data(session):
+def _get_breadcrumb_data():
     return {
-        'all_areas_flat': serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area'),
-        'all_steps_flat': serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step'),
-        'all_usecases_flat': serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        'all_areas_flat': serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area'),
+        'all_steps_flat': serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step'),
+        'all_usecases_flat': serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
     }
 
 def handle_edit_relevance(relevance_id, link_type, view_name_for_redirect, id_name_for_redirect):
-    session = SessionLocal()
     try:
-        page_data = relevance_service.get_data_for_edit_page(session, relevance_id, link_type)
+        page_data = relevance_service.get_data_for_edit_page(g.db_session, relevance_id, link_type)
         if not page_data.get('relevance_link'):
             flash(f"{link_type.replace('_', ' ').capitalize()} relevance link not found.", "danger")
             return redirect(url_for('index'))
 
-        page_data.update(_get_breadcrumb_data(session))
+        page_data.update(_get_breadcrumb_data())
 
         if request.method == 'POST':
             form_data = {
@@ -362,28 +336,26 @@ def handle_edit_relevance(relevance_id, link_type, view_name_for_redirect, id_na
                 return render_template('edit_relevance.html', **page_data)
 
             success, message, redirect_id = relevance_service.update_relevance_link(
-                session, relevance_id, link_type, form_data
+                g.db_session, relevance_id, link_type, form_data
             )
 
             if success:
-                session.commit()
+                g.db_session.commit()
                 flash(message, 'success')
                 return redirect(url_for(view_name_for_redirect, **{id_name_for_redirect: redirect_id}))
             else:
-                session.rollback()
+                g.db_session.rollback()
                 flash(message, 'danger')
                 # Re-fetch data to reflect potential changes before the failed update attempt
-                updated_page_data = relevance_service.get_data_for_edit_page(session, relevance_id, link_type)
-                updated_page_data.update(_get_breadcrumb_data(session))
+                updated_page_data = relevance_service.get_data_for_edit_page(g.db_session, relevance_id, link_type)
+                updated_page_data.update(_get_breadcrumb_data())
                 return render_template('edit_relevance.html', **updated_page_data)
 
         return render_template('edit_relevance.html', **page_data)
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
         return redirect(url_for('index'))
-    finally:
-        SessionLocal.remove()
 
 
 @relevance_routes.route('/edit/area/<int:relevance_id>', methods=['GET', 'POST'])
@@ -413,10 +385,9 @@ def edit_step_to_step_relevance(relevance_id):
 @relevance_routes.route('/visualize')
 @login_required
 def visualize_relevance():
-    session = SessionLocal()
     try:
-        echarts_data = relevance_service.get_relevance_graph_data(session)
-        breadcrumb_data = _get_breadcrumb_data(session)
+        echarts_data = relevance_service.get_relevance_graph_data(g.db_session)
+        breadcrumb_data = _get_breadcrumb_data()
 
         return render_template(
             'relevance_visualize.html',
@@ -443,5 +414,3 @@ def visualize_relevance():
             all_steps_flat=[],
             all_usecases_flat=[]
         )
-    finally:
-        SessionLocal.remove()

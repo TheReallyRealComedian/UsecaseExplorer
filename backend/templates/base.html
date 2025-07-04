@@ -23,42 +23,65 @@
             </div>
             <nav class="sidebar-menu">
                 <ul>
+                    {# ##Dashboard #}
                     <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
                         <a href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                     </li>
-                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">PTPs</li>
-                    <li class="{% if request.endpoint == 'index' %}active{% endif %}">
-                        <a href="{{ url_for('index') }}"><i class="fas fa-sitemap"></i> Process Target Pictures</a>
-                    </li>
+
+                    {# #PTP CONTENT #}
+                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">PTP CONTENT</li>
+                    
+                    {# ##Areas #}
                     <li class="{% if request.blueprint == 'areas' and request.endpoint != 'areas.view_area' %}active{% endif %}">
                         <a href="{{ url_for('areas.list_areas') }}"><i class="fas fa-map-marked-alt"></i> Areas</a>
                     </li>
-                     <li class="{% if request.endpoint == 'relevance.visualize_relevance' %}active{% endif %}">
-                        <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
+                    
+                    {# ##Process Steps #}
+                    <li class="{% if request.endpoint == 'index' %}active{% endif %}">
+                        <a href="{{ url_for('index') }}"><i class="fas fa-sitemap"></i> Process Steps</a>
                     </li>
-                    <li class="{% if request.endpoint == 'review.review_process_links_page' %}active{% endif %}">
-                        <a href="{{ url_for('review.review_process_links_page') }}"><i class="fas fa-link"></i> Relevance Links (PS-PS)</a>
+                    
+                    {# ##Use Cases #}
+                    <li class="{% if request.blueprint == 'usecases' %}active{% endif %}">
+                        <a href="{{ url_for('usecases.list_usecases') }}"><i class="fas fa-tasks"></i> Use Cases</a>
                     </li>
 
-                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">USE  CASES</li>
-                    <li class="{% if request.blueprint == 'usecases' %}active{% endif %}">
-                        <a href="{{ url_for('usecases.list_usecases') }}"><i class="fas fa-tasks"></i> Use-Cases</a>
+                    {# ##Links #}
+                    <li class="{% if request.endpoint == 'review.review_process_links_page' %}active{% endif %}">
+                        <a href="{{ url_for('review.review_process_links_page') }}"><i class="fas fa-link"></i> Links</a>
                     </li>
-                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">ANALYSIS</li>
+
+                    {# #DATA #}
+                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">DATA</li>
+
+                    {# ##Data Mining #}
                     <li class="{% if request.blueprint == 'llm' %}active{% endif %}">
                         <a href="{{ url_for('llm.llm_data_prep_page') }}"><i class="fas fa-robot"></i> Data Mining</a>
                     </li>
+
+                    {# ##Data Management #}
                     <li class="{% if request.blueprint == 'data_management' %}active{% endif %}">
                         <a href="{{ url_for('data_management.data_management_page') }}"><i class="fas fa-cogs"></i> Data Management</a>
                     </li>
+                    
+                    {# #SYSTEM #}
+                    <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">SYSTEM</li>
+                    
+                    {# ##Settings #}
+                    <li class="{% if request.blueprint == 'settings' %}active{% endif %}">
+                        <a href="{{ url_for('settings.manage_settings') }}"><i class="fas fa-sliders-h"></i> Settings</a>
+                    </li>
+
+                    {# ##Logout #}
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout ({{ current_user.username }})</a></li>
+                    {% endif %}
                  </ul>
             </nav>
             <div class="sidebar-footer-menu">
                 <ul>
-                    {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout ({{ current_user.username }})</a></li>
-                    {% else %}
-                    <li><a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                    {% if not current_user.is_authenticated %}
+                        <li><a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
                     {% endif %}
                 </ul>
             </div>

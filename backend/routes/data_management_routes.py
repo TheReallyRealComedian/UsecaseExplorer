@@ -1,12 +1,11 @@
 # backend/routes/data_management_routes.py
 import json
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
+from flask import Blueprint, g, render_template, request, flash, redirect, url_for, session, jsonify
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
 
 # Import services
 from ..services import data_management_service, bulk_edit_service
-from ..db import SessionLocal
 from ..models import Area, ProcessStep, UseCase
 from ..utils import serialize_for_js
 
@@ -47,128 +46,120 @@ PROCESS_USECASE_EDITABLE_FIELDS = {
 @data_management_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def data_management_page():
-    session_db = SessionLocal()
-    try:
-        if request.method == 'POST':
-            if 'database_file' in request.files:
-                file = request.files['database_file']
-                if file.filename == '':
-                    flash('No selected database file.', 'warning')
-                elif file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() == 'json':
-                    clear_data = request.form.get('clear_existing_data') == 'on'
-                    try:
-                        file_content = file.read().decode('utf-8')
-                        result = data_management_service.import_database_from_json(file_content, clear_existing_data=clear_data)
-                        flash_category = 'success' if result.get('success') else 'danger'
-                        flash(result.get('message', 'An unknown error occurred.'), flash_category)
-                    except Exception as e:
-                        flash(f"An unexpected error occurred during database import: {str(e)}", 'danger')
-                else:
-                    flash('Invalid file type for database import. Please upload a .json file.', 'danger')
-                return redirect(url_for('data_management.data_management_page'))
+    if request.method == 'POST':
+        if 'database_file' in request.files:
+            file = request.files['database_file']
+            if file.filename == '':
+                flash('No selected database file.', 'warning')
+            elif file and '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() == 'json':
+                clear_data = request.form.get('clear_existing_data') == 'on'
+                try:
+                    file_content = file.read().decode('utf-8')
+                    result = data_management_service.import_database_from_json(file_content, clear_existing_data=clear_data)
+                    flash_category = 'success' if result.get('success') else 'danger'
+                    flash(result.get('message', 'An unknown error occurred.'), flash_category)
+                except Exception as e:
+                    flash(f"An unexpected error occurred during database import: {str(e)}", 'danger')
+            else:
+                flash('Invalid file type for database import. Please upload a .json file.', 'danger')
+            return redirect(url_for('data_management.data_management_page'))
 
-            file_handlers = {
-                'area_file': (data_management_service.process_area_file, {}),
-                'step_file': (data_management_service.process_step_file, {'is_preview': True}),
-                'usecase_file': (data_management_service.process_usecase_file, {}),
-                'ps_ps_relevance_file': (data_management_service.process_ps_ps_relevance_file, {}),
-                'usecase_area_relevance_file': (data_management_service.process_usecase_area_relevance_file, {}),
-                'usecase_step_relevance_file': (data_management_service.process_usecase_step_relevance_file, {}),
-                'usecase_usecase_relevance_file': (data_management_service.process_usecase_usecase_relevance_file, {})
-            }
+        file_handlers = {
+            'area_file': (data_management_service.process_area_file, {}),
+            'step_file': (data_management_service.process_step_file, {'is_preview': True}),
+            'usecase_file': (data_management_service.process_usecase_file, {}),
+            'ps_ps_relevance_file': (data_management_service.process_ps_ps_relevance_file, {}),
+            'usecase_area_relevance_file': (data_management_service.process_usecase_area_relevance_file, {}),
+            'usecase_step_relevance_file': (data_management_service.process_usecase_step_relevance_file, {}),
+            'usecase_usecase_relevance_file': (data_management_service.process_usecase_usecase_relevance_file, {})
+        }
 
-            for file_key, (handler, options) in file_handlers.items():
-                if file_key in request.files:
-                    file = request.files[file_key]
-                    if file and file.filename != '':
-                        if not file.filename.lower().endswith('.json'):
-                            flash(f'Invalid file type for {file_key}. Please upload a .json file.', 'danger')
-                            return redirect(request.url)
-
-                        if file_key == 'step_file' and options.get('is_preview'):
-                            try:
-                                parsed_json_data = json.loads(file.read().decode('utf-8'))
-                                result = handler(parsed_json_data)
-                                if result.get('success') and result.get('preview_data'):
-                                    session['step_import_preview_data'] = result['preview_data']
-                                    flash('Step file uploaded. Please review changes before finalizing import.', 'info')
-                                    return redirect(url_for('data_management.preview_steps_injection'))
-                                elif not result.get('preview_data'):
-                                     flash('Step file uploaded but no valid steps were found for import.', 'warning')
-                                else:
-                                    flash(result.get('message', 'Error processing step file.'), 'danger')
-                            except json.JSONDecodeError as e:
-                                flash(f'Invalid JSON in step file: {e}', 'danger')
-                        else:
-                            result = handler(file.stream)
-                            flash_category = 'success' if result.get('success') else 'danger'
-                            if result.get('success') and result.get('skipped_count', 0) > 0:
-                                flash_category = 'warning'
-                            flash(result.get('message', 'File processed.'), flash_category)
-
+        for file_key, (handler, options) in file_handlers.items():
+            if file_key in request.files:
+                file = request.files[file_key]
+                if file and file.filename != '':
+                    if not file.filename.lower().endswith('.json'):
+                        flash(f'Invalid file type for {file_key}. Please upload a .json file.', 'danger')
                         return redirect(request.url)
 
-            flash('No file submitted or unknown action.', 'warning')
-            return redirect(request.url)
+                    if file_key == 'step_file' and options.get('is_preview'):
+                        try:
+                            parsed_json_data = json.loads(file.read().decode('utf-8'))
+                            result = handler(parsed_json_data)
+                            if result.get('success') and result.get('preview_data'):
+                                session['step_import_preview_data'] = result['preview_data']
+                                flash('Step file uploaded. Please review changes before finalizing import.', 'info')
+                                return redirect(url_for('data_management.preview_steps_injection'))
+                            elif not result.get('preview_data'):
+                                 flash('Step file uploaded but no valid steps were found for import.', 'warning')
+                            else:
+                                flash(result.get('message', 'Error processing step file.'), 'danger')
+                        except json.JSONDecodeError as e:
+                            flash(f'Invalid JSON in step file: {e}', 'danger')
+                    else:
+                        result = handler(file.stream)
+                        flash_category = 'success' if result.get('success') else 'danger'
+                        if result.get('success') and result.get('skipped_count', 0) > 0:
+                            flash_category = 'warning'
+                        flash(result.get('message', 'File processed.'), flash_category)
 
-        all_steps = session_db.query(ProcessStep).options(joinedload(ProcessStep.area), joinedload(ProcessStep.use_cases)).order_by(ProcessStep.area_id, ProcessStep.name).all()
-        all_usecases = session_db.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).order_by(UseCase.process_step_id, UseCase.name).all()
-        all_areas_for_filters = session_db.query(Area).order_by(Area.name).all()
+                    return redirect(request.url)
 
-        detailed_usecases_for_js = [{'id': uc.id, 'name': uc.name, 'bi_id': uc.bi_id, 'process_step_id': uc.process_step_id, 'area_id': uc.area.id if uc.area else None, 'wave': uc.wave, 'effort_level': uc.effort_level, 'priority': uc.priority, 'quality_improvement_quant': uc.quality_improvement_quant} for uc in all_usecases]
+        flash('No file submitted or unknown action.', 'warning')
+        return redirect(request.url)
 
-        all_areas_flat = serialize_for_js(all_areas_for_filters, 'area')
-        all_steps_flat_js = serialize_for_js(all_steps, 'step')
-        all_usecases_flat = serialize_for_js(all_usecases, 'usecase')
+    all_steps = g.db_session.query(ProcessStep).options(joinedload(ProcessStep.area), joinedload(ProcessStep.use_cases)).order_by(ProcessStep.area_id, ProcessStep.name).all()
+    all_usecases = g.db_session.query(UseCase).options(joinedload(UseCase.process_step).joinedload(ProcessStep.area)).order_by(UseCase.process_step_id, UseCase.name).all()
+    all_areas_for_filters = g.db_session.query(Area).order_by(Area.name).all()
 
-        return render_template(
-            'data_management.html',
-            title='Data Management',
-            all_steps=all_steps,
-            all_usecases=all_usecases,
-            all_areas_for_filters=all_areas_for_filters,
-            all_steps_flat=all_steps_flat_js,
-            all_usecases_for_js_filtering=detailed_usecases_for_js,
-            current_item=None, current_area=None, current_step=None, current_usecase=None,
-            all_areas_flat=all_areas_flat, all_usecases_flat=all_usecases_flat
-        )
-    finally:
-        session_db.close()
+    detailed_usecases_for_js = [{'id': uc.id, 'name': uc.name, 'bi_id': uc.bi_id, 'process_step_id': uc.process_step_id, 'area_id': uc.area.id if uc.area else None, 'wave': uc.wave, 'effort_level': uc.effort_level, 'priority': uc.priority, 'quality_improvement_quant': uc.quality_improvement_quant} for uc in all_usecases]
+
+    all_areas_flat = serialize_for_js(all_areas_for_filters, 'area')
+    all_steps_flat_js = serialize_for_js(all_steps, 'step')
+    all_usecases_flat = serialize_for_js(all_usecases, 'usecase')
+
+    return render_template(
+        'data_management.html',
+        title='Data Management',
+        all_steps=all_steps,
+        all_usecases=all_usecases,
+        all_areas_for_filters=all_areas_for_filters,
+        all_steps_flat=all_steps_flat_js,
+        all_usecases_for_js_filtering=detailed_usecases_for_js,
+        current_item=None, current_area=None, current_step=None, current_usecase=None,
+        all_areas_flat=all_areas_flat, all_usecases_flat=all_usecases_flat
+    )
 
 @data_management_bp.route('/help', methods=['GET'])
 @login_required
 def data_help_page():
-    session_db = SessionLocal()
-    try:
-        all_areas = session_db.query(Area).order_by(Area.name).all()
-        all_steps = session_db.query(ProcessStep).order_by(ProcessStep.name).all()
+    all_areas = g.db_session.query(Area).order_by(Area.name).all()
+    all_steps = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
 
-        area_names_list = "\n".join([area.name for area in all_areas])
+    area_names_list = "\n".join([area.name for area in all_areas])
 
-        step_list_lines = ["BI_ID | Name", "--------------------------------------------------"]
-        for step in all_steps:
-            step_list_lines.append(f"{step.bi_id} | {step.name}")
-        steps_text_block = "\n".join(step_list_lines)
+    step_list_lines = ["BI_ID | Name", "--------------------------------------------------"]
+    for step in all_steps:
+        step_list_lines.append(f"{step.bi_id} | {step.name}")
+    steps_text_block = "\n".join(step_list_lines)
 
-        all_areas_flat = serialize_for_js(all_areas, 'area')
-        all_steps_flat = serialize_for_js(all_steps, 'step')
-        all_usecases_flat = serialize_for_js(session_db.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    all_areas_flat = serialize_for_js(all_areas, 'area')
+    all_steps_flat = serialize_for_js(all_steps, 'step')
+    all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
-        return render_template(
-            'data_help.html',
-            title='Data Import/Export Help',
-            area_names_list=area_names_list,
-            steps_text_block=steps_text_block,
-            current_item=None,
-            current_area=None,
-            current_step=None,
-            current_usecase=None,
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
-        )
-    finally:
-        session_db.close()
+    return render_template(
+        'data_help.html',
+        title='Data Import/Export Help',
+        area_names_list=area_names_list,
+        steps_text_block=steps_text_block,
+        current_item=None,
+        current_area=None,
+        current_step=None,
+        current_usecase=None,
+        all_areas_flat=all_areas_flat,
+        all_steps_flat=all_steps_flat,
+        all_usecases_flat=all_usecases_flat
+    )
 
 
 @data_management_bp.route('/steps/prepare-for-edit', methods=['POST'])
@@ -180,13 +171,9 @@ def prepare_steps_for_edit():
         return redirect(url_for('data_management.data_management_page'))
     selected_ids = [int(id_val) for id_val in selected_ids_str.split(',') if id_val.isdigit()]
 
-    session_db = SessionLocal()
-    try:
-        prepared_data = bulk_edit_service.prepare_steps_for_bulk_edit(session_db, selected_ids, PROCESS_STEP_EDITABLE_FIELDS)
-        session['steps_to_edit'] = prepared_data
-        return redirect(url_for('data_management.edit_multiple_steps'))
-    finally:
-        session_db.close()
+    prepared_data = bulk_edit_service.prepare_steps_for_bulk_edit(g.db_session, selected_ids, PROCESS_STEP_EDITABLE_FIELDS)
+    session['steps_to_edit'] = prepared_data
+    return redirect(url_for('data_management.edit_multiple_steps'))
 
 
 @data_management_bp.route('/steps/edit-multiple', methods=['GET'])
@@ -196,34 +183,27 @@ def edit_multiple_steps():
     if not steps_data:
         return redirect(url_for('data_management.data_management_page'))
 
-    session_db = SessionLocal()
-    try:
-        all_areas = session_db.query(Area).order_by(Area.name).all()
-        return render_template(
-            'edit_multiple_steps.html', title='Bulk Edit Process Steps', steps_data=steps_data,
-            all_areas=all_areas, editable_fields=PROCESS_STEP_EDITABLE_FIELDS,
-            all_areas_flat=serialize_for_js(all_areas, 'area'),
-            all_steps_flat=serialize_for_js(session_db.query(ProcessStep).all(), 'step'),
-            all_usecases_flat=serialize_for_js(session_db.query(UseCase).all(), 'usecase')
-        )
-    finally:
-        session_db.close()
+    all_areas = g.db_session.query(Area).order_by(Area.name).all()
+    return render_template(
+        'edit_multiple_steps.html', title='Bulk Edit Process Steps', steps_data=steps_data,
+        all_areas=all_areas, editable_fields=PROCESS_STEP_EDITABLE_FIELDS,
+        all_areas_flat=serialize_for_js(all_areas, 'area'),
+        all_steps_flat=serialize_for_js(g.db_session.query(ProcessStep).all(), 'step'),
+        all_usecases_flat=serialize_for_js(g.db_session.query(UseCase).all(), 'usecase')
+    )
 
 
 @data_management_bp.route('/steps/save-all-changes', methods=['POST'])
 @login_required
 def save_all_steps_changes():
     changes = request.get_json()
-    session_db = SessionLocal()
     try:
-        message = bulk_edit_service.save_bulk_step_changes(session_db, changes)
+        message = bulk_edit_service.save_bulk_step_changes(g.db_session, changes)
         session.pop('steps_to_edit', None)
         return jsonify(success=True, message=message)
     except Exception as e:
-        session_db.rollback()
+        g.db_session.rollback()
         return jsonify(success=False, message=str(e)), 500
-    finally:
-        session_db.close()
 
 
 @data_management_bp.route('/usecases/prepare-for-edit', methods=['POST'])
@@ -235,13 +215,9 @@ def prepare_usecases_for_edit():
         return redirect(url_for('data_management.data_management_page'))
     selected_ids = [int(id_val) for id_val in selected_ids_str.split(',') if id_val.isdigit()]
 
-    session_db = SessionLocal()
-    try:
-        prepared_data = bulk_edit_service.prepare_usecases_for_bulk_edit(session_db, selected_ids, PROCESS_USECASE_EDITABLE_FIELDS)
-        session['usecases_to_edit'] = prepared_data
-        return redirect(url_for('data_management.edit_multiple_usecases'))
-    finally:
-        session_db.close()
+    prepared_data = bulk_edit_service.prepare_usecases_for_bulk_edit(g.db_session, selected_ids, PROCESS_USECASE_EDITABLE_FIELDS)
+    session['usecases_to_edit'] = prepared_data
+    return redirect(url_for('data_management.edit_multiple_usecases'))
 
 
 @data_management_bp.route('/usecases/edit-multiple', methods=['GET'])
@@ -251,34 +227,27 @@ def edit_multiple_usecases():
     if not usecases_data:
         return redirect(url_for('data_management.data_management_page'))
 
-    session_db = SessionLocal()
-    try:
-        all_steps = session_db.query(ProcessStep).order_by(ProcessStep.name).all()
-        return render_template(
-            'edit_multiple_usecases.html', title='Bulk Edit Use Cases', usecases_data=usecases_data,
-            all_steps=all_steps, editable_fields=PROCESS_USECASE_EDITABLE_FIELDS,
-            all_areas_flat=serialize_for_js(session_db.query(Area).all(), 'area'),
-            all_steps_flat=serialize_for_js(all_steps, 'step'),
-            all_usecases_flat=serialize_for_js(session_db.query(UseCase).all(), 'usecase')
-        )
-    finally:
-        session_db.close()
+    all_steps = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
+    return render_template(
+        'edit_multiple_usecases.html', title='Bulk Edit Use Cases', usecases_data=usecases_data,
+        all_steps=all_steps, editable_fields=PROCESS_USECASE_EDITABLE_FIELDS,
+        all_areas_flat=serialize_for_js(g.db_session.query(Area).all(), 'area'),
+        all_steps_flat=serialize_for_js(all_steps, 'step'),
+        all_usecases_flat=serialize_for_js(g.db_session.query(UseCase).all(), 'usecase')
+    )
 
 
 @data_management_bp.route('/usecases/save-all-changes', methods=['POST'])
 @login_required
 def save_all_usecases_changes():
     changes = request.get_json()
-    session_db = SessionLocal()
     try:
-        message = bulk_edit_service.save_bulk_usecase_changes(session_db, changes)
+        message = bulk_edit_service.save_bulk_usecase_changes(g.db_session, changes)
         session.pop('usecases_to_edit', None)
         return jsonify(success=True, message=message)
     except Exception as e:
-        session_db.rollback()
+        g.db_session.rollback()
         return jsonify(success=False, message=str(e)), 500
-    finally:
-        session_db.close()
 
 
 @data_management_bp.route('/steps/injection-preview')
@@ -289,18 +258,14 @@ def preview_steps_injection():
         flash("No step data found for preview. Please upload a file again.", "warning")
         return redirect(url_for('data_management.data_management_page'))
 
-    session_db = SessionLocal()
-    try:
-        all_areas = session_db.query(Area).order_by(Area.name).all()
-        return render_template(
-            'step_injection_preview.html', title='Process Step Import Preview',
-            preview_data=preview_data, all_areas=all_areas, step_detail_fields=STEP_DETAIL_FIELDS,
-            all_areas_flat=serialize_for_js(all_areas, 'area'),
-            all_steps_flat=serialize_for_js(session_db.query(ProcessStep).all(), 'step'),
-            all_usecases_flat=serialize_for_js(session_db.query(UseCase).all(), 'usecase')
-        )
-    finally:
-        session_db.close()
+    all_areas = g.db_session.query(Area).order_by(Area.name).all()
+    return render_template(
+        'step_injection_preview.html', title='Process Step Import Preview',
+        preview_data=preview_data, all_areas=all_areas, step_detail_fields=STEP_DETAIL_FIELDS,
+        all_areas_flat=serialize_for_js(all_areas, 'area'),
+        all_steps_flat=serialize_for_js(g.db_session.query(ProcessStep).all(), 'step'),
+        all_usecases_flat=serialize_for_js(g.db_session.query(UseCase).all(), 'usecase')
+    )
 
 
 @data_management_bp.route('/steps/finalize', methods=['POST'])

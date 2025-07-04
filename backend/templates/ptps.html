@@ -9,7 +9,7 @@
         A landscape of all Process Steps and their alignment to Areas.
     </p>
 
-    <!-- NEW: Area Filter Buttons -->
+    <!-- Area Filter Buttons -->
     <div class="filter-controls mb-3">
         <div class="area-filter-tabs" id="ptpAreaFilterTabs">
             <button class="btn btn-sm btn-outline-secondary active" data-area-id="all">All Areas</button>
@@ -18,9 +18,8 @@
             {% endfor %}
         </div>
     </div>
-    <!-- END NEW: Area Filter Buttons -->
 
-    <!-- Process Steps Overview (Now Collapsible) -->
+    <!-- Process Steps Overview -->
     <div class="mb-xl">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="card-title mb-0">Process Steps Overview</h2>
@@ -45,7 +44,6 @@
                             </thead>
                             <tbody>
                                 {% for step in all_steps %}
-                                {# MODIFIED: Added data-step-area-id and data-sort-value attributes #}
                                 <tr data-step-id="{{ step.id }}" data-step-area-id="{{ step.area_id }}">
                                     <td data-field="area_id" class="editable-cell" data-sort-value="{{ step.area.name if step.area else 'Z' }}">{{ step.area.name if step.area else 'N/A' }}</td>
                                     <td data-field="bi_id" class="editable-cell" data-sort-value="{{ step.bi_id }}">{{ step.bi_id }}</td>
@@ -76,12 +74,11 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Pass data to the new JS file
     window.allAreasForSelect = {{ all_areas_for_select | tojson | safe }};
 </script>
 <script type="module" src="{{ url_for('static', filename='js/inline_table_edit.js') }}"></script>
-
-<!-- NEW: In-page script for area filtering -->
+<!-- ADDED: Reference to the new main.js file -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filterTabsContainer = document.getElementById('ptpAreaFilterTabs');
@@ -89,60 +86,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (filterTabsContainer && table) {
         const tableRows = table.querySelectorAll('tbody tr');
-
         filterTabsContainer.addEventListener('click', function(event) {
             const clickedButton = event.target.closest('button.btn');
-            if (!clickedButton || !clickedButton.dataset.areaId) {
-                return; // Exit if not a filter button
-            }
+            if (!clickedButton || !clickedButton.dataset.areaId) return;
 
-            // Update active state on buttons
             filterTabsContainer.querySelectorAll('button.btn').forEach(btn => btn.classList.remove('active'));
             clickedButton.classList.add('active');
 
             const selectedAreaId = clickedButton.dataset.areaId;
 
-            // Filter table rows
             tableRows.forEach(row => {
                 const rowAreaId = row.dataset.stepAreaId;
                 if (selectedAreaId === 'all' || !rowAreaId || rowAreaId === selectedAreaId) {
-                    row.style.display = ''; // Show row
+                    row.style.display = '';
                 } else {
-                    row.style.display = 'none'; // Hide row
+                    row.style.display = 'none';
                 }
             });
         });
     }
 
-    // --- NEW: Table Sorting Functionality ---
-    function makeTableSortable(tableElement) {
-        if (!tableElement) return;
-        const headers = tableElement.querySelectorAll('th.sortable');
-
-        headers.forEach(header => {
-            header.addEventListener('click', () => {
-                const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : null);
-                let sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
-
-                tableElement.querySelectorAll('th.sortable').forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
-                header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
-
-                const tbody = tableElement.querySelector('tbody');
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                const colIndex = Array.from(header.parentNode.children).indexOf(header);
-
-                rows.sort((a, b) => {
-                    let valA = a.cells[colIndex].dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex].textContent.trim();
-                    let valB = b.cells[colIndex].dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex].textContent.trim();
-                    const numA = parseFloat(valA); const numB = parseFloat(valB);
-                    if (!isNaN(numA) && !isNaN(numB)) { return sortOrder === 'asc' ? numA - numB : numB - numA; }
-                    return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                });
-                rows.forEach(row => tbody.appendChild(row));
-            });
-        });
-    }
-    makeTableSortable(document.getElementById('processStepsOverviewTable'));
+    // REPLACED inline script with a call to the global sorter
+    initializeTableSorter('processStepsOverviewTable');
 });
 </script>
 {% endblock %}

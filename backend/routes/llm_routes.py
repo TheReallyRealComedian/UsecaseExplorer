@@ -3,13 +3,12 @@
 import json
 import traceback
 
-from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, current_app
+from flask import Blueprint, g, request, flash, redirect, url_for, render_template, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import distinct, or_
 
 from ..services import llm_service
-from ..db import SessionLocal
 from ..models import ProcessStep, Area, User, UseCase, UsecaseStepRelevance
 from ..utils import serialize_for_js
 
@@ -129,7 +128,6 @@ MOST IMPORTANT OF ALL: Output ONLY the JSON object and nothing else!!!!!
 @llm_routes.route('/data-prep', methods=['GET', 'POST'])
 @login_required
 def llm_data_prep_page():
-    session = SessionLocal()
     try:
         prepared_data = {"process_steps": [], "use_cases": []}
         total_tokens = 0
@@ -145,7 +143,7 @@ def llm_data_prep_page():
 
         if request.method == 'POST':
             prepared_data, total_tokens = llm_service.prepare_data_for_llm(
-                session, request.form, SELECTABLE_STEP_FIELDS.keys(), SELECTABLE_USECASE_FIELDS.keys()
+                g.db_session, request.form, SELECTABLE_STEP_FIELDS.keys(), SELECTABLE_USECASE_FIELDS.keys()
             )
             # Store selections to re-render the form state
             form_data_for_template = {
@@ -159,15 +157,15 @@ def llm_data_prep_page():
             }
 
         # Data for initial page load and for re-rendering the form filters
-        areas = session.query(Area).order_by(Area.name).all()
-        all_steps_db = session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
-        all_usecases_db = session.query(UseCase).options(
+        areas = g.db_session.query(Area).order_by(Area.name).all()
+        all_steps_db = g.db_session.query(ProcessStep).options(joinedload(ProcessStep.area)).order_by(ProcessStep.name).all()
+        all_usecases_db = g.db_session.query(UseCase).options(
             joinedload(UseCase.process_step).joinedload(ProcessStep.area)
         ).order_by(UseCase.name).all()
 
-        distinct_waves_query = session.query(distinct(UseCase.wave)).filter(UseCase.wave.isnot(None)).filter(UseCase.wave != '').order_by(UseCase.wave).all()
+        distinct_waves_query = g.db_session.query(distinct(UseCase.wave)).filter(UseCase.wave.isnot(None)).filter(UseCase.wave != '').order_by(UseCase.wave).all()
         all_wave_values_for_filter = [w[0] for w in distinct_waves_query if w[0]]
-        if session.query(UseCase).filter(or_(UseCase.wave.is_(None), UseCase.wave == '')).first():
+        if g.db_session.query(UseCase).filter(or_(UseCase.wave.is_(None), UseCase.wave == '')).first():
             if "N/A" not in all_wave_values_for_filter:
                 all_wave_values_for_filter.append("N/A")
 
@@ -175,9 +173,9 @@ def llm_data_prep_page():
         ollama_models = llm_service.get_all_available_llm_models()
         chat_history = list(llm_service.get_chat_history())
 
-        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
         return render_template(
             'llm_data_prep.html',
@@ -230,8 +228,6 @@ def llm_data_prep_page():
             selected_step_fields_form=[], selected_usecase_fields_form=[],
             selected_wave_values_form=[], export_uc_step_relevance=False,
         )
-    finally:
-        session.close()
 
 
 @llm_routes.route('/analyze/<int:usecase_id>', methods=['POST', 'GET'])
@@ -245,65 +241,41 @@ def analyze_usecase(usecase_id):
 @llm_routes.route('/chat', methods=['POST'])
 @login_required
 def llm_chat():
-    user_message = request.json.get('message')
-    model_name = request.json.get('model')
-    image_base64 = request.json.get('image_base64')
-    image_mime_type = request.json.get('image_mime_type')
+    data = request.json
+    user_message = data.get('message')
+    model_name = data.get('model')
+    image_base64 = data.get('image_base64')
+    image_mime_type = data.get('image_mime_type')
 
     system_prompt = current_user.system_prompt if current_user.is_authenticated else None
-    if system_prompt == "":
-        system_prompt = None
 
     if not user_message and not image_base64:
         return jsonify({"success": False, "message": "Message or image is required."}), 400
-
     if not model_name:
         return jsonify({"success": False, "message": "Model is required."}), 400
 
-    chat_history = llm_service.get_chat_history()
-
-    parts = model_name.split('-', 1)
-    provider = parts[0] if len(parts) > 0 else "unknown"
-    model_id = parts[1] if len(parts) > 1 else model_name
-
-    response = {"success": False, "message": "Unsupported LLM provider or no response."}
-
     try:
-        if provider == "ollama":
-            response = llm_service.generate_ollama_chat_response(
-                model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
-            )
-        elif provider == "openai":
-            response = llm_service.generate_openai_chat_response(
-                model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
-            )
-        elif provider == "anthropic":
-            response = llm_service.generate_anthropic_chat_response(
-                model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
-            )
-        elif provider == "google":
-            response = llm_service.generate_google_chat_response(
-                model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
-            )
-        elif provider == "apollo":
-            response = llm_service.generate_apollo_chat_response(
-                model_id, user_message, system_prompt, image_base64, image_mime_type, chat_history
-            )
-        else:
-            response = {"success": False, "message": f"Unknown or unsupported LLM provider: {provider}"}
+        chat_history = llm_service.get_chat_history()
+
+        response = llm_service.generate_chat_response(
+            model_name=model_name,
+            user_message=user_message,
+            system_prompt=system_prompt,
+            image_base64=image_base64,
+            image_mime_type=image_mime_type,
+            chat_history=chat_history
+        )
+
+        if response.get("success"):
+            user_message_for_history = user_message or "Image provided."
+            llm_service.add_message_to_history('user', user_message_for_history)
+            llm_service.add_message_to_history('assistant', response["message"])
+
+        return jsonify(response)
 
     except Exception as e:
-        response = {"success": False, "message": f"Server error calling LLM: {e}"}
         traceback.print_exc()
-
-    if response["success"]:
-        user_message_for_history = user_message
-        if not user_message_for_history and image_base64:
-            user_message_for_history = "Image provided."
-        llm_service.add_message_to_history('user', user_message_for_history)
-        llm_service.add_message_to_history('assistant', response["message"])
-
-    return jsonify(response)
+        return jsonify({"success": False, "message": f"An unexpected error occurred in the chat route: {e}"}), 500
 
 
 @llm_routes.route('/system-prompt', methods=['POST'])
@@ -313,17 +285,14 @@ def save_system_prompt():
     if prompt_content is None:
         return jsonify({"success": False, "message": "Prompt content is required."}), 400
 
-    session = SessionLocal()
     try:
-        success, message = llm_service.save_user_system_prompt(session, current_user.id, prompt_content)
+        success, message = llm_service.save_user_system_prompt(g.db_session, current_user.id, prompt_content)
         return jsonify({"success": success, "message": message}), 200 if success else 404
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         print(f"Error saving system prompt for user {current_user.id}: {e}")
         traceback.print_exc()
         return jsonify({"success": False, "message": f"Failed to save system prompt: {e}"}), 500
-    finally:
-        session.close()
 
 
 @llm_routes.route('/chat/clear', methods=['POST'])
@@ -336,7 +305,6 @@ def llm_chat_clear():
 @llm_routes.route('/analyze-usecase-image', methods=['POST'])
 @login_required
 def analyze_usecase_image_with_llm():
-    session_db = SessionLocal()
     try:
         data = request.json
         usecase_id = data.get('usecase_id')
@@ -350,7 +318,7 @@ def analyze_usecase_image_with_llm():
                 "success": False, "message": "Missing required data: usecase_id, image_base64, image_mime_type, or model."
             }), 400
 
-        usecase = session_db.query(UseCase).get(usecase_id)
+        usecase = g.db_session.query(UseCase).get(usecase_id)
         if not usecase:
             return jsonify({"success": False, "message": "Use Case not found."}), 404
 
@@ -365,9 +333,9 @@ def analyze_usecase_image_with_llm():
             "usecase_dependencies_text": usecase.dependencies_text or "N/A",
             "usecase_usecase_type_category": usecase.usecase_type_category or "N/A",
         }
-        
+
         active_system_prompt_template = system_prompt_override if system_prompt_override else AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE
-        
+
         try:
             final_llm_prompt_text = active_system_prompt_template.format(**prompt_context)
         except KeyError as e:
@@ -376,7 +344,7 @@ def analyze_usecase_image_with_llm():
                 "success": False,
                 "message": f"Error formatting the prompt template. A placeholder like '{{{e}}}' might be missing from the provided context or the template is malformed."
             }), 500
-        
+
         parts = selected_model_name.split('-', 1)
         provider = parts[0].lower()
         model_id = parts[1] if len(parts) > 1 else selected_model_name
@@ -411,7 +379,7 @@ def analyze_usecase_image_with_llm():
                 response_message = llm_response_data["message"]
                 if response_message.startswith("```json"):
                     response_message = response_message[len("```json"):].strip()
-                if response_message.startswith("```"): 
+                if response_message.startswith("```"):
                      response_message = response_message[len("```"):].strip()
                 if response_message.endswith("```"):
                     response_message = response_message[:-len("```")].strip()
@@ -441,8 +409,6 @@ def analyze_usecase_image_with_llm():
         print(f"Error in /analyze-usecase-image: {e}")
         traceback.print_exc()
         return jsonify({"success": False, "message": f"An internal server error occurred: {str(e)}"}), 500
-    finally:
-        session_db.close()
 
 
 @llm_routes.route('/get_llm_models', methods=['GET'])

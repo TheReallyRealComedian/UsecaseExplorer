@@ -1,10 +1,9 @@
 # backend/routes/review_routes.py
-from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for, Response
+from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for, Response, g
 from flask_login import login_required
 from sqlalchemy.orm import joinedload, aliased
 from sqlalchemy import or_, and_, exc as sqlalchemy_exc
 
-from ..db import SessionLocal
 from ..utils import serialize_for_js
 from ..models import Area, ProcessStep, ProcessStepProcessStepRelevance, UseCase
 from ..services import review_service
@@ -21,13 +20,13 @@ review_routes = Blueprint('review', __name__,
 @review_routes.route('/')
 @login_required
 def review_dashboard():
-    session = SessionLocal()
     try:
-        all_areas_flat = serialize_for_js(session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-    finally:
-        session.close()
+        all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
+        all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+    except Exception as e:
+        flash(f"Error loading dashboard data: {e}", "danger")
+        return redirect(url_for('main.index'))
 
     return render_template('review_dashboard.html',
                            title="Review Center",
@@ -43,13 +42,12 @@ def review_dashboard():
 @review_routes.route('/process-links/')
 @login_required
 def review_process_links_page():
-    session = SessionLocal()
     try:
-        areas = session.query(Area).order_by(Area.name).all()
+        areas = g.db_session.query(Area).order_by(Area.name).all()
 
         all_areas_flat = serialize_for_js(areas, 'area')
-        all_steps_flat = serialize_for_js(session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
+        all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
+        all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
 
         return render_template('review_process_links.html',
                                title="Review Process Step Links",
@@ -61,14 +59,14 @@ def review_process_links_page():
                                all_areas_flat=all_areas_flat,
                                all_steps_flat=all_steps_flat,
                                all_usecases_flat=all_usecases_flat)
-    finally:
-        session.close()
+    except Exception as e:
+        flash(f"Error loading process links page: {e}", "danger")
+        return redirect(url_for('review.review_dashboard'))
 
 
 @review_routes.route('/api/process-links/data', methods=['GET'])
 @login_required
 def get_process_links_data():
-    session = SessionLocal()
     try:
         focus_area_id = request.args.get('focus_area_id', type=int)
         comparison_area_ids_str = request.args.getlist('comparison_area_ids[]')
@@ -84,7 +82,7 @@ def get_process_links_data():
             return jsonify(error="Focus area ID is required."), 400
 
         # Call the service function to get the data
-        links_data = review_service.get_process_links_for_review(session, focus_area_id, comparison_area_ids)
+        links_data = review_service.get_process_links_for_review(g.db_session, focus_area_id, comparison_area_ids)
 
         return jsonify(links=links_data)
 
@@ -93,15 +91,11 @@ def get_process_links_data():
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 @review_routes.route('/export-involved-steps-csv', methods=['GET'])
 @login_required
 def export_involved_steps_csv():
-    session = SessionLocal()
     try:
         focus_area_id = request.args.get('focus_area_id', type=int)
         comparison_area_ids_str = request.args.getlist('comparison_area_ids[]')
@@ -121,7 +115,7 @@ def export_involved_steps_csv():
         SourceStep = aliased(ProcessStep, name='source_step')
         TargetStep = aliased(ProcessStep, name='target_step')
 
-        query = session.query(
+        query = g.db_session.query(
             ProcessStepProcessStepRelevance.source_process_step_id,
             ProcessStepProcessStepRelevance.target_process_step_id
         ).join(
@@ -157,7 +151,7 @@ def export_involved_steps_csv():
 
         steps_to_export = []
         if involved_step_ids:
-            steps_to_export = session.query(
+            steps_to_export = g.db_session.query(
                 ProcessStep.id,
                 ProcessStep.step_description
             ).filter(ProcessStep.id.in_(list(involved_step_ids))).order_by(ProcessStep.id).all()
@@ -187,17 +181,13 @@ def export_involved_steps_csv():
         traceback.print_exc()
         flash("An error occurred while exporting involved steps.", "danger")
         return redirect(url_for('review.review_process_links_page'))
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['GET'])
 @login_required
 def get_process_link_detail(link_id):
-    session = SessionLocal()
     try:
-        link = session.query(ProcessStepProcessStepRelevance).options(
+        link = g.db_session.query(ProcessStepProcessStepRelevance).options(
             joinedload(ProcessStepProcessStepRelevance.source_process_step).joinedload(ProcessStep.area),
             joinedload(ProcessStepProcessStepRelevance.target_process_step).joinedload(ProcessStep.area)
         ).get(link_id)
@@ -216,15 +206,13 @@ def get_process_link_detail(link_id):
             "relevance_score": link.relevance_score,
             "relevance_content": link.relevance_content or ""
         })
-    finally:
-        if session and session.is_active:
-            session.close()
+    except Exception as e:
+        return jsonify(error=str(e)), 500
 
 
 @review_routes.route('/api/process-links/link', methods=['POST'])
 @login_required
 def create_process_link():
-    session = SessionLocal()
     try:
         data = request.json
         source_step_id = data.get('source_step_id')
@@ -248,14 +236,14 @@ def create_process_link():
         except ValueError:
             return jsonify(error="Invalid score format."), 400
 
-        source_step_exists = session.query(ProcessStep).get(source_step_id)
-        target_step_exists = session.query(ProcessStep).get(target_step_id)
+        source_step_exists = g.db_session.query(ProcessStep).get(source_step_id)
+        target_step_exists = g.db_session.query(ProcessStep).get(target_step_id)
         if not source_step_exists:
             return jsonify(error=f"Source step with ID {source_step_id} not found."), 404
         if not target_step_exists:
             return jsonify(error=f"Target step with ID {target_step_id} not found."), 404
 
-        existing = session.query(ProcessStepProcessStepRelevance).filter_by(
+        existing = g.db_session.query(ProcessStepProcessStepRelevance).filter_by(
             source_process_step_id=source_step_id,
             target_process_step_id=target_step_id
         ).first()
@@ -268,30 +256,26 @@ def create_process_link():
             relevance_score=score,
             relevance_content=relevance_content or None
         )
-        session.add(new_link)
-        session.commit()
+        g.db_session.add(new_link)
+        g.db_session.commit()
         return jsonify(success=True, message="Link created successfully.", link_id=new_link.id), 201
     except sqlalchemy_exc.IntegrityError as e:
-        session.rollback()
+        g.db_session.rollback()
         if "no_self_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
         if "unique_process_step_process_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: This link already exists."), 409
         return jsonify(error=f"Database integrity error: {e.orig}"), 500
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         return jsonify(error=str(e)), 500
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['PUT'])
 @login_required
 def update_process_link(link_id):
-    session = SessionLocal()
     try:
-        link = session.query(ProcessStepProcessStepRelevance).get(link_id)
+        link = g.db_session.query(ProcessStepProcessStepRelevance).get(link_id)
         if not link:
             return jsonify(error="Link not found."), 404
 
@@ -311,16 +295,16 @@ def update_process_link(link_id):
 
         if source_changed or target_changed:
             if source_changed:
-                source_step_exists = session.query(ProcessStep).get(final_source_id)
+                source_step_exists = g.db_session.query(ProcessStep).get(final_source_id)
                 if not source_step_exists:
                     return jsonify(error=f"New source step with ID {final_source_id} not found."), 404
 
             if target_changed:
-                target_step_exists = session.query(ProcessStep).get(final_target_id)
+                target_step_exists = g.db_session.query(ProcessStep).get(final_target_id)
                 if not target_step_exists:
                     return jsonify(error=f"New target step with ID {final_target_id} not found."), 404
 
-            existing_duplicate = session.query(ProcessStepProcessStepRelevance).filter(
+            existing_duplicate = g.db_session.query(ProcessStepProcessStepRelevance).filter(
                 ProcessStepProcessStepRelevance.id != link_id,
                 ProcessStepProcessStepRelevance.source_process_step_id == final_source_id,
                 ProcessStepProcessStepRelevance.target_process_step_id == final_target_id
@@ -346,50 +330,42 @@ def update_process_link(link_id):
         if 'relevance_content' in data:
             link.relevance_content = relevance_content or None
 
-        session.commit()
+        g.db_session.commit()
         return jsonify(success=True, message="Link updated successfully.")
     except sqlalchemy_exc.IntegrityError as e:
-        session.rollback()
+        g.db_session.rollback()
         if "no_self_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: Cannot link a step to itself."), 400
         if "unique_process_step_process_step_relevance" in str(e.orig).lower():
             return jsonify(error="Database constraint violation: This link (source/target combination) already exists."), 409
         return jsonify(error=f"Database integrity error: {e.orig}"), 500
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         return jsonify(error=str(e)), 500
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 @review_routes.route('/api/process-links/link/<int:link_id>', methods=['DELETE'])
 @login_required
 def delete_process_link(link_id):
-    session = SessionLocal()
     try:
-        link = session.query(ProcessStepProcessStepRelevance).get(link_id)
+        link = g.db_session.query(ProcessStepProcessStepRelevance).get(link_id)
         if not link:
             return jsonify(error="Link not found."), 404
 
-        session.delete(link)
-        session.commit()
+        g.db_session.delete(link)
+        g.db_session.commit()
         return jsonify(success=True, message="Link deleted successfully.")
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         return jsonify(error=str(e)), 500
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 @review_routes.route('/api/process-links/delete-all', methods=['POST'])
 @login_required
 def delete_all_process_links():
-    session = SessionLocal()
     try:
-        num_deleted = session.query(ProcessStepProcessStepRelevance).delete()
-        session.commit()
+        num_deleted = g.db_session.query(ProcessStepProcessStepRelevance).delete()
+        g.db_session.commit()
 
         message = f"Successfully deleted {num_deleted} process step link(s)."
         if num_deleted == 0:
@@ -397,12 +373,9 @@ def delete_all_process_links():
 
         return jsonify(success=True, message=message), 200
     except Exception as e:
-        session.rollback()
+        g.db_session.rollback()
         print(f"Error deleting all process step links: {e}")
         return jsonify(success=False, error="An unexpected error occurred while deleting links."), 500
-    finally:
-        if session and session.is_active:
-            session.close()
 
 
 general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
@@ -411,9 +384,8 @@ general_api_routes = Blueprint('general_api', __name__, url_prefix='/api')
 @general_api_routes.route('/steps', methods=['GET'])
 @login_required
 def get_all_steps_for_select():
-    session = SessionLocal()
     try:
-        steps_query = session.query(ProcessStep).options(
+        steps_query = g.db_session.query(ProcessStep).options(
             joinedload(ProcessStep.area)
         ).order_by(ProcessStep.name).all()
 
@@ -431,6 +403,3 @@ def get_all_steps_for_select():
         import traceback
         traceback.print_exc()
         return jsonify(error=str(e)), 500
-    finally:
-        if session and session.is_active:
-            session.close()

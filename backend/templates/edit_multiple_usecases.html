@@ -3,18 +3,12 @@
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
-{% block head_extra %}
-{# Removed inline <style> block. Styles are now in style.css #}
-{% endblock %}
-
 {% block content %}
 <div class="bulk-edit-usecases-page">
     <h1>{{ title }}</h1>
     <p class="text-color-light mb-4">
         Edit the fields of your selected Use Cases. Changes are saved in bulk.
     </p>
-
-    {# The entire LLM Helper section previously here is removed. #}
 
     {% if usecases_data %}
         <div class="save-all-controls">
@@ -57,18 +51,18 @@
                                 {% endfor %}
                             </select>
                         {% elif field_key == 'priority' %}
-                            <input type="number" 
-                                   class="form-control new-value-input" 
-                                   data-field="{{ field_key }}" 
-                                   data-uc-id="{{ uc_item.id }}" 
-                                   min="1" max="4" 
-                                   value="{{ uc_item.new_values[field_key] | default('', true) }}" 
+                            <input type="number"
+                                   class="form-control new-value-input"
+                                   data-field="{{ field_key }}"
+                                   data-uc-id="{{ uc_item.id }}"
+                                   min="1" max="4"
+                                   value="{{ uc_item.new_values[field_key] | default('', true) }}"
                                    placeholder="New priority (1-4)">
                         {% else %}
-                            <textarea class="form-control new-value-input" 
-                                      data-field="{{ field_key }}" 
-                                      data-uc-id="{{ uc_item.id }}" 
-                                      rows="3" 
+                            <textarea class="form-control new-value-input"
+                                      data-field="{{ field_key }}"
+                                      data-uc-id="{{ uc_item.id }}"
+                                      rows="3"
                                       placeholder="New value for {{ field_name }}">{% if uc_item.new_values[field_key] is not none %}{{ uc_item.new_values[field_key] }}{% endif %}</textarea>
                         {% endif %}
                     </div>
@@ -100,14 +94,138 @@
 
 {% block scripts %}
 {{ super() }}
-{# No more Marked.js or common_llm_chat.js needed here #}
-
 <script type="text/javascript">
-    // Pass initial data to JavaScript for client-side processing
     const INITIAL_USETYPE_DATA = {{ usecases_data | tojson | safe }};
     const ALL_STEPS_DATA_FOR_DROPDOWN = {{ all_steps | tojson | safe }};
     const EDITABLE_FIELDS_CONFIG = {{ editable_fields | tojson | safe }};
 </script>
-{# New JavaScript file for bulk edit UI. Removed import of common_llm_chat.js #}
-<script type="module" src="{{ url_for('static', filename='js/edit_multiple_usecases_ui.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const usecasesData = INITIAL_USETYPE_DATA;
+    const pendingChanges = {};
+
+    const saveAllChangesBtnTop = document.getElementById('saveAllChangesBtn');
+    const cancelAllChangesBtnTop = document.getElementById('cancelAllChangesBtn');
+    const pendingChangesCountTop = document.getElementById('pendingChangesCount');
+    const saveAllChangesBtnBottom = document.getElementById('saveAllChangesBtnBottom');
+    const cancelAllChangesBtnBottom = document.getElementById('cancelAllChangesBtnBottom');
+    const pendingChangesCountBottom = document.getElementById('pendingChangesCountBottom');
+
+    function updatePendingChangesCount() {
+        let count = Object.keys(pendingChanges).length;
+        const countText = `${count} pending change${count === 1 ? '' : 's'}`;
+        pendingChangesCountTop.textContent = countText;
+        pendingChangesCountBottom.textContent = countText;
+        const isDisabled = count === 0;
+        saveAllChangesBtnTop.disabled = isDisabled;
+        cancelAllChangesBtnTop.disabled = isDisabled;
+        saveAllChangesBtnBottom.disabled = isDisabled;
+        cancelAllChangesBtnBottom.disabled = isDisabled;
+    }
+
+    function toggleFieldHighlight(ucId, fieldKey, isChanged) {
+        const fieldRow = document.querySelector(`.edit-usecase-card[data-uc-id="${ucId}"] .field-row[data-field-key="${fieldKey}"]`);
+        if (fieldRow) {
+            fieldRow.classList.toggle('unsaved-field-change', isChanged);
+        }
+    }
+
+    function showFlashMessage(message, category) {
+        let flashContainer = document.querySelector('.flash-messages');
+        if (!flashContainer) {
+            flashContainer = document.createElement('div');
+            flashContainer.className = 'flash-messages';
+            document.querySelector('.page-content').prepend(flashContainer);
+        }
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${category}`;
+        alertDiv.textContent = message;
+        flashContainer.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    document.querySelectorAll('.new-value-input, .new-value-select').forEach(input => {
+        input.addEventListener('input', function() {
+            const ucId = parseInt(this.dataset.ucId);
+            const fieldKey = this.dataset.field;
+            let newValue = (this.value.trim() === '') ? null : this.value;
+
+            if (this.tagName === 'SELECT' || this.type === 'number') {
+                newValue = (newValue === null) ? null : parseInt(newValue);
+            }
+
+            const ucItem = usecasesData.find(u => u.id === ucId);
+            const originalValue = ucItem['current_' + fieldKey] ?? ucItem.current_process_step_id;
+
+            ucItem.new_values[fieldKey] = newValue;
+            const isChanged = newValue !== originalValue;
+
+            if (isChanged) {
+                if (!pendingChanges[ucId]) pendingChanges[ucId] = { id: ucId, updated_fields: {} };
+                pendingChanges[ucId].updated_fields[fieldKey] = newValue;
+            } else {
+                if (pendingChanges[ucId]) {
+                    delete pendingChanges[ucId].updated_fields[fieldKey];
+                    if (Object.keys(pendingChanges[ucId].updated_fields).length === 0) {
+                        delete pendingChanges[ucId];
+                    }
+                }
+            }
+            toggleFieldHighlight(ucId, fieldKey, isChanged);
+            updatePendingChangesCount();
+        });
+    });
+
+    async function saveAllChanges() {
+        if (Object.keys(pendingChanges).length === 0 || !confirm('Save all pending changes?')) return;
+
+        saveAllChangesBtnTop.disabled = true;
+        saveAllChangesBtnBottom.disabled = true;
+        pendingChangesCountTop.textContent = 'Saving...';
+        pendingChangesCountBottom.textContent = 'Saving...';
+
+        try {
+            const response = await fetch('/data-management/usecases/save-all-changes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.values(pendingChanges)),
+            });
+            const result = await response.json();
+            showFlashMessage(result.message, result.success ? 'success' : 'danger');
+            if (result.success) {
+                setTimeout(() => { window.location.href = '/data-management/'; }, 1500);
+            } else {
+                updatePendingChangesCount();
+            }
+        } catch (error) {
+            showFlashMessage('Network error during save.', 'danger');
+            updatePendingChangesCount();
+        }
+    }
+
+    function discardAllChanges() {
+        if (Object.keys(pendingChanges).length === 0 || !confirm('Discard all pending changes?')) return;
+
+        Object.keys(pendingChanges).forEach(ucId => {
+            const ucItem = usecasesData.find(u => u.id == ucId);
+            Object.keys(pendingChanges[ucId].updated_fields).forEach(fieldKey => {
+                const originalValue = ucItem['current_' + fieldKey] ?? ucItem.current_process_step_id;
+                const inputElement = document.querySelector(`.edit-usecase-card[data-uc-id="${ucId}"] [data-field="${fieldKey}"]`);
+                if (inputElement) inputElement.value = originalValue ?? '';
+                toggleFieldHighlight(ucId, fieldKey, false);
+            });
+        });
+        Object.keys(pendingChanges).forEach(key => delete pendingChanges[key]);
+        updatePendingChangesCount();
+        showFlashMessage('All pending changes have been discarded.', 'info');
+    }
+
+    saveAllChangesBtnTop.addEventListener('click', saveAllChanges);
+    saveAllChangesBtnBottom.addEventListener('click', saveAllChanges);
+    cancelAllChangesBtnTop.addEventListener('click', discardAllChanges);
+    cancelAllChangesBtnBottom.addEventListener('click', discardAllChanges);
+
+    updatePendingChangesCount();
+});
+</script>
 {% endblock %}
