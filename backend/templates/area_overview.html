@@ -1,3 +1,4 @@
+{# backend/templates/area_overview.html #}
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
@@ -47,14 +48,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-<!-- ADDED: Reference to the new main.js file -->
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // REPLACED inline script with a call to the global sorter
-    initializeTableSorter('areasOverviewTable');
-});
-</script>
-{% endblock %}
+{# FIX: The entire block is removed #}

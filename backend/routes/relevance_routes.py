@@ -21,7 +21,7 @@ def add_area_relevance():
     redirect_url = (
         url_for('usecases.view_usecase', usecase_id=source_usecase_id)
         if source_usecase_id
-        else url_for('index')
+        else url_for('main.index')
     )
 
     if not all([source_usecase_id, target_area_id, score_str is not None]):
@@ -68,7 +68,7 @@ def add_step_relevance():
     redirect_url = (
         url_for('usecases.view_usecase', usecase_id=source_usecase_id)
         if source_usecase_id
-        else url_for('index')
+        else url_for('main.index')
     )
 
     if not all([source_usecase_id, target_process_step_id, score_str is not None]):
@@ -115,7 +115,7 @@ def add_usecase_relevance():
     redirect_url = (
         url_for('usecases.view_usecase', usecase_id=source_usecase_id)
         if source_usecase_id
-        else url_for('index')
+        else url_for('main.index')
     )
 
     if not all([source_usecase_id, target_usecase_id, score_str is not None]):
@@ -166,7 +166,7 @@ def add_step_to_step_relevance():
     redirect_url = (
         url_for('steps.view_step', step_id=source_process_step_id)
         if source_process_step_id
-        else url_for('index')
+        else url_for('main.index')
     )
 
     if not all([source_process_step_id, target_process_step_id, score_str is not None]):
@@ -225,7 +225,7 @@ def delete_area_relevance(relevance_id):
         g.db_session.rollback()
         flash(f"Error deleting area relevance link: {e}", "danger")
 
-    return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('index'))
+    return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('main.index'))
 
 
 @relevance_routes.route('/delete/step/<int:relevance_id>', methods=['POST'])
@@ -250,7 +250,7 @@ def delete_step_relevance(relevance_id):
         return redirect(url_for('steps.view_step', step_id=referrer_step_id))
     if source_usecase_id:
         return redirect(url_for('usecases.view_usecase', usecase_id=source_usecase_id))
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 @relevance_routes.route('/delete/usecase/<int:relevance_id>', methods=['POST'])
@@ -271,7 +271,7 @@ def delete_usecase_relevance(relevance_id):
         g.db_session.rollback()
         flash(f"Error deleting use case relevance link: {e}", "danger")
 
-    return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('index'))
+    return redirect(url_for('usecases.view_usecase', usecase_id=redirect_id) if redirect_id else url_for('main.index'))
 
 
 @relevance_routes.route('/delete/step_to_step/<int:relevance_id>', methods=['POST'])
@@ -292,7 +292,7 @@ def delete_step_to_step_relevance(relevance_id):
         g.db_session.rollback()
         flash(f"Error deleting process step relevance link: {e}", "danger")
 
-    return redirect(url_for('steps.view_step', step_id=redirect_id) if redirect_id else url_for('index'))
+    return redirect(url_for('steps.view_step', step_id=redirect_id) if redirect_id else url_for('main.index'))
 
 
 # --- EDIT ROUTES ---
@@ -309,7 +309,7 @@ def handle_edit_relevance(relevance_id, link_type, view_name_for_redirect, id_na
         page_data = relevance_service.get_data_for_edit_page(g.db_session, relevance_id, link_type)
         if not page_data.get('relevance_link'):
             flash(f"{link_type.replace('_', ' ').capitalize()} relevance link not found.", "danger")
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
 
         page_data.update(_get_breadcrumb_data())
 
@@ -355,7 +355,7 @@ def handle_edit_relevance(relevance_id, link_type, view_name_for_redirect, id_na
     except Exception as e:
         g.db_session.rollback()
         flash(f"An unexpected error occurred: {e}", "danger")
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
 
 @relevance_routes.route('/edit/area/<int:relevance_id>', methods=['GET', 'POST'])

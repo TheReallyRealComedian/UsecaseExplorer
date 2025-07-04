@@ -1,8 +1,9 @@
-### backend/requirements.txt
+# backend/requirements.txt
 
 #### Web Framework & Extensions
 
 Flask==2.3.3
+Flask-Assets
 Flask-Login>=0.6.3
 Flask-Migrate
 Flask-SQLAlchemy==3.1.1
@@ -28,7 +29,9 @@ tiktoken==0.5.2
 #### Utilities & Helpers
 
 Pillow
+cssmin
 httpx
+jsmin
 markdown
 passlib==1.7.4
 python-dotenv==1.0.0

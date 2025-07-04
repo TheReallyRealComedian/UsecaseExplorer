@@ -17,28 +17,25 @@ def index():
             joinedload(Area.process_steps)
         ).order_by(Area.name).all()
         all_areas_query = g.db_session.query(Area).order_by(Area.name).all()
-        all_usecases_query = g.db_session.query(UseCase).order_by(UseCase.name).all()
         
-        # Prepare data for JS
-        all_areas_for_select_js = serialize_for_js(all_areas_query, 'area')
-        all_areas_flat = serialize_for_js(all_areas_query, 'area')
-        all_steps_flat = serialize_for_js(all_steps, 'step')
-        all_usecases_flat = serialize_for_js(all_usecases_query, 'usecase')
+        # --- START REFACTOR: Consolidate data for the data island ---
+        # Data needed specifically for this page's JavaScript (e.g., inline editing).
+        page_data = {
+            "all_areas_for_select": serialize_for_js(all_areas_query, 'area')
+        }
 
         return render_template(
             'ptps.html',
             title='Process Target Pictures (PTPs)',
             all_steps=all_steps,
             areas_with_steps=areas_with_steps,
-            all_areas_for_select=all_areas_for_select_js,
+            page_data=page_data,  # Pass the new data island object
             current_item=None,
             current_area=None,
             current_step=None,
-            current_usecase=None,
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
+            current_usecase=None
         )
+        # --- END REFACTOR ---
     else:
         return redirect(url_for('auth.login'))
 
@@ -46,10 +43,8 @@ def index():
 def dashboard():
     if current_user.is_authenticated:
         stats = dashboard_service.get_dashboard_stats(g.db_session)
-        all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
-        all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
-        all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
-
+        
+        # --- REFACTOR: Remove unused flat navigation data ---
         return render_template(
             'index.html',
             title='Dashboard',
@@ -59,10 +54,8 @@ def dashboard():
             current_item=None,
             current_area=None,
             current_step=None,
-            current_usecase=None,
-            all_areas_flat=all_areas_flat,
-            all_steps_flat=all_steps_flat,
-            all_usecases_flat=all_usecases_flat
+            current_usecase=None
         )
+        # --- END REFACTOR ---
     else:
         return redirect(url_for('auth.login'))

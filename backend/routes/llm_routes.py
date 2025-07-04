@@ -169,10 +169,6 @@ def llm_data_prep_page():
             if "N/A" not in all_wave_values_for_filter:
                 all_wave_values_for_filter.append("N/A")
 
-        user_system_prompt = current_user.system_prompt if current_user.is_authenticated else ""
-        ollama_models = llm_service.get_all_available_llm_models()
-        chat_history = list(llm_service.get_chat_history())
-
         all_areas_flat = serialize_for_js(g.db_session.query(Area).order_by(Area.name).all(), 'area')
         all_steps_flat = serialize_for_js(g.db_session.query(ProcessStep).order_by(ProcessStep.name).all(), 'step')
         all_usecases_flat = serialize_for_js(g.db_session.query(UseCase).order_by(UseCase.name).all(), 'usecase')
@@ -188,10 +184,6 @@ def llm_data_prep_page():
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data=prepared_data,
             total_tokens=total_tokens,
-            ollama_models=ollama_models,
-            chat_history=chat_history,
-            config=current_app.config,
-            user_system_prompt=user_system_prompt,
             current_item=None,
             current_area=None,
             current_step=None,
@@ -210,7 +202,6 @@ def llm_data_prep_page():
         print("-------------------------------------------\n")
 
         flash("An error occurred while preparing data. Please try again.", "danger")
-        user_system_prompt_on_error = current_user.system_prompt if current_user.is_authenticated else ""
         return render_template(
             'llm_data_prep.html',
             title="Data Mining",
@@ -219,9 +210,6 @@ def llm_data_prep_page():
             selectable_fields_usecases=SELECTABLE_USECASE_FIELDS,
             prepared_data={"process_steps": [], "use_cases": []},
             total_tokens=0,
-            ollama_models=[], chat_history=[],
-            config=current_app.config,
-            user_system_prompt=user_system_prompt_on_error,
             current_item=None, current_area=None, current_step=None, current_usecase=None,
             all_areas_flat=[], all_steps_flat=[], all_usecases_flat=[],
             selected_area_ids=[], selected_step_ids=[], selected_usecase_ids=[],

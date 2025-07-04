@@ -85,7 +85,7 @@ def edit_step(step_id):
 @step_routes.route('/<int:step_id>/delete', methods=['POST'])
 @login_required
 def delete_step(step_id):
-    redirect_url = url_for('index')
+    redirect_url = url_for('main.index')
     try:
         step_name, area_id, message = step_service.delete_step_by_id(g.db_session, step_id)
         if step_name:

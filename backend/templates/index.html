@@ -23,7 +23,9 @@
                     <div class="card-body">
                         <h5 class="card-title">Total Process Steps</h5>
                         <p class="card-text fs-2 fw-bold">{{ total_steps | default('0', true) }}</p>
-                        <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">View All Steps</a>
+                        {# --- START MODIFICATION --- #}
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-sm">View All Steps</a>
+                        {# --- END MODIFICATION --- #}
                     </div>
                 </div>
             </div>

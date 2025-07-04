@@ -1,6 +1,4 @@
 // UsecaseExplorer/backend/static/js/llm_ui.js
-import { initializeLLMChat } from './common_llm_chat.js'; // Import the new module
-
 document.addEventListener('DOMContentLoaded', function () {
     // Custom Selects Initialization
     initializeCustomSelects();
@@ -8,20 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeSearch();
     // Update counts for custom selects on page load
     updateAllCounts();
-
-    // Initialize the LLM Chat functionality using the common module
-    initializeLLMChat(
-        'chatDisplay',
-        'chatInput',
-        'sendMessageButton',
-        'clearChatButton',
-        'llmModelSelect',
-        'systemPromptInput',
-        'saveSystemPromptButton',
-        'chatInput', 
-        'imagePreview', 
-        'clearImageButton'
-    );
 
     // --- Custom Select Implementation ---
     function initializeCustomSelects() {
@@ -260,12 +244,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ... (rest of the file: JSON Preview, Bootstrap Collapse, Field Checkboxes - remains the same) ...
-    // --- JSON Preview Control (existing, no change) ---
+    // --- JSON Preview Control ---
     const copyJsonButton = document.getElementById('copyJsonButton');
     const jsonDataPreview = document.getElementById('jsonDataPreview');
     const jsonPreviewContainer = document.getElementById('jsonPreviewContainer');
-    const toggleJsonPreviewButton = document.getElementById('toggleJsonPreview');
     const tokenCountDisplay = document.getElementById('tokenCountDisplay');
 
     const hasData = jsonDataPreview && 
@@ -274,21 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     jsonDataPreview.textContent.trim() !== '';
 
     if (copyJsonButton) copyJsonButton.style.display = hasData ? 'inline-block' : 'none';
-    if (toggleJsonPreviewButton) toggleJsonPreviewButton.style.display = hasData ? 'inline-block' : 'none'; 
     if (tokenCountDisplay) tokenCountDisplay.style.display = hasData ? 'block' : 'none';
-
-    if (toggleJsonPreviewButton && jsonPreviewContainer) {
-        toggleJsonPreviewButton.addEventListener('click', () => {
-            const isHidden = jsonPreviewContainer.style.display === 'none';
-            if (isHidden) {
-                jsonPreviewContainer.style.display = 'block';
-                toggleJsonPreviewButton.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Hide JSON';
-            } else {
-                jsonPreviewContainer.style.display = 'none';
-                toggleJsonPreviewButton.innerHTML = '<i class="fas fa-eye me-1"></i>Show JSON';
-            }
-        });
-    }
 
     if (copyJsonButton && jsonDataPreview) {
         copyJsonButton.addEventListener('click', () => {
@@ -323,12 +291,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Bootstrap Collapse Icon Toggle Logic (existing, no change) ---
+    // --- Bootstrap Collapse Icon Toggle Logic ---
     const collapseHeaders = [
         document.getElementById('selectionCriteriaHeader'),
         document.getElementById('preparedDataHeader'),
-        document.getElementById('llmChatHeader'),
-        document.getElementById('systemPromptHeader'),
         document.getElementById('relevanceLinkBody')
     ];
 

@@ -1,3 +1,4 @@
+{# backend/templates/usecase_overview.html #}
 {% extends "base.html" %}
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
@@ -125,12 +126,6 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-<script>
-    const allStepsDataForJS = {{ all_steps_for_js | tojson | safe }};
-    const allUsecasesDataForJS = {{ all_usecases_for_js_filtering | tojson | safe }};
-</script>
-<script src="{{ url_for('static', filename='js/usecase_overview.js') }}"></script>
-<script type="module" src="{{ url_for('static', filename='js/inline_table_edit.js') }}"></script>
-{% endblock %}
+{# --- START MODIFICATION: Remove entire scripts block --- #}
+{% block scripts %}{% endblock %}
+{# --- END MODIFICATION --- #}

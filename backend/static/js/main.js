@@ -1,49 +1,76 @@
 // backend/static/js/main.js
 
-/**
- * Initializes sorting functionality for a table with 'sortable' headers.
- * @param {string} tableId The ID of the table element to make sortable.
- */
-function initializeTableSorter(tableId) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
+(function() {
+    'use strict';
 
-    const headers = table.querySelectorAll('th.sortable');
+    // Main app initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize common UI components that are on every page
+        if (window.usecaseExplorer && typeof window.usecaseExplorer.initializeBreadcrumbs === 'function') {
+            window.usecaseExplorer.initializeBreadcrumbs();
+        }
 
-    headers.forEach(header => {
-        header.addEventListener('click', () => {
-            const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : 'none');
-            const sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
-            
-            headers.forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
-            header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+        // --- FIX: Broader initialization logic ---
+        // If there's an editable cell on the page, initialize inline editing.
+        if (document.querySelector('td.editable-cell') && typeof window.usecaseExplorer.initializeInlineTableEditing === 'function') {
+            window.usecaseExplorer.initializeInlineTableEditing();
+        }
 
-            const tbody = table.querySelector('tbody');
-            if (!tbody) return;
-            
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            const colIndex = Array.from(header.parentNode.children).indexOf(header);
+        // If it's the use case overview page, initialize the filters.
+        if (document.querySelector('.usecase-overview-page') && typeof window.usecaseExplorer.initializeUsecaseOverview === 'function') {
+            window.usecaseExplorer.initializeUsecaseOverview();
+        }
+        
+        // Expose the table sorter to the global scope so it can be called from templates if needed
+        // This is a bridge for any remaining inline scripts
+        window.initializeTableSorter = function(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
 
-            rows.sort((a, b) => {
-                const valA = a.cells[colIndex]?.dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex]?.textContent.trim() || '';
-                const valB = b.cells[colIndex]?.dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex]?.textContent.trim() || '';
+            const headers = table.querySelectorAll('th.sortable');
 
-                const numA = parseFloat(valA);
-                const numB = parseFloat(valB);
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const currentOrder = header.classList.contains('sorted-asc') ? 'asc' : (header.classList.contains('sorted-desc') ? 'desc' : 'none');
+                    const sortOrder = (currentOrder === 'asc') ? 'desc' : 'asc';
+                    
+                    headers.forEach(th => th.classList.remove('sorted-asc', 'sorted-desc'));
+                    header.classList.add(sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
 
-                if (!isNaN(numA) && !isNaN(numB)) {
-                    return sortOrder === 'asc' ? numA - numB : numB - numA;
-                } else {
-                    return sortOrder === 'asc' 
-                        ? valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) 
-                        : valB.localeCompare(valA, undefined, { numeric: true, sensitivity: 'base' });
-                }
+                    const tbody = table.querySelector('tbody');
+                    if (!tbody) return;
+                    
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+                    const colIndex = Array.from(header.parentNode.children).indexOf(header);
+
+                    rows.sort((a, b) => {
+                        const valA = a.cells[colIndex]?.dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex]?.textContent.trim() || '';
+                        const valB = b.cells[colIndex]?.dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex]?.textContent.trim() || '';
+
+                        const numA = parseFloat(valA);
+                        const numB = parseFloat(valB);
+
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return sortOrder === 'asc' ? numA - numB : numB - numA;
+                        } else {
+                            return sortOrder === 'asc' 
+                                ? valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) 
+                                : valB.localeCompare(valA, undefined, { numeric: true, sensitivity: 'base' });
+                        }
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                });
             });
+        };
 
-            rows.forEach(row => tbody.appendChild(row));
-        });
+        // Initialize table sorters on pages that have them
+        if (document.getElementById('areasOverviewTable')) {
+            window.initializeTableSorter('areasOverviewTable');
+        }
+        if (document.getElementById('processStepsOverviewTable')) {
+            window.initializeTableSorter('processStepsOverviewTable');
+        }
     });
-}
 
-// Expose the function to the global scope so it can be called from templates.
-window.initializeTableSorter = initializeTableSorter;
+})();

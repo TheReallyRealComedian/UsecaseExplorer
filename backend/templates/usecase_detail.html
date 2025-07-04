@@ -476,7 +476,7 @@
         {% if usecase.process_step %}
             <a href="{{ url_for('steps.view_step', step_id=usecase.process_step.id) }}" class="btn btn-secondary me-2">Back to Process Step: {{ usecase.process_step.name }}</a>
         {% endif %}
-        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Back to Overview</a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Back to Overview</a>
     </div>
 </div>
 {% endblock %}

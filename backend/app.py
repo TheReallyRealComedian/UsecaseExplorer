@@ -5,6 +5,7 @@ from flask import Flask, render_template, redirect, url_for, flash, jsonify, g
 from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_session import Session
+from flask_assets import Environment
 
 # --- CORRECTED ABSOLUTE IMPORTS ---
 from backend.config import get_config
@@ -14,6 +15,8 @@ from backend.utils import (
     serialize_for_js, nl2br, markdown_to_html_filter, truncate_filter,
     zfill_filter, htmlsafe_json_filter, map_priority_to_benefit_filter
 )
+# --- Asset Imports ---
+from backend.assets import js_main_bundle, css_bundle
 
 # --- Blueprint Imports ---
 from backend.routes.auth_routes import auth_routes
@@ -27,6 +30,7 @@ from backend.routes.settings_routes import settings_routes
 from backend.routes.review_routes import review_routes
 from backend.routes.data_management_routes import data_management_bp
 from backend.routes.main_routes import main_routes
+from backend.routes.api_routes import api_bp
 
 # --- Service Imports (now only needed by routes, but we'll leave it for now) ---
 from backend.services import step_service, dashboard_service
@@ -77,6 +81,14 @@ def create_app(init_session=True):
 
     app.config.from_object(get_config())
     login_manager.init_app(app)
+    
+    # --- START MODIFICATION: Initialize Flask-Assets ---
+    assets = Environment(app)
+    assets.register('js_main', js_main_bundle)
+    assets.register('css_main', css_bundle)
+    # The 'gen' folder will be created automatically in 'static'
+    assets.url = app.static_url_path
+    # --- END MODIFICATION ---
 
     # Register Jinja filters
     app.jinja_env.filters['nl2br'] = nl2br
@@ -125,6 +137,7 @@ def create_app(init_session=True):
     app.register_blueprint(review_routes)
     app.register_blueprint(data_management_bp)
     app.register_blueprint(main_routes)
+    app.register_blueprint(api_bp)
 
 
     @app.route('/debug-check')

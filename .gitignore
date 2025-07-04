@@ -23,12 +23,16 @@ docker-compose.override.yml # Often used for local overrides, keep out of main r
 .dockerignore # (if you create one later)
 
 # Flask specific
-instance/ # Flask instance folder, often contains sensitive config/databases
+instance/
 
 # Frontend specific (if build step generates files, e.g. webpack, npm)
-# dist/
-# build/
-node_modules/ # If you ever add Node.js tools later
+dist/
+build/
+node_modules/
+
+
+backend/static/webassets-cache/
+backend/static/gen/
 
 # Operating System files
 .DS_Store # macOS
@@ -44,3 +48,8 @@ Thumbs.db # Windows
 
 # Uploaded files (if users can upload)
 /uploads/
+
+
+# Node.js and Vite
+/node_modules
+.vite
