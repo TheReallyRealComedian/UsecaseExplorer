@@ -2,6 +2,7 @@
 import json
 import traceback
 from sqlalchemy import text
+from passlib.hash import pbkdf2_sha256
 from sqlalchemy.exc import IntegrityError, OperationalError
 from ..db import SessionLocal, db as flask_sqlalchemy_db
 from ..models import (

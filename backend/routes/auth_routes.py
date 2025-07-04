@@ -30,7 +30,7 @@ def register():
 @auth_routes.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -43,7 +43,7 @@ def login():
             flash('Login successful!', 'success')
             next_page = request.args.get('next')
             if not next_page or urlparse(next_page).netloc != '':
-                next_page = url_for('index')
+                next_page = url_for('main.index')
             return redirect(next_page)
         else:
             flash('Invalid username or password.', 'danger')
