@@ -10,7 +10,6 @@
             window.usecaseExplorer.initializeBreadcrumbs();
         }
 
-        // --- FIX: Broader initialization logic ---
         // If there's an editable cell on the page, initialize inline editing.
         if (document.querySelector('td.editable-cell') && typeof window.usecaseExplorer.initializeInlineTableEditing === 'function') {
             window.usecaseExplorer.initializeInlineTableEditing();
@@ -21,6 +20,11 @@
             window.usecaseExplorer.initializeUsecaseOverview();
         }
         
+        // NEW: If it's the PTPS (Process Steps) page, initialize its specific overview logic.
+        if (document.querySelector('.ptps-page') && typeof window.usecaseExplorer.initializePtpsOverview === 'function') {
+            window.usecaseExplorer.initializePtpsOverview();
+        }
+
         // Expose the table sorter to the global scope so it can be called from templates if needed
         // This is a bridge for any remaining inline scripts
         window.initializeTableSorter = function(tableId) {
@@ -44,8 +48,8 @@
                     const colIndex = Array.from(header.parentNode.children).indexOf(header);
 
                     rows.sort((a, b) => {
-                        const valA = a.cells[colIndex]?.dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : a.cells[colIndex]?.textContent.trim() || '';
-                        const valB = b.cells[colIndex]?.dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : b.cells[colIndex]?.textContent.trim() || '';
+                        const valA = a.cells[colIndex]?.dataset.sortValue !== undefined ? a.cells[colIndex].dataset.sortValue : (a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '');
+                        const valB = b.cells[colIndex]?.dataset.sortValue !== undefined ? b.cells[colIndex].dataset.sortValue : (b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '');
 
                         const numA = parseFloat(valA);
                         const numB = parseFloat(valB);

@@ -18,19 +18,20 @@ from backend.utils import (
 # --- Asset Imports ---
 from backend.assets import js_main_bundle, css_bundle
 
-# --- Blueprint Imports ---
-from backend.routes.auth_routes import auth_routes
-from backend.routes.usecase_routes import usecase_routes
-from backend.routes.relevance_routes import relevance_routes
-from backend.routes.llm_routes import llm_routes
-from backend.routes.area_routes import area_routes
-from backend.routes.step_routes import step_routes
-from backend.routes.export_routes import export_routes
-from backend.routes.settings_routes import settings_routes
-from backend.routes.review_routes import review_routes
-from backend.routes.data_management_routes import data_management_bp
-from backend.routes.main_routes import main_routes
-from backend.routes.api_routes import api_bp
+# --- START FIX: Change blueprint import style to prevent circular dependencies ---
+import backend.routes.auth_routes as auth_routes_mod
+import backend.routes.usecase_routes as usecase_routes_mod
+import backend.routes.relevance_routes as relevance_routes_mod
+import backend.routes.llm_routes as llm_routes_mod
+import backend.routes.area_routes as area_routes_mod
+import backend.routes.step_routes as step_routes_mod
+import backend.routes.export_routes as export_routes_mod
+import backend.routes.settings_routes as settings_routes_mod
+import backend.routes.review_routes as review_routes_mod
+import backend.routes.data_management_routes as data_management_routes_mod
+import backend.routes.main_routes as main_routes_mod
+import backend.routes.api_routes as api_routes_mod
+# --- END FIX ---
 
 # --- Service Imports (now only needed by routes, but we'll leave it for now) ---
 from backend.services import step_service, dashboard_service
@@ -100,8 +101,6 @@ def create_app(init_session=True):
 
     db_instance, migrate_instance = init_app_db(app)
 
-    #migrate = Migrate(app, db_instance, directory='/app/migrations')
-
     # Conditionally initialize Flask-Session
     if init_session:
         # Flask-Session configuration
@@ -125,20 +124,20 @@ def create_app(init_session=True):
         if db_session is not None:
             SessionLocal.remove()
 
-    # Register Blueprints
-    app.register_blueprint(auth_routes)
-    app.register_blueprint(usecase_routes)
-    app.register_blueprint(relevance_routes)
-    app.register_blueprint(llm_routes)
-    app.register_blueprint(area_routes)
-    app.register_blueprint(step_routes)
-    app.register_blueprint(export_routes)
-    app.register_blueprint(settings_routes)
-    app.register_blueprint(review_routes)
-    app.register_blueprint(data_management_bp)
-    app.register_blueprint(main_routes)
-    app.register_blueprint(api_bp)
-
+    # --- START FIX: Register blueprints using the module alias ---
+    app.register_blueprint(auth_routes_mod.auth_routes)
+    app.register_blueprint(usecase_routes_mod.usecase_routes)
+    app.register_blueprint(relevance_routes_mod.relevance_routes)
+    app.register_blueprint(llm_routes_mod.llm_routes)
+    app.register_blueprint(area_routes_mod.area_routes)
+    app.register_blueprint(step_routes_mod.step_routes)
+    app.register_blueprint(export_routes_mod.export_routes)
+    app.register_blueprint(settings_routes_mod.settings_routes)
+    app.register_blueprint(review_routes_mod.review_routes)
+    app.register_blueprint(data_management_routes_mod.data_management_bp)
+    app.register_blueprint(main_routes_mod.main_routes)
+    app.register_blueprint(api_routes_mod.api_bp)
+    # --- END FIX ---
 
     @app.route('/debug-check')
     def debug_check():

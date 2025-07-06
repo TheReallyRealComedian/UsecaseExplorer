@@ -74,6 +74,10 @@
 </div>
 {% endblock %}
 
-{# --- START MODIFICATION: Remove entire scripts block --- #}
-{% block scripts %}{% endblock %}
-{# --- END MODIFICATION --- #}
+{% block scripts %}
+{{ super() }}
+<script type="application/json" id="ptps-page-data-island">
+    {{ page_data | default({}, true) | tojson | safe }}
+</script>
+{# Removed direct script include as it's now part of js_main bundle #}
+{% endblock %}

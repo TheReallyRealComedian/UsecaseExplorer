@@ -165,9 +165,8 @@ def process_area_file(file_stream):
 
         if duplicates_not_updated:
             message += f" (Existing items not updated: {len(duplicates_not_updated)}). "
-        if skipped_errors_details:
-            print("Skipped item details:", skipped_errors_details)
-            message += f" (Review server logs for details on skipped items). "
+        if skipped_errors_details: # The route handler will now display these details.
+            print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_area_file: {e}")
@@ -703,8 +702,8 @@ def process_usecase_file(file_stream):
         else:
             message = f"Processing complete. {', '.join(parts)}."
 
-        if skipped_errors_details:
-             message += f" (Details on specific skips available in server logs). "
+        if skipped_errors_details: # The route handler will now display these details.
+             print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_usecase_file: {e}")
@@ -868,8 +867,8 @@ def process_ps_ps_relevance_file(file_stream):
         else:
             message = f"Processing complete. {', '.join(parts)}."
 
-        if skipped_errors_details:
-             message += f" (Details on specific skips available in server logs). "
+        if skipped_errors_details: # The route handler will now display these details.
+             print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_ps_ps_relevance_file: {e}")
@@ -1009,8 +1008,8 @@ def process_usecase_area_relevance_file(file_stream):
         else:
             message = f"Processing complete. {', '.join(parts)}."
 
-        if skipped_errors_details:
-             message += f" (Details on specific skips available in server logs). "
+        if skipped_errors_details: # The route handler will now display these details.
+             print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_usecase_area_relevance_file: {e}")
@@ -1149,8 +1148,8 @@ def process_usecase_step_relevance_file(file_stream):
         else:
             message = f"Processing complete. {', '.join(parts)}."
 
-        if skipped_errors_details:
-             message += f" (Details on specific skips available in server logs). "
+        if skipped_errors_details: # The route handler will now display these details.
+             print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_usecase_step_relevance_file: {e}")
@@ -1295,8 +1294,8 @@ def process_usecase_usecase_relevance_file(file_stream):
         else:
             message = f"Processing complete. {', '.join(parts)}."
 
-        if skipped_errors_details:
-             message += f" (Details on specific skips available in server logs). "
+        if skipped_errors_details: # The route handler will now display these details.
+             print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_usecase_usecase_relevance_file: {e}")

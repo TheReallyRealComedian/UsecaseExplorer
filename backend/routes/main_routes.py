@@ -1,5 +1,5 @@
 # backend/routes/main_routes.py
-from flask import Blueprint, render_template, redirect, url_for, g
+from flask import Blueprint, render_template, redirect, url_for, g, request
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
@@ -18,11 +18,16 @@ def index():
         ).order_by(Area.name).all()
         all_areas_query = g.db_session.query(Area).order_by(Area.name).all()
         
-        # --- START REFACTOR: Consolidate data for the data island ---
-        # Data needed specifically for this page's JavaScript (e.g., inline editing).
+        # Data needed for this page's JavaScript (e.g., inline editing, filtering).
         page_data = {
-            "all_areas_for_select": serialize_for_js(all_areas_query, 'area')
+            "all_areas_for_select": serialize_for_js(all_areas_query, 'area'),
+            "all_steps_for_js_filtering": serialize_for_js(all_steps, 'step')
         }
+
+        # Handle filter_area_id URL parameter for pre-filtering when coming from another page.
+        filter_area_id = request.args.get('filter_area_id')
+        if filter_area_id:
+            page_data['initial_filter_area_id'] = filter_area_id
 
         return render_template(
             'ptps.html',
@@ -35,7 +40,6 @@ def index():
             current_step=None,
             current_usecase=None
         )
-        # --- END REFACTOR ---
     else:
         return redirect(url_for('auth.login'))
 
@@ -44,7 +48,6 @@ def dashboard():
     if current_user.is_authenticated:
         stats = dashboard_service.get_dashboard_stats(g.db_session)
         
-        # --- REFACTOR: Remove unused flat navigation data ---
         return render_template(
             'index.html',
             title='Dashboard',
@@ -56,6 +59,5 @@ def dashboard():
             current_step=None,
             current_usecase=None
         )
-        # --- END REFACTOR ---
     else:
         return redirect(url_for('auth.login'))

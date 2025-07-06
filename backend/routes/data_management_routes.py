@@ -3,6 +3,7 @@ import json
 from flask import Blueprint, g, render_template, request, flash, redirect, url_for, session, jsonify
 from flask_login import login_required
 from sqlalchemy.orm import joinedload
+from markupsafe import Markup, escape
 
 # Import services
 from ..services import data_management_service, bulk_edit_service
@@ -43,6 +44,37 @@ PROCESS_USECASE_EDITABLE_FIELDS = {
 }
 
 
+def flash_import_result(result):
+    """Flashes a detailed message based on the import service result."""
+    flash_category = 'success'
+    if not result.get('success'):
+        flash_category = 'danger'
+    # Consider skipped/failed items as a warning, even if the overall process "succeeded"
+    elif result.get('skipped_count', 0) > 0 or result.get('failed_count', 0) > 0 or result.get('skipped_errors_details'):
+        flash_category = 'warning'
+
+    message = result.get('message', 'File processed.')
+
+    # Check for specific details to add to the message
+    details_html = ""
+    skipped_details = result.get('skipped_errors_details')
+    if skipped_details:
+        # Use set to avoid showing the exact same error message multiple times, then sort for consistent order
+        unique_details = sorted(list(set(skipped_details)))
+        details_html += "<h6>Details on Skipped/Failed Items:</h6><ul>"
+        for detail in unique_details:
+            details_html += f"<li>{escape(detail)}</li>"
+        details_html += "</ul>"
+
+    if details_html:
+        # Construct the final HTML string, but do not wrap it in Markup().
+        # This ensures a standard string is stored in the session.
+        final_html_message = f"<p>{escape(message)}</p>{details_html}"
+        flash(final_html_message, flash_category)
+    else:
+        flash(message, flash_category)
+
+
 @data_management_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def data_management_page():
@@ -56,8 +88,7 @@ def data_management_page():
                 try:
                     file_content = file.read().decode('utf-8')
                     result = data_management_service.import_database_from_json(file_content, clear_existing_data=clear_data)
-                    flash_category = 'success' if result.get('success') else 'danger'
-                    flash(result.get('message', 'An unknown error occurred.'), flash_category)
+                    flash_import_result(result)
                 except Exception as e:
                     flash(f"An unexpected error occurred during database import: {str(e)}", 'danger')
             else:
@@ -97,11 +128,7 @@ def data_management_page():
                         except json.JSONDecodeError as e:
                             flash(f'Invalid JSON in step file: {e}', 'danger')
                     else:
-                        result = handler(file.stream)
-                        flash_category = 'success' if result.get('success') else 'danger'
-                        if result.get('success') and result.get('skipped_count', 0) > 0:
-                            flash_category = 'warning'
-                        flash(result.get('message', 'File processed.'), flash_category)
+                        flash_import_result(handler(file.stream))
 
                     return redirect(request.url)
 

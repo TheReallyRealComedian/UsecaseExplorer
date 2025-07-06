@@ -10,12 +10,6 @@ __pycache__/
 venv/
 .venv/
 
-# Database files (if not using a persistent volume outside container)
-# However, with Docker and persistent volumes, this might be less relevant
-# For a local dev setup where db files might be in the repo dir temporarily
-# This is good. Adjust if your db volume is outside the main repo dir.
-# db/data/ # Example if database files end up here
-
 # Docker artifacts
 *.dockerignore # Often similar to .gitignore, but sometimes distinct
 docker-compose.override.yml # Often used for local overrides, keep out of main repo
@@ -32,6 +26,7 @@ node_modules/
 
 
 backend/static/webassets-cache/
+backend/static/.webassets-cache/
 backend/static/gen/
 
 # Operating System files

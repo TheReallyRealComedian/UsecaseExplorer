@@ -7,6 +7,7 @@ js_main_bundle = Bundle(
     'js/breadcrumb_ui.js',
     'js/inline_table_edit.js',      # <-- FIX: Added for inline editing
     'js/usecase_overview.js',       # <-- FIX: Added for use case filtering
+    'js/ptps_overview.js',          # NEW: Added for Process Steps page filtering
     'js/main.js',
     filters='jsmin',
     output='gen/app.%(version)s.js'

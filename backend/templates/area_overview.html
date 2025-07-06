@@ -31,7 +31,8 @@
                                 {% set step_count = area.process_steps|length %}
                                 {% set use_case_count = area.process_steps | map(attribute='use_cases') | map('length') | sum %}
                                 <tr>
-                                    <td data-sort-value="{{ area.name }}"><a><strong>{{ area.name }}</strong></a></td>
+                                    {# Changed the link to point to main.index (PTPs page) with filter_area_id #}
+                                    <td data-sort-value="{{ area.name }}"><a href="{{ url_for('main.index', filter_area_id=area.id) }}"><strong>{{ area.name }}</strong></a></td>
                                     <td data-sort-value="{{ step_count }}">{{ step_count }}</td>
                                     <td data-sort-value="{{ use_case_count }}">{{ use_case_count }}</td>
                                     <td>{{ area.description | truncate(100) | default('N/A', true) }}</td>
@@ -48,4 +49,7 @@
 </div>
 {% endblock %}
 
-{# FIX: The entire block is removed #}
+{% block scripts %}
+{{ super() }}
+{# No specific JS for this page, sorting is handled by main.js #}
+{% endblock %}

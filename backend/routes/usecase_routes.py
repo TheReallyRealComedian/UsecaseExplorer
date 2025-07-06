@@ -1,7 +1,10 @@
 # backend/routes/usecase_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify, g
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify, g, current_app
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload # Added for eager loading
+import traceback # Added for detailed error logging
+
 from ..models import UseCase, ProcessStep, Area
 from ..utils import serialize_for_js
 from ..services.llm_service import get_all_available_llm_models
@@ -69,7 +72,12 @@ def view_usecase(usecase_id):
 @login_required
 def edit_usecase(usecase_id):
     try:
-        usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
+        # Ensure process_step and area are eager loaded to avoid N+1 queries and
+        # to ensure SQLAlchemy attempts to load them (if they exist)
+        usecase = g.db_session.query(UseCase).options(
+            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
+        ).get(usecase_id)
+
         if not usecase:
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
             return redirect(url_for('usecases.list_usecases'))
@@ -78,23 +86,31 @@ def edit_usecase(usecase_id):
             success, message = usecase_service.update_usecase_from_form(g.db_session, usecase, request.form)
             flash(message, 'success' if success else 'danger')
             if success:
-                return redirect(url_for('usecases.list_usecases'))
+                # Redirect to the edited use case's detail page, not the list, for better UX
+                return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
 
         all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
         
-        # --- REFACTOR: Remove flat navigation data ---
+        # Safely assign context variables, handling potential None for related objects
+        # Although nullable=False, defensive programming is good if data might be inconsistent
+        current_step_for_template = usecase.process_step 
+        current_area_for_template = usecase.process_step.area if usecase.process_step else None
+
         return render_template('edit_usecase.html',
             title=f"Edit Use Case: {usecase.name}",
             usecase=usecase,
             all_steps=all_steps_db,
             current_usecase=usecase,
-            current_step=usecase.process_step,
-            current_area=usecase.process_step.area,
+            current_step=current_step_for_template,
+            current_area=current_area_for_template,
             current_item=usecase
         )
     except Exception as e:
         g.db_session.rollback()
-        flash(f"An unexpected error occurred: {e}", "danger")
+        # Log the full traceback to help diagnose why the exception occurred
+        current_app.logger.error(f"Error in edit_usecase route for ID {usecase_id}: {e}\n{traceback.format_exc()}")
+        flash(f"An unexpected error occurred while loading the edit page: {e}", "danger")
+        # Redirect to the use case detail page which should be more stable
         return redirect(url_for('usecases.view_usecase', usecase_id=usecase_id))
 
 # --- START MODIFICATION: Add the missing delete route back ---
