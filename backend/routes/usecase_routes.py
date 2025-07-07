@@ -1,19 +1,28 @@
 # backend/routes/usecase_routes.py
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify, g, current_app
+from flask import Blueprint, render_template, flash, redirect, url_for, request, g, current_app
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload # Added for eager loading
-import traceback # Added for detailed error logging
+from sqlalchemy.orm import joinedload
+import traceback
 
-from ..models import UseCase, ProcessStep, Area
 from ..utils import serialize_for_js
 from ..services.llm_service import get_all_available_llm_models
+# Corrected import: only import what's actually in llm_routes
 from ..routes.llm_routes import AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE
+
+from ..models import UseCase, ProcessStep, Area
 from ..services import usecase_service, step_service, area_service
 
 usecase_routes = Blueprint('usecases', __name__, template_folder='../templates', url_prefix='/usecases')
 
-PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS = [ "name", "summary", "business_problem_solved", "target_solution_description", "pilot_site_factory_text", "usecase_type_category", "effort_quantification", "potential_quantification", "dependencies_text" ]
+# --- START FIX: Re-define the constant in its correct home ---
+PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS = [
+    "name", "summary", "business_problem_solved", "target_solution_description",
+    "pilot_site_factory_text", "usecase_type_category", "effort_quantification",
+    "potential_quantification", "dependencies_text"
+]
+# --- END FIX ---
+
 
 @usecase_routes.route('/')
 @login_required
@@ -24,7 +33,6 @@ def list_usecases():
     
     all_usecases_for_js_filtering = [ { 'id': uc.id, 'name': uc.name, 'bi_id': uc.bi_id, 'process_step_id': uc.process_step_id, 'area_id': uc.process_step.area.id if uc.process_step and uc.process_step.area else None, 'wave': uc.wave, 'effort_level': uc.effort_level, 'priority': uc.priority, 'quality_improvement_quant': uc.quality_improvement_quant } for uc in usecases ]
     
-    # --- START REFACTOR: Consolidate data into a single page_data object ---
     page_data = {
         "usecases": all_usecases_for_js_filtering,
         "steps": serialize_for_js(all_steps_for_filters, 'step')
@@ -35,49 +43,19 @@ def list_usecases():
         title="All Use Cases",
         usecases=usecases,
         all_areas_for_filters=all_areas_for_filters,
-        page_data=page_data,  # Pass the new data island object
+        page_data=page_data,
         current_item=None,
         current_area=None,
         current_step=None,
         current_usecase=None
     )
-    # --- END REFACTOR ---
 
-@usecase_routes.route('/<int:usecase_id>')
+# UNIFIED VIEW & EDIT ROUTE
+@usecase_routes.route('/<int:usecase_id>', methods=['GET', 'POST'])
 @login_required
 def view_usecase(usecase_id):
-    usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
-    if not usecase:
-        flash(f"Use Case with ID {usecase_id} not found.", "warning")
-        return redirect(url_for('main.dashboard'))
-
-    all_areas_db = g.db_session.query(Area).order_by(Area.name).all()
-    all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
-    other_usecases = usecase_service.get_all_other_usecases(g.db_session, usecase_id)
-
-    # --- REFACTOR: Remove flat navigation data ---
-    return render_template('usecase_detail.html',
-        title=f"Use Case: {usecase.name}",
-        usecase=usecase,
-        all_areas=all_areas_db,
-        all_steps=all_steps_db,
-        other_usecases=other_usecases,
-        current_usecase=usecase,
-        current_step=usecase.process_step,
-        current_area=usecase.process_step.area,
-        current_item=usecase
-    )
-
-@usecase_routes.route('/<int:usecase_id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit_usecase(usecase_id):
     try:
-        # Ensure process_step and area are eager loaded to avoid N+1 queries and
-        # to ensure SQLAlchemy attempts to load them (if they exist)
-        usecase = g.db_session.query(UseCase).options(
-            joinedload(UseCase.process_step).joinedload(ProcessStep.area)
-        ).get(usecase_id)
-
+        usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
         if not usecase:
             flash(f"Use Case with ID {usecase_id} not found.", "warning")
             return redirect(url_for('usecases.list_usecases'))
@@ -85,19 +63,14 @@ def edit_usecase(usecase_id):
         if request.method == 'POST':
             success, message = usecase_service.update_usecase_from_form(g.db_session, usecase, request.form)
             flash(message, 'success' if success else 'danger')
-            if success:
-                # Redirect to the edited use case's detail page, not the list, for better UX
-                return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
+            return redirect(url_for('usecases.view_usecase', usecase_id=usecase.id))
 
         all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
-        
-        # Safely assign context variables, handling potential None for related objects
-        # Although nullable=False, defensive programming is good if data might be inconsistent
         current_step_for_template = usecase.process_step 
         current_area_for_template = usecase.process_step.area if usecase.process_step else None
 
-        return render_template('edit_usecase.html',
-            title=f"Edit Use Case: {usecase.name}",
+        return render_template('usecase_detail.html',
+            title=f"Details for: {usecase.name}",
             usecase=usecase,
             all_steps=all_steps_db,
             current_usecase=usecase,
@@ -107,13 +80,25 @@ def edit_usecase(usecase_id):
         )
     except Exception as e:
         g.db_session.rollback()
-        # Log the full traceback to help diagnose why the exception occurred
-        current_app.logger.error(f"Error in edit_usecase route for ID {usecase_id}: {e}\n{traceback.format_exc()}")
-        flash(f"An unexpected error occurred while loading the edit page: {e}", "danger")
-        # Redirect to the use case detail page which should be more stable
-        return redirect(url_for('usecases.view_usecase', usecase_id=usecase_id))
+        current_app.logger.error(f"Error in unified view_usecase route for ID {usecase_id}: {e}\n{traceback.format_exc()}")
+        flash(f"An unexpected error occurred: {e}", "danger")
+        return redirect(url_for('usecases.list_usecases'))
 
-# --- START MODIFICATION: Add the missing delete route back ---
+# AI EDIT ROUTE
+@usecase_routes.route('/<int:usecase_id>/edit-with-ai', methods=['GET'])
+@login_required
+def edit_usecase_with_ai(usecase_id):
+    usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
+    if not usecase:
+        flash(f"Use Case with ID {usecase_id} not found.", "warning")
+        return redirect(url_for('usecases.list_usecases'))
+
+    all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
+    usecase_data_for_js = { "id": usecase.id, "name": usecase.name, "bi_id": usecase.bi_id, "process_step_id": usecase.process_step_id, "priority": usecase.priority, "raw_content": usecase.raw_content, "summary": usecase.summary, "inspiration": usecase.inspiration, "wave": usecase.wave, "effort_level": usecase.effort_level, "status": usecase.status, "business_problem_solved": usecase.business_problem_solved, "target_solution_description": usecase.target_solution_description, "technologies_text": usecase.technologies_text, "requirements": usecase.requirements, "relevants_text": usecase.relevants_text, "reduction_time_transfer": usecase.reduction_time_transfer, "reduction_time_launches": usecase.reduction_time_launches, "reduction_costs_supply": usecase.reduction_costs_supply, "quality_improvement_quant": usecase.quality_improvement_quant, "ideation_notes": usecase.ideation_notes, "further_ideas": usecase.further_ideas, "effort_quantification": usecase.effort_quantification, "potential_quantification": usecase.potential_quantification, "dependencies_text": usecase.dependencies_text, "contact_persons_text": usecase.contact_persons_text, "related_projects_text": usecase.related_projects_text, "process_step_name": usecase.process_step.name if usecase.process_step else "N/A", "area_name": usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else "N/A", "pilot_site_factory_text": usecase.pilot_site_factory_text, "usecase_type_category": usecase.usecase_type_category, }
+    
+    return render_template( 'edit_usecase_with_ai.html', title=f"AI Edit: {usecase.name}", usecase=usecase, usecase_data_for_js=usecase_data_for_js, all_steps=all_steps_db, default_ai_system_prompt=AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE, ai_suggestible_fields=PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS, current_usecase=usecase, current_step=usecase.process_step, current_area=usecase.process_step.area, current_item=usecase, available_llm_models=get_all_available_llm_models() )
+
+# DELETE ROUTE
 @usecase_routes.route('/<int:usecase_id>/delete', methods=['POST'])
 @login_required
 def delete_usecase(usecase_id):
@@ -127,40 +112,3 @@ def delete_usecase(usecase_id):
     except Exception as e:
         flash(f"An unexpected error occurred: {e}", "danger")
     return redirect(redirect_url)
-# --- END MODIFICATION ---
-
-@usecase_routes.route('/api/usecases/<int:usecase_id>/inline-update', methods=['PUT'])
-@login_required
-def inline_update_usecase(usecase_id):
-    try:
-        usecase = g.db_session.query(UseCase).get(usecase_id)
-        if not usecase: return jsonify(success=False, message="Use Case not found"), 404
-        data = request.json
-        if not data or len(data) != 1: return jsonify(success=False, message="Invalid update data."), 400
-        field, value = list(data.items())[0]
-
-        updated_usecase, message, updated_data = usecase_service.inline_update_usecase_field(g.db_session, usecase, field, value)
-        if updated_usecase:
-            return jsonify(success=True, message=message, usecase=updated_data)
-        else:
-            return jsonify(success=False, message=message), 400
-    except IntegrityError as e:
-        g.db_session.rollback()
-        return jsonify(success=False, message=f"Database error: {e.orig}"), 500
-    except Exception as e:
-        g.db_session.rollback()
-        return jsonify(success=False, message=str(e)), 500
-
-@usecase_routes.route('/<int:usecase_id>/edit-with-ai', methods=['GET'])
-@login_required
-def edit_usecase_with_ai(usecase_id):
-    usecase = usecase_service.get_usecase_by_id(g.db_session, usecase_id)
-    if not usecase:
-        flash(f"Use Case with ID {usecase_id} not found.", "warning")
-        return redirect(url_for('usecases.list_usecases'))
-
-    all_steps_db = g.db_session.query(ProcessStep).order_by(ProcessStep.name).all()
-    # ... (rest of data prep for template is fine) ...
-    usecase_data_for_js = { "id": usecase.id, "name": usecase.name, "bi_id": usecase.bi_id, "process_step_id": usecase.process_step_id, "priority": usecase.priority, "raw_content": usecase.raw_content, "summary": usecase.summary, "inspiration": usecase.inspiration, "wave": usecase.wave, "effort_level": usecase.effort_level, "status": usecase.status, "business_problem_solved": usecase.business_problem_solved, "target_solution_description": usecase.target_solution_description, "technologies_text": usecase.technologies_text, "requirements": usecase.requirements, "relevants_text": usecase.relevants_text, "reduction_time_transfer": usecase.reduction_time_transfer, "reduction_time_launches": usecase.reduction_time_launches, "reduction_costs_supply": usecase.reduction_costs_supply, "quality_improvement_quant": usecase.quality_improvement_quant, "ideation_notes": usecase.ideation_notes, "further_ideas": usecase.further_ideas, "effort_quantification": usecase.effort_quantification, "potential_quantification": usecase.potential_quantification, "dependencies_text": usecase.dependencies_text, "contact_persons_text": usecase.contact_persons_text, "related_projects_text": usecase.related_projects_text, "process_step_name": usecase.process_step.name if usecase.process_step else "N/A", "area_name": usecase.process_step.area.name if usecase.process_step and usecase.process_step.area else "N/A", "pilot_site_factory_text": usecase.pilot_site_factory_text, "usecase_type_category": usecase.usecase_type_category, }
-    
-    return render_template( 'edit_usecase_with_ai.html', title=f"AI Edit: {usecase.name}", usecase=usecase, usecase_data_for_js=usecase_data_for_js, all_steps=all_steps_db, default_ai_system_prompt=AI_ASSIST_IMAGE_SYSTEM_PROMPT_TEMPLATE, ai_suggestible_fields=PROCESS_USECASE_EDITABLE_FIELDS_FOR_AI_SUGGESTIONS, current_usecase=usecase, current_step=usecase.process_step, current_area=usecase.process_step.area, current_item=usecase, available_llm_models=get_all_available_llm_models() )

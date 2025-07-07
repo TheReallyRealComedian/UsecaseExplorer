@@ -103,20 +103,21 @@
                     data-uc-wave="{{ uc.wave | default('N/A', true) }}">
                     <td data-sort-value="{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}">{{ uc.process_step.area.name if uc.process_step and uc.process_step.area else 'N/A' }}</td>
                     <td data-sort-value="{{ uc.process_step.name if uc.process_step else 'N/A' }}">{{ uc.process_step.name if uc.process_step else 'N/A' }}</td>
-                    <td data-field="bi_id" class="editable-cell">{{ uc.bi_id }}</td>
-                    <td data-field="name" class="editable-cell"><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
-                    <td data-field="quality_improvement_quant" class="editable-cell" data-sort-value="{{ uc.priority | default(99) }}">{{ uc.quality_improvement_quant | default(uc.priority | map_priority_to_benefit, true) }}</td>
-                    <td data-field="effort_level" class="editable-cell">{{ uc.effort_level | default('N/A', true) }}</td>
-                    <td data-field="wave" class="editable-cell">{{ uc.wave | default('N/A', true) }}</td>
+                    <td>{{ uc.bi_id }}</td> {# Not making this editable from the overview for simplicity #}
+                    <td><a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a></td>
+                    <td data-sort-value="{{ uc.priority | default(99) }}">{{ uc.quality_improvement_quant | default(uc.priority | map_priority_to_benefit, true) }}</td>
+                    <td>{{ uc.effort_level | default('N/A', true) }}</td>
+                    <td>{{ uc.wave | default('N/A', true) }}</td>
                     <td>
-                        <div class="actions-button-group" style="max-width: 72px;"> {# Wrapper with max-width to force 2x2 grid #}
-                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
+                        {# --- START MODIFICATION --- #}
+                        <div class="actions-button-group" style="max-width: 72px;">
+                            <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="View & Edit Details"><i class="fas fa-eye"></i></a>
                             <a href="{{ url_for('usecases.edit_usecase_with_ai', usecase_id=uc.id) }}" class="btn btn-sm btn-info" title="Edit with AI Assist"><i class="fas fa-magic"></i></a>
-                            <a href="{{ url_for('usecases.edit_usecase', usecase_id=uc.id) }}" class="btn btn-sm btn-secondary" title="Edit Use Case"><i class="fas fa-edit"></i></a>
                             <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" onsubmit="return confirm('Delete this use case?');">
                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete Use Case"><i class="fas fa-trash"></i></button>
                             </form>
                         </div>
+                        {# --- END MODIFICATION --- #}
                     </td>
                 </tr>
                 {% endfor %}

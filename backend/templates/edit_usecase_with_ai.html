@@ -4,7 +4,8 @@
 
 {% block head_extra %}
     {{ super() }}
-    {# Add any specific CSS if needed, or rely on style.css #}
+    {# Marked.js for rendering markdown #}
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .ai-suggestions-container { display: none; /* Hidden by default */ }
         .ai-column { padding: 15px; }
@@ -38,12 +39,11 @@
             display: none; /* Hidden by default */
             margin-left: 10px;
         }
-        /* Styles for new image input elements */
         .image-input-container {
-            border: 1px dashed var(--border-color); /* Subtle border for drag/drop */
+            border: 1px dashed var(--border-color);
             padding: 1rem;
             border-radius: var(--border-radius-sm);
-            background-color: var(--bi-neutral-050); /* Light background */
+            background-color: var(--bi-neutral-050);
             text-align: center;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -53,20 +53,19 @@
             background-color: var(--bi-neutral-100);
         }
         .image-input-container.active-paste {
-            border-style: solid; /* Solid border when active for paste */
+            border-style: solid;
             border-color: var(--color-primary);
-            background-color: var(--bi-info-100); /* Light blue for active paste */
+            background-color: var(--bi-info-100);
         }
         .image-input-container.drag-over {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(8, 49, 42, 0.1);
         }
         #screenshotPasteArea {
-            display: none; /* Hidden by default, controlled by JS */
-            margin-top: 1rem; /* Space between upload and paste area */
+            display: none;
+            margin-top: 1rem;
         }
     </style>
-    {# NEW: Embed data directly into a script tag for robustness #}
     <script type="text/javascript">
         window.GLOBAL_USECASE_DATA_FOR_AI = {{ usecase_data_for_js | tojson | safe }};
         window.GLOBAL_DEFAULT_AI_SYSTEM_PROMPT = {{ default_ai_system_prompt | tojson | safe }};
@@ -75,7 +74,6 @@
 {% endblock %}
 
 {% block content %}
-{# Removed data-* attributes from the div, as data is now in window variables #}
 <div class="edit-usecase-with-ai-page"> 
 
     <h1>{{ title }}</h1>
@@ -179,7 +177,7 @@
             <h2 class="card-title mb-0">Edit Use Case Details (Manual / AI-Assisted)</h2>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('usecases.edit_usecase', usecase_id=usecase.id) }}" id="mainUsecaseEditForm">
+            <form method="POST" action="{{ url_for('usecases.view_usecase', usecase_id=usecase.id) }}" id="mainUsecaseEditForm">
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -307,7 +305,6 @@
                     <label for="related_projects_text" class="form-label">Related Projects:</label>
                     <textarea class="form-control" id="related_projects_text" name="related_projects_text" rows="5">{{ usecase.related_projects_text | default('', true) }}</textarea>
                 </div>
-                {# ADDED NEW FIELDS HERE #}
                 <div class="mb-3">
                     <label for="pilot_site_factory_text" class="form-label">Pilot Site, Factory:</label>
                     <textarea class="form-control" id="pilot_site_factory_text" name="pilot_site_factory_text" rows="3">{{ usecase.pilot_site_factory_text | default('', true) }}</textarea>
@@ -316,7 +313,6 @@
                     <label for="usecase_type_category" class="form-label">Use Case Type Category:</label>
                     <input type="text" class="form-control" id="usecase_type_category" name="usecase_type_category" value="{{ usecase.usecase_type_category | default('', true) }}">
                 </div>
-                {# END ADDED NEW FIELDS #}
 
                 <div class="mt-4">
                     <button type="submit" class="btn btn-primary">Save Use Case Changes</button>
@@ -330,4 +326,5 @@
 
 {% block scripts %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/edit_usecase_with_ai_ui.js') }}"></script>
 {% endblock %}

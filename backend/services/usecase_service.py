@@ -54,7 +54,13 @@ def update_usecase_from_form(db_session: Session, usecase: UseCase, form_data: d
     original_bi_id = usecase.bi_id
     usecase.name = form_data.get('name', '').strip()
     usecase.bi_id = form_data.get('bi_id', '').strip()
-    usecase.process_step_id = int(form_data.get('process_step_id'))
+    
+    step_id_str = form_data.get('process_step_id')
+    if step_id_str and step_id_str.isdigit():
+        usecase.process_step_id = int(step_id_str)
+    else:
+        # This will cause the validation below to fail correctly if the ID is missing/invalid
+        usecase.process_step_id = None
 
     priority_str = form_data.get('priority')
     if priority_str and priority_str.isdigit() and 1 <= int(priority_str) <= 4:
@@ -75,16 +81,17 @@ def update_usecase_from_form(db_session: Session, usecase: UseCase, form_data: d
     for field in text_fields:
         setattr(usecase, field, form_data.get(field, '').strip() or None)
 
-    # --- NEW: Handle tags ---
     it_system_tags = _handle_tags(db_session, form_data.get('it_systems', ''), 'it_system')
     data_type_tags = _handle_tags(db_session, form_data.get('data_types', ''), 'data_type')
     generic_tags = _handle_tags(db_session, form_data.get('generic_tags', ''), 'tag')
 
-    # Combine all tags and update the relationship
-    # This automatically handles the association table
     usecase.tags = it_system_tags + data_type_tags + generic_tags
 
-    if not all([usecase.name, usecase.bi_id, usecase.process_step_id]):
+    if not all([
+        usecase.name,
+        usecase.bi_id,
+        usecase.process_step_id is not None
+    ]):
         return False, "Use Case Name, BI_ID, and Process Step are required."
 
     if usecase.bi_id != original_bi_id:
