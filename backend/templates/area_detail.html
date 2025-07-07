@@ -2,43 +2,71 @@
 
 {% block title %}{{ title }} - Usecase Explorer{% endblock %}
 
+{% block head_extra %}
+    {{ super() }}
+    <!-- Marked.js for rendering markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+
 {% block content %}
 <div class="area-detail-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Area: {{ area.name }}</h1>
-        <div class="actions-button-group"> {# Add the class to the existing div #}
-            <a href="{{ url_for('areas.edit_area', area_id=area.id) }}" class="btn btn-sm btn-primary">Edit Area</a>
+        <div class="actions-button-group">
             <form action="{{ url_for('areas.delete_area', area_id=area.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this area and all its process steps and use cases? This action cannot be undone.');">
                 <button type="submit" class="btn btn-sm btn-danger">Delete Area</button>
             </form>
             <a href="{{ url_for('export.export_area_md', area_id=area.id) }}" class="btn btn-sm btn-info">Export to Markdown</a>
         </div>
     </div>
-    <p class="text-color-light mb-3">Detailed information for Area ID: {{ area.id }}</p>
+    <p class="text-color-light mb-3">View and edit details for Area ID: {{ area.id }}.</p>
 
-    <div class="mb-xl">
-        <div class="card-header">
-            <h2 class="card-title">Area Information</h2>
+    <form method="POST">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="card-title">Area Information</h2>
+            </div>
+            <div class="card-body">
+                <dl class="info-list">
+                    <dt>Name:</dt>
+                    <dd>
+                        <input type="text" class="form-control" id="name" name="name"
+                               value="{{ area.name }}" required>
+                    </dd>
+
+                    <dt>Created At:</dt>
+                    <dd class="pt-2">{{ area.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if area.created_at else 'N/A' }}</dd>
+                </dl>
+            </div>
         </div>
-        <div class="card-body">
-            <dl class="info-list">
-                <dt class="col-sm-3">Name:</dt>
-                <dd class="col-sm-9">{{ area.name }}</dd>
 
-                <dt class="col-sm-3">Description:</dt>
-                <dd class="col-sm-9">
-                    <div class="markdown-content">
-                        {{ area.description | default('N/A', true) | markdown }}
-                    </div>
-                </dd>
-                
-                <dt class="col-sm-3">Created At:</dt>
-                <dd class="col-sm-9">{{ area.created_at.strftime('%Y-%m-%d %H:%M:%S %Z') if area.created_at else 'N/A' }}</dd>
-            </dl>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="card-title mb-0">Description</h2>
+                <button type="button" class="btn btn-sm btn-secondary" id="toggleDescriptionEditBtn">
+                    <i class="fas fa-edit"></i> Edit Description
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Markdown Display Area -->
+                <div id="descriptionDisplay" class="markdown-content">
+                    {{ area.description | markdown | default('<em>No description provided. Click "Edit" to add one.</em>' | safe, true) }}
+                </div>
+                <!-- Hidden Textarea for Editing -->
+                <textarea class="form-control" id="description" name="description" rows="8" style="display: none;" 
+                          placeholder="Enter area description here. Markdown is supported.">{{ area.description | default('', true) }}</textarea>
+            </div>
         </div>
-    </div>
+        
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('areas.list_areas') }}" class="btn btn-secondary">Back to Area List</a>
+        </div>
+    </form>
 
-    <div class="mb-xl">
+
+    <div class="card mt-4">
         <div class="card-header">
             <h2 class="card-title">Process Steps in this Area</h2>
         </div>
@@ -69,45 +97,52 @@
                     {% endfor %}
                 </ul>
             {% else %}
-                <p class="mb-0"><em>No process steps found directly in this area.</em></p>
+                <p class="mb-0"><em>No process steps found in this area.</em></p>
             {% endif %}
         </div>
     </div>
-
-    <div class="relevance-section mb-xl">
-        <div class="card-header">
-            <h2 class="card-title">Use Cases Relevant to this Area</h2>
-        </div>
-        <div class="card-body">
-            {% if area.usecase_relevance %}
-                <ul class="list-unstyled">
-                    {% for rel in area.usecase_relevance | sort(attribute='relevance_score', reverse=True) %}
-                        {% if rel.source_usecase %}
-                        <li class="relevance-item border-bottom pb-2 mb-2">
-                            <strong>Use Case:</strong>
-                            <a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">
-                                {{ rel.source_usecase.name }}
-                            </a>
-                            <small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small>
-                            <br>
-                            <strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span><br>
-                            {% if rel.relevance_content %}
-                                <strong class="d-block mt-1">Relevance Content:</strong>
-                                <div class="markdown-content">
-                                    {{ rel.relevance_content | markdown }}
-                                </div>
-                            {% endif %}
-                        </li>
-                        {% endif %}
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="mb-0"><em>No use cases found that are marked as relevant to this area.</em></p>
-            {% endif %}
-        </div>
-    </div>
-
-    <a href="{{ url_for('usecases.list_usecases') }}" class="btn btn-secondary mt-3">Back to Use-Cases</a>
-    {# Or if your main page is the dashboard: <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a> #}
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggleDescriptionEditBtn');
+    const displayDiv = document.getElementById('descriptionDisplay');
+    const editTextarea = document.getElementById('description');
+    
+    let isEditing = false;
+
+    if (toggleBtn && displayDiv && editTextarea) {
+        toggleBtn.addEventListener('click', function() {
+            isEditing = !isEditing;
+
+            if (isEditing) {
+                // Switch to edit mode
+                displayDiv.style.display = 'none';
+                editTextarea.style.display = 'block';
+                this.innerHTML = '<i class="fas fa-eye"></i> View Markdown';
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-info');
+            } else {
+                // Switch to view mode
+                // Re-render the markdown from the textarea content
+                const newMarkdown = editTextarea.value;
+                if (newMarkdown.trim()) {
+                    displayDiv.innerHTML = marked.parse(newMarkdown);
+                } else {
+                    displayDiv.innerHTML = '<em>No description provided. Click "Edit" to add one.</em>';
+                }
+                
+                displayDiv.style.display = 'block';
+                editTextarea.style.display = 'none';
+                this.innerHTML = '<i class="fas fa-edit"></i> Edit Description';
+                this.classList.remove('btn-info');
+                this.classList.add('btn-secondary');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
