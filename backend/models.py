@@ -44,7 +44,13 @@ class User(UserMixin, Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(80), unique=True, nullable=False)
     password = Column(String(255), nullable=False) # Storing hashed password
-    system_prompt = Column(Text, nullable=True)
+    
+    # Existing prompt for general chat
+    system_prompt = Column(Text, nullable=True) 
+    
+    # NEW: Specific prompt for step summarization
+    step_summary_system_prompt = Column(Text, nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # One-to-one relationship with LLMSettings

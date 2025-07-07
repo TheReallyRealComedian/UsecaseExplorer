@@ -14,6 +14,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Process Step: {{ step.name }}</h1>
         <div class="actions-button-group">
+            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#aiSummaryModal">
+                <i class="fas fa-magic"></i> Summarize with AI
+            </button>
             <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this process step and all its use cases? This action cannot be undone.');">
                 <button type="submit" class="btn btn-sm btn-danger">Delete Step</button>
             </form>
@@ -25,14 +28,14 @@
         <!-- Markdown/Edit Toggle for LLM Comment 1 -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="card-title mb-0">LLM Comment 1</h2>
+                <h2 class="card-title mb-0">LLM Comment 1 (AI Summary Target)</h2>
                 <button type="button" class="btn btn-sm btn-secondary" id="toggleLlmCommentEditBtn">
                     <i class="fas fa-edit"></i> Edit Content
                 </button>
             </div>
             <div class="card-body">
                 <div id="llmComment1Display" class="markdown-content">
-                    {{ step.llm_comment_1 | markdown | default('<em>No content provided. Click "Edit" to add some.</em>' | safe, true) }}
+                    {{ step.llm_comment_1 | markdown | default('<em>No content provided. Use "Summarize with AI" or click "Edit" to add some.</em>' | safe, true) }}
                 </div>
                 <textarea class="form-control" id="llm_comment_1" name="llm_comment_1" rows="8" style="display: none;">{{ step.llm_comment_1 | default('', true) }}</textarea>
             </div>
@@ -82,7 +85,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="summary" class="form-label">Generic Summary:</label>
-                    <textarea class="form-control" id="summary" name="summary" rows="3">{{ step.summary | default('', true) }}</textarea>
+                    <textarea class="form-control" id="summary" name="summary" rows="5">{{ step.summary | default('', true) }}</textarea>
                 </div>
                 <div class="mb-3">
                     <label for="what_is_actually_done" class="form-label">What is Actually Done:</label>
@@ -144,6 +147,63 @@
     </div>
 
 </div>
+
+<!-- AI Summary Modal -->
+<div class="modal fade" id="aiSummaryModal" tabindex="-1" aria-labelledby="aiSummaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiSummaryModalLabel">AI Summary Generation for LLM Comment 1</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Initial View: Prompt and Model Selection -->
+                <div id="aiSummaryInitialView">
+                    <div class="mb-3">
+                        <label for="aiModelSelect" class="form-label">Select LLM Model:</label>
+                        <select id="aiModelSelect" class="form-select">
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                         <label for="aiSystemPrompt" class="form-label d-flex justify-content-between">
+                            <span>System Prompt:</span>
+                            <button class="btn btn-sm btn-link p-0" id="saveSystemPromptBtn">Save Prompt</button>
+                        </label>
+                        <textarea id="aiSystemPrompt" class="form-control" rows="8"></textarea>
+                        <div class="form-text">The prompt must include `{area_description}` and `{process_step_fields}` placeholders.</div>
+                        <div id="savePromptStatus" class="form-text small"></div>
+                    </div>
+                </div>
+
+                <!-- Result View: Left/Right Comparison (Initially hidden) -->
+                <div id="aiSummaryResultView" class="d-none">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Current LLM Comment 1</h5>
+                            <div id="currentSummaryDisplay" class="p-2 border rounded bg-light" style="min-height: 200px; white-space: pre-wrap;"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>AI Suggested Content (Editable)</h5>
+                            <textarea id="aiSuggestedSummary" class="form-control" rows="8" style="min-height: 200px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="aiSummaryErrorLog" class="text-danger mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close / Discard</button>
+                <button type="button" class="btn btn-primary" id="generateSummaryBtn">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    Summarize
+                </button>
+                <button type="button" class="btn btn-success d-none" id="acceptSummaryBtn">Accept Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 
@@ -166,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.replace('btn-secondary', 'btn-info');
             } else {
                 const newMarkdown = editTextarea.value;
-                displayDiv.innerHTML = newMarkdown.trim() ? marked.parse(newMarkdown) : '<em>No content provided. Click "Edit" to add some.</em>';
+                displayDiv.innerHTML = newMarkdown.trim() ? marked.parse(newMarkdown) : '<em>No content provided. Use "Summarize with AI" or click "Edit" to add some.</em>';
                 displayDiv.style.display = 'block';
                 editTextarea.style.display = 'none';
                 this.innerHTML = '<i class="fas fa-edit"></i> Edit Content';
@@ -174,6 +234,159 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // --- AI Summary Modal Logic ---
+    const stepId = {{ step.id }};
+    const defaultSystemPrompt = `You are an expert business analyst. Your task is to synthesize information about a process step and create a concise, professional summary for it.
+
+Context about the business area:
+{area_description}
+
+Detailed fields for the process step:
+{process_step_fields}
+
+Based ONLY on the information provided, generate a single paragraph for the 'LLM Comment 1' field. The summary should be clear, objective, and capture the essence of the process step. Do not add any information not present in the context. Output only the summary text, with no introductory phrases like "Here is the summary:".`;
+    
+    const savedSystemPrompt = {{ current_user.step_summary_system_prompt|tojson|safe }} || defaultSystemPrompt;
+
+    const modalElement = document.getElementById('aiSummaryModal');
+    const aiModelSelect = document.getElementById('aiModelSelect');
+    const aiSystemPrompt = document.getElementById('aiSystemPrompt');
+    const saveSystemPromptBtn = document.getElementById('saveSystemPromptBtn');
+    const savePromptStatus = document.getElementById('savePromptStatus');
+    const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+    const acceptSummaryBtn = document.getElementById('acceptSummaryBtn');
+    const aiErrorLog = document.getElementById('aiSummaryErrorLog');
+
+    const initialView = document.getElementById('aiSummaryInitialView');
+    const resultView = document.getElementById('aiSummaryResultView');
+    const currentSummaryDisplay = document.getElementById('currentSummaryDisplay');
+    const aiSuggestedSummary = document.getElementById('aiSuggestedSummary');
+    
+    // Correct target textarea
+    const mainTargetTextarea = document.getElementById('llm_comment_1'); 
+    
+    // NO LONGER NEEDED: const mainSaveChangesBtn = document.querySelector('form button[type="submit"]');
+
+    async function populateAiModels() {
+        try {
+            const response = await fetch('/llm/get_llm_models');
+            const data = await response.json();
+            if (data.success && data.models) {
+                aiModelSelect.innerHTML = '';
+                if (data.models.length > 0) {
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        aiModelSelect.appendChild(option);
+                    });
+                } else {
+                    aiModelSelect.innerHTML = '<option value="">No models found</option>';
+                    generateSummaryBtn.disabled = true;
+                }
+            }
+        } catch (error) { console.error("Error fetching LLM models:", error); }
+    }
+
+    modalElement.addEventListener('show.bs.modal', () => {
+        populateAiModels();
+        aiSystemPrompt.value = savedSystemPrompt;
+        initialView.classList.remove('d-none');
+        resultView.classList.add('d-none');
+        generateSummaryBtn.classList.remove('d-none');
+        acceptSummaryBtn.classList.add('d-none');
+        aiErrorLog.textContent = '';
+        savePromptStatus.textContent = '';
+    });
+
+    saveSystemPromptBtn.addEventListener('click', async () => {
+        savePromptStatus.textContent = 'Saving...';
+        saveSystemPromptBtn.disabled = true;
+        try {
+            const response = await fetch('/llm/save-step-summary-prompt', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prompt: aiSystemPrompt.value })
+            });
+            const result = await response.json();
+            savePromptStatus.textContent = result.message;
+            savePromptStatus.style.color = result.success ? 'green' : 'red';
+        } catch (error) {
+            savePromptStatus.textContent = 'Network error.';
+            savePromptStatus.style.color = 'red';
+        } finally {
+            saveSystemPromptBtn.disabled = false;
+            setTimeout(() => { savePromptStatus.textContent = ''; }, 3000);
+        }
+    });
+
+    generateSummaryBtn.addEventListener('click', async () => {
+        const payload = {
+            step_id: stepId,
+            model: aiModelSelect.value,
+            prompt: aiSystemPrompt.value
+        };
+
+        if (!payload.model) {
+            aiErrorLog.textContent = 'Please select a model.';
+            return;
+        }
+
+        const spinner = generateSummaryBtn.querySelector('.spinner-border');
+        spinner.classList.remove('d-none');
+        generateSummaryBtn.disabled = true;
+        aiErrorLog.textContent = '';
+
+        try {
+            const response = await fetch('/llm/summarize-step', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                currentSummaryDisplay.textContent = mainTargetTextarea.value || 'No current content.';
+                aiSuggestedSummary.value = result.message;
+                initialView.classList.add('d-none');
+                resultView.classList.remove('d-none');
+                generateSummaryBtn.classList.add('d-none');
+                acceptSummaryBtn.classList.remove('d-none');
+            } else {
+                aiErrorLog.textContent = `Error: ${result.message}`;
+            }
+        } catch (error) {
+            aiErrorLog.textContent = `Network error: ${error.message}`;
+        } finally {
+            spinner.classList.add('d-none');
+            generateSummaryBtn.disabled = false;
+        }
+    });
+
+    acceptSummaryBtn.addEventListener('click', () => {
+        mainTargetTextarea.value = aiSuggestedSummary.value;
+        
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        modalInstance.hide();
+
+        // --- REVERTED TO SIMPLER UX ---
+        // Scroll to the main form's target field to show the change
+        mainTargetTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Flash the background of the textarea to confirm placement
+        mainTargetTextarea.style.transition = 'background-color 0.3s ease';
+        mainTargetTextarea.style.backgroundColor = '#d1e7dd'; // Light green flash
+        
+        setTimeout(() => { 
+            mainTargetTextarea.style.backgroundColor = ''; 
+        }, 2000);
+        
+        // Manually update the markdown view as well
+        if (displayDiv) {
+            const newMarkdown = mainTargetTextarea.value;
+            displayDiv.innerHTML = newMarkdown.trim() ? marked.parse(newMarkdown) : '<em>No content provided. Click "Edit" to add some.</em>';
+        }
+    });
 });
 </script>
 {% endblock %}

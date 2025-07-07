@@ -11,8 +11,8 @@ from collections import deque
 import logging
 from flask_login import current_user
 from ..db import SessionLocal
-from ..models import User, LLMSettings, ProcessStep, UseCase, UsecaseStepRelevance
-from sqlalchemy.orm import joinedload, selectinload
+from ..models import User, LLMSettings, ProcessStep, UseCase, UsecaseStepRelevance, Area
+from sqlalchemy.orm import joinedload, selectinload, Session
 from sqlalchemy import or_
 
 # --- SDK Imports ---
@@ -34,8 +34,9 @@ def get_ollama_base_url():
         session = SessionLocal()
         user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
         if user and user.llm_settings and user.llm_settings.ollama_base_url:
+            session.close() # Close session before returning
             return user.llm_settings.ollama_base_url
-        SessionLocal.remove()
+        session.close() # Close session if no settings found
     return os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434')
 
 def get_openai_api_key():
@@ -43,8 +44,9 @@ def get_openai_api_key():
         session = SessionLocal()
         user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
         if user and user.llm_settings and user.llm_settings.openai_api_key:
+            session.close()
             return user.llm_settings.openai_api_key
-        SessionLocal.remove()
+        session.close()
     return os.environ.get('OPENAI_API_KEY')
 
 def get_anthropic_api_key():
@@ -52,8 +54,9 @@ def get_anthropic_api_key():
         session = SessionLocal()
         user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
         if user and user.llm_settings and user.llm_settings.anthropic_api_key:
+            session.close()
             return user.llm_settings.anthropic_api_key
-        SessionLocal.remove()
+        session.close()
     return os.environ.get('ANTHROPIC_API_KEY')
 
 def get_google_api_key():
@@ -61,8 +64,9 @@ def get_google_api_key():
         session = SessionLocal()
         user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
         if user and user.llm_settings and user.llm_settings.google_api_key:
+            session.close()
             return user.llm_settings.google_api_key
-        SessionLocal.remove()
+        session.close()
     return os.environ.get('GOOGLE_API_KEY')
 
 def get_apollo_client_credentials():
@@ -70,8 +74,9 @@ def get_apollo_client_credentials():
         session = SessionLocal()
         user = session.query(User).options(joinedload(User.llm_settings)).get(current_user.id)
         if user and user.llm_settings and user.llm_settings.apollo_client_id and user.llm_settings.apollo_client_secret:
+            session.close()
             return user.llm_settings.apollo_client_id, user.llm_settings.apollo_client_secret
-        SessionLocal.remove()
+        session.close()
     return current_app.config.get('APOLLO_CLIENT_ID'), current_app.config.get('APOLLO_CLIENT_SECRET')
 
 def get_apollo_access_token():
@@ -121,7 +126,7 @@ def clear_chat_history():
 
 # --- Data Preparation Service Logic ---
 
-def prepare_data_for_llm(db_session, form_data, selectable_step_fields, selectable_uc_fields):
+def prepare_data_for_llm(db_session: Session, form_data, selectable_step_fields, selectable_uc_fields):
     """
     Prepares data based on form selections for LLM analysis.
     """
@@ -345,6 +350,65 @@ def generate_chat_response(model_name, user_message, system_prompt, image_base64
         logging.error(f"{error_msg}\n{traceback.format_exc()}")
         return {"success": False, "message": error_msg}
 
+
+def generate_step_summary(db_session: Session, step_id: int, model_name: str, system_prompt_template: str):
+    """
+    Generates a summary for a Process Step using an LLM.
+
+    Args:
+        db_session: The database session.
+        step_id: The ID of the ProcessStep to summarize.
+        model_name: The name of the LLM model to use.
+        system_prompt_template: The user-provided system prompt template.
+
+    Returns:
+        A dictionary with the success status and the generated summary or an error message.
+    """
+    step = db_session.query(ProcessStep).options(joinedload(ProcessStep.area)).get(step_id)
+    if not step:
+        return {"success": False, "message": f"Process Step with ID {step_id} not found."}
+
+    # Consolidate all relevant data into a single context string
+    context_data = {
+        "Area Description": step.area.description if step.area else "N/A",
+        "Step Name": step.name,
+        "Step BI_ID": step.bi_id,
+        "Step Description": step.step_description,
+        "Vision Statement": step.vision_statement,
+        "What is Actually Done": step.what_is_actually_done,
+        "Pain Points": step.pain_points,
+        "In Scope": step.in_scope,
+        "Out of Scope": step.out_of_scope,
+        "Interfaces": step.interfaces_text,
+        "Targets": step.targets_text,
+        "Raw Content": step.raw_content,
+    }
+    
+    # Filter out empty fields and format them into a string
+    context_text = "\n".join([f"- {key}: {value}" for key, value in context_data.items() if value])
+
+    try:
+        # Format the final system prompt with the gathered context
+        final_system_prompt = system_prompt_template.format(
+            area_description=context_data["Area Description"],
+            process_step_fields=context_text
+        )
+    except KeyError as e:
+        return {"success": False, "message": f"System prompt is missing a placeholder: {{{e}}}. Please ensure your prompt includes '{{area_description}}' and '{{process_step_fields}}'."}
+
+    # Use the main chat response generator, but with an empty history and a specific user message
+    user_message = "Based on the provided context in the system prompt, please generate a concise summary for the 'summary' field of the process step."
+    
+    response = generate_chat_response(
+        model_name=model_name,
+        user_message=user_message,
+        system_prompt=final_system_prompt,
+        image_base64=None,
+        image_mime_type=None,
+        chat_history=[] # No chat history needed for this one-off task
+    )
+
+    return response
 
 # --- Model Discovery Functions ---
 def get_available_ollama_models():

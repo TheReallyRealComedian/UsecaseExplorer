@@ -411,3 +411,45 @@ def get_llm_models_api():
 def get_chat_history_api():
     history = llm_service.get_chat_history()
     return jsonify({"success": True, "history": history})
+
+
+@llm_routes.route('/summarize-step', methods=['POST'])
+@login_required
+def summarize_step_with_llm():
+    """API endpoint to generate a summary for a Process Step."""
+    data = request.json
+    step_id = data.get('step_id')
+    model_name = data.get('model')
+    system_prompt = data.get('prompt')
+
+    if not all([step_id, model_name, system_prompt]):
+        return jsonify({"success": False, "message": "Missing step_id, model, or prompt."}), 400
+
+    try:
+        result = llm_service.generate_step_summary(g.db_session, step_id, model_name, system_prompt)
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"An unexpected error occurred: {e}"}), 500
+
+
+@llm_routes.route('/save-step-summary-prompt', methods=['POST'])
+@login_required
+def save_step_summary_prompt():
+    """API endpoint to save the user's custom system prompt for step summarization."""
+    prompt_content = request.json.get('prompt')
+    if prompt_content is None:
+        return jsonify({"success": False, "message": "Prompt content is required."}), 400
+
+    try:
+        user = g.db_session.query(User).get(current_user.id)
+        if not user:
+            return jsonify({"success": False, "message": "User not found."}), 404
+        
+        user.step_summary_system_prompt = prompt_content
+        g.db_session.commit()
+        return jsonify({"success": True, "message": "System prompt saved successfully."})
+    except Exception as e:
+        g.db_session.rollback()
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"Failed to save system prompt: {e}"}), 500
