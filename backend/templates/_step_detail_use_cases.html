@@ -1,0 +1,32 @@
+{# backend/templates/_step_detail_use_cases.html #}
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="card-title">Use Cases under this Process Step</h2>
+    </div>
+    <div class="card-body">
+        {% if step.use_cases %}
+            <ul class="list-unstyled item-list">
+                {% for uc in step.use_cases | sort(attribute='name') %}
+                    <li>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="item-title">
+                                    <a href="{{ url_for('usecases.view_usecase', usecase_id=uc.id) }}">{{ uc.name }}</a>
+                                </div>
+                                <div class="item-meta">
+                                    <small class="text-muted">(BI_ID: {{ uc.bi_id }})</small>
+                                </div>
+                            </div>
+                            <form action="{{ url_for('usecases.delete_usecase', usecase_id=uc.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this use case? This action cannot be undone.');">
+                                <input type="hidden" name="process_step_id_for_redirect" value="{{ step.id }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mb-0"><em>No use cases found directly under this process step.</em></p>
+        {% endif %}
+    </div>
+</div>

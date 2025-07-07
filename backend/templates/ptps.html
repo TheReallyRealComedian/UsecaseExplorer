@@ -54,7 +54,8 @@
                                     <td>
                                         <div class="actions-button-group"> {# Simple wrapper for consistent spacing #}
                                             <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i></a>
-                                            <a href="{{ url_for('steps.edit_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
+                                            {# CORRECTED LINK: Points to the unified view/edit page #}
+                                            <a href="{{ url_for('steps.view_step', step_id=step.id) }}" class="btn btn-sm btn-secondary" title="Edit Step"><i class="fas fa-edit"></i></a>
                                             <form action="{{ url_for('steps.delete_step', step_id=step.id) }}" method="POST" onsubmit="return confirm('Delete this step and its use cases?');">
                                                 <button type="submit" class="btn btn-sm btn-danger" title="Delete Step"><i class="fas fa-trash"></i></button>
                                             </form>

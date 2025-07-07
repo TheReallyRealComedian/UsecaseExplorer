@@ -1,5 +1,6 @@
 # backend/services/step_service.py
 from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.exc import IntegrityError
 from ..models import ProcessStep, UseCase, Area, UsecaseStepRelevance, ProcessStepProcessStepRelevance
 
 def get_all_steps_with_details(db_session: Session):
@@ -34,19 +35,23 @@ def get_all_other_steps(db_session: Session, step_id: int):
 def update_step_from_form(db_session: Session, step: ProcessStep, form_data: dict):
     """Updates a ProcessStep object from form data."""
     original_bi_id = step.bi_id
+    
+    # Core fields
     step.name = form_data.get('name', '').strip()
     step.bi_id = form_data.get('bi_id', '').strip()
     step.area_id = int(form_data.get('area_id'))
-    step.step_description = form_data.get('step_description', '').strip() or None
-    step.raw_content = form_data.get('raw_content', '').strip() or None
-    step.summary = form_data.get('summary', '').strip() or None
-    step.vision_statement = form_data.get('vision_statement', '').strip() or None
-    step.in_scope = form_data.get('in_scope', '').strip() or None
-    step.out_of_scope = form_data.get('out_of_scope', '').strip() or None
-    step.interfaces_text = form_data.get('interfaces_text', '').strip() or None
-    step.what_is_actually_done = form_data.get('what_is_actually_done', '').strip() or None
-    step.pain_points = form_data.get('pain_points', '').strip() or None
-    step.targets_text = form_data.get('targets_text', '').strip() or None
+    
+    # List of all text-based fields to update
+    text_fields = [
+        'step_description', 'raw_content', 'summary', 'vision_statement',
+        'in_scope', 'out_of_scope', 'interfaces_text', 'what_is_actually_done',
+        'pain_points', 'targets_text', 'llm_comment_1', 'llm_comment_2',
+        'llm_comment_3', 'llm_comment_4', 'llm_comment_5'
+    ]
+
+    for field in text_fields:
+        # Use .get() which returns None if key is missing, then strip or default to None
+        setattr(step, field, form_data.get(field, '').strip() or None)
 
     if not all([step.name, step.bi_id, step.area_id]):
         return False, "Step Name, BI_ID, and Area are required."
@@ -54,10 +59,15 @@ def update_step_from_form(db_session: Session, step: ProcessStep, form_data: dic
     if step.bi_id != original_bi_id:
         existing_step = db_session.query(ProcessStep).filter(ProcessStep.bi_id == step.bi_id, ProcessStep.id != step.id).first()
         if existing_step:
+            db_session.rollback()
             return False, f"Another process step with BI_ID '{step.bi_id}' already exists."
 
-    db_session.commit()
-    return True, "Process Step updated successfully!"
+    try:
+        db_session.commit()
+        return True, "Process Step updated successfully!"
+    except Exception as e:
+        db_session.rollback()
+        return False, f"An unexpected error occurred during update: {e}"
 
 def inline_update_step_field(db_session: Session, step: ProcessStep, field_to_update: str, new_value):
     """Updates a single field on a step for inline editing."""

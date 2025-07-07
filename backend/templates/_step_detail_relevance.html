@@ -1,0 +1,98 @@
+{# backend/templates/_step_detail_relevance.html #}
+<!-- Use Cases Targeting This Step -->
+<div class="relevance-section mb-4">
+    <div class="card-header"><h2 class="card-title">Relevant To (Use Cases)</h2></div>
+    <div class="card-body">
+        {% if step.usecase_relevance %}
+            <ul class="list-unstyled">
+                {% for rel in step.usecase_relevance | sort(attribute='relevance_score', reverse=True) %}
+                    {% if rel.source_usecase %}
+                    <li class="relevance-item border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1 me-3">
+                                <div class="item-title"><a href="{{ url_for('usecases.view_usecase', usecase_id=rel.source_usecase.id) }}">{{ rel.source_usecase.name }}</a></div>
+                                <div class="item-meta"><small class="text-muted">(BI_ID: {{ rel.source_usecase.bi_id }})</small></div>
+                                <div><strong>Score:</strong> <span class="badge bg-info">{{ rel.relevance_score }}/100</span></div>
+                                {% if rel.relevance_content %}<div class="markdown-content mt-1">{{ rel.relevance_content | markdown }}</div>{% endif %}
+                            </div>
+                            <div>
+                                <a href="{{ url_for('relevance.edit_step_relevance', relevance_id=rel.id) }}" class="btn btn-secondary btn-sm mb-1">Edit</a>
+                                <form action="{{ url_for('relevance.delete_step_relevance', relevance_id=rel.id) }}" method="POST" onsubmit="return confirm('Delete relevance link?');">
+                                    <input type="hidden" name="referrer_step_id" value="{{ step.id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mb-0"><em>No use cases are marked as relevant to this process step.</em></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Steps This Step is Relevant To -->
+<div class="relevance-section mb-4">
+    <div class="card-header"><h2 class="card-title">Relevant To (Other Steps)</h2></div>
+    <div class="card-body">
+         {% if step.relevant_to_steps_as_source %}
+            <ul class="list-unstyled item-list">
+                {% for rel in step.relevant_to_steps_as_source | sort(attribute='relevance_score', reverse=True) %}
+                    <li class="relevance-item border-bottom pb-2 mb-2">
+                        <!-- ... (same structure as above) ... -->
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+             <p class="p-3 mb-0"><em>No relevance links to other Process Steps originating from this one.</em></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Steps Relevant To This Step -->
+<div class="relevance-section mb-4">
+    <div class="card-header"><h2 class="card-title">Relevant From (Other Steps)</h2></div>
+    <div class="card-body">
+        {% if step.relevant_to_steps_as_target %}
+             <ul class="list-unstyled item-list">
+                 {% for rel in step.relevant_to_steps_as_target | sort(attribute='relevance_score', reverse=True) %}
+                    <li class="relevance-item border-bottom pb-2 mb-2">
+                        <!-- ... (same structure as above) ... -->
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+             <p class="p-3 mb-0"><em>No relevance links from other Process Steps found pointing to this one.</em></p>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- Add Relevance Form -->
+<div class="add-relevance-forms mt-3">
+    <h3>Add New Relevance Link</h3>
+    <form action="{{ url_for('relevance.add_step_to_step_relevance') }}" method="post" class="add-relevance-form mb-3 p-3 border rounded">
+        <h4>Link to another Process Step</h4>
+        <input type="hidden" name="source_process_step_id" value="{{ step.id }}">
+         <div class="mb-2">
+            <label for="target_step_id" class="form-label">Select Process Step:</label>
+            <select name="target_process_step_id" id="target_step_id" class="form-select" required>
+                <option value="">-- Select a Step --</option>
+                {% for other_ps in other_steps %}
+                    <option value="{{ other_ps.id }}">{{ other_ps.name }} ({{ other_ps.bi_id }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-2">
+            <label for="ps_ps_relevance_score" class="form-label">Score (0-100):</label>
+            <input type="number" name="relevance_score" id="ps_ps_relevance_score" class="form-control" min="0" max="100" required>
+        </div>
+        <div class="mb-2">
+            <label for="ps_ps_relevance_content" class="form-label">Content (Optional):</label>
+            <textarea name="relevance_content" id="ps_ps_relevance_content" class="form-control" rows="3"></textarea>
+        </div>
+         <button type="submit" class="btn btn-primary btn-sm">Add Step to Step Link</button>
+    </form>
+</div>
