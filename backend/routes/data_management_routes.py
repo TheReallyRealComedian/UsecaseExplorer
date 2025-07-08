@@ -8,6 +8,7 @@ from markupsafe import Markup, escape
 # Import services
 from ..services import data_management_service, bulk_edit_service
 from ..models import Area, ProcessStep, UseCase
+from ..services.data_management_service import analyze_json_import, finalize_import
 from ..utils import serialize_for_js
 
 data_management_bp = Blueprint('data_management', __name__,
@@ -41,6 +42,13 @@ PROCESS_USECASE_EDITABLE_FIELDS = {
     "dependencies_text": "Redundancies & Dependencies", "contact_persons_text": "Contact Persons",
     "related_projects_text": "Related Projects", "pilot_site_factory_text": "Pilot Site, Factory",
     "usecase_type_category": "Use Case Type Category"
+}
+
+# Map string entity names to their SQLAlchemy models and unique keys
+ENTITY_MAP = {
+    'use_cases': {'model': UseCase, 'key': 'bi_id'},
+    'process_steps': {'model': ProcessStep, 'key': 'bi_id'},
+    'areas': {'model': Area, 'key': 'name'},
 }
 
 
@@ -305,4 +313,90 @@ def finalize_steps_import():
     result = data_management_service.finalize_step_import(resolved_steps_data)
     if result['success']:
         session.pop('step_import_preview_data', None)
+    return jsonify(result)
+
+
+@data_management_bp.route('/import/analyze', methods=['POST'])
+@login_required
+def analyze_json_upload():
+    if 'json_file' not in request.files:
+        flash('No file part in the request.', 'danger')
+        return redirect(url_for('data_management.data_management_page'))
+
+    file = request.files['json_file']
+    entity_type = request.form.get('entity_type')
+
+    if file.filename == '' or not entity_type:
+        flash('No file selected or entity type missing.', 'warning')
+        return redirect(url_for('data_management.data_management_page'))
+
+    if entity_type not in ENTITY_MAP:
+        flash(f"Invalid entity type '{entity_type}'.", 'danger')
+        return redirect(url_for('data_management.data_management_page'))
+
+    try:
+        json_data = json.load(file.stream)
+        if not isinstance(json_data, list):
+            flash("Invalid JSON format. File must contain a list of objects.", "danger")
+            return redirect(url_for('data_management.data_management_page'))
+
+        analysis_result = analyze_json_import(
+            json_data,
+            ENTITY_MAP[entity_type]['model'],
+            ENTITY_MAP[entity_type]['key']
+        )
+
+        if analysis_result['success']:
+            session['import_preview_data'] = analysis_result['preview_data']
+            session['import_entity_type'] = entity_type
+            return redirect(url_for('data_management.import_preview'))
+        else:
+            flash(analysis_result.get('message', 'Analysis failed.'), 'danger')
+            return redirect(url_for('data_management.data_management_page'))
+
+    except json.JSONDecodeError:
+        flash("Invalid JSON file. Please check the file content and format.", "danger")
+        return redirect(url_for('data_management.data_management_page'))
+    except Exception as e:
+        flash(f"An unexpected error occurred during analysis: {e}", "danger")
+        return redirect(url_for('data_management.data_management_page'))
+
+
+@data_management_bp.route('/import/preview', methods=['GET'])
+@login_required
+def import_preview():
+    preview_data = session.get('import_preview_data')
+    entity_type = session.get('import_entity_type')
+
+    if not preview_data or not entity_type:
+        flash("No import preview data found. Please start a new import.", "warning")
+        return redirect(url_for('data_management.data_management_page'))
+
+    return render_template(
+        'json_import_preview.html',
+        title=f"Import Preview for {entity_type.replace('_', ' ').title()}",
+        preview_data=preview_data,
+        entity_type=entity_type
+    )
+
+
+@data_management_bp.route('/import/finalize', methods=['POST'])
+@login_required
+def finalize_json_import():
+    resolved_data = request.get_json().get('resolved_data')
+    entity_type = request.get_json().get('entity_type')
+
+    if not resolved_data or not entity_type or entity_type not in ENTITY_MAP:
+        return jsonify(success=False, message="Invalid request data."), 400
+
+    result = finalize_import(
+        resolved_data,
+        ENTITY_MAP[entity_type]['model'],
+        ENTITY_MAP[entity_type]['key']
+    )
+
+    if result['success']:
+        session.pop('import_preview_data', None)
+        session.pop('import_entity_type', None)
+
     return jsonify(result)

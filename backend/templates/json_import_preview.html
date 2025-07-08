@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="json-import-preview-page">
+    <h1>{{ title }}</h1>
+    <p class="text-color-light mb-4">Review the proposed changes below. You can approve or skip each item. No changes will be saved until you click "Finalize Import".</p>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title mb-0">Bulk Actions</h2>
+            <div>
+                <label class="me-2">For all UPDATES:</label>
+                <button class="btn btn-sm btn-outline-success" id="bulk-update-all">Accept All</button>
+                <button class="btn btn-sm btn-outline-warning" id="bulk-skip-all-updates">Skip All</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Status</th>
+                    <th>Identifier</th>
+                    <th>Changes Summary</th>
+                    <th style="width: 20%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="preview-table-body">
+                {% for item in preview_data %}
+                <tr data-identifier="{{ item.identifier }}" data-status="{{ item.status }}">
+                    <td><span class="badge 
+                        {% if item.status == 'new' %}bg-success
+                        {% elif item.status == 'update' %}bg-warning text-dark
+                        {% elif item.status == 'no_change' %}bg-secondary
+                        {% else %}bg-danger{% endif %}">{{ item.status | upper }}</span>
+                    </td>
+                    <td><strong>{{ item.identifier }}</strong><br><small>{{ item.json_item.name | default('N/A', true) }}</small></td>
+                    <td>
+                        {% if item.diff %}
+                            <ul>
+                            {% for field, values in item.diff.items() %}
+                                <li><strong>{{ field }}:</strong> '{{ values.old | truncate(30) }}' → '{{ values.new | truncate(30) }}'</li>
+                            {% endfor %}
+                            </ul>
+                        {% elif item.messages %}
+                            {{ item.messages[0] }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" value="add" 
+                                {% if item.action != 'add' %}disabled{% endif %} {% if item.action == 'add' %}checked{% endif %}>
+                            <label class="form-check-label">Add</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" value="update"
+                                {% if item.action != 'update' %}disabled{% endif %} {% if item.action == 'update' %}checked{% endif %}>
+                            <label class="form-check-label">Update</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input action-radio" type="radio" name="action_{{ loop.index0 }}" value="skip"
+                                {% if item.action == 'skip' %}checked{% endif %}>
+                            <label class="form-check-label">Skip</label>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4 text-end">
+        <a href="{{ url_for('data_management.data_management_page') }}" class="btn btn-secondary">Cancel</a>
+        <button id="finalize-import-btn" class="btn btn-primary">Finalize Import</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const previewData = {{ preview_data | tojson | safe }};
+    const entityType = "{{ entity_type }}";
+
+    // Bulk action listeners
+    document.getElementById('bulk-update-all').addEventListener('click', () => {
+        document.querySelectorAll('tr[data-status="update"] .action-radio[value="update"]').forEach(radio => radio.checked = true);
+    });
+
+    document.getElementById('bulk-skip-all-updates').addEventListener('click', () => {
+        document.querySelectorAll('tr[data-status="update"] .action-radio[value="skip"]').forEach(radio => radio.checked = true);
+    });
+
+    // Finalize button listener
+    document.getElementById('finalize-import-btn').addEventListener('click', async () => {
+        const finalizeBtn = this;
+        finalizeBtn.disabled = true;
+        finalizeBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizing...';
+
+        const resolved_data = [];
+        document.querySelectorAll('#preview-table-body tr').forEach((row, index) => {
+            const identifier = row.dataset.identifier;
+            const action = row.querySelector('.action-radio:checked').value;
+            const originalItem = previewData[index];
+
+            if (action !== 'skip') {
+                resolved_data.push({
+                    action: action,
+                    identifier: identifier,
+                    data: originalItem.json_item
+                });
+            }
+        });
+
+        try {
+            const response = await fetch("{{ url_for('data_management.finalize_json_import') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ resolved_data: resolved_data, entity_type: entityType })
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                window.location.href = "{{ url_for('data_management.data_management_page') }}";
+            } else {
+                alert(`Error: ${result.message}`);
+                finalizeBtn.disabled = false;
+                finalizeBtn.textContent = 'Finalize Import';
+            }
+        } catch (error) {
+            alert('A network error occurred. Please try again.');
+            finalizeBtn.disabled = false;
+            finalizeBtn.textContent = 'Finalize Import';
+        }
+    });
+});
+</script>
+{% endblock %}

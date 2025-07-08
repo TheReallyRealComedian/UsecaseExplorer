@@ -103,6 +103,34 @@
     </div>
 </div>
 
+<!-- Interactive JSON Import Card -->
+<div class="card mb-4">
+    <div class="card-header"><h2 class="card-title mb-0">Interactive JSON Import (Preview)</h2></div>
+    <div class="card-body">
+        <p>Upload a JSON file to get a preview of the changes before committing them to the database.</p>
+        <form action="{{ url_for('data_management.analyze_json_upload') }}" method="post" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="entity_type" class="form-label">Select Data Type:</label>
+                    <select name="entity_type" id="entity_type" class="form-select" required>
+                        <option value="">-- Choose data type --</option>
+                        <option value="use_cases">Use Cases</option>
+                        <option value="process_steps">Process Steps</option>
+                        <option value="areas">Areas</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="json_file" class="form-label">Select JSON File:</label>
+                    <input type="file" id="json_file" name="json_file" accept=".json" required class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Analyze File</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Bulk Editing Section -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
