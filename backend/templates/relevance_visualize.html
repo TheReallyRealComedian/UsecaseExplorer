@@ -27,7 +27,9 @@
         </div>
     </div>
 
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Overview</a>
+    {# --- START MODIFICATION --- #}
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary mt-3">Back to Overview</a>
+    {# --- END MODIFICATION --- #}
 </div>
 {% endblock %}
 

@@ -31,6 +31,12 @@
                         <a href="{{ url_for('main.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                     </li>
 
+                    {# --- START MODIFICATION: Add Relevance Map Link --- #}
+                    <li class="{% if request.endpoint == 'relevance.visualize_relevance' %}active{% endif %}">
+                        <a href="{{ url_for('relevance.visualize_relevance') }}"><i class="fas fa-project-diagram"></i> Relevance Map</a>
+                    </li>
+                    {# --- END MODIFICATION --- #}
+
                     {# #PTP CONTENT #}
                     <li class="sidebar-menu-header" style="color: #6B8375; font-weight: bold; padding: 16px 26px 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">PTP CONTENT</li>
                     
@@ -148,7 +154,7 @@
                 {% if current_usecase %}
                     <i class="fas fa-chevron-right breadcrumb-separator"></i>
                     <div class="breadcrumb-dropdown-container dropdown" id="usecase-breadcrumb-container" data-item-id="{{ current_usecase.id }}" data-item-type="usecase" data-parent-step-id="{{ current_usecase.process_step.id if current_usecase.process_step else '' }}">
-                        <a href="{{ url_for('usecases.view_usecase', usecase_id=current_usecase.id) }}" class="breadcrumb-item {% if current_item == current_usecase %}active{% endif %} dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="{{ url_for('usecases.view_usecase', usecase_id=usecase.id) }}" class="breadcrumb-item {% if current_item == current_usecase %}active{% endif %} dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             {{ current_usecase.name }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="usecase-breadcrumb-container">

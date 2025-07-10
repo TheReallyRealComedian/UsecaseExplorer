@@ -333,34 +333,18 @@ def analyze_usecase_image_with_llm():
                 "message": f"Error formatting the prompt template. A placeholder like '{{{e}}}' might be missing from the provided context or the template is malformed."
             }), 500
 
-        parts = selected_model_name.split('-', 1)
-        provider = parts[0].lower()
-        model_id = parts[1] if len(parts) > 1 else selected_model_name
-
-        llm_response_data = {"success": False, "message": "LLM provider not supported or error."}
-
-        if provider == "openai":
-            llm_response_data = llm_service.generate_openai_chat_response(
-                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
-            )
-        elif provider == "anthropic":
-            llm_response_data = llm_service.generate_anthropic_chat_response(
-                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
-            )
-        elif provider == "google":
-             llm_response_data = llm_service.generate_google_chat_response(
-                 model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
-             )
-        elif provider == "ollama":
-            llm_response_data = llm_service.generate_ollama_chat_response(
-                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
-            )
-        elif provider == "apollo":
-            llm_response_data = llm_service.generate_apollo_chat_response(
-                model_id, final_llm_prompt_text, None, image_base64, image_mime_type, []
-            )
-        else:
-            return jsonify({"success": False, "message": f"Unsupported LLM provider: {provider}"}), 400
+        # --- START FIX: Use the unified LLM service dispatcher ---
+        # The main dispatcher handles provider logic internally.
+        # Provide a default user message as some models require it with an image.
+        llm_response_data = llm_service.generate_chat_response(
+            model_name=selected_model_name,
+            user_message="Analyze this image and suggest updates based on the system prompt.",
+            system_prompt=final_llm_prompt_text,
+            image_base64=image_base64,
+            image_mime_type=image_mime_type,
+            chat_history=[]  # This is a one-off request, so no history is needed
+        )
+        # --- END FIX ---
 
         if llm_response_data.get("success"):
             try:

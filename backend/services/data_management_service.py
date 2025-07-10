@@ -4,6 +4,8 @@ import traceback
 from sqlalchemy import text
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import Session, selectinload
+
 from ..db import SessionLocal, db as flask_sqlalchemy_db
 from ..models import (
     Base, User, Area, ProcessStep, UseCase, LLMSettings,
@@ -11,29 +13,30 @@ from ..models import (
     ProcessStepProcessStepRelevance, Tag
 )
 from datetime import datetime
-from sqlalchemy.orm import Session
+
 
 def datetime_serializer(obj):
     if isinstance(obj, datetime):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def _get_or_create_tags(db_session: Session, tag_string: str, category: str, tag_cache: dict):
+def _get_or_create_tags(db_session: Session, tag_input, category: str, tag_cache: dict):
     """
-    Efficiently gets or creates tags from a comma-separated string, using a
-    per-request cache to avoid duplicate creation within a single transaction.
+    Efficiently gets or creates tags from a comma-separated string OR a list, 
+    using a per-request cache to avoid duplicate creation.
     """
-    if not tag_string or not isinstance(tag_string, str):
-        return []
+    tag_names = set()
+    if isinstance(tag_input, str):
+        tag_names = {name.strip() for name in tag_input.split(',') if name.strip()}
+    elif isinstance(tag_input, list):
+        tag_names = {str(name).strip() for name in tag_input if str(name).strip()}
 
-    tag_names = {name.strip() for name in tag_string.split(',') if name.strip()}
     if not tag_names:
         return []
 
     tags_to_return = []
     tags_to_query = []
 
-    # First, check the cache
     for name in tag_names:
         cache_key = (name, category)
         if cache_key in tag_cache:
@@ -41,25 +44,20 @@ def _get_or_create_tags(db_session: Session, tag_string: str, category: str, tag
         else:
             tags_to_query.append(name)
     
-    # If there are tags not in the cache, query the DB
     if tags_to_query:
         existing_tags_from_db = db_session.query(Tag).filter(
             Tag.category == category,
             Tag.name.in_(tags_to_query)
         ).all()
-
         for tag in existing_tags_from_db:
             cache_key = (tag.name, tag.category)
             tag_cache[cache_key] = tag
             tags_to_return.append(tag)
-        
         existing_names_from_db = {t.name for t in existing_tags_from_db}
-
-        # Create new tags for those that were not in cache and not in DB
         for name in tags_to_query:
             if name not in existing_names_from_db:
                 new_tag = Tag(name=name, category=category)
-                db_session.add(new_tag) # Add to session, will be flushed
+                db_session.add(new_tag)
                 cache_key = (name, category)
                 tag_cache[cache_key] = new_tag
                 tags_to_return.append(new_tag)
@@ -74,10 +72,7 @@ def process_area_file(file_stream):
     skipped_count = 0
     duplicates_not_updated = []
     skipped_errors_details = []
-
-    # --- START MODIFICATION: Track names processed within this single file/transaction ---
     processed_names_in_this_run = set()
-
     message = ""
     success = False
 
@@ -102,15 +97,12 @@ def process_area_file(file_stream):
                 skipped_errors_details.append(f"{item_identifier}: Invalid format or missing/empty 'name' field.")
                 continue
             
-            # --- START MODIFICATION: Check for duplicates within the file itself ---
             if area_name in processed_names_in_this_run:
                 skipped_count += 1
                 skipped_errors_details.append(f"{item_identifier}: Duplicate name found within the uploaded file. Skipping subsequent entry.")
                 continue
             
-            # Add to the set to mark it as processed for this run
             processed_names_in_this_run.add(area_name)
-            # --- END MODIFICATION ---
 
             description_from_json = item.get('description')
             if description_from_json is not None:
@@ -126,15 +118,12 @@ def process_area_file(file_stream):
             item_updated = False
 
             if existing_area:
-                # --- START MODIFICATION: More permissive update logic ---
-                # Update description if it's different, not just if it was empty.
                 db_desc = existing_area.description or ""
                 json_desc = description_from_json or ""
                 
                 if description_from_json is not None and db_desc != json_desc:
                     existing_area.description = description_from_json
                     item_updated = True
-                # --- END MODIFICATION ---
 
                 if item_updated:
                     updated_count += 1
@@ -165,8 +154,8 @@ def process_area_file(file_stream):
 
         if duplicates_not_updated:
             message += f" (Existing items not updated: {len(duplicates_not_updated)}). "
-        if skipped_errors_details: # The route handler will now display these details.
-            print("Skipped item details:", skipped_errors_details) # Keep server-side logging for debug.
+        if skipped_errors_details:
+            print("Skipped item details:", skipped_errors_details)
 
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error in process_area_file: {e}")
@@ -204,54 +193,94 @@ def analyze_json_import(json_data, model_class, unique_key_field='bi_id'):
     """
     session = SessionLocal()
     preview_data = []
+
+    if model_class == UseCase:
+        existing_items_query = session.query(UseCase).options(selectinload(UseCase.tags)).all()
+    else:
+        existing_items_query = session.query(model_class).all()
     
-    # Create a lookup for existing items for efficiency
-    existing_items_query = session.query(model_class).all()
     existing_items_map = {getattr(item, unique_key_field): item for item in existing_items_query}
     
     for json_item in json_data:
-        identifier = json_item.get(unique_key_field)
         entry = {
             'status': 'error',
             'action': 'skip',
-            'identifier': identifier,
+            'identifier': json_item.get(unique_key_field),
             'json_item': json_item,
             'db_item': None,
             'diff': {},
             'messages': []
         }
 
-        if not identifier:
+        if not entry['identifier']:
             entry['messages'].append(f"Skipped: Item is missing the unique identifier field '{unique_key_field}'.")
             preview_data.append(entry)
             continue
 
-        existing_item = existing_items_map.get(identifier)
+        existing_item = existing_items_map.get(entry['identifier'])
 
         if existing_item:
-            # --- Item exists, check for updates ---
             entry['status'] = 'no_change'
-            entry['action'] = 'skip' # Default for no_change
-            entry['db_item'] = {c.name: getattr(existing_item, c.name) for c in existing_item.__table__.columns}
+            entry['action'] = 'skip'
+            entry['db_item'] = {c.name: getattr(existing_item, c.name) for c in existing_item.__table__.columns if not c.name.startswith('_')}
             
             is_dirty = False
+            tag_fields = {}
+
+            if model_class == UseCase:
+                tag_fields = {'it_systems': 'it_system', 'data_types': 'data_type', 'generic_tags': 'tag'}
+                for json_key, category in tag_fields.items():
+                    if json_key in json_item:
+                        new_value_raw = json_item.get(json_key)
+                        
+                        current_tags_for_category = [t.name for t in existing_item.tags if t.category == category]
+                        old_tags_str = ', '.join(sorted(current_tags_for_category))
+                        
+                        new_tags_list = []
+                        if isinstance(new_value_raw, str):
+                            new_tags_list = [s.strip() for s in new_value_raw.split(',') if s.strip()]
+                        elif isinstance(new_value_raw, list):
+                            new_tags_list = [str(s).strip() for s in new_value_raw if str(s).strip()]
+                        
+                        new_tags_str = ', '.join(sorted(new_tags_list))
+
+                        if old_tags_str != new_tags_str:
+                            is_dirty = True
+                            entry['diff'][json_key] = {'old': old_tags_str, 'new': new_tags_str}
+
             for key, new_value in json_item.items():
-                if hasattr(existing_item, key):
+                if model_class == UseCase and key in tag_fields:
+                    continue
+
+                # --- START FIX: Handle relevants_text list-to-string conversion for diff ---
+                if key == 'relevants_text' and isinstance(new_value, list):
+                    new_value = ', '.join(str(s).strip() for s in new_value)
+                # --- END FIX ---
+                
+                if hasattr(existing_item, key) and not isinstance(getattr(type(existing_item), key, None), property):
                     old_value = getattr(existing_item, key)
-                    # Simple comparison, can be made more sophisticated
-                    if str(old_value) != str(new_value):
+                    
+                    is_old_empty = old_value is None or str(old_value).strip() == ""
+                    is_new_empty = new_value is None or str(new_value).strip() == ""
+
+                    field_is_dirty = False
+                    if not (is_old_empty and is_new_empty):
+                        if str(old_value or '') != str(new_value or ''):
+                            field_is_dirty = True
+                    
+                    if field_is_dirty:
                         is_dirty = True
-                        entry['diff'][key] = {'old': old_value, 'new': new_value}
+                        if key not in entry['diff']:
+                            entry['diff'][key] = {'old': old_value, 'new': new_value}
 
             if is_dirty:
                 entry['status'] = 'update'
-                entry['action'] = 'update' # Propose update by default
+                entry['action'] = 'update'
                 changed_fields = ", ".join(entry['diff'].keys())
                 entry['messages'].append(f"Will update fields: {changed_fields}.")
             else:
                 entry['messages'].append("Item already exists and matches the database.")
         else:
-            # --- Item is new ---
             entry['status'] = 'new'
             entry['action'] = 'add'
             entry['messages'].append("This is a new item that will be created.")
@@ -268,7 +297,13 @@ def finalize_import(resolved_data, model_class, unique_key_field='bi_id'):
     """
     session = SessionLocal()
     added_count, updated_count, skipped_count, failed_count = 0, 0, 0, 0
-    
+    error_messages = []
+    tag_cache = {}
+
+    step_lookup = {}
+    if model_class == UseCase:
+        step_lookup = {step.bi_id: step.id for step in session.query(ProcessStep.bi_id, ProcessStep.id).all()}
+
     try:
         for item in resolved_data:
             action = item.get('action')
@@ -279,32 +314,88 @@ def finalize_import(resolved_data, model_class, unique_key_field='bi_id'):
                 skipped_count += 1
                 continue
             
+            normalized_data = {k.lower(): v for k, v in data.items()}
+            
+            tags_from_json = []
+            tags_to_update_from_json = {}
+            tag_fields = {}
+            
+            # --- START FIX: Handle list-to-string for relevants_text ---
+            if 'relevants_text' in normalized_data:
+                relevants_value = normalized_data['relevants_text']
+                if isinstance(relevants_value, list):
+                    normalized_data['relevants_text'] = ', '.join(str(s).strip() for s in relevants_value)
+                elif relevants_value is not None:
+                    normalized_data['relevants_text'] = str(relevants_value)
+            # --- END FIX ---
+            
+            if model_class == UseCase:
+                tag_fields = {'it_systems': 'it_system', 'data_types': 'data_type', 'generic_tags': 'tag'}
+                for key, category in tag_fields.items():
+                    if key in normalized_data and normalized_data[key] is not None:
+                        tags_to_update_from_json[category] = normalized_data[key]
+                
+                for category, tag_input in tags_to_update_from_json.items():
+                    tags_from_json.extend(_get_or_create_tags(session, tag_input, category, tag_cache))
+
+            creation_data = {k: v for k, v in normalized_data.items() if k not in list(tag_fields.keys()) + ['process_step_bi_id']}
+            
+            if model_class == UseCase:
+                step_bi_id = normalized_data.get('process_step_bi_id')
+                if step_bi_id and step_bi_id in step_lookup:
+                    creation_data['process_step_id'] = step_lookup[step_bi_id]
+                else:
+                    failed_count += 1
+                    msg = f"Failed to process '{identifier}': Parent Process Step BI_ID '{step_bi_id}' not found."
+                    print(msg)
+                    error_messages.append(msg)
+                    continue
+
             if action == 'add':
                 try:
-                    new_obj = model_class(**data)
+                    new_obj = model_class(**creation_data)
+                    if model_class == UseCase:
+                        new_obj.tags = tags_from_json
+                    
                     session.add(new_obj)
-                    session.flush() # Flush to catch integrity errors early
+                    session.flush() 
                     added_count += 1
                 except Exception as e:
                     failed_count += 1
-                    print(f"Failed to add item {identifier}: {e}") # Log error
+                    msg = f"Failed to add item {identifier}: {e}"
+                    print(msg)
+                    error_messages.append(msg)
+                    session.rollback()
             
             elif action == 'update':
                 try:
                     obj_to_update = session.query(model_class).filter(getattr(model_class, unique_key_field) == identifier).first()
                     if obj_to_update:
-                        for key, value in data.items():
-                            setattr(obj_to_update, key, value)
+                        if model_class == UseCase and tags_to_update_from_json:
+                            categories_in_json = tags_to_update_from_json.keys()
+                            final_tags = [tag for tag in obj_to_update.tags if tag.category not in categories_in_json]
+                            final_tags.extend(tags_from_json)
+                            obj_to_update.tags = final_tags
+                        
+                        for key, value in creation_data.items():
+                            if hasattr(obj_to_update, key) and not isinstance(getattr(type(obj_to_update), key, None), property):
+                                setattr(obj_to_update, key, value)
                         updated_count += 1
                     else:
-                        failed_count += 1 # Cannot update if it doesn't exist
+                        failed_count += 1
+                        msg = f"Failed to update item {identifier}: Not found in database."
+                        print(msg)
+                        error_messages.append(msg)
                 except Exception as e:
                     failed_count += 1
-                    print(f"Failed to update item {identifier}: {e}") # Log error
+                    msg = f"Failed to update item {identifier}: {e}"
+                    print(msg)
+                    error_messages.append(msg)
+                    session.rollback()
 
         if failed_count > 0:
             session.rollback()
-            return {"success": False, "message": f"Import failed. {failed_count} errors occurred. No changes were saved."}
+            return {"success": False, "message": f"Import failed. {failed_count} errors occurred. No changes were saved. Details: {'; '.join(error_messages)}"}
 
         session.commit()
         return {
@@ -313,10 +404,10 @@ def finalize_import(resolved_data, model_class, unique_key_field='bi_id'):
         }
     except Exception as e:
         session.rollback()
+        traceback.print_exc()
         return {"success": False, "message": f"A critical error occurred: {e}. All changes have been rolled back."}
     finally:
         session.close()
-
 
 def process_usecase_file(file_stream):
     session = SessionLocal()
@@ -1200,10 +1291,6 @@ def import_database_from_json(json_string, clear_existing_data=False):
                     area_id_map[a_data["id"]] = area.id
             print("Areas import complete.")
             
-            # ... The rest of the import logic remains the same as the old file...
-            # This logic correctly maps old IDs to new ones and handles dependencies.
-            # I will include the full, correct version from the old file here.
-
             if "process_steps" in imported_data:
                 for ps_data in imported_data["process_steps"]:
                     new_area_id = area_id_map.get(ps_data["area_id"])
